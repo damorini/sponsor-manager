@@ -5,7 +5,7 @@ Da SOSTITUIRE al portal/urls.py della parte 2.
 """
 from django.urls import path
 
-from portal.views import auth, dashboard, contract, catalog, cart, materials
+from portal.views import auth, dashboard, contract, catalog, cart, materials, wishlist
 from contracts.views import checkout
 
 app_name = 'portal'
@@ -56,6 +56,12 @@ urlpatterns = [
     path('materials/delete/<uuid:document_id>/', materials.material_delete_view,
          name='material_delete'),
     
+    # Wishlist
+    path("api/wishlist/", wishlist.wishlist_view, name="wishlist_view"),
+    path("api/wishlist/add/", wishlist.wishlist_add_api, name="wishlist_add"),
+    path("api/wishlist/remove/", wishlist.wishlist_remove_api, name="wishlist_remove"),
+    path("api/wishlist/check/", wishlist.wishlist_check_api, name="wishlist_check"),
+
     # Checkout PayPal
     path('checkout/start/<uuid:contract_id>/',
          checkout.start_paypal_checkout, name='checkout_start_paypal'),
