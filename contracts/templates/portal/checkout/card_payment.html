@@ -1,0 +1,325 @@
+{% extends "portal/base.html" %}
+{% load static %}
+
+{% block title %}Pagamento con carta · {{ contract.contract_number }}{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+  <h1>Pagamento</h1>
+  
+  <!-- Riepilogo ordine -->
+  <div class="order-summary">
+    <h2>Riepilogo</h2>
+    <p><strong>Contratto:</strong> {{ contract.contract_number }}</p>
+    <p><strong>Evento:</strong> {{ contract.event.get_name }}</p>
+    
+    <table class="lines-table">
+      <thead>
+        <tr>
+          <th>Servizio</th>
+          <th>Q.tà</th>
+          <th>Totale</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in contract.lines.all %}
+        <tr>
+          <td>{{ line.service_name_snapshot }}</td>
+          <td>{{ line.quantity }}</td>
+          <td>€ {{ line.line_total|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2"><strong>Totale:</strong></td>
+          <td><strong>€ {{ amount|floatformat:2 }}</strong></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  
+  <!-- Scelta metodo: PayPal o Carta -->
+  <div class="payment-methods">
+    <h2>Scegli come pagare</h2>
+    
+    <!-- Pulsante PayPal Standard (redirect) -->
+    <div id="paypal-button-container"></div>
+    
+    <div class="separator">oppure paga con carta</div>
+    
+    <!-- Form carta diretta -->
+    <div class="card-form">
+      <div id="card-name-field-container"></div>
+      <div id="card-number-field-container"></div>
+      <div class="row">
+        <div id="card-expiry-field-container" class="col"></div>
+        <div id="card-cvv-field-container" class="col"></div>
+      </div>
+      
+      <button id="card-submit-button" type="button" class="pay-button" disabled>
+        Paga € {{ amount|floatformat:2 }}
+      </button>
+      
+      <div id="card-error" class="error-message" style="display:none;"></div>
+      <div id="card-loading" style="display:none;">Elaborazione in corso...</div>
+    </div>
+    
+    <p class="paypal-disclaimer">
+      Il pagamento è elaborato da PayPal in base alla
+      <a href="https://www.paypal.com/it/legalhub/privacy-full" target="_blank">
+        Privacy Policy PayPal
+      </a>.
+    </p>
+  </div>
+</div>
+
+<style>
+  .checkout-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  }
+  .order-summary {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+  .lines-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+  }
+  .lines-table th, .lines-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .lines-table th:last-child, .lines-table td:last-child { text-align: right; }
+  .payment-methods { margin-top: 24px; }
+  .separator {
+    text-align: center;
+    margin: 24px 0;
+    color: #6b7280;
+    position: relative;
+  }
+  .separator::before, .separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: #e5e7eb;
+  }
+  .separator::before { left: 0; }
+  .separator::after { right: 0; }
+  .card-form { margin-top: 16px; }
+  .card-form > div { margin-bottom: 12px; }
+  
+  /* I container delle card fields hanno questa altezza minima */
+  #card-name-field-container,
+  #card-number-field-container,
+  #card-expiry-field-container,
+  #card-cvv-field-container {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 40px;
+    background: white;
+  }
+  .row { display: flex; gap: 12px; }
+  .col { flex: 1; }
+  
+  .pay-button {
+    width: 100%;
+    padding: 14px;
+    background: #1f4e79;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+  .pay-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+  }
+  .pay-button:hover:not(:disabled) {
+    background: #1a3f63;
+  }
+  .error-message {
+    color: #dc2626;
+    background: #fee2e2;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 12px;
+  }
+  .paypal-disclaimer {
+    margin-top: 24px;
+    font-size: 12px;
+    color: #6b7280;
+    text-align: center;
+  }
+</style>
+
+<!-- PayPal JS SDK v5 con buttons + card-fields -->
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&components=buttons,card-fields&currency={{ currency }}&intent=capture"></script>
+
+<script>
+(function() {
+  const orderId = "{{ paypal_order_id }}";
+  const paymentId = "{{ payment.id }}";
+  const captureUrl = "{% url 'portal:checkout_card_capture' payment.id %}";
+  
+  // CSRF token per le AJAX
+  function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+  }
+  const csrfToken = getCookie('csrftoken');
+  
+  // ==========================================================================
+  // 1. PayPal Smart Buttons (PayPal account / pay later / Venmo / etc)
+  // ==========================================================================
+  paypal.Buttons({
+    style: {
+      shape: 'rect',
+      color: 'gold',
+      layout: 'vertical',
+      label: 'paypal',
+    },
+    
+    // L'ordine è già stato creato lato server in card_checkout_page.
+    // Restituiamo solo l'order_id già esistente.
+    createOrder: function() {
+      return orderId;
+    },
+    
+    // Quando l'utente approva su PayPal, chiamiamo l'endpoint capture lato server
+    onApprove: function(data, actions) {
+      return fetch(captureUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrfToken,
+        },
+      })
+      .then(res => res.json())
+      .then(result => {
+        if (result.success) {
+          window.location.href = result.redirect_url;
+        } else {
+          showError('Pagamento non completato: ' + (result.error || 'errore sconosciuto'));
+        }
+      })
+      .catch(err => {
+        showError('Errore durante la conferma del pagamento. Contatta l\'assistenza.');
+        console.error(err);
+      });
+    },
+    
+    onError: function(err) {
+      showError('Errore PayPal: ' + (err.message || err));
+      console.error(err);
+    },
+    
+    onCancel: function() {
+      // L'utente ha chiuso il popup, non facciamo nulla (il payment resta pending)
+    },
+    
+  }).render('#paypal-button-container');
+  
+  // ==========================================================================
+  // 2. Card Fields (carta diretta)
+  // ==========================================================================
+  if (paypal.CardFields) {
+    const cardField = paypal.CardFields({
+      createOrder: function() {
+        return orderId;
+      },
+      
+      onApprove: function(data) {
+        return fetch(captureUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+          },
+        })
+        .then(res => res.json())
+        .then(result => {
+          if (result.success) {
+            window.location.href = result.redirect_url;
+          } else {
+            showError('Pagamento non completato: ' + (result.error || 'errore'));
+            hideLoading();
+          }
+        })
+        .catch(err => {
+          showError('Errore durante la conferma del pagamento.');
+          hideLoading();
+          console.error(err);
+        });
+      },
+      
+      onError: function(err) {
+        showError('Errore: ' + (err.message || err));
+        hideLoading();
+        console.error(err);
+      },
+    });
+    
+    if (cardField.isEligible()) {
+      // Render dei singoli campi
+      cardField.NameField({ placeholder: 'Nome sulla carta' })
+                .render('#card-name-field-container');
+      cardField.NumberField({ placeholder: 'Numero carta' })
+                .render('#card-number-field-container');
+      cardField.ExpiryField({ placeholder: 'MM/AA' })
+                .render('#card-expiry-field-container');
+      cardField.CVVField({ placeholder: 'CVV' })
+                .render('#card-cvv-field-container');
+      
+      // Abilita il bottone solo dopo che i field sono renderizzati
+      document.getElementById('card-submit-button').disabled = false;
+      
+      // Gestione click
+      document.getElementById('card-submit-button').addEventListener('click', function() {
+        showLoading();
+        cardField.submit().catch(function(err) {
+          showError('Errore validazione carta: verifica i dati inseriti.');
+          hideLoading();
+          console.error(err);
+        });
+      });
+    } else {
+      // Card payments non disponibili (es. account merchant non abilitato)
+      document.querySelector('.card-form').style.display = 'none';
+      document.querySelector('.separator').style.display = 'none';
+    }
+  }
+  
+  // ==========================================================================
+  // Helper UI
+  // ==========================================================================
+  function showError(msg) {
+    const el = document.getElementById('card-error');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function showLoading() {
+    document.getElementById('card-loading').style.display = 'block';
+    document.getElementById('card-submit-button').disabled = true;
+  }
+  function hideLoading() {
+    document.getElementById('card-loading').style.display = 'none';
+    document.getElementById('card-submit-button').disabled = false;
+  }
+})();
+</script>
+{% endblock %}

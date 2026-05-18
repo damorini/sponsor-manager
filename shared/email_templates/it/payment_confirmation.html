@@ -1,0 +1,53 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#10b981; margin:0 0 16px 0; font-size:20px;">
+  ✓ Pagamento ricevuto
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>confermiamo la ricezione del pagamento per il contratto
+  <strong>{{ contract.contract_number }}</strong>
+  relativo all'evento <strong>{{ event_name }}</strong>.
+</p>
+
+<div class="alert-success">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td style="padding:4px 0;"><strong>Importo:</strong></td>
+      <td style="padding:4px 0; text-align:right;">€ {{ payment.amount_gross|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;"><strong>Modalità:</strong></td>
+      <td style="padding:4px 0; text-align:right;">{{ payment.get_payment_method_display }}</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;"><strong>Data:</strong></td>
+      <td style="padding:4px 0; text-align:right;">{{ payment.completed_at|date:"d/m/Y" }} {{ payment.completed_at|time:"H:i" }}</td>
+    </tr>
+    {% if payment.paypal_capture_id %}
+    <tr>
+      <td style="padding:4px 0;"><strong>Riferimento PayPal:</strong></td>
+      <td style="padding:4px 0; text-align:right; font-family:monospace; font-size:12px;">
+        {{ payment.paypal_capture_id }}
+      </td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+
+<p>Il vostro contratto è ora attivo. Tutte le eventuali scadenze operative
+  sono state generate e potete consultarle nell'area riservata.</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Accedi al portale sponsor</a>
+</p>
+
+<p>La fattura sarà emessa secondo i termini concordati.</p>
+
+<p style="margin-top:24px;">
+  Grazie per la vostra collaborazione,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

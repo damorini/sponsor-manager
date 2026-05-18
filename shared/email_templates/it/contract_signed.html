@@ -1,0 +1,47 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Contratto sponsor confermato
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>vi confermiamo l'attivazione del contratto sponsor
+  <strong>{{ contract.contract_number }}</strong>
+  per l'evento <strong>{{ event_name }}</strong>
+  ({{ event.start_date|date:"d/m/Y" }} - {{ event.end_date|date:"d/m/Y" }},
+  {{ event.location }}).
+</p>
+
+<p>In allegato trovate il PDF del contratto.</p>
+
+{% if has_deadlines %}
+<div class="alert-warning">
+  <strong>Scadenze operative</strong><br>
+  Il contratto include alcune scadenze per la consegna di materiali e
+  informazioni. Le trovate riepilogate nel portale e riceverete reminder
+  automatici a ridosso di ciascuna data.
+</div>
+{% endif %}
+
+<p>Potete accedere all'area riservata per:</p>
+<ul style="padding-left:20px;">
+  <li>Consultare lo stato del contratto</li>
+  <li>Vedere le scadenze operative</li>
+  <li>Caricare i materiali richiesti</li>
+  <li>Acquistare servizi aggiuntivi (se disponibili)</li>
+</ul>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Accedi al portale sponsor</a>
+</p>
+
+<p>Vi ringraziamo per la collaborazione e siamo a disposizione per qualsiasi
+  necessità.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

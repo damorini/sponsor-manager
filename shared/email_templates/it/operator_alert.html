@@ -1,0 +1,59 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#dc2626; margin:0 0 16px 0; font-size:20px;">
+  ⚠ Alert Sponsor Manager
+</h2>
+
+<p>Buongiorno {{ user.first_name|default:user.email }},</p>
+
+<p>Il sistema ha rilevato situazioni che richiedono la tua attenzione:</p>
+
+{% if overdue_deadlines %}
+<h3 style="color:#dc2626; margin-top:24px;">Scadenze in ritardo ({{ overdue_deadlines|length }})</h3>
+<ul style="padding-left:20px;">
+{% for d in overdue_deadlines %}
+  <li>
+    <strong>{{ d.contract.sponsor.legal_name }}</strong> ·
+    {{ d.title }} ·
+    in ritardo di <strong>{{ d.days_overdue }} giorni</strong>
+  </li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if pending_payments %}
+<h3 style="color:#f59e0b; margin-top:24px;">Pagamenti da confermare ({{ pending_payments|length }})</h3>
+<ul style="padding-left:20px;">
+{% for p in pending_payments %}
+  <li>
+    <strong>{{ p.contract.sponsor.legal_name }}</strong> ·
+    € {{ p.amount_gross|floatformat:2 }} via {{ p.get_payment_method_display }} ·
+    in attesa da <strong>{{ p.days_pending }} giorni</strong>
+  </li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if failed_emails %}
+<h3 style="color:#dc2626; margin-top:24px;">Email non recapitate ({{ failed_emails|length }})</h3>
+<ul style="padding-left:20px;">
+{% for c in failed_emails %}
+  <li>
+    {{ c.subject|truncatechars:60 }} ·
+    {{ c.recipients_to.0 }} ·
+    {{ c.bounce_reason|default:"motivo non specificato" }}
+  </li>
+{% endfor %}
+</ul>
+{% endif %}
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ admin_url }}" class="button">Apri il pannello admin</a>
+</p>
+
+<p style="margin-top:24px; color:#6b7280; font-size:13px;">
+  Questa email viene inviata solo quando ci sono situazioni urgenti.
+  Per silenziare gli alert puoi disattivarli dalle impostazioni utente.
+</p>
+{% endblock %}

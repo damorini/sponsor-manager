@@ -1,0 +1,301 @@
+"""
+Service per rendering e invio email transazionali.
+
+Funzioni principali:
+- send_email(template_name, context, to, ...): invio singolo
+- get_template_for_language(template_name, language): risolve il path del template
+- log_communication(...): salva il record Communication
+
+Flow tipico:
+    from contracts.services.email_sender import send_email
+    
+    send_email(
+        template_name='deadline_reminder',
+        context={'contact': contact, 'deadline': deadline, ...},
+        to=[contact.email],
+        language='it',
+        related_to=deadline,  # per linkare la Communication
+    )
+
+Provider supportati:
+- Postmark (raccomandato)
+- Brevo (ex Sendinblue)
+- SMTP generico (anche fallback per development)
+
+In development le email vanno sulla console (vedi settings.development).
+"""
+import logging
+from typing import Optional
+
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.html import strip_tags
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Risoluzione template
+# ============================================================================
+
+def get_template_path(template_name: str, language: str = 'it') -> str:
+    """
+    Restituisce il path del template Django da usare.
+    
+    Es: ('deadline_reminder', 'en') → 'shared/email_templates/en/deadline_reminder.html'
+    
+    Fallback: se il template nella lingua richiesta non esiste, ripiega su 'it'.
+    """
+    primary = f"shared/email_templates/{language}/{template_name}.html"
+    fallback = f"shared/email_templates/it/{template_name}.html"
+
+    # Verifica esistenza usando il template engine
+    from django.template.loader import get_template
+    from django.template import TemplateDoesNotExist
+
+    try:
+        get_template(primary)
+        return primary
+    except TemplateDoesNotExist:
+        try:
+            get_template(fallback)
+            logger.warning(
+                "Template %s non trovato in %s, uso fallback italiano",
+                template_name, language
+            )
+            return fallback
+        except TemplateDoesNotExist as e:
+            raise ValueError(
+                f"Template email non trovato: né {primary} né {fallback}"
+            ) from e
+
+
+# ============================================================================
+# Costruzione contesto comune
+# ============================================================================
+
+def build_common_context(extra_context: dict = None, language: str = 'it') -> dict:
+    """
+    Aggiunge al contesto le variabili comuni di branding/footer.
+    
+    Variabili sempre disponibili nei template:
+    - language
+    - subject (impostato dal chiamante)
+    - organizer_name, organizer_address, support_email
+    - brand_logo_url, brand_primary_color
+    - portal_url, admin_url, checkout_url
+    """
+    extra_context = extra_context or {}
+
+    common = {
+        'language': language,
+        'organizer_name': getattr(
+            settings, 'ORGANIZER_DISPLAY_NAME',
+            getattr(settings, 'DEFAULT_ORGANIZER_LEGAL_NAME', 'Sponsor Manager')
+        ),
+        'organizer_address': getattr(settings, 'ORGANIZER_ADDRESS', ''),
+        'support_email': getattr(settings, 'SUPPORT_EMAIL', settings.DEFAULT_FROM_EMAIL),
+        'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
+        'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
+        'portal_url': getattr(settings, 'PORTAL_URL', '/portal/'),
+        'admin_url': getattr(settings, 'ADMIN_URL', '/admin/'),
+        'checkout_url': getattr(settings, 'PORTAL_URL', '/portal/') + 'checkout/',
+    }
+
+    # Il context custom prevale (può sovrascrivere se serve)
+    common.update(extra_context)
+    return common
+
+
+# ============================================================================
+# Invio email
+# ============================================================================
+
+def send_email(
+    template_name: str,
+    context: dict,
+    to: list,
+    subject: str,
+    cc: list = None,
+    bcc: list = None,
+    language: str = 'it',
+    attachments: list = None,
+    related_to=None,
+    communication_type: str = 'manual',
+    triggered_by_user=None,
+    is_automated: bool = False,
+) -> 'Communication':
+    """
+    Invia un'email transazionale renderizzando il template specificato.
+    
+    Args:
+        template_name: nome template (es. 'deadline_reminder', SENZA path/.html)
+        context: dict di variabili passate al template
+        to: lista email destinatari
+        subject: oggetto email
+        cc, bcc: liste opzionali
+        language: lingua per scelta template ('it' o 'en')
+        attachments: lista di tuple (filename, content_bytes, mime_type)
+        related_to: istanza modello a cui legare la Communication (opzionale)
+        communication_type: tipo (es. 'reminder', 'payment_confirmation')
+        triggered_by_user: User che ha avviato l'invio (None per automazioni)
+        is_automated: True se inviata da task Celery automatico
+    
+    Returns:
+        Istanza Communication salvata nel DB.
+    
+    Raises:
+        ValueError, RuntimeError in caso di problemi.
+    """
+    from shared.models import Communication, CommunicationStatus
+
+    # 1. Risolvi template
+    template_path = get_template_path(template_name, language)
+
+    # 2. Costruisci contesto completo
+    full_context = build_common_context(context, language)
+    full_context['subject'] = subject
+
+    # 3. Renderizza il body HTML
+    body_html = render_to_string(template_path, full_context)
+    body_text = strip_tags(body_html)  # versione testuale fallback
+
+    # 4. Crea record Communication PRIMA dell'invio (status='queued')
+    communication = _create_communication(
+        related_to=related_to,
+        communication_type=communication_type,
+        recipients_to=to,
+        recipients_cc=cc or [],
+        recipients_bcc=bcc or [],
+        subject=subject,
+        body_text=body_text,
+        body_html=body_html,
+        triggered_by_user=triggered_by_user,
+        is_automated=is_automated,
+    )
+
+    # 5. Costruisci e invia email
+    try:
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=body_text,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=to,
+            cc=cc or [],
+            bcc=bcc or [],
+            reply_to=[settings.DEFAULT_FROM_EMAIL],
+        )
+        email.attach_alternative(body_html, 'text/html')
+
+        # Allegati: lista di (filename, content, mime_type)
+        for attachment in (attachments or []):
+            email.attach(*attachment)
+
+        email.send(fail_silently=False)
+
+        # Aggiorna Communication a 'sent'
+        communication.status = CommunicationStatus.SENT
+        communication.sent_at = timezone.now()
+        communication.save(update_fields=['status', 'sent_at', 'updated_at'])
+
+        logger.info(
+            "Email inviata: template=%s to=%s subject=%s",
+            template_name, to, subject
+        )
+
+    except Exception as e:
+        # Aggiorna Communication a 'failed'
+        communication.status = CommunicationStatus.FAILED
+        communication.bounced_at = timezone.now()
+        communication.bounce_reason = str(e)[:500]
+        communication.save(update_fields=[
+            'status', 'bounced_at', 'bounce_reason', 'updated_at'
+        ])
+        logger.exception("Errore invio email %s a %s", template_name, to)
+        raise
+
+    return communication
+
+
+def _create_communication(
+    related_to,
+    communication_type,
+    recipients_to,
+    recipients_cc,
+    recipients_bcc,
+    subject,
+    body_text,
+    body_html,
+    triggered_by_user,
+    is_automated,
+):
+    """Crea il record Communication (separato per leggibilità)."""
+    from shared.models import Communication, CommunicationChannel, CommunicationStatus
+
+    kwargs = {
+        'channel': CommunicationChannel.EMAIL,
+        'communication_type': communication_type,
+        'recipients_to': recipients_to,
+        'recipients_cc': recipients_cc,
+        'recipients_bcc': recipients_bcc,
+        'subject': subject,
+        'body_text': body_text,
+        'body_html': body_html,
+        'status': CommunicationStatus.QUEUED,
+        'triggered_by_user': triggered_by_user,
+        'is_automated': is_automated,
+    }
+
+    if related_to is not None:
+        kwargs['content_type'] = ContentType.objects.get_for_model(related_to)
+        kwargs['object_id'] = related_to.id
+
+    return Communication.objects.create(**kwargs)
+
+
+# ============================================================================
+# Helper: scelta destinatari per ruolo
+# ============================================================================
+
+def get_recipients_for_contract(contract, roles: list = None) -> list:
+    """
+    Restituisce le email dei contatti dello sponsor che hanno almeno uno dei
+    ruoli richiesti.
+    
+    Es:
+        emails = get_recipients_for_contract(contract, roles=['marketing', 'operational'])
+    
+    Se roles è None, restituisce solo il contatto primario.
+    """
+    contacts = contract.sponsor.contacts.all()
+
+    if roles:
+        # Filtra contatti con almeno uno dei ruoli richiesti
+        result = []
+        for contact in contacts:
+            if any(r in (contact.roles or []) for r in roles):
+                if contact.email and contact.email not in result:
+                    result.append(contact.email)
+        if result:
+            return result
+
+    # Fallback: contatto primario o primo disponibile
+    primary = contacts.filter(is_primary=True).first()
+    if primary and primary.email:
+        return [primary.email]
+
+    first = contacts.first()
+    if first and first.email:
+        return [first.email]
+
+    return []
+
+
+def get_signer_email(contract) -> Optional[str]:
+    """Email del firmatario del contratto, se valorizzato."""
+    if contract.sponsor_signer_contact and contract.sponsor_signer_contact.email:
+        return contract.sponsor_signer_contact.email
+    return None

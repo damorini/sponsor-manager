@@ -1,0 +1,38 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Promemoria scadenza
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>vi ricordiamo che la scadenza
+  <strong>"{{ deadline.title }}"</strong>
+  relativa al contratto <strong>{{ contract.contract_number }}</strong>
+  per l'evento <strong>{{ event_name }}</strong>
+  è prevista per il
+  <strong class="text-primary">{{ deadline.due_date|date:"d/m/Y" }}</strong>
+  ({{ days_remaining }} giorni).
+</p>
+
+{% if deadline.description %}
+<div class="alert-warning">
+  <strong>Cosa è richiesto:</strong><br>
+  {{ deadline.description|linebreaksbr }}
+</div>
+{% endif %}
+
+<p>Potete consultare lo stato completo del vostro contratto nell'area riservata:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Accedi al portale sponsor</a>
+</p>
+
+<p>Restiamo a disposizione per qualsiasi necessità.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

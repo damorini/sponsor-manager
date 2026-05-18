@@ -1,0 +1,39 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Benvenuto nel portale sponsor
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>Ti diamo il benvenuto nel portale sponsor di
+  <strong>{{ organizer_name }}</strong>.
+  Da qui potrai gestire i contratti della tua azienda
+  ({{ contact.sponsor.legal_name }}), consultare le scadenze operative e
+  acquistare servizi aggiuntivi.
+</p>
+
+<div class="alert-info">
+  <strong>Le tue credenziali di accesso:</strong><br>
+  Email: <code>{{ user.email }}</code><br>
+  Password temporanea: <code>{{ temp_password }}</code>
+</div>
+
+<p>Ti consigliamo di cambiare la password al primo accesso. Puoi farlo dalle
+  impostazioni del tuo profilo o usando la funzione "Reset password".
+</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Accedi al portale</a>
+</p>
+
+<p>Per qualsiasi necessità o difficoltà di accesso, scrivi a
+  <a href="mailto:{{ support_email }}" class="text-primary">{{ support_email }}</a>.
+</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

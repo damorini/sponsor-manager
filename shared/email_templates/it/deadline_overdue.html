@@ -1,0 +1,42 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#dc2626; margin:0 0 16px 0; font-size:20px;">
+  Sollecito · Scadenza superata
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<div class="alert-error">
+  <strong>Attenzione:</strong> la scadenza
+  "<strong>{{ deadline.title }}</strong>" del contratto
+  <strong>{{ contract.contract_number }}</strong>
+  era prevista per il <strong>{{ deadline.due_date|date:"d/m/Y" }}</strong>
+  e risulta scaduta da {{ days_overdue }} giorni.
+</div>
+
+<p>L'evento <strong>{{ event_name }}</strong> si svolgerà il
+  <strong>{{ event.start_date|date:"d/m/Y" }}</strong> e il rispetto
+  delle scadenze è essenziale per la corretta gestione operativa.
+</p>
+
+{% if deadline.description %}
+<p><strong>Cosa è richiesto:</strong><br>
+{{ deadline.description|linebreaksbr }}</p>
+{% endif %}
+
+<p>Vi preghiamo di provvedere al più presto. Potete caricare i materiali
+  o aggiornare lo stato dall'area riservata:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Accedi al portale sponsor</a>
+</p>
+
+<p>Per qualsiasi difficoltà o impossibilità a rispettare la scadenza,
+  vi preghiamo di contattarci al più presto.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

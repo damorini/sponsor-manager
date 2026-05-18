@@ -1,0 +1,33 @@
+# Core
+Django==5.1.4
+psycopg2-binary==2.9.10
+python-decouple==3.8
+dj-database-url==3.1.2
+
+# Utility
+django-extensions==3.2.3
+
+# Async/Tasks
+celery==5.4.0
+redis==5.2.1
+
+# Storage
+django-storages[s3]==1.14.4
+boto3==1.36.3
+
+# Document generation
+docxtpl==0.19.1
+python-docx==1.1.2
+
+# Payments
+paypal-server-sdk==1.0.0
+
+# Monitoring
+sentry-sdk[django]==2.19.2
+
+# Production server
+gunicorn==23.0.0
+whitenoise==6.8.2
+
+# Dev tools
+django-debug-toolbar==4.4.6

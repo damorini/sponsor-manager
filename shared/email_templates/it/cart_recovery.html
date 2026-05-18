@@ -1,0 +1,66 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Hai lasciato qualcosa nel carrello
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>abbiamo notato che hai un carrello in sospeso per l'evento
+  <strong>{{ event_name }}</strong>.
+</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:16px 0; border:1px solid #e5e7eb; border-radius:6px;">
+  <thead>
+    <tr style="background:#f9fafb;">
+      <th align="left" style="padding:12px; border-bottom:1px solid #e5e7eb;
+                              font-size:14px;">Servizio</th>
+      <th align="right" style="padding:12px; border-bottom:1px solid #e5e7eb;
+                               font-size:14px;">Q.tà</th>
+      <th align="right" style="padding:12px; border-bottom:1px solid #e5e7eb;
+                               font-size:14px;">Totale</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for line in cart_lines %}
+    <tr>
+      <td style="padding:12px; border-bottom:1px solid #f3f4f6;">
+        {{ line.service_name_snapshot }}
+      </td>
+      <td align="right" style="padding:12px; border-bottom:1px solid #f3f4f6;">
+        {{ line.quantity }}
+      </td>
+      <td align="right" style="padding:12px; border-bottom:1px solid #f3f4f6;">
+        € {{ line.line_total|floatformat:2 }}
+      </td>
+    </tr>
+    {% endfor %}
+    <tr style="background:#f9fafb;">
+      <td colspan="2" align="right" style="padding:12px; font-weight:600;">Totale:</td>
+      <td align="right" style="padding:12px; font-weight:600;">
+        € {{ cart_total|floatformat:2 }}
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+{% if days_until_cutoff <= 7 %}
+<div class="alert-warning">
+  <strong>Attenzione:</strong> alcuni servizi potrebbero non essere più
+  acquistabili a ridosso dell'evento. Conferma l'ordine entro pochi giorni.
+</div>
+{% endif %}
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ checkout_url }}" class="button">Completa l'acquisto</a>
+</p>
+
+<p>Se hai cambiato idea o non riesci a completare, contattaci per assistenza.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

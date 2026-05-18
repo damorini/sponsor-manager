@@ -1,0 +1,37 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Deadline reminder
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<p>this is a reminder that the deadline
+  <strong>"{{ deadline.title }}"</strong>
+  for contract <strong>{{ contract.contract_number }}</strong>
+  (event <strong>{{ event_name }}</strong>) is due on
+  <strong class="text-primary">{{ deadline.due_date|date:"Y-m-d" }}</strong>
+  ({{ days_remaining }} days from now).
+</p>
+
+{% if deadline.description %}
+<div class="alert-warning">
+  <strong>What is required:</strong><br>
+  {{ deadline.description|linebreaksbr }}
+</div>
+{% endif %}
+
+<p>You can review the full contract status in your sponsor area:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Access sponsor portal</a>
+</p>
+
+<p>We remain at your disposal for any need.</p>
+
+<p style="margin-top:24px;">
+  Best regards,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

@@ -1,0 +1,330 @@
+{% extends "portal/base.html" %}
+
+{% block title %}{{ contract.contract_number }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <!-- Breadcrumb -->
+  <nav class="text-sm text-gray-500 mb-4">
+    <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">Dashboard</a>
+    <span class="mx-2">/</span>
+    <a href="{% url 'portal:contracts_list' %}" class="hover:text-brand-500">Contratti</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">{{ contract.contract_number }}</span>
+  </nav>
+  
+  <!-- Header contratto -->
+  <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-3xl font-bold text-gray-900">
+          {{ contract.contract_number }}
+        </h1>
+        <span class="text-xs px-2 py-1 rounded font-medium
+          {% if contract.status == 'signed' or contract.status == 'active' %}bg-green-100 text-green-800
+          {% elif contract.status == 'pending_payment' %}bg-yellow-100 text-yellow-800
+          {% elif contract.status == 'sent' %}bg-blue-100 text-blue-800
+          {% elif contract.status == 'cancelled' %}bg-red-100 text-red-800
+          {% else %}bg-gray-100 text-gray-700{% endif %}">
+          {{ contract.get_status_display }}
+        </span>
+        {% if contract.contract_kind == 'addon' %}
+        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
+          Addon
+        </span>
+        {% endif %}
+      </div>
+      <p class="mt-1 text-gray-600">
+        {{ contract.event.get_name }} ·
+        {{ contract.event.start_date|date:"d/m/Y" }} - {{ contract.event.end_date|date:"d/m/Y" }}
+        {% if contract.event.location %}· {{ contract.event.location }}{% endif %}
+      </p>
+    </div>
+    
+    <!-- Bottoni azione (paga / acquista altri servizi) -->
+    {% if is_payable %}
+    <div class="flex gap-2">
+      <a href="{% url 'portal:checkout_card' contract.id %}" 
+         class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
+        Paga ora
+      </a>
+    </div>
+    {% endif %}
+  </div>
+  
+  <!-- Layout 2 colonne -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Colonna principale (sinistra, 2 col) -->
+    <div class="lg:col-span-2 space-y-6">
+      
+      <!-- Servizi inclusi -->
+      <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Servizi inclusi</h2>
+        </div>
+        
+        {% if contract.lines.all %}
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-xs uppercase text-gray-600">
+            <tr>
+              <th class="px-5 py-3 text-left">Descrizione</th>
+              <th class="px-5 py-3 text-right">Q.tà</th>
+              <th class="px-5 py-3 text-right">Prezzo</th>
+              <th class="px-5 py-3 text-right">Totale</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            {% for line in contract.lines.all %}
+            <tr>
+              <td class="px-5 py-3">
+                <div class="font-medium text-gray-900">
+                  {{ line.service_name_snapshot }}
+                </div>
+                {% if line.service_description_snapshot %}
+                <div class="text-xs text-gray-500 mt-1">
+                  {{ line.service_description_snapshot|truncatechars:100 }}
+                </div>
+                {% endif %}
+              </td>
+              <td class="px-5 py-3 text-right">{{ line.quantity }}</td>
+              <td class="px-5 py-3 text-right">€ {{ line.unit_price|floatformat:2 }}</td>
+              <td class="px-5 py-3 text-right font-medium">€ {{ line.line_total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="bg-gray-50 text-sm">
+            <tr>
+              <td colspan="3" class="px-5 py-2 text-right text-gray-600">Subtotale:</td>
+              <td class="px-5 py-2 text-right">€ {{ contract.subtotal|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td colspan="3" class="px-5 py-2 text-right text-gray-600">
+                IVA:
+              </td>
+              <td class="px-5 py-2 text-right">€ {{ contract.vat_amount|floatformat:2 }}</td>
+            </tr>
+            <tr class="border-t border-gray-200">
+              <td colspan="3" class="px-5 py-3 text-right font-semibold text-gray-900">Totale:</td>
+              <td class="px-5 py-3 text-right font-bold text-lg">€ {{ contract.total|floatformat:2 }}</td>
+            </tr>
+          </tfoot>
+        </table>
+        {% else %}
+        <div class="px-5 py-8 text-center text-gray-500">
+          Nessuna riga sul contratto.
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- Scadenze operative -->
+      {% if deadlines %}
+      <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+          <h2 class="text-lg font-semibold text-gray-900">Scadenze operative</h2>
+          <p class="text-xs text-gray-500 mt-1">
+            Materiali e attività richieste per il corretto svolgimento dello sponsorship
+          </p>
+        </div>
+        <ul class="divide-y divide-gray-100">
+          {% for d in deadlines %}
+          <li class="px-5 py-4">
+            <div class="flex justify-between items-start gap-4">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  {% if d.status == 'received' %}
+                    <span class="text-green-600">✓</span>
+                  {% elif d.is_overdue %}
+                    <span class="text-red-600">⚠</span>
+                  {% else %}
+                    <span class="text-gray-400">○</span>
+                  {% endif %}
+                  <span class="font-medium text-gray-900">{{ d.title }}</span>
+                </div>
+                {% if d.description %}
+                <p class="mt-1 text-sm text-gray-600 ml-6">
+                  {{ d.description|linebreaksbr }}
+                </p>
+                {% endif %}
+              </div>
+              
+              <div class="text-right text-sm whitespace-nowrap">
+                <div class="text-gray-900">
+                  {{ d.due_date|date:"d/m/Y" }}
+                </div>
+                <div class="text-xs mt-1
+                  {% if d.status == 'received' %}text-green-600
+                  {% elif d.is_overdue %}text-red-600 font-medium
+                  {% elif d.days_remaining <= 3 %}text-yellow-600 font-medium
+                  {% else %}text-gray-500{% endif %}">
+                  {% if d.status == 'received' %}
+                    Ricevuto
+                  {% elif d.status == 'waived' %}
+                    Esonerato
+                  {% elif d.is_overdue %}
+                    {{ d.days_remaining }} gg in ritardo
+                  {% else %}
+                    tra {{ d.days_remaining }} gg
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="px-5 py-3 bg-gray-50 text-xs text-gray-600">
+          Per caricare i materiali richiesti, vai alla
+          <a href="#" class="text-brand-500 hover:underline">
+            sezione Materiali
+          </a>
+          (in arrivo).
+        </div>
+      </div>
+      {% endif %}
+      
+      <!-- CTA acquista altri servizi -->
+      {% if purchasable_services_count > 0 and contract.status != 'cancelled' %}
+      <div class="bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg shadow-sm p-6 text-white">
+        <h3 class="text-lg font-semibold mb-2">Aggiungi altri servizi</h3>
+        <p class="text-sm text-brand-50 mb-4">
+          Sono disponibili {{ purchasable_services_count }} servizi acquistabili 
+          per questo evento. Workshop, hostess, spazi promozionali extra
+          e molto altro.
+        </p>
+        <a href="{% url 'portal:catalog_event' contract.event.id %}" 
+           class="inline-block bg-white text-brand-700 font-medium px-5 py-2 rounded text-sm hover:bg-brand-50 transition-colors">
+          Esplora il catalogo
+        </a>
+      </div>
+      {% endif %}
+      
+    </div>
+    
+    <!-- Colonna laterale (destra) -->
+    <div class="space-y-6">
+      
+      <!-- Info contratto -->
+      <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+          <h3 class="font-semibold text-gray-900">Dettagli</h3>
+        </div>
+        <dl class="px-5 py-3 text-sm space-y-3">
+          
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Sponsor</dt>
+            <dd class="text-gray-900 font-medium">{{ contract.sponsor.legal_name }}</dd>
+          </div>
+          
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Tipo contratto</dt>
+            <dd class="text-gray-900">
+              {{ contract.get_contract_kind_display }}
+              {% if contract.parent_contract %}
+              <a href="{% url 'portal:contract_detail' contract.parent_contract.id %}" 
+                 class="text-brand-500 hover:underline text-xs block">
+                Da {{ contract.parent_contract.contract_number }}
+              </a>
+              {% endif %}
+            </dd>
+          </div>
+          
+          {% if contract.stand %}
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Stand assegnato</dt>
+            <dd class="text-gray-900">
+              <strong>{{ contract.stand.code }}</strong>
+              ({{ contract.stand.area_sqm }} m²)
+            </dd>
+          </div>
+          {% elif contract.stand_block %}
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Blocco stand</dt>
+            <dd class="text-gray-900">
+              <strong>{{ contract.stand_block.code }}</strong>
+            </dd>
+          </div>
+          {% endif %}
+          
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Creato</dt>
+            <dd class="text-gray-700">{{ contract.created_at|date:"d/m/Y" }}</dd>
+          </div>
+          
+          {% if contract.signed_at %}
+          <div>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">Firmato</dt>
+            <dd class="text-gray-700">{{ contract.signed_at|date:"d/m/Y" }}</dd>
+          </div>
+          {% endif %}
+          
+        </dl>
+      </div>
+      
+      <!-- Storico pagamenti -->
+      {% if payments %}
+      <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+          <h3 class="font-semibold text-gray-900">Pagamenti</h3>
+        </div>
+        <ul class="divide-y divide-gray-100">
+          {% for p in payments %}
+          <li class="px-5 py-3">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="text-sm font-medium 
+                  {% if p.status == 'succeeded' %}text-green-700
+                  {% elif p.status == 'failed' %}text-red-700
+                  {% elif p.status == 'refunded' or p.status == 'partial_refund' %}text-orange-700
+                  {% else %}text-gray-700{% endif %}">
+                  € {{ p.amount_gross|floatformat:2 }}
+                </div>
+                <div class="text-xs text-gray-500">
+                  {{ p.get_payment_method_display }} · {{ p.get_status_display }}
+                </div>
+              </div>
+              <div class="text-xs text-gray-500 text-right">
+                {% if p.completed_at %}
+                  {{ p.completed_at|date:"d/m/Y" }}
+                {% else %}
+                  {{ p.initiated_at|date:"d/m/Y" }}
+                {% endif %}
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      
+      <!-- Documenti -->
+      {% if documents %}
+      <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+          <h3 class="font-semibold text-gray-900">Documenti</h3>
+        </div>
+        <ul class="divide-y divide-gray-100">
+          {% for doc in documents %}
+          <li class="px-5 py-3">
+            <a href="{{ doc.storage_url }}" target="_blank" 
+               class="flex items-center text-sm text-brand-500 hover:underline">
+              <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              {{ doc.file_name|truncatechars:30 }}
+            </a>
+            <div class="text-xs text-gray-500 ml-6">
+              {{ doc.created_at|date:"d/m/Y" }}
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      
+    </div>
+    
+  </div>
+</div>
+{% endblock %}

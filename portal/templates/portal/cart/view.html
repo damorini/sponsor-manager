@@ -1,0 +1,164 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Carrello{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Carrello</h1>
+  
+  {% if is_empty %}
+  <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+    <svg class="mx-auto h-16 w-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+    </svg>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">Il carrello è vuoto</h2>
+    <p class="text-gray-600 mb-6">
+      Esplora il catalogo per aggiungere servizi ai tuoi eventi.
+    </p>
+    <a href="{% url 'portal:catalog' %}" 
+       class="inline-block bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md">
+      Vai al catalogo
+    </a>
+  </div>
+  
+  {% else %}
+  
+  <p class="text-gray-600 mb-6">
+    Hai un carrello per ciascun evento. Conferma e paga separatamente.
+  </p>
+  
+  {% for item in cart_data %}
+  <div class="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
+    
+    <!-- Header evento -->
+    <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+      <div class="flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900">
+            {{ item.event.get_name }}
+          </h2>
+          <p class="text-xs text-gray-600 mt-1">
+            {{ item.event.start_date|date:"d/m/Y" }} - {{ item.event.end_date|date:"d/m/Y" }}
+          </p>
+        </div>
+        <div class="text-xs text-gray-500">
+          Carrello #{{ item.contract.contract_number }}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Avviso se ci sono linee scadute -->
+    {% if item.has_invalid_lines %}
+    <div class="px-6 py-3 bg-red-50 border-b border-red-200 text-sm text-red-800">
+      ⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto).
+      Rimuovili prima di procedere al pagamento.
+    </div>
+    {% endif %}
+    
+    <!-- Righe -->
+    <table class="w-full">
+      <thead class="text-xs uppercase text-gray-600 bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left">Servizio</th>
+          <th class="px-6 py-3 text-center w-32">Quantità</th>
+          <th class="px-6 py-3 text-right w-32">Prezzo</th>
+          <th class="px-6 py-3 text-right w-32">Totale</th>
+          <th class="px-6 py-3 w-12"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for ld in item.lines %}
+        <tr {% if not ld.is_valid %}class="opacity-50 bg-red-50"{% endif %}>
+          <td class="px-6 py-4">
+            <div class="font-medium text-gray-900">{{ ld.line.service_name_snapshot }}</div>
+            {% if not ld.is_valid %}
+            <div class="text-xs text-red-600 mt-1">
+              Scaduto: termine acquisto superato
+            </div>
+            {% elif ld.cutoff_remaining is not None and ld.cutoff_remaining <= 7 %}
+            <div class="text-xs text-yellow-600 mt-1">
+              Ancora {{ ld.cutoff_remaining }} giorni per acquistare
+            </div>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 text-center">
+            <form method="post" action="{% url 'portal:cart_update_quantity' ld.line.id %}" 
+                  class="inline-flex items-center gap-1">
+              {% csrf_token %}
+              <input type="number" name="quantity" value="{{ ld.line.quantity }}" 
+                     min="1" max="100"
+                     class="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm"
+                     onchange="this.form.submit()">
+            </form>
+          </td>
+          <td class="px-6 py-4 text-right text-sm">
+            € {{ ld.line.unit_price|floatformat:2 }}
+          </td>
+          <td class="px-6 py-4 text-right text-sm font-medium">
+            € {{ ld.line.line_total|floatformat:2 }}
+          </td>
+          <td class="px-6 py-4 text-center">
+            <form method="post" action="{% url 'portal:cart_remove' ld.line.id %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" 
+                      class="text-red-500 hover:text-red-700 p-1"
+                      title="Rimuovi"
+                      onclick="return confirm('Rimuovere questo servizio?')">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"></path>
+                </svg>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-50">
+        <tr>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">Subtotale:</td>
+          <td class="px-6 py-2 text-right text-sm">€ {{ item.contract.subtotal|floatformat:2 }}</td>
+          <td></td>
+        </tr>
+        <tr>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">IVA:</td>
+          <td class="px-6 py-2 text-right text-sm">€ {{ item.contract.vat_amount|floatformat:2 }}</td>
+          <td></td>
+        </tr>
+        <tr class="border-t border-gray-200">
+          <td colspan="3" class="px-6 py-3 text-right font-semibold">Totale:</td>
+          <td class="px-6 py-3 text-right font-bold text-lg">€ {{ item.contract.total|floatformat:2 }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    
+    <!-- Footer con bottone checkout -->
+    <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-between items-center">
+      <a href="{% url 'portal:catalog_event' item.event.id %}" 
+         class="text-sm text-gray-600 hover:text-brand-500">
+        ← Continua acquisti per questo evento
+      </a>
+      
+      {% if item.has_invalid_lines %}
+      <button disabled 
+              class="bg-gray-300 text-gray-500 font-medium px-6 py-2.5 rounded-md cursor-not-allowed">
+        Rimuovi prima i servizi scaduti
+      </button>
+      {% else %}
+      <a href="{% url 'portal:cart_checkout' item.contract.id %}" 
+         class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md transition-colors">
+        Procedi al pagamento →
+      </a>
+      {% endif %}
+    </div>
+    
+  </div>
+  {% endfor %}
+  
+  {% endif %}
+  
+</div>
+{% endblock %}

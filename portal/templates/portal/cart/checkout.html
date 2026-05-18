@@ -1,0 +1,152 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Conferma e paga{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <nav class="text-sm text-gray-500 mb-4">
+    <a href="{% url 'portal:cart_view' %}" class="hover:text-brand-500">Carrello</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">Conferma</span>
+  </nav>
+  
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">Conferma e paga</h1>
+  <p class="text-gray-600 mb-8">
+    Verifica i dettagli prima di procedere al pagamento.
+  </p>
+  
+  <!-- Riepilogo evento -->
+  <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Evento</h2>
+    <div class="text-sm">
+      <div class="font-medium text-gray-900">{{ event.get_name }}</div>
+      <div class="text-gray-600 mt-1">
+        {{ event.start_date|date:"d/m/Y" }} - {{ event.end_date|date:"d/m/Y" }}
+        {% if event.location %}· {{ event.location }}{% endif %}
+      </div>
+    </div>
+  </div>
+  
+  <!-- Servizi -->
+  <div class="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h2 class="text-lg font-semibold text-gray-900">Servizi acquistati</h2>
+    </div>
+    <table class="w-full">
+      <thead class="text-xs uppercase text-gray-600 bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left">Servizio</th>
+          <th class="px-6 py-3 text-right">Q.tà</th>
+          <th class="px-6 py-3 text-right">Prezzo</th>
+          <th class="px-6 py-3 text-right">Totale</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for line in contract.lines.all %}
+        <tr>
+          <td class="px-6 py-3">
+            <div class="font-medium text-gray-900 text-sm">{{ line.service_name_snapshot }}</div>
+          </td>
+          <td class="px-6 py-3 text-right text-sm">{{ line.quantity }}</td>
+          <td class="px-6 py-3 text-right text-sm">€ {{ line.unit_price|floatformat:2 }}</td>
+          <td class="px-6 py-3 text-right text-sm font-medium">€ {{ line.line_total|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="bg-gray-50">
+        <tr>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">Subtotale:</td>
+          <td class="px-6 py-2 text-right text-sm">€ {{ contract.subtotal|floatformat:2 }}</td>
+        </tr>
+        <tr>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">IVA:</td>
+          <td class="px-6 py-2 text-right text-sm">€ {{ contract.vat_amount|floatformat:2 }}</td>
+        </tr>
+        <tr class="border-t border-gray-200">
+          <td colspan="3" class="px-6 py-3 text-right font-bold">Totale da pagare:</td>
+          <td class="px-6 py-3 text-right font-bold text-2xl">€ {{ contract.total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  
+  <!-- Dati fatturazione -->
+  <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">Dati fatturazione</h2>
+    <div class="text-sm text-gray-700 space-y-1">
+      <div><strong>{{ contract.billing_legal_name }}</strong></div>
+      <div>{{ contract.billing_address|linebreaksbr }}</div>
+      {% if contract.billing_vat_number %}
+      <div>P.IVA: {{ contract.billing_vat_number }}</div>
+      {% endif %}
+      {% if contract.billing_tax_code %}
+      <div>C.F.: {{ contract.billing_tax_code }}</div>
+      {% endif %}
+      {% if contract.billing_pec %}
+      <div>PEC: {{ contract.billing_pec }}</div>
+      {% endif %}
+      {% if contract.billing_sdi_code %}
+      <div>SDI: {{ contract.billing_sdi_code }}</div>
+      {% endif %}
+    </div>
+    <p class="text-xs text-gray-500 mt-3">
+      I dati sono ereditati dal contratto principale. Per modifiche, contatta
+      <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">{{ support_email }}</a>.
+    </p>
+  </div>
+  
+  <!-- Scelta metodo pagamento -->
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Scegli come pagare</h2>
+    
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <a href="{% url 'portal:checkout_card' contract.id %}" 
+         class="border border-gray-200 rounded-lg p-5 hover:border-brand-500 hover:shadow transition-all">
+        <div class="flex items-center mb-2">
+          <svg class="w-8 h-8 text-brand-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+          <span class="font-semibold text-gray-900">Carta o PayPal</span>
+        </div>
+        <p class="text-sm text-gray-600">
+          Visa, Mastercard, American Express o accesso PayPal.
+          Pagamento immediato.
+        </p>
+      </a>
+      
+      <a href="{% url 'portal:checkout_start_paypal' contract.id %}" 
+         class="border border-gray-200 rounded-lg p-5 hover:border-brand-500 hover:shadow transition-all">
+        <div class="flex items-center mb-2">
+          <svg class="w-8 h-8 text-blue-700 mr-3" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M7.4 21h-2.5l1.6-9.7h2.5L7.4 21zM18.6 11.5c-.3-.5-.7-.9-1.2-1.2-.5-.3-1-.5-1.7-.5h-3l-1.6 9.7h2.4l.4-2.5h.5c1.1 0 2-.3 2.7-.9.7-.6 1.1-1.4 1.3-2.5.1-.6 0-1.2-.2-1.6-.2-.4-.4-.7-.6-.5z"/>
+          </svg>
+          <span class="font-semibold text-gray-900">PayPal</span>
+        </div>
+        <p class="text-sm text-gray-600">
+          Login PayPal o pagamento come ospite.
+          Redirect su paypal.com.
+        </p>
+      </a>
+    </div>
+    
+    <div class="mt-6 alert-info rounded text-sm">
+      <strong>Bonifico bancario?</strong>
+      Per importi superiori a € 1.000 puoi richiedere il pagamento tramite bonifico:
+      <a href="mailto:{{ support_email }}?subject=Pagamento bonifico {{ contract.contract_number }}" 
+         class="underline font-medium">
+        contatta l'amministrazione
+      </a>.
+    </div>
+    
+    <div class="mt-6 text-center">
+      <a href="{% url 'portal:cart_view' %}" 
+         class="text-sm text-gray-600 hover:text-brand-500">
+        ← Torna al carrello
+      </a>
+    </div>
+  </div>
+  
+</div>
+{% endblock %}

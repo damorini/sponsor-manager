@@ -1,0 +1,42 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#dc2626; margin:0 0 16px 0; font-size:20px;">
+  Reminder · Overdue deadline
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<div class="alert-error">
+  <strong>Attention:</strong> the deadline
+  "<strong>{{ deadline.title }}</strong>" of contract
+  <strong>{{ contract.contract_number }}</strong>
+  was due on <strong>{{ deadline.due_date|date:"Y-m-d" }}</strong>
+  and is overdue by {{ days_overdue }} days.
+</div>
+
+<p>The event <strong>{{ event_name }}</strong> will take place on
+  <strong>{{ event.start_date|date:"Y-m-d" }}</strong> and meeting deadlines
+  is essential for proper operational management.
+</p>
+
+{% if deadline.description %}
+<p><strong>What is required:</strong><br>
+{{ deadline.description|linebreaksbr }}</p>
+{% endif %}
+
+<p>Please act as soon as possible. You can upload materials or update the
+  status from your sponsor area:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Access sponsor portal</a>
+</p>
+
+<p>For any difficulties or inability to meet the deadline, please contact us
+  as soon as possible.</p>
+
+<p style="margin-top:24px;">
+  Best regards,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

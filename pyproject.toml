@@ -1,0 +1,60 @@
+[project]
+name = "sponsor-manager"
+version = "0.1.0"
+description = "Gestionale congressi e sponsor"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    "*/migrations/*",
+    "venv",
+    ".venv",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DJ",  # flake8-django
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (gestito da black)
+    "B008",  # function call in default args (Django pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/migrations/*" = ["E", "F", "I"]
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+extend-exclude = '''
+/(
+  | migrations
+)/
+'''
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.development"
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--reuse-db --tb=short"
+testpaths = ["."]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/test_*.py",
+    "manage.py",
+    "config/settings/*",
+    "venv/*",
+    ".venv/*",
+]

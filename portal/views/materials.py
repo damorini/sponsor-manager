@@ -1,0 +1,329 @@
+"""
+View per gestione materiali sponsor.
+
+Concetti:
+- Deadline = richiesta operativa (es. "Logo HD entro 30 giorni dall'evento")
+- Document = file caricato dallo sponsor che soddisfa la deadline
+
+Lo sponsor vede:
+- Lista materiali per contratto (= lista Deadline filtrate)
+- Per ogni deadline: stato + materiali già caricati + form upload
+- Quando carica un file, la deadline passa a RECEIVED
+
+Validazioni upload:
+- Tipo MIME consentito (configurabile per deadline)
+- Dimensione massima (default 20 MB, configurabile)
+- Estensione valida
+"""
+import logging
+import mimetypes
+from datetime import date
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.contenttypes.models import ContentType
+from django.core.files.storage import default_storage
+from django.db import transaction
+from django.http import FileResponse, Http404, HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from portal.views.dashboard import sponsor_required
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Configurazione upload
+# ============================================================================
+
+DEFAULT_MAX_UPLOAD_SIZE_MB = 20
+
+DEFAULT_ALLOWED_MIME_TYPES = [
+    'application/pdf',
+    'image/jpeg', 'image/png', 'image/webp', 'image/svg+xml',
+    'application/zip',
+    'application/illustrator', 'application/postscript',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]
+
+
+# ============================================================================
+# Helper: lista materiali per un contratto
+# ============================================================================
+
+def _get_materials_for_contract(contract):
+    """Restituisce lista di dict con deadline + suoi documents."""
+    from contracts.models import Deadline, DeadlineStatus
+    from shared.models import Document
+
+    deadlines = contract.deadlines.select_related('deadline_template').order_by('due_date')
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+
+    today = date.today()
+    materials = []
+    for d in deadlines:
+        docs = Document.objects.filter(
+            content_type=deadline_ct,
+            object_id=d.id,
+            deleted_at__isnull=True,
+        ).order_by('-created_at')
+
+        if d.due_date >= today:
+            d.days_remaining = (d.due_date - today).days
+            d.is_overdue = False
+        else:
+            d.days_remaining = (today - d.due_date).days
+            d.is_overdue = True
+
+        materials.append({
+            'deadline': d,
+            'documents': list(docs),
+            'has_documents': docs.exists(),
+            'is_completed': d.status in [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED],
+        })
+
+    return materials
+
+
+# ============================================================================
+# View: lista materiali per un contratto
+# ============================================================================
+
+@sponsor_required
+def materials_view(request, contract_id):
+    """Pagina materiali di un contratto: scadenze + upload."""
+    from contracts.models import Contract
+
+    contract = get_object_or_404(
+        Contract.objects.select_related('event', 'sponsor'),
+        id=contract_id,
+        deleted_at__isnull=True,
+    )
+
+    if contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+
+    materials = _get_materials_for_contract(contract)
+
+    # Statistiche
+    total_count = len(materials)
+    completed_count = sum(1 for m in materials if m['is_completed'])
+    overdue_count = sum(
+        1 for m in materials
+        if m['deadline'].is_overdue and not m['is_completed']
+    )
+
+    return render(request, 'portal/materials/list.html', {
+        'contract': contract,
+        'materials': materials,
+        'total_count': total_count,
+        'completed_count': completed_count,
+        'overdue_count': overdue_count,
+        'max_upload_mb': DEFAULT_MAX_UPLOAD_SIZE_MB,
+    })
+
+
+# ============================================================================
+# View: upload materiale per una deadline
+# ============================================================================
+
+@sponsor_required
+@require_POST
+@transaction.atomic
+def material_upload_view(request, deadline_id):
+    """
+    Upload di uno o più file collegati a una specifica Deadline.
+    Marca la deadline come RECEIVED se almeno un file viene caricato.
+    """
+    from contracts.models import Deadline, DeadlineStatus
+    from shared.models import Document
+
+    deadline = get_object_or_404(
+        Deadline.objects.select_related('contract', 'deadline_template'),
+        id=deadline_id,
+    )
+
+    if deadline.contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+
+    if deadline.status == DeadlineStatus.WAIVED:
+        messages.warning(
+            request,
+            "Questa scadenza è stata esonerata e non richiede materiali."
+        )
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    files = request.FILES.getlist('files')
+    if not files:
+        messages.error(request, "Nessun file selezionato.")
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    template = deadline.deadline_template
+    max_size_bytes = (
+        getattr(template, 'max_file_size_mb', None) or DEFAULT_MAX_UPLOAD_SIZE_MB
+    ) * 1024 * 1024
+
+    allowed_mimes = (
+        getattr(template, 'allowed_mime_types', None) or DEFAULT_ALLOWED_MIME_TYPES
+    )
+
+    # Limita a max 10 file per upload
+    files = files[:10]
+
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+    uploaded_count = 0
+    errors = []
+
+    for f in files:
+        if f.size > max_size_bytes:
+            errors.append(
+                f"'{f.name}': troppo grande "
+                f"({f.size / 1024 / 1024:.1f} MB > {max_size_bytes / 1024 / 1024:.0f} MB)"
+            )
+            continue
+
+        mime_type = (
+            f.content_type
+            or mimetypes.guess_type(f.name)[0]
+            or 'application/octet-stream'
+        )
+        if allowed_mimes and mime_type not in allowed_mimes:
+            errors.append(f"'{f.name}': tipo non consentito ({mime_type})")
+            continue
+
+        try:
+            relative_path = (
+                f"documents/contracts/{deadline.contract_id}/"
+                f"deadlines/{deadline.id}/{f.name}"
+            )
+            saved_path = default_storage.save(relative_path, f)
+
+            Document.objects.create(
+                content_type=deadline_ct,
+                object_id=deadline.id,
+                file_name=f.name,
+                file_size=f.size,
+                mime_type=mime_type,
+                storage_url=settings.MEDIA_URL + saved_path,
+                document_type='sponsor_material',
+                uploaded_by=request.user,
+            )
+            uploaded_count += 1
+            logger.info(
+                "Material uploaded: deadline=%s file=%s by user=%s",
+                deadline.id, f.name, request.user.id
+            )
+        except Exception as e:
+            logger.exception("Errore upload file %s", f.name)
+            errors.append(f"'{f.name}': errore di salvataggio")
+
+    if uploaded_count > 0 and deadline.status != DeadlineStatus.RECEIVED:
+        deadline.status = DeadlineStatus.RECEIVED
+        deadline.received_at = timezone.now()
+        deadline.save(update_fields=['status', 'received_at', 'updated_at'])
+
+    if uploaded_count > 0:
+        messages.success(
+            request,
+            f"✓ Caricati {uploaded_count} file. "
+            f"La scadenza '{deadline.title}' è stata marcata come consegnata."
+        )
+    if errors:
+        for err in errors:
+            messages.error(request, err)
+
+    return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+
+# ============================================================================
+# View: download di un documento
+# ============================================================================
+
+@sponsor_required
+def material_download_view(request, document_id):
+    """Download di un documento (con verifica accesso)."""
+    from shared.models import Document
+    from contracts.models import Deadline
+
+    document = get_object_or_404(
+        Document.objects.filter(deleted_at__isnull=True),
+        id=document_id,
+    )
+
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+    if document.content_type != deadline_ct:
+        return HttpResponseForbidden("Documento non scaricabile.")
+
+    try:
+        deadline = Deadline.objects.select_related('contract').get(id=document.object_id)
+    except Deadline.DoesNotExist:
+        raise Http404()
+
+    if deadline.contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+
+    relative_path = document.storage_url.replace(settings.MEDIA_URL, '')
+    if not default_storage.exists(relative_path):
+        raise Http404("File non trovato sul server.")
+
+    response = FileResponse(
+        default_storage.open(relative_path, 'rb'),
+        as_attachment=True,
+        filename=document.file_name,
+    )
+    return response
+
+
+# ============================================================================
+# View: delete di un documento
+# ============================================================================
+
+@sponsor_required
+@require_POST
+@transaction.atomic
+def material_delete_view(request, document_id):
+    """
+    Cancella (soft delete) un documento.
+    Se era l'unico documento per la deadline, rimette la deadline a PENDING.
+    """
+    from shared.models import Document
+    from contracts.models import Deadline, DeadlineStatus
+
+    document = get_object_or_404(
+        Document.objects.filter(deleted_at__isnull=True),
+        id=document_id,
+    )
+
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+    if document.content_type != deadline_ct:
+        return HttpResponseForbidden("Operazione non consentita.")
+
+    try:
+        deadline = Deadline.objects.select_related('contract').get(id=document.object_id)
+    except Deadline.DoesNotExist:
+        raise Http404()
+
+    if deadline.contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+
+    document.deleted_at = timezone.now()
+    document.save(update_fields=['deleted_at', 'updated_at'])
+
+    other_docs = Document.objects.filter(
+        content_type=deadline_ct,
+        object_id=deadline.id,
+        deleted_at__isnull=True,
+    ).exclude(id=document.id)
+
+    if not other_docs.exists() and deadline.status == DeadlineStatus.RECEIVED:
+        deadline.status = DeadlineStatus.PENDING
+        deadline.received_at = None
+        deadline.save(update_fields=['status', 'received_at', 'updated_at'])
+
+    messages.success(request, f"File '{document.file_name}' rimosso.")
+    return redirect('portal:materials_list', contract_id=deadline.contract_id)

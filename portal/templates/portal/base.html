@@ -1,0 +1,166 @@
+{% load static %}<!DOCTYPE html>
+<html lang="{{ request.LANGUAGE_CODE|default:'it' }}">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Portale Sponsor{% endblock %} · {{ organizer_name|default:"Sponsor Manager" }}</title>
+
+<!-- Tailwind CSS via CDN (Play CDN, no build needed) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'brand': {
+            50:  '#eff6ff',
+            100: '#dbeafe',
+            500: '{{ brand_primary_color|default:"#1f4e79" }}',
+            600: '{{ brand_primary_color|default:"#1f4e79" }}',
+            700: '#1a3f63',
+            900: '#0f2942',
+          },
+        },
+      }
+    }
+  }
+</script>
+
+<style>
+  /* Stili custom oltre Tailwind */
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+  .alert-success { @apply bg-green-50 border-l-4 border-green-500 text-green-800 p-4; }
+  .alert-error { @apply bg-red-50 border-l-4 border-red-500 text-red-800 p-4; }
+  .alert-warning { @apply bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4; }
+  .alert-info { @apply bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4; }
+</style>
+
+{% block extra_head %}{% endblock %}
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+{% if user.is_authenticated and user.is_sponsor %}
+<!-- ========================================================================
+     HEADER con menu (solo per sponsor autenticati)
+     ======================================================================== -->
+<header class="bg-white border-b border-gray-200 shadow-sm">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-16">
+      
+      <!-- Logo / brand -->
+      <div class="flex items-center">
+        <a href="{% url 'portal:dashboard' %}" class="flex items-center">
+          {% if brand_logo_url %}
+            <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}"
+                 class="h-8 w-auto">
+          {% else %}
+            <span class="text-xl font-semibold text-brand-500">
+              {{ organizer_name|default:"Sponsor Portal" }}
+            </span>
+          {% endif %}
+        </a>
+      </div>
+      
+      <!-- Menu desktop -->
+      <nav class="hidden md:flex space-x-8">
+        <a href="{% url 'portal:dashboard' %}" 
+           class="text-gray-700 hover:text-brand-500 font-medium">
+          Dashboard
+        </a>
+        <a href="{% url 'portal:contracts_list' %}"
+           class="text-gray-700 hover:text-brand-500 font-medium">
+          Contratti
+        </a>
+        {% if has_purchasable_services %}
+        <a href="{% url 'portal:catalog' %}"
+           class="text-gray-700 hover:text-brand-500 font-medium">
+          Acquista servizi
+        </a>
+        {% endif %}
+      </nav>
+      
+      <!-- User menu -->
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:block text-sm text-gray-600">
+          {{ user.contact_profile.full_name }}
+          {% if user.contact_profile.sponsor %}
+          <span class="text-gray-400">·</span>
+          <span class="font-medium">{{ user.contact_profile.sponsor.legal_name }}</span>
+          {% endif %}
+        </div>
+        <form action="{% url 'portal:logout' %}" method="post" class="inline">
+          {% csrf_token %}
+          <button type="submit" 
+                  class="text-sm text-gray-600 hover:text-red-600 font-medium">
+            Esci
+          </button>
+        </form>
+      </div>
+      
+      <!-- Hamburger mobile (semplice toggle JS) -->
+      <button class="md:hidden text-gray-700"
+              onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
+              aria-label="Apri menu">
+        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Menu mobile (toggle) -->
+    <div id="mobile-menu" class="md:hidden hidden pb-3 space-y-1">
+      <a href="{% url 'portal:dashboard' %}" 
+         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Dashboard</a>
+      <a href="{% url 'portal:contracts_list' %}"
+         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Contratti</a>
+      {% if has_purchasable_services %}
+      <a href="{% url 'portal:catalog' %}"
+         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Acquista</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+{% endif %}
+
+<!-- ========================================================================
+     MESSAGES (notifiche flash)
+     ======================================================================== -->
+{% if messages %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 space-y-2">
+  {% for message in messages %}
+  <div class="alert-{{ message.tags|default:'info' }} rounded">
+    {{ message }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- ========================================================================
+     CONTENUTO principale
+     ======================================================================== -->
+<main class="flex-1">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ========================================================================
+     FOOTER
+     ======================================================================== -->
+<footer class="bg-white border-t border-gray-200 mt-12">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="text-center text-sm text-gray-500">
+      <p>
+        © {% now "Y" %} {{ organizer_name|default:"Sponsor Manager" }}.
+        Per assistenza:
+        <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">
+          {{ support_email|default:"info@example.com" }}
+        </a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

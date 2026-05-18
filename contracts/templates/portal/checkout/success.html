@@ -1,0 +1,117 @@
+{% extends "portal/base.html" %}
+
+{% block title %}Pagamento completato · {{ contract.contract_number }}{% endblock %}
+
+{% block content %}
+<div class="success-container">
+  <div class="success-icon">✓</div>
+  <h1>Pagamento ricevuto</h1>
+  
+  {% if already_processed %}
+  <p class="info">Questo pagamento era già stato confermato.</p>
+  {% endif %}
+  
+  <div class="receipt">
+    <h2>Riepilogo</h2>
+    <table>
+      <tr>
+        <td>Contratto:</td>
+        <td><strong>{{ contract.contract_number }}</strong></td>
+      </tr>
+      <tr>
+        <td>Evento:</td>
+        <td>{{ contract.event.get_name }}</td>
+      </tr>
+      <tr>
+        <td>Importo:</td>
+        <td><strong>€ {{ payment.amount_gross|floatformat:2 }}</strong></td>
+      </tr>
+      <tr>
+        <td>Riferimento PayPal:</td>
+        <td><code>{{ capture_id }}</code></td>
+      </tr>
+      <tr>
+        <td>Data:</td>
+        <td>{{ payment.completed_at|date:"d/m/Y H:i" }}</td>
+      </tr>
+    </table>
+  </div>
+  
+  <p>
+    Il contratto è ora attivo. Riceverete una email di conferma con il PDF
+    del contratto in allegato. La fattura sarà emessa secondo i termini
+    concordati.
+  </p>
+  
+  <p>
+    <a href="{% url 'portal:contract_detail' contract.id %}" class="button">
+      Vai al dettaglio contratto
+    </a>
+  </p>
+</div>
+
+<style>
+  .success-container {
+    max-width: 600px;
+    margin: 60px auto;
+    padding: 40px;
+    text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  }
+  .success-icon {
+    width: 80px;
+    height: 80px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin-bottom: 24px;
+  }
+  .receipt {
+    background: #f0fdf4;
+    border: 1px solid #d1fae5;
+    border-radius: 8px;
+    padding: 24px;
+    margin: 32px 0;
+    text-align: left;
+  }
+  .receipt table {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .receipt td {
+    padding: 8px 0;
+  }
+  .receipt td:first-child {
+    color: #6b7280;
+    width: 40%;
+  }
+  .info {
+    background: #fef3c7;
+    color: #78350f;
+    padding: 12px;
+    border-radius: 6px;
+    margin: 16px 0;
+  }
+  .button {
+    display: inline-block;
+    padding: 12px 28px;
+    background: #1f4e79;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+  code {
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 12px;
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+</style>
+{% endblock %}

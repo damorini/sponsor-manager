@@ -1,0 +1,53 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#10b981; margin:0 0 16px 0; font-size:20px;">
+  ✓ Payment received
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<p>we confirm receipt of payment for contract
+  <strong>{{ contract.contract_number }}</strong>
+  related to event <strong>{{ event_name }}</strong>.
+</p>
+
+<div class="alert-success">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+      <td style="padding:4px 0;"><strong>Amount:</strong></td>
+      <td style="padding:4px 0; text-align:right;">€ {{ payment.amount_gross|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;"><strong>Method:</strong></td>
+      <td style="padding:4px 0; text-align:right;">{{ payment.get_payment_method_display }}</td>
+    </tr>
+    <tr>
+      <td style="padding:4px 0;"><strong>Date:</strong></td>
+      <td style="padding:4px 0; text-align:right;">{{ payment.completed_at|date:"Y-m-d" }} {{ payment.completed_at|time:"H:i" }}</td>
+    </tr>
+    {% if payment.paypal_capture_id %}
+    <tr>
+      <td style="padding:4px 0;"><strong>PayPal reference:</strong></td>
+      <td style="padding:4px 0; text-align:right; font-family:monospace; font-size:12px;">
+        {{ payment.paypal_capture_id }}
+      </td>
+    </tr>
+    {% endif %}
+  </table>
+</div>
+
+<p>Your contract is now active. All operational deadlines have been generated
+  and you can review them in your sponsor area.</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}" class="button">Access sponsor portal</a>
+</p>
+
+<p>The invoice will be issued according to the agreed terms.</p>
+
+<p style="margin-top:24px;">
+  Thank you for your collaboration,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

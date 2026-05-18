@@ -1,0 +1,154 @@
+{% extends "portal/base.html" %}
+
+{% block title %}I tuoi contratti{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">Contratti</h1>
+    <div class="text-sm text-gray-600">
+      {{ total_count }} contratto{{ total_count|pluralize:"i" }}
+    </div>
+  </div>
+  
+  <!-- Filtri -->
+  <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-3 items-end">
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Evento</label>
+        <select name="event" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+          <option value="">Tutti gli eventi</option>
+          {% for ev in available_events %}
+          <option value="{{ ev.id }}" {% if request.GET.event == ev.id|stringformat:"s" %}selected{% endif %}>
+            {{ ev.get_name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Stato</label>
+        <select name="status" class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+          <option value="">Tutti gli stati</option>
+          <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Attivi</option>
+          <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>In attesa</option>
+          <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completati</option>
+        </select>
+      </div>
+      <button type="submit" 
+              class="bg-brand-500 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-md">
+        Filtra
+      </button>
+      {% if request.GET.event or request.GET.status %}
+      <a href="{% url 'portal:contracts_list' %}" class="text-sm text-gray-500 hover:underline">
+        Reset filtri
+      </a>
+      {% endif %}
+    </form>
+  </div>
+  
+  <!-- Lista contratti -->
+  {% if contracts %}
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+    <ul class="divide-y divide-gray-100">
+      {% for c in contracts %}
+      <li>
+        <a href="{% url 'portal:contract_detail' c.id %}" 
+           class="block px-5 py-4 hover:bg-gray-50 transition-colors">
+          
+          <div class="flex justify-between items-start">
+            <div class="flex-1 min-w-0">
+              <!-- Numero contratto + tipo -->
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-gray-900">{{ c.contract_number }}</span>
+                {% if c.contract_kind == 'addon' %}
+                <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">
+                  Addon
+                </span>
+                {% endif %}
+              </div>
+              
+              <!-- Evento -->
+              <div class="text-sm text-gray-700 mt-1">
+                {{ c.event.get_name }}
+              </div>
+              
+              <!-- Date evento -->
+              <div class="text-xs text-gray-500 mt-1">
+                {{ c.event.start_date|date:"d/m/Y" }}
+                {% if c.event.location %}· {{ c.event.location }}{% endif %}
+              </div>
+              
+              <!-- Stand assegnato -->
+              {% if c.stand %}
+              <div class="text-xs text-gray-600 mt-1">
+                📍 Stand {{ c.stand.code }} ({{ c.stand.area_sqm }} m²)
+              </div>
+              {% elif c.stand_block %}
+              <div class="text-xs text-gray-600 mt-1">
+                📍 Blocco {{ c.stand_block.code }}
+              </div>
+              {% endif %}
+            </div>
+            
+            <div class="text-right ml-4">
+              <!-- Stato -->
+              <span class="inline-block text-xs px-2 py-1 rounded font-medium
+                {% if c.status == 'signed' or c.status == 'active' %}bg-green-100 text-green-800
+                {% elif c.status == 'pending_payment' %}bg-yellow-100 text-yellow-800
+                {% elif c.status == 'sent' %}bg-blue-100 text-blue-800
+                {% elif c.status == 'cancelled' %}bg-red-100 text-red-800
+                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                {{ c.get_status_display }}
+              </span>
+              
+              <!-- Totale -->
+              <div class="font-semibold text-gray-900 mt-2">
+                € {{ c.total|floatformat:2 }}
+              </div>
+              
+              <!-- Scadenze pending -->
+              {% if c.pending_deadlines_count > 0 %}
+              <div class="text-xs text-yellow-600 mt-1">
+                {{ c.pending_deadlines_count }} scadenz{{ c.pending_deadlines_count|pluralize:"a,e" }} aperta
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  
+  <!-- Paginazione -->
+  {% if is_paginated %}
+  <div class="flex justify-center mt-6 gap-2">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.event %}&event={{ request.GET.event }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+       class="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">
+      ← Precedente
+    </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 text-sm text-gray-600">
+      Pagina {{ page_obj.number }} di {{ page_obj.paginator.num_pages }}
+    </span>
+    
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.event %}&event={{ request.GET.event }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" 
+       class="px-4 py-2 border border-gray-300 rounded text-sm hover:bg-gray-50">
+      Successiva →
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+  
+  {% else %}
+  <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+    <p class="text-gray-500">Nessun contratto corrisponde ai filtri selezionati.</p>
+  </div>
+  {% endif %}
+  
+</div>
+{% endblock %}
