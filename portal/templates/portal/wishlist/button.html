@@ -1,0 +1,81 @@
+<button 
+  class="wishlist-btn bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded transition-colors flex items-center gap-2"
+  data-service-id="{{ service.id }}"
+  data-service-name="{{ service.name }}"
+>
+  <span class="wishlist-icon">♡</span>
+  <span class="wishlist-text">Wishlist</span>
+</button>
+
+<script>
+(function() {
+  const wishlistBtns = document.querySelectorAll('.wishlist-btn');
+  
+  wishlistBtns.forEach(btn => {
+    const serviceId = btn.dataset.serviceId;
+    const serviceName = btn.dataset.serviceName;
+    
+    checkWishlistStatus(serviceId, btn);
+    
+    btn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      await toggleWishlist(serviceId, serviceName, btn);
+    });
+  });
+  
+  async function checkWishlistStatus(serviceId, btn) {
+    try {
+      const response = await fetch(`/portal/api/wishlist/check/?service_id=${serviceId}`);
+      if (response.ok) {
+        const data = await response.json();
+        updateButtonUI(btn, data.in_wishlist);
+      }
+    } catch (error) {
+      console.error('Errore:', error);
+    }
+  }
+  
+  async function toggleWishlist(serviceId, serviceName, btn) {
+    const isInWishlist = btn.classList.contains('in-wishlist');
+    const endpoint = isInWishlist ? '/portal/api/wishlist/remove/' : '/portal/api/wishlist/add/';
+    
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        },
+        body: JSON.stringify({ service_id: serviceId })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const newStatus = data.status === 'added';
+        updateButtonUI(btn, newStatus);
+      }
+    } catch (error) {
+      console.error('Errore:', error);
+    }
+  }
+  
+  function updateButtonUI(btn, inWishlist) {
+    const icon = btn.querySelector('.wishlist-icon');
+    const text = btn.querySelector('.wishlist-text');
+    
+    if (inWishlist) {
+      btn.classList.add('in-wishlist');
+      btn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+      btn.classList.add('bg-red-100', 'hover:bg-red-200', 'text-red-700');
+      icon.textContent = '♥';
+      text.textContent = 'Nella wishlist';
+    } else {
+      btn.classList.remove('in-wishlist');
+      btn.classList.remove('bg-red-100', 'hover:bg-red-200', 'text-red-700');
+      btn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'text-gray-700');
+      icon.textContent = '♡';
+      text.textContent = 'Wishlist';
+    }
+  }
+})();
+</script>

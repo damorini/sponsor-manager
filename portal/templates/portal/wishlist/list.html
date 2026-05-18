@@ -1,0 +1,94 @@
+{% extends "portal/base.html" %}
+{% block title %}La mia Wishlist{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">♥ La mia Wishlist</h1>
+    <p class="text-gray-600">{{ service_count }} servizio{% if service_count != 1 %}i{% endif %} salvato{% if service_count != 1 %}i{% endif %}</p>
+  </div>
+
+  {% if not services %}
+  <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center mb-8">
+    <p class="text-gray-700 mb-4">Non hai ancora salvato nessun servizio nella tua wishlist.</p>
+    <a href="{% url 'portal:catalog' %}" class="inline-block bg-brand-500 hover:bg-brand-700 text-white px-6 py-2 rounded transition-colors">
+      Sfoglia il catalogo
+    </a>
+  </div>
+  {% else %}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for service in services %}
+    <div class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-shadow">
+      <div class="p-6 border-b border-gray-100">
+        <div class="flex justify-between items-start mb-2">
+          <h3 class="text-lg font-semibold text-gray-900 flex-1">
+            {{ service.name }}
+          </h3>
+          <button 
+            class="remove-from-wishlist-btn text-red-500 hover:text-red-700 transition-colors"
+            data-service-id="{{ service.id }}"
+          >
+            ♥
+          </button>
+        </div>
+        {% if service.description %}
+        <p class="text-sm text-gray-600 mb-4">
+          {{ service.description|truncatewords:20 }}
+        </p>
+        {% endif %}
+      </div>
+
+      <div class="p-6 bg-gray-50">
+        <div class="text-2xl font-bold text-gray-900 mb-4">
+          € {{ service.base_price|floatformat:2 }}
+          <span class="text-sm font-normal text-gray-500">+ IVA</span>
+        </div>
+        
+        <div class="flex gap-2">
+          <a 
+            href="{% url 'portal:service_detail' service.id %}"
+            class="flex-1 text-center bg-brand-500 hover:bg-brand-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+          >
+            Dettagli
+          </a>
+          <button 
+            class="flex-1 add-to-cart-btn bg-green-500 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
+            data-service-id="{{ service.id }}"
+          >
+            Carrello
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% endif %}
+</div>
+
+<div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
+
+<script>
+document.querySelectorAll('.remove-from-wishlist-btn').forEach(btn => {
+  btn.addEventListener('click', async function() {
+    const serviceId = this.dataset.serviceId;
+    try {
+      const response = await fetch('/portal/api/wishlist/remove/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+        },
+        body: JSON.stringify({ service_id: serviceId })
+      });
+      if (response.ok) {
+        location.reload();
+      }
+    } catch (error) {
+      console.error('Errore:', error);
+    }
+  });
+});
+</script>
+{% endblock %}

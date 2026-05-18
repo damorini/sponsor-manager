@@ -2,6 +2,7 @@
 API endpoints per la wishlist nel portale sponsor.
 """
 from django.http import JsonResponse
+from django.shortcuts import render
 from django.views.decorators.http import require_http_methods, require_POST
 from django.views.decorators.csrf import csrf_protect
 from catalog.models import Service
@@ -129,3 +130,26 @@ def wishlist_check_api(request):
         'service_id': str(service.id),
         'in_wishlist': in_wishlist
     })
+
+
+@sponsor_required
+@require_http_methods(["GET"])
+def wishlist_page(request):
+    """
+    Pagina HTML per visualizzare la wishlist dell'utente.
+    GET /portal/wishlist/
+    """
+    try:
+        wishlist = request.user.wishlist_obj
+        services = wishlist.services.all()
+    except Wishlist.DoesNotExist:
+        wishlist = None
+        services = []
+    
+    context = {
+        'wishlist': wishlist,
+        'services': services,
+        'service_count': len(services),
+    }
+    
+    return render(request, 'portal/wishlist/list.html', context)
