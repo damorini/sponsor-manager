@@ -11,6 +11,7 @@ ottenere la traduzione con fallback alla lingua di default dell'evento.
 """
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from datetime import datetime, date
 from django.db import models
 from django.utils.text import slugify
 
@@ -176,7 +177,14 @@ class Event(TimeStampedModel):
         if not self.slug and self.name:
             base_name = self.get_name(self.default_language or 'it')
             base_slug = slugify(base_name)
-            year = self.start_date.year if self.start_date else ''
+            # Converti stringhe a date objects se necessario
+            start_date = self.start_date
+            if isinstance(start_date, str):
+                try:
+                    start_date = datetime.fromisoformat(start_date).date()
+                except (ValueError, AttributeError):
+                    start_date = None
+            year = start_date.year if start_date else ''
             self.slug = f"{base_slug}-{year}" if year else base_slug
         super().save(*args, **kwargs)
 
