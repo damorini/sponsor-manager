@@ -600,9 +600,9 @@ class ContractLine(TimeStampedModel):
         # Snapshot al primo salvataggio
         if is_new and self.service:
             if not self.service_name_snapshot:
-                self.service_name_snapshot = self.service.name
+                self.service_name_snapshot = self.service.translated('name')
             if not self.service_description_snapshot:
-                self.service_description_snapshot = self.service.description
+                self.service_description_snapshot = self.service.translated('description')
             if not self.unit_price:
                 # Prezzo base; logica avanzata (scaglioni) gestita a livello applicativo
                 self.unit_price = self.service.base_price
