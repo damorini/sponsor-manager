@@ -44,10 +44,9 @@ urlpatterns = [
     path('cart/update/<uuid:line_id>/', cart.cart_update_quantity_view,
          name='cart_update_quantity'),
     path('cart/checkout/<uuid:contract_id>/', cart.cart_checkout_view,
-    
+         name='cart_checkout'),
     # Wishlist (pagina)
     path('wishlist/', wishlist.wishlist_page, name='wishlist_page'),
-         name='cart_checkout'),
     
     # Materiali (parte 3)
     path('contracts/<uuid:contract_id>/materials/', materials.materials_view,

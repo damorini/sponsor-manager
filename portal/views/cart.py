@@ -41,80 +41,80 @@ def _get_or_create_cart_contract(sponsor, event, contact):
     """
     Trova o crea un Contract DRAFT (con kind=ADDON) che funge da carrello
     per uno sponsor/evento.
-    
-    Return: (contract, was_created)
+
+    THREAD-SAFE: usa select_for_update() dentro una transazione atomica
+    per evitare la creazione di carrelli duplicati quando arrivano due
+    richieste simultanee (es. doppio click o due tab del browser).
+
+    Return: (contract, cart, was_created)
     """
     from contracts.models import Contract, ContractKind, ContractStatus
     from contracts.payments import CartSession, CartSessionStatus
 
-    # Cerca un cart attivo
-    existing_cart = CartSession.objects.filter(
-        contract__sponsor=sponsor,
-        contract__event=event,
-        contract__contract_kind=ContractKind.ADDON,
-        contract__status=ContractStatus.DRAFT,
-        status=CartSessionStatus.ACTIVE,
-    ).select_related('contract').first()
+    with transaction.atomic():
+        # Lock: nessun altro processo puo' SELECT/UPDATE questa riga
+        # fino al termine della transazione.
+        existing_cart = CartSession.objects.select_for_update().filter(
+            contract__sponsor=sponsor,
+            contract__event=event,
+            contract__contract_kind=ContractKind.ADDON,
+            contract__status=ContractStatus.DRAFT,
+            status=CartSessionStatus.ACTIVE,
+        ).select_related('contract').first()
 
-    if existing_cart:
-        # Aggiorna last_activity
-        existing_cart.last_activity_at = timezone.now()
-        existing_cart.save(update_fields=['last_activity_at', 'updated_at'])
-        return existing_cart.contract, existing_cart, False
+        if existing_cart:
+            existing_cart.last_activity_at = timezone.now()
+            existing_cart.save(update_fields=['last_activity_at', 'updated_at'])
+            return existing_cart.contract, existing_cart, False
 
-    # Trova il contratto principale (per parent_contract)
-    parent = Contract.objects.filter(
-        sponsor=sponsor,
-        event=event,
-        status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
-        contract_kind=ContractKind.STANDARD,
-        deleted_at__isnull=True,
-    ).first()
+        # Trova il contratto principale (per parent_contract)
+        parent = Contract.objects.filter(
+            sponsor=sponsor,
+            event=event,
+            status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
+            contract_kind=ContractKind.MAIN,
+            deleted_at__isnull=True,
+        ).first()
 
-    if not parent:
-        raise ValueError(
-            "Nessun contratto standard attivo per questo evento. "
-            "Impossibile creare carrello addon."
+        if not parent:
+            raise ValueError(
+                "Nessun contratto standard attivo per questo evento. "
+                "Impossibile creare carrello addon."
+            )
+
+        # Crea nuovo Contract draft + CartSession
+        contract = Contract.objects.create(
+            sponsor=sponsor,
+            event=event,
+            contract_kind=ContractKind.ADDON,
+            parent_contract=parent,
+            status=ContractStatus.DRAFT,
+            language=contact.preferred_language or 'it',
+            origin='portal_self_service',
+            # Eredita dati fiscali dal parent (snapshot)
+            billing_legal_name=parent.billing_legal_name,
+            billing_vat_number=parent.billing_vat_number,
+            billing_tax_code=parent.billing_tax_code,
+            billing_address=parent.billing_address,
+            billing_email=parent.billing_email,
+            billing_pec=parent.billing_pec,
+            billing_sdi_code=parent.billing_sdi_code,
+            vat_rate=parent.vat_rate,
+            currency=parent.currency,
         )
 
-    # Crea nuovo Contract draft + CartSession
-    contract = Contract.objects.create(
-        sponsor=sponsor,
-        event=event,
-        contract_kind=ContractKind.ADDON,
-        parent_contract=parent,
-        status=ContractStatus.DRAFT,
-        language=contact.preferred_language or 'it',
-        origin='portal_self_service',
-        # Eredita dati fiscali dal parent (snapshot)
-        billing_legal_name=parent.billing_legal_name,
-        billing_vat_number=parent.billing_vat_number,
-        billing_tax_code=parent.billing_tax_code,
-        billing_address=parent.billing_address,
-        billing_email=parent.billing_email,
-        billing_pec=parent.billing_pec,
-        billing_sdi_code=parent.billing_sdi_code,
-        vat_rate=parent.vat_rate,
-        currency=parent.currency,
-    )
+        cart = CartSession.objects.create(
+            contract=contract,
+            contact=contact,
+            status=CartSessionStatus.ACTIVE,
+            last_activity_at=timezone.now(),
+        )
 
-    cart = CartSession.objects.create(
-        contract=contract,
-        contact=contact,
-        status=CartSessionStatus.ACTIVE,
-        last_activity_at=timezone.now(),
-    )
-
-    logger.info(
-        "Cart creato: sponsor=%s event=%s contract=%s",
-        sponsor.id, event.id, contract.id
-    )
-    return contract, cart, True
-
-
-# ============================================================================
-# View: visualizza carrello
-# ============================================================================
+        logger.info(
+            "Cart creato: sponsor=%s event=%s contract=%s",
+            sponsor.id, event.id, contract.id
+        )
+        return contract, cart, True
 
 @sponsor_required
 def cart_view(request):
