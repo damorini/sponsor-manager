@@ -146,12 +146,8 @@ def check_abandoned_carts():
             cart.status = CartSessionStatus.EXPIRED
             cart.save(update_fields=['status', 'updated_at'])
             continue
-
         send_cart_recovery_email.delay(cart.id)
 
-        # Marca abbandonato dopo invio
-        cart.status = CartSessionStatus.ABANDONED
-        cart.save(update_fields=['status', 'updated_at'])
         sent_count += 1
 
     logger.info("check_abandoned_carts: %d recovery email schedulate", sent_count)
