@@ -90,17 +90,7 @@ def _get_or_create_cart_contract(sponsor, event, contact):
             parent_contract=parent,
             status=ContractStatus.DRAFT,
             language=contact.preferred_language or 'it',
-            origin='portal_self_service',
-            # Eredita dati fiscali dal parent (snapshot)
-            billing_legal_name=parent.billing_legal_name,
-            billing_vat_number=parent.billing_vat_number,
-            billing_tax_code=parent.billing_tax_code,
-            billing_address=parent.billing_address,
-            billing_email=parent.billing_email,
-            billing_pec=parent.billing_pec,
-            billing_sdi_code=parent.billing_sdi_code,
-            vat_rate=parent.vat_rate,
-            currency=parent.currency,
+            origin='ecommerce',
         )
 
         cart = CartSession.objects.create(
