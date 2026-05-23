@@ -77,4 +77,6 @@ urlpatterns = [
          checkout.card_capture_ajax, name='checkout_card_capture'),
     path('checkout/success/<uuid:payment_id>/',
          checkout.paypal_return, name='checkout_success'),
+    path('checkout/dev-mark-paid/<uuid:contract_id>/',
+         checkout.dev_mark_paid, name='checkout_dev_mark_paid'),
 ]

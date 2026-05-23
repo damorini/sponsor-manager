@@ -440,3 +440,32 @@ def _user_owns_contract(user, contract) -> bool:
         return False
 
     return contact.sponsor_id == contract.sponsor_id
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def dev_mark_paid(request, contract_id):
+    """SOLO SVILUPPO: simula pagamento riuscito. Disponibile solo con DEBUG=True."""
+    from django.http import Http404
+    from contracts.models import Contract, ContractStatus
+
+    if not settings.DEBUG:
+        raise Http404()
+
+    contract = get_object_or_404(
+        Contract.objects.select_related('sponsor', 'event'),
+        id=contract_id,
+    )
+    if not _user_owns_contract(request.user, contract):
+        return HttpResponse('Forbidden', status=403)
+
+    if contract.status == ContractStatus.DRAFT:
+        contract.mark_as_pending_payment()
+    if contract.status == ContractStatus.PENDING_PAYMENT:
+        contract.mark_payment_succeeded()
+        messages.success(request, "[DEV] Pagamento simulato: contratto pagato/firmato.")
+    else:
+        messages.info(request, f"[DEV] Nessuna azione: stato '{contract.get_status_display()}'.")
+
+    return redirect('portal:contract_detail', contract_id=contract.id)
