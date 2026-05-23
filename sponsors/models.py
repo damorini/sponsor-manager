@@ -194,7 +194,7 @@ class Sponsor(SoftDeleteModel):
         }
 
 
-class Contact(TimeStampedModel):
+class Contact(SoftDeleteModel):
     """
     Persona di contatto presso uno sponsor. Un'azienda ha tipicamente
     più contatti con ruoli diversi.

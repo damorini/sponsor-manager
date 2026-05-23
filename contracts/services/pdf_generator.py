@@ -398,8 +398,9 @@ def _create_document_record(contract, full_path, relative_path, file_name, mime)
     document = Document.objects.create(
         content_type=contract_ct,
         object_id=contract.id,
+        title=file_name,
         file_name=file_name,
-        file_size=full_path.stat().st_size,
+        file_size_bytes=full_path.stat().st_size,
         mime_type=mime,
         storage_url=settings.MEDIA_URL + relative_path,
         document_type='contract',

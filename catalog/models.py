@@ -174,6 +174,12 @@ class Service(TranslatableMixin, TimeStampedModel):
     def __str__(self):
         return f"{self.translated('name')} ({self.event.slug})"
 
+    def get_name(self, language=None):
+        return self.translated('name', language)
+
+    def get_description(self, language=None):
+        return self.translated('description', language)
+
     @property
     def DEFAULT_LANGUAGE(self):
         """Override del mixin: usa la default_language dell'evento."""

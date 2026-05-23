@@ -60,7 +60,7 @@ def login_view(request):
             user = None
 
         if user:
-            user = authenticate(request, username=user.username, password=password)
+            user = authenticate(request, username=user.email, password=password)
 
         if user is not None and user.is_active and user.is_sponsor:
             django_login(request, user)

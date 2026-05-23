@@ -219,8 +219,7 @@ def cart_add_view(request):
     if existing_line:
         # Aumenta quantità
         existing_line.quantity = (existing_line.quantity or 0) + quantity
-        existing_line.recalc_totals()
-        existing_line.save()
+        existing_line.save()  # save() ricalcola da solo i totali
         messages.success(
             request,
             f"Quantità di '{service.name}' aggiornata."
@@ -230,13 +229,14 @@ def cart_add_view(request):
         line = ContractLine.objects.create(
             contract=contract,
             service=service,
-            service_name_snapshot=service.name,
-            service_description_snapshot=service.description,
+            service_name_snapshot=service.translated('name'),
+            service_description_snapshot=service.translated('description'),
             quantity=quantity,
-            unit_price=service.unit_price,
+            unit_price=service.base_price,
             vat_rate=service.vat_rate,
         )
-        line.recalc_totals()
+        # NB: ContractLine.save() chiama gia' calculate_totals() e
+        # contract.recalculate_totals(), quindi qui basta il save().
         line.save()
         messages.success(
             request,
@@ -244,8 +244,7 @@ def cart_add_view(request):
         )
 
     # Ricalcola totali contratto
-    contract.recalc_totals()
-    contract.save()
+    contract.recalculate_totals()  # save=True di default
 
     return redirect('portal:cart_view')
 
@@ -276,10 +275,10 @@ def cart_remove_view(request, line_id):
     contract = line.contract
     service_name = line.service_name_snapshot
 
-    line.delete()
+    line.delete()  # ContractLine.delete() richiama gia' recalculate_totals
 
-    contract.recalc_totals()
-    contract.save()
+    contract.refresh_from_db()
+    contract.recalculate_totals()  # save=True di default
 
     # Se il contract è rimasto vuoto, marca cart come abbandonato/expired
     if not contract.lines.exists():
@@ -321,12 +320,10 @@ def cart_update_quantity_view(request, line_id):
     new_quantity = max(1, min(new_quantity, 100))
 
     line.quantity = new_quantity
-    line.recalc_totals()
-    line.save()
+    line.save()  # save() ricalcola i totali della riga e del contratto
 
     contract = line.contract
-    contract.recalc_totals()
-    contract.save()
+    contract.recalculate_totals()  # save=True di default
 
     # AJAX: ritorna JSON con totali aggiornati
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

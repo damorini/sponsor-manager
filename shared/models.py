@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from core.models import TimeStampedModel
+from core.models import SoftDeleteModel, TimeStampedModel
 
 
 # =============================================================================
@@ -36,7 +36,7 @@ class StorageProvider(models.TextChoices):
     LOCAL = 'local', 'Locale'
 
 
-class Document(TimeStampedModel):
+class Document(SoftDeleteModel):
     """
     Documento collegato a un'entità qualsiasi (Contract, Sponsor, Event, Deadline).
     Il file vero sta su storage esterno (S3/R2); qui solo il riferimento.

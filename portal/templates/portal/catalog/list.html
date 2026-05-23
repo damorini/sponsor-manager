@@ -39,7 +39,7 @@
           
           <div class="p-5 flex-1">
             <div class="flex items-start justify-between gap-2 mb-2">
-              <h3 class="font-semibold text-gray-900">{{ service.name }}</h3>
+              <h3 class="font-semibold text-gray-900">{{ service.get_name }}</h3>
               {% if not service.is_within_cutoff %}
               <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-medium whitespace-nowrap">
                 Scaduto
@@ -51,14 +51,14 @@
               {% endif %}
             </div>
             
-            {% if service.description %}
+            {% if service.get_description %}
             <p class="text-sm text-gray-600 mb-4">
-              {{ service.description|truncatechars:120 }}
+              {{ service.get_description|truncatechars:120 }}
             </p>
             {% endif %}
             
             <div class="text-2xl font-bold text-gray-900">
-              € {{ service.unit_price|floatformat:2 }}
+              € {{ service.base_price|floatformat:2 }}
               <span class="text-sm font-normal text-gray-500">+ IVA</span>
             </div>
           </div>

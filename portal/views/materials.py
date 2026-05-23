@@ -206,12 +206,13 @@ def material_upload_view(request, deadline_id):
             Document.objects.create(
                 content_type=deadline_ct,
                 object_id=deadline.id,
+                title=f.name,
                 file_name=f.name,
-                file_size=f.size,
+                file_size_bytes=f.size,
                 mime_type=mime_type,
                 storage_url=settings.MEDIA_URL + saved_path,
                 document_type='sponsor_material',
-                uploaded_by=request.user,
+                uploaded_by_user=request.user,
             )
             uploaded_count += 1
             logger.info(

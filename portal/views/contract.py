@@ -47,16 +47,8 @@ def contract_detail_view(request, contract_id):
             "Non hai accesso a questo contratto."
         )
 
-    # Scadenze operative
+    # Scadenze operative (is_overdue e days_remaining sono property del modello)
     deadlines = contract.deadlines.select_related('deadline_template').order_by('due_date')
-    today = date.today()
-    for d in deadlines:
-        if d.due_date >= today:
-            d.days_remaining = (d.due_date - today).days
-            d.is_overdue = False
-        else:
-            d.days_remaining = (today - d.due_date).days
-            d.is_overdue = True
 
     # Storico pagamenti
     payments = contract.payments.exclude(

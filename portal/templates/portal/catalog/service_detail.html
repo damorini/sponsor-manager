@@ -1,6 +1,6 @@
 {% extends "portal/base.html" %}
 
-{% block title %}{{ service.name }}{% endblock %}
+{% block title %}{{ service.get_name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -12,7 +12,7 @@
       {{ event.get_name|truncatechars:30 }}
     </a>
     <span class="mx-2">/</span>
-    <span class="text-gray-700">{{ service.name }}</span>
+    <span class="text-gray-700">{{ service.get_name }}</span>
   </nav>
   
   <div class="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -21,7 +21,7 @@
     <div class="p-6 border-b border-gray-200">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ service.name }}</h1>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ service.get_name }}</h1>
           <p class="text-gray-600">
             Per: <strong>{{ event.get_name }}</strong>
           </p>
@@ -39,10 +39,10 @@
       
       <!-- Descrizione -->
       <div class="lg:col-span-2">
-        {% if service.description %}
+        {% if service.get_description %}
         <h2 class="text-lg font-semibold mb-3 text-gray-900">Descrizione</h2>
         <div class="text-gray-700 leading-relaxed whitespace-pre-line">
-          {{ service.description }}
+          {{ service.get_description }}
         </div>
         {% endif %}
         
@@ -69,7 +69,7 @@
       <div>
         <div class="bg-gray-50 rounded-lg p-5 sticky top-4">
           <div class="text-3xl font-bold text-gray-900 mb-1">
-            € {{ service.unit_price|floatformat:2 }}
+            € {{ service.base_price|floatformat:2 }}
           </div>
           <div class="text-sm text-gray-500 mb-4">
             + IVA {{ service.vat_rate|floatformat:0 }}%
@@ -95,6 +95,10 @@
               Aggiungi al carrello
             </button>
           </form>
+
+          <div class="mt-3">
+            {% include 'portal/wishlist/button.html' %}
+          </div>
           {% else %}
           <button disabled 
                   class="w-full bg-gray-300 text-gray-500 font-medium py-3 rounded-md cursor-not-allowed">
