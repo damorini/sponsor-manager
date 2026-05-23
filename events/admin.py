@@ -125,7 +125,7 @@ class EventAdmin(admin.ModelAdmin):
         revenue = getattr(obj, '_revenue', None)
         if revenue is None:
             return '—'
-        return format_html('<strong>€ {:,.2f}</strong>', revenue)
+        return format_html('<strong>€ {}</strong>', f"{revenue:,.2f}")
 
     @admin.display(description='Lingue')
     def languages_display(self, obj):

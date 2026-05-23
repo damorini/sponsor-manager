@@ -64,6 +64,8 @@ class TranslatableJSONWidget(forms.MultiWidget):
                 value = json.loads(value)
             except (ValueError, TypeError):
                 return ['' for _ in self.languages]
+        if not isinstance(value, dict):
+            return ['' for _ in self.languages]
         return [value.get(lang, '') for lang in self.languages]
 
     def value_from_datadict(self, data, files, name):

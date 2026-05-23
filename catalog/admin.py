@@ -64,7 +64,7 @@ class ServiceAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('event', 'code', 'name', 'description', 'category'),
+            'fields': ('event', 'code', 'name', 'description', 'image', 'category'),
         }),
         ('Pricing', {
             'fields': ('pricing_mode', 'base_price', 'pricing_tiers',
@@ -105,14 +105,15 @@ class ServiceAdmin(admin.ModelAdmin):
 
     @admin.display(description='Pricing')
     def pricing_display(self, obj):
+        prezzo = f"{obj.base_price:,.2f}"
         if obj.pricing_mode == PricingMode.FIXED:
-            return format_html('<strong>€ {:,.2f}</strong>', obj.base_price)
+            return format_html('<strong>€ {}</strong>', prezzo)
         if obj.pricing_mode == PricingMode.QUANTITY:
-            return format_html('€ {:,.2f} <small>× q.tà</small>', obj.base_price)
+            return format_html('€ {} <small>× q.tà</small>', prezzo)
         if obj.pricing_mode == PricingMode.TIERED:
             return format_html(
-                '<small>scaglioni</small> <strong>€ {:,.2f}+</strong>',
-                obj.base_price
+                '<small>scaglioni</small> <strong>€ {}+</strong>',
+                prezzo
             )
         return '—'
 

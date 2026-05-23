@@ -66,6 +66,14 @@ class Service(TranslatableMixin, TimeStampedModel):
         verbose_name="Descrizione (multilingua)",
     )
 
+    image = models.FileField(
+        upload_to='services/images/',
+        null=True,
+        blank=True,
+        verbose_name="Immagine",
+        help_text="Foto dell'articolo mostrata nel catalogo.",
+    )
+
     category = models.CharField(
         max_length=50,
         blank=True,

@@ -23,6 +23,10 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col
                 {% if not service.is_within_cutoff %}opacity-60{% endif %}">
       
+      {% if service.image %}
+      <img src="{{ service.image.url }}" alt="{{ service.get_name }}" class="w-full h-40 object-cover">
+      {% endif %}
+
       <div class="p-5 flex-1">
         <div class="flex items-start justify-between gap-2 mb-2">
           <h3 class="font-semibold text-gray-900">{{ service.get_name }}</h3>

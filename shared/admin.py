@@ -318,7 +318,7 @@ class InvoiceExportAdmin(admin.ModelAdmin):
 
     @admin.display(description='Totale', ordering='amount_total')
     def amount_total_display(self, obj):
-        return format_html('<strong>€ {:,.2f}</strong>', obj.amount_total)
+        return format_html('<strong>€ {}</strong>', f"{obj.amount_total:,.2f}")
 
     @admin.display(description='Stato')
     def status_badge(self, obj):

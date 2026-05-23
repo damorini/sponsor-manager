@@ -196,7 +196,7 @@ class ContractAdmin(admin.ModelAdmin):
 
     @admin.display(description='Totale', ordering='total')
     def total_display(self, obj):
-        return format_html('<strong>€ {:,.2f}</strong>', obj.total)
+        return format_html('<strong>€ {}</strong>', f"{obj.total:,.2f}")
 
     @admin.display(description='Origine')
     def origin_badge(self, obj):
@@ -457,7 +457,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
     @admin.display(description='Netto')
     def amount_net_display(self, obj):
-        return format_html('<strong>€ {:,.2f}</strong>', obj.amount_net)
+        return format_html('<strong>€ {}</strong>', f"{obj.amount_net:,.2f}")
 
     @admin.display(description='Stato')
     def status_badge(self, obj):
@@ -553,7 +553,7 @@ class CartSessionAdmin(admin.ModelAdmin):
     @admin.display(description='Carrello', ordering='contract__contract_number')
     def contract_link(self, obj):
         url = reverse('admin:contracts_contract_change', args=[obj.contract_id])
-        return format_html('<a href="{}">€ {:,.2f}</a>', url, obj.contract.total)
+        return format_html('<a href="{}">€ {}</a>', url, f"{obj.contract.total:,.2f}")
 
     @admin.display(description='Stato')
     def status_badge(self, obj):

@@ -39,6 +39,9 @@
       
       <!-- Descrizione -->
       <div class="lg:col-span-2">
+        {% if service.image %}
+        <img src="{{ service.image.url }}" alt="{{ service.get_name }}" class="w-full max-h-80 object-cover rounded-lg mb-5">
+        {% endif %}
         {% if service.get_description %}
         <h2 class="text-lg font-semibold mb-3 text-gray-900">Descrizione</h2>
         <div class="text-gray-700 leading-relaxed whitespace-pre-line">
