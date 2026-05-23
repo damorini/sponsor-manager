@@ -72,7 +72,12 @@
         {% for ld in item.lines %}
         <tr {% if not ld.is_valid %}class="opacity-50 bg-red-50"{% endif %}>
           <td class="px-6 py-4">
-            <div class="font-medium text-gray-900">{{ ld.line.service_name_snapshot }}</div>
+            <div class="flex items-center gap-3">
+              {% if ld.line.service.image %}
+              <img src="{{ ld.line.service.image.url }}" alt="" class="w-12 h-12 rounded object-cover flex-shrink-0">
+              {% endif %}
+              <div class="font-medium text-gray-900">{{ ld.line.service_name_snapshot }}</div>
+            </div>
             {% if not ld.is_valid %}
             <div class="text-xs text-red-600 mt-1">
               Scaduto: termine acquisto superato
