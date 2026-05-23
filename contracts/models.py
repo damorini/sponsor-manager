@@ -390,6 +390,16 @@ class Contract(SoftDeleteModel):
         # Genera scadenze concrete dai template
         self._generate_deadlines()
 
+        # Notifica email di conferma (sincrona in dev con EAGER=True).
+        try:
+            from contracts.tasks.notifications import send_contract_signed_notification
+            send_contract_signed_notification.delay(self.id)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Invio notifica firma fallito per contract %s", self.id
+            )
+
     @transaction.atomic
     def mark_as_pending_payment(self):
         """
