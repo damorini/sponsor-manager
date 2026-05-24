@@ -211,16 +211,6 @@ class Contract(SoftDeleteModel):
     )
 
     special_clauses = models.TextField(blank=True, verbose_name="Clausole speciali")
-
-    # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
-    requires_aifa = models.BooleanField(
-        default=False,
-        verbose_name="Richiede AIFA (per questo evento)",
-    )
-    requires_svc_medtech = models.BooleanField(
-        default=False,
-        verbose_name="Richiede MEDTECH/SVC (per questo evento)",
-    )
     internal_notes = models.TextField(
         blank=True,
         verbose_name="Note interne",

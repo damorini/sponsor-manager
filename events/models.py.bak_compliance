@@ -122,19 +122,6 @@ class Event(TimeStampedModel):
         help_text="Nome completo, es. 'Prof. Mario Rossi'",
     )
 
-    aifa_reference = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="Numero riferimento AIFA",
-        help_text="Solo per archivio/consultazione interna.",
-    )
-    medtech_svc_reference = models.CharField(
-        max_length=100,
-        blank=True,
-        verbose_name="Numero riferimento MEDTECH/SVC",
-        help_text="Solo per archivio/consultazione interna.",
-    )
-
     # Dati per template contratti
     organizer_legal_name = models.CharField(
         max_length=255,

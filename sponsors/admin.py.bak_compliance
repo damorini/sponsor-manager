@@ -27,11 +27,11 @@ class ContactInline(admin.TabularInline):
 class SponsorAdmin(admin.ModelAdmin):
     list_display = (
         'legal_name', 'display_name_or_dash', 'vat_number',
-        'address_city', 'industry',
+        'address_city', 'industry', 'compliance_badges',
         'contracts_count', 'has_active_contracts',
     )
     list_filter = (
-        'industry', 'address_country',
+        'industry', 'requires_aifa', 'requires_svc_medtech', 'address_country',
     )
     search_fields = (
         'legal_name', 'display_name', 'vat_number', 'tax_code',
@@ -54,6 +54,9 @@ class SponsorAdmin(admin.ModelAdmin):
                 ('address_zip', 'address_city', 'address_province'),
                 'address_country',
             ),
+        }),
+        ('Compliance', {
+            'fields': ('requires_aifa', 'requires_svc_medtech'),
         }),
         ('Note', {
             'fields': ('notes',),
@@ -85,6 +88,17 @@ class SponsorAdmin(admin.ModelAdmin):
     @admin.display(description='Nome breve')
     def display_name_or_dash(self, obj):
         return obj.display_name or '—'
+
+    @admin.display(description='Compliance')
+    def compliance_badges(self, obj):
+        badges = []
+        if obj.requires_aifa:
+            badges.append('<span style="background:#ba2121; color:white; padding:1px 6px; '
+                          'border-radius:3px; font-size:0.75em;">AIFA</span>')
+        if obj.requires_svc_medtech:
+            badges.append('<span style="background:#e6a23c; color:white; padding:1px 6px; '
+                          'border-radius:3px; font-size:0.75em;">MedTech</span>')
+        return format_html(' '.join(badges)) if badges else '—'
 
     @admin.display(description='Contratti', ordering='_contracts_count')
     def contracts_count(self, obj):

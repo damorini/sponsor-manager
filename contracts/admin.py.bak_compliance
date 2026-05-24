@@ -129,7 +129,7 @@ class ContractAdmin(admin.ModelAdmin):
             'fields': ('payment_method', 'payment_terms', 'payment_installments'),
         }),
         ('Template e clausole', {
-            'fields': ('template_used', 'special_clauses', 'requires_aifa', 'requires_svc_medtech'),
+            'fields': ('template_used', 'special_clauses'),
             'classes': ('collapse',),
         }),
         ('Note interne', {

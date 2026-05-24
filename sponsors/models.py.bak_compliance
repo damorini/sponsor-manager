@@ -72,6 +72,15 @@ class Sponsor(SoftDeleteModel):
         help_text="Codice ISO 3166-1 alpha-2 (es. IT, FR, DE)",
     )
 
+    # Compliance
+    requires_aifa = models.BooleanField(
+        default=False,
+        verbose_name="Richiede AIFA",
+    )
+    requires_svc_medtech = models.BooleanField(
+        default=False,
+        verbose_name="Richiede SVC MedTech",
+    )
 
     # Dati Registro Imprese (per contratti)
     rea_city = models.CharField(

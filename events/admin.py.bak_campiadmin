@@ -52,7 +52,7 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('slug', 'code', 'email_header_image', 'name', 'description', 'event_type', 'status'),
         }),
         ('Date e luogo', {
-            'fields': ('start_date', 'end_date', 'location', 'venue_address'),
+            'fields': ('start_date', 'end_date', 'location'),
         }),
         ('Lingue supportate', {
             'fields': ('supported_languages', 'default_language'),
@@ -60,7 +60,7 @@ class EventAdmin(admin.ModelAdmin):
                            "La lingua di default è obbligatoria nei campi multilingua.",
         }),
         ('Dati per contratti', {
-            'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location'),
+            'fields': ('organizer_legal_name', 'contract_signing_location'),
             'classes': ('collapse',),
         }),
         ('Note interne', {

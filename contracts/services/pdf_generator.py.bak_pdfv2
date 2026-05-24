@@ -448,13 +448,10 @@ def auto_generate_on_send(contract):
 
 def _add_header_footer_to_docx(docx_path, contract):
     """
-    HEADER DI PAGINA (v2): modifica IN-PLACE il .docx generato.
-
-      - HEADER di pagina (su tutte le pagine): inserisce l'immagine header
-        dell'evento (contract.event.email_header_image) a tutta larghezza,
-        rimuovendo eventuali immagini preesistenti (vecchio logo) ma tenendo
-        il testo (es. numero pagina).
-      - FOOTER: logo segreteria + 4 righe a bandiera (sinistra) dai dati di
+    Modifica IN-PLACE il .docx generato:
+      - inserisce in cima al corpo l'immagine header dell'evento, se presente
+        (contract.event.email_header_image);
+      - imposta il footer con logo segreteria + dati organizzatore presi da
         core.OrganizerSettings.
 
     Non solleva: ogni parte e' protetta singolarmente.
@@ -463,6 +460,8 @@ def _add_header_footer_to_docx(docx_path, contract):
     from docx import Document
     from docx.shared import Mm, Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.text.paragraph import Paragraph
 
     docx_path = _Path(docx_path)
     d = Document(str(docx_path))
@@ -471,35 +470,24 @@ def _add_header_footer_to_docx(docx_path, contract):
 
     changed = False
 
-    # ---- HEADER DI PAGINA: immagine evento su tutte le pagine ----
+    # ---- HEADER: immagine evento in cima al corpo ----
     event = getattr(contract, 'event', None)
     header_img = getattr(event, 'email_header_image', None) if event else None
     if header_img:
         try:
             img_path = _Path(header_img.path)
             if img_path.exists():
-                header = sec.header
-                header.is_linked_to_previous = False
-
-                # 1) rimuovi le immagini gia' presenti nell'header (vecchio logo),
-                #    tenendo il testo (numero pagina ecc.)
-                for p in header.paragraphs:
-                    for run in list(p.runs):
-                        if '<a:blip' in run._r.xml or '<w:drawing' in run._r.xml:
-                            run._r.getparent().remove(run._r)
-
-                # 2) inserisci l'header congresso nel primo paragrafo
-                if header.paragraphs:
-                    target = header.paragraphs[0]
-                else:
-                    target = header.add_paragraph()
-                target.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                target.add_run().add_picture(str(img_path), width=Mm(usable_mm))
+                body = d.element.body
+                new_p = body.makeelement(qn('w:p'), {})
+                body.insert(0, new_p)
+                para = Paragraph(new_p, d)
+                para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                para.add_run().add_picture(str(img_path), width=Mm(usable_mm))
                 changed = True
         except Exception:
             pass
 
-    # ---- FOOTER: logo segreteria + 4 righe a bandiera ----
+    # ---- FOOTER: logo segreteria + dati a bandiera ----
     try:
         from core.models import OrganizerSettings
         org = OrganizerSettings.load()
@@ -509,6 +497,7 @@ def _add_header_footer_to_docx(docx_path, contract):
     if org:
         footer = sec.footer
         footer.is_linked_to_previous = False
+        # svuota footer esistente
         for p in list(footer.paragraphs):
             p._element.getparent().remove(p._element)
 
@@ -525,22 +514,20 @@ def _add_header_footer_to_docx(docx_path, contract):
             except Exception:
                 pass
 
-        # costruisco le 4 righe (telefono+email+sito sulla stessa riga)
+        # righe dati (testo, grassetto)
         righe = []
         if org.name:
             righe.append((org.name, True))
         if org.address:
-            addr = " ".join(str(org.address).split())  # indirizzo su una riga
-            righe.append((addr, False))
-        contatti = []
+            for ln in str(org.address).splitlines():
+                if ln.strip():
+                    righe.append((ln.strip(), False))
         if org.phone:
-            contatti.append("Tel: " + org.phone)
+            righe.append(("Tel: " + org.phone, False))
         if org.email:
-            contatti.append("Email: " + org.email)
+            righe.append(("Email: " + org.email, False))
         if org.website:
-            contatti.append(org.website)
-        if contatti:
-            righe.append(("   ".join(contatti), False))
+            righe.append((org.website, False))
         fisc = []
         if org.vat_number:
             fisc.append("P.IVA " + org.vat_number)
