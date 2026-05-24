@@ -49,7 +49,7 @@ class EventAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('slug', 'code', 'email_header_image', 'name', 'description', 'event_type', 'status'),
+            'fields': ('slug', 'code', 'name', 'description', 'event_type', 'status'),
         }),
         ('Date e luogo', {
             'fields': ('start_date', 'end_date', 'location'),

@@ -61,14 +61,6 @@ class Event(TimeStampedModel):
                   "Se vuota, viene generata automaticamente.",
     )
 
-    email_header_image = models.FileField(
-        upload_to='events/email_headers/',
-        null=True,
-        blank=True,
-        verbose_name="Header email congresso",
-        help_text="Immagine mostrata in cima alle email di questo evento, a tutta larghezza (max 600px). Consigliato PNG/JPG.",
-    )
-
     # Campi multilingua: dict con chiavi lingua
     # Esempio: {"it": "Congresso Cardiologia", "en": "Cardiology Congress"}
     name = models.JSONField(

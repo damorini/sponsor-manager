@@ -90,13 +90,6 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
     """
     extra_context = extra_context or {}
 
-    # Dati segreteria dal pannello admin (fallback ai settings)
-    try:
-        from core.models import OrganizerSettings
-        _org = OrganizerSettings.load()
-    except Exception:
-        _org = None
-
     common = {
         'language': language,
         'organizer_name': getattr(
@@ -106,14 +99,6 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
         'organizer_address': getattr(settings, 'ORGANIZER_ADDRESS', ''),
         'support_email': getattr(settings, 'SUPPORT_EMAIL', settings.DEFAULT_FROM_EMAIL),
         'site_url': getattr(settings, 'SITE_URL', '').rstrip('/'),
-        'org_name': (_org.name if _org and _org.name else None) or getattr(settings, 'ORGANIZER_DISPLAY_NAME', ''),
-        'org_address': (_org.address if _org else '') ,
-        'org_email': (_org.email if _org else '') ,
-        'org_phone': (_org.phone if _org else '') ,
-        'org_website': (_org.website if _org else '') ,
-        'org_vat': (_org.vat_number if _org else '') ,
-        'org_rea': (_org.rea if _org else '') ,
-        'org_logo_url': ((getattr(settings, 'SITE_URL', '').rstrip('/') + _org.logo.url) if (_org and _org.logo) else ''),
         'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
         'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
         'portal_url': getattr(settings, 'PORTAL_URL', '/portal/'),

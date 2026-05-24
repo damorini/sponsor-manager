@@ -121,29 +121,23 @@
           </td>
         </tr>
 
-        <!-- FOOTER segreteria: logo a sinistra, riferimenti a fianco -->
-        <tr class="footer-segreteria">
+        <!-- FOOTER -->
+        <tr>
           <td style="padding:24px 40px; background-color:#f9fafb;
-                     border-top:1px solid #e5e7eb; color:#6b7280;
-                     font-size:12px; line-height:1.5;">
-            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-              <tr>
-                {% if org_logo_url %}
-                <td valign="top" style="width:120px; padding-right:16px;">
-                  <img src="{{ org_logo_url }}" alt="{{ org_name }}"
-                       width="110" style="max-width:110px; height:auto; display:block;">
-                </td>
-                {% endif %}
-                <td valign="top" style="color:#6b7280; font-size:12px; line-height:1.6;">
-                  {% if org_name %}<strong style="color:#374151;">{{ org_name }}</strong><br>{% endif %}
-                  {% if org_address %}{{ org_address|linebreaksbr }}<br>{% endif %}
-                  {% if org_phone %}Tel: {{ org_phone }}<br>{% endif %}
-                  {% if org_email %}Email: <a href="mailto:{{ org_email }}" style="color:#1f4e79;">{{ org_email }}</a><br>{% endif %}
-                  {% if org_website %}<a href="{{ org_website }}" style="color:#1f4e79;">{{ org_website }}</a><br>{% endif %}
-                  {% if org_vat %}P.IVA {{ org_vat }}{% if org_rea %} · REA {{ org_rea }}{% endif %}{% elif org_rea %}REA {{ org_rea }}{% endif %}
-                </td>
-              </tr>
-            </table>
+                     border-top:1px solid #e5e7eb;
+                     color:#6b7280; font-size:12px; line-height:1.5;
+                     text-align:center;">
+            <p style="margin:0 0 8px 0;">
+              {{ organizer_name|default:"Sponsor Manager" }}
+              {% if organizer_address %}— {{ organizer_address }}{% endif %}
+            </p>
+            <p style="margin:0;">
+              Questa email è stata generata automaticamente.
+              Per assistenza scrivere a
+              <a href="mailto:{{ support_email }}" class="text-primary">
+                {{ support_email|default:"info@example.com" }}
+              </a>
+            </p>
           </td>
         </tr>
 
