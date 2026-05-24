@@ -45,19 +45,11 @@ class DeadlineTemplateInline(admin.TabularInline):
 
 @admin.register(Service)
 class ServiceAdmin(admin.ModelAdmin):
-    @admin.display(description='Disponibili')
-    def availability_display(self, obj):
-        av = obj.quantity_available()
-        if av is None:
-            return '∞ (illimitato)'
-        comm = obj.quantity_committed()
-        return f'{av} liberi / {obj.total_available} tot ({comm} assegnati)'
-
     form = ServiceAdminForm
 
     list_display = (
         'code', 'name_display', 'event_link', 'category', 'pricing_display',
-        'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
+        'ecommerce_badge', 'cutoff_display', 'is_active',
     )
     list_filter = (
         'is_active', 'is_self_purchasable', 'pricing_mode',
@@ -81,7 +73,7 @@ class ServiceAdmin(admin.ModelAdmin):
                            '{"min": N, "max": N, "unit_price": X}',
         }),
         ('Disponibilità', {
-            'fields': ('is_active', 'max_quantity', 'total_available', 'display_order'),
+            'fields': ('is_active', 'max_quantity', 'display_order'),
         }),
         ('Ecommerce sponsor', {
             'fields': ('is_self_purchasable', 'self_purchase_cutoff_days'),

@@ -124,13 +124,6 @@ class Service(TranslatableMixin, TimeStampedModel):
         validators=[MinValueValidator(1)],
         verbose_name="Quantità massima",
     )
-    total_available = models.IntegerField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(0)],
-        verbose_name="Quantità totale disponibile",
-        help_text="Quanti pezzi esistono in totale (es. 1 per uno stand unico). Vuoto = illimitato.",
-    )
 
     triggers_deadlines = models.BooleanField(
         default=False,
@@ -199,25 +192,6 @@ class Service(TranslatableMixin, TimeStampedModel):
     def DEFAULT_LANGUAGE(self):
         """Override del mixin: usa la default_language dell'evento."""
         return self.event.default_language if self.event_id else 'it'
-
-    def quantity_committed(self, exclude_contract_id=None):
-        """Somma delle quantita' impegnate in contratti NON cancellati."""
-        from django.db.models import Sum
-        qs = self.contract_lines.exclude(contract__status='cancelled')
-        if exclude_contract_id is not None:
-            qs = qs.exclude(contract_id=exclude_contract_id)
-        return qs.aggregate(tot=Sum('quantity'))['tot'] or 0
-
-    def quantity_available(self, exclude_contract_id=None):
-        """Pezzi ancora disponibili. None = illimitato."""
-        if self.total_available is None:
-            return None
-        return self.total_available - self.quantity_committed(exclude_contract_id)
-
-    @property
-    def is_sold_out(self):
-        avail = self.quantity_available()
-        return avail is not None and avail <= 0
 
     def calculate_price(self, quantity=1):
         """Calcola il prezzo totale per una quantità."""

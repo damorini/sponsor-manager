@@ -79,13 +79,6 @@ class PaymentInline(admin.TabularInline):
 
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
-    @admin.display(description="Numero contratto")
-    def contract_number_display(self, obj):
-        # Mostra il numero; sui nuovi (non salvati) avvisa che e automatico
-        if obj and obj.pk and obj.contract_number:
-            return obj.contract_number
-        return "(generato automaticamente al salvataggio)"
-
     list_display = (
         'contract_number', 'sponsor_link', 'event_link',
         'kind_badge', 'status_badge', 'venue_display',
@@ -105,7 +98,6 @@ class ContractAdmin(admin.ModelAdmin):
         'parent_contract', 'sponsor_signer_contact',
     ]
     readonly_fields = (
-        'contract_number_display',
         'created_at', 'updated_at',
         'subtotal', 'vat_amount', 'total',
         'sent_date', 'cancelled_date',
@@ -116,7 +108,7 @@ class ContractAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('contract_number_display', 'event', 'sponsor', 'sponsor_signer_contact'),
+            'fields': ('contract_number', 'event', 'sponsor', 'sponsor_signer_contact'),
         }),
         ('Tipo e origine', {
             'fields': ('contract_kind', 'parent_contract', 'origin', 'language'),

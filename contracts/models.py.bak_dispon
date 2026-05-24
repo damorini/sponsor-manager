@@ -544,34 +544,6 @@ class Contract(SoftDeleteModel):
 
 
 class ContractLine(TimeStampedModel):
-    def clean(self):
-        """Blocca l'assegnazione se il servizio e' esaurito."""
-        from django.core.exceptions import ValidationError
-        super_clean = getattr(super(), 'clean', None)
-        if super_clean:
-            super_clean()
-        if not self.service_id:
-            return
-        # contratto cui appartiene questa riga (per escluderlo dal conteggio)
-        contract_id = self.contract_id
-        avail = self.service.quantity_available(exclude_contract_id=contract_id)
-        if avail is None:
-            return  # illimitato
-        # quanto gia' impegnato da QUESTO contratto per lo stesso servizio
-        already = 0
-        if contract_id:
-            from django.db.models import Sum
-            already = (self.service.contract_lines
-                       .filter(contract_id=contract_id)
-                       .exclude(pk=self.pk)
-                       .aggregate(t=Sum('quantity'))['t'] or 0)
-        richiesta = (self.quantity or 0) + already
-        if richiesta > avail + already:
-            raise ValidationError(
-                f"Servizio '{self.service}' non disponibile in quantita' "
-                f"sufficiente: richiesti {self.quantity}, disponibili {avail}."
-            )
-
     """
     Riga di un contratto: un servizio acquistato in una certa quantità.
     

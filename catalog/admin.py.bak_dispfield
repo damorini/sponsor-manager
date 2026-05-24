@@ -81,7 +81,7 @@ class ServiceAdmin(admin.ModelAdmin):
                            '{"min": N, "max": N, "unit_price": X}',
         }),
         ('Disponibilità', {
-            'fields': ('is_active', 'max_quantity', 'total_available', 'display_order'),
+            'fields': ('is_active', 'max_quantity', 'display_order'),
         }),
         ('Ecommerce sponsor', {
             'fields': ('is_self_purchasable', 'self_purchase_cutoff_days'),
