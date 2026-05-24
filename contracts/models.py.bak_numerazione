@@ -292,42 +292,26 @@ class Contract(SoftDeleteModel):
     # ---------------------------------------------------------------------
 
     def _generate_contract_number(self):
-        """Genera il numero contratto formato SIGLA-AA-NNN (es. HIFU-26-001).
-
-        - SIGLA: event.code (maiuscolo). Se vuota, fallback dallo slug.
-        - AA: ultime 2 cifre dell'anno dell'evento.
-        - NNN: progressivo a 3 cifre, riparte da 1 per ogni evento/anno.
-          Oltre 999 passa a 4 cifre automaticamente.
-        """
         from datetime import date
-
-        sigla = (getattr(self.event, 'code', '') or '').strip().upper()
-        if not sigla:
-            base = (self.event.slug or 'EV').replace('-', '')
-            sigla = base[:4].upper() or 'EV'
-
-        anno_full = self.event.start_date.year if self.event.start_date else date.today().year
-        anno = f"{anno_full % 100:02d}"
-
-        prefix = f"{sigla}-{anno}-"
-
+        anno = date.today().year
+        prefix = f"{anno}-N"
         with transaction.atomic():
             ultimo = (
                 Contract.all_objects
-                .filter(event=self.event, contract_number__startswith=prefix)
+                .filter(contract_number__startswith=prefix)
                 .order_by('-contract_number')
                 .values_list('contract_number', flat=True)
                 .first()
             )
             if ultimo:
                 try:
-                    n = int(ultimo.rsplit('-', 1)[1]) + 1
+                    n = int(ultimo.split('-N')[1]) + 1
                 except (IndexError, ValueError):
                     n = 1
             else:
                 n = 1
             while True:
-                candidato = f"{prefix}{n:03d}"
+                candidato = f"{prefix}{n:04d}"
                 if not Contract.all_objects.filter(contract_number=candidato).exists():
                     return candidato
                 n += 1

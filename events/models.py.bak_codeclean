@@ -194,11 +194,6 @@ class Event(TimeStampedModel):
                     start_date = None
             year = start_date.year if start_date else ''
             self.slug = f"{base_slug}-{year}" if year else base_slug
-
-        # Pulizia sigla evento: niente spazi, sempre MAIUSCOLO
-        if self.code:
-            self.code = ''.join(self.code.split()).upper()
-
         super().save(*args, **kwargs)
 
     # ---------------------------------------------------------------------
