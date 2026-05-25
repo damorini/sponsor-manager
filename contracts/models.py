@@ -273,6 +273,26 @@ class Contract(SoftDeleteModel):
                 "Il blocco selezionato non appartiene a questo evento."
             )
 
+        # Unicità stand: uno stand può stare in un solo contratto NON annullato.
+        if self.stand:
+            altro = Contract.objects.filter(stand=self.stand).exclude(
+                status=ContractStatus.CANCELLED).exclude(pk=self.pk).first()
+            if altro:
+                raise ValidationError({'stand': (
+                    f"Lo stand '{self.stand.code}' è già assegnato al contratto "
+                    f"{altro.contract_number or '(in creazione)'} "
+                    f"({altro.sponsor}, stato: {altro.get_status_display()}). "
+                    f"Annulla quel contratto o scegli un altro stand.")})
+        if self.stand_block:
+            altro = Contract.objects.filter(stand_block=self.stand_block).exclude(
+                status=ContractStatus.CANCELLED).exclude(pk=self.pk).first()
+            if altro:
+                raise ValidationError({'stand_block': (
+                    f"Il blocco '{self.stand_block.code}' è già assegnato al contratto "
+                    f"{altro.contract_number or '(in creazione)'} "
+                    f"({altro.sponsor}, stato: {altro.get_status_display()}). "
+                    f"Annulla quel contratto o scegli un altro blocco.")})
+
         # Validazioni parent_contract
         if self.contract_kind == ContractKind.MAIN and self.parent_contract:
             raise ValidationError({
