@@ -212,6 +212,13 @@ class Contract(SoftDeleteModel):
 
     special_clauses = models.TextField(blank=True, verbose_name="Clausole speciali")
 
+    quote_intro_text = models.TextField(
+        blank=True,
+        verbose_name="Testo lettera preventivo",
+        help_text="Testo introduttivo della lettera di preventivo da inviare al cliente. "
+                  "Lasciare vuoto se non serve. Il sistema aggiunge intestazione e riepilogo dati.",
+    )
+
     # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
     requires_aifa = models.BooleanField(
         default=False,

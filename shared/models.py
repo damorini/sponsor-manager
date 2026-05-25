@@ -506,3 +506,25 @@ class AuditLog(models.Model):
 
     def __str__(self):
         return f"{self.action} · {self.entity_type} · {self.created_at}"
+
+
+
+class LetterTemplate(TimeStampedModel):
+    """Template lettere riutilizzabili (preventivi, rettifiche, ecc).
+    Segnaposti corpo: {{ azienda }} {{ evento }} {{ date_evento }}
+    {{ luogo_evento }} {{ numero }} {{ totale }} {{ stand }} {{ servizi }}"""
+    name = models.CharField(max_length=255, verbose_name="Nome",
+        help_text="Es. 'Preventivo iniziale', 'Rettifica', 'Invio documenti'")
+    body_template = models.TextField(verbose_name="Corpo lettera (template)",
+        help_text="Segnaposti: {{ azienda }}, {{ evento }}, {{ date_evento }}, "
+                  "{{ luogo_evento }}, {{ numero }}, {{ totale }}, {{ stand }}, {{ servizi }}")
+    language = models.CharField(max_length=2, default='it', verbose_name="Lingua")
+    is_active = models.BooleanField(default=True, verbose_name="Attivo")
+
+    class Meta:
+        verbose_name = "Template lettera"
+        verbose_name_plural = "Template lettere"
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name

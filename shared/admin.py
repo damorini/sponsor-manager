@@ -14,7 +14,7 @@ from core.admin_widgets import TranslatableJSONField
 
 from .models import (
     AuditLog, Communication, CommunicationStatus, Document, DocumentType,
-    EmailTemplate, InvoiceExport, InvoiceExportStatus,
+    EmailTemplate, InvoiceExport, InvoiceExportStatus, LetterTemplate,
 )
 
 
@@ -390,3 +390,20 @@ class AuditLogAdmin(admin.ModelAdmin):
     @admin.display(description='Modifiche', boolean=True)
     def has_changes_icon(self, obj):
         return bool(obj.changes)
+
+
+
+@admin.register(LetterTemplate)
+class LetterTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'language', 'is_active', 'updated_at')
+    list_filter = ('is_active', 'language')
+    search_fields = ('name', 'body_template')
+    ordering = ('name',)
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        (None, {'fields': ('name', 'language', 'is_active')}),
+        ('Contenuto', {'fields': ('body_template',),
+            'description': "Segnaposti: {{ azienda }}, {{ evento }}, {{ date_evento }}, "
+                           "{{ luogo_evento }}, {{ numero }}, {{ totale }}, {{ stand }}, {{ servizi }}"}),
+        ('Sistema', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
