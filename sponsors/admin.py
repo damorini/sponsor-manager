@@ -4,7 +4,10 @@ Admin per Sponsor e Contact.
 I Contact sono editati come inline dentro il form dello Sponsor: vedi tutti
 i contatti di un'azienda nella stessa schermata.
 """
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.urls import path
+from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponseRedirect
 from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils.html import format_html
@@ -40,6 +43,99 @@ class SponsorAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary')
     ordering = ('legal_name',)
     inlines = [ContactInline]
+    actions = ['action_generate_client_summary']
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                '<path:object_id>/genera-scheda/',
+                self.admin_site.admin_view(self.generate_summary_view),
+                name='sponsors_sponsor_generate_summary',
+            ),
+        ]
+        return custom + urls
+
+    def _events_of_sponsor(self, sponsor):
+        """Eventi distinti dai contratti non annullati dello sponsor."""
+        from contracts.models import ContractStatus
+        seen = {}
+        qs = (sponsor.contracts
+              .exclude(status=ContractStatus.CANCELLED)
+              .select_related('event'))
+        for c in qs:
+            ev = c.event
+            if ev.id not in seen:
+                lang = getattr(c, 'language', None) or 'it'
+                label = ev.get_name(lang) if hasattr(ev, 'get_name') else str(ev)
+                seen[ev.id] = {'id': ev.id, 'obj': ev, 'label': label}
+        return list(seen.values())
+
+    def _genera_e_messaggio(self, request, sponsor, event):
+        from contracts.services.pdf_generator import generate_client_summary_pdf
+        try:
+            document = generate_client_summary_pdf(sponsor, event)
+        except ValueError as e:
+            self.message_user(request, str(e), level=messages.ERROR)
+            return
+        except Exception as e:
+            self.message_user(request, f"Errore nella generazione della scheda: {e}",
+                              level=messages.ERROR)
+            return
+        from django.utils.html import format_html
+        self.message_user(
+            request,
+            format_html('Scheda cliente generata: <a href="{}" target="_blank">apri il PDF</a>',
+                        document.storage_url),
+            level=messages.SUCCESS,
+        )
+
+    @admin.action(description='Genera SCHEDA CLIENTE (scegli evento)')
+    def action_generate_client_summary(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, "Seleziona UN solo sponsor.",
+                              level=messages.WARNING)
+            return
+        sponsor = queryset.first()
+        return HttpResponseRedirect(
+            reverse('admin:sponsors_sponsor_generate_summary', args=[sponsor.pk])
+        )
+
+    def generate_summary_view(self, request, object_id):
+        sponsor = get_object_or_404(Sponsor, pk=object_id)
+        events = self._events_of_sponsor(sponsor)
+
+        if not events:
+            self.message_user(request,
+                              f"{sponsor.legal_name} non ha contratti: scheda non generabile.",
+                              level=messages.WARNING)
+            return HttpResponseRedirect('../../')
+
+        # 1 solo evento -> genera diretto
+        if len(events) == 1 and request.method == 'GET':
+            self._genera_e_messaggio(request, sponsor, events[0]['obj'])
+            return HttpResponseRedirect('../../')
+
+        # POST: evento scelto
+        if request.method == 'POST':
+            ev_id = request.POST.get('event_id')
+            chosen = next((e for e in events if str(e['id']) == str(ev_id)), None)
+            if not chosen:
+                self.message_user(request, "Evento non valido.", level=messages.ERROR)
+                return HttpResponseRedirect(request.path)
+            self._genera_e_messaggio(request, sponsor, chosen['obj'])
+            return HttpResponseRedirect('../../')
+
+        # GET con piu' eventi -> pagina di scelta
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Genera scheda cliente',
+            'sponsor': sponsor,
+            'events': events,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/client_summary_event_choice.html', context)
+
 
     fieldsets = (
         ('Anagrafica', {

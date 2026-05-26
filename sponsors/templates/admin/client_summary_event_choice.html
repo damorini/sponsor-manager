@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Genera scheda cliente</h1>
+<p>Sponsor <strong>{{ sponsor.legal_name }}</strong> ha contratti su piu' eventi.
+   Scegli per quale evento generare la scheda:</p>
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    {% for ev in events %}
+      <div style="margin:6px 0;">
+        <label>
+          <input type="radio" name="event_id" value="{{ ev.id }}"
+                 {% if forloop.first %}checked{% endif %}>
+          {{ ev.label }}
+        </label>
+      </div>
+    {% endfor %}
+  </fieldset>
+  <div class="submit-row">
+    <input type="submit" value="Genera scheda" class="default">
+    <a href="../../" class="button cancel-link">Annulla</a>
+  </div>
+</form>
+{% endblock %}
