@@ -10,6 +10,29 @@ def _money(value):
     return value if value is not None else Decimal('0.00')
 
 
+def _scadenza_stato(due_date, saldato, soglia_giorni=15):
+    """
+    Stato di una scadenza:
+      'saldato'      se il contratto risulta gia' pagato (residuo <= 0)
+      'scaduta'      se la data e' passata
+      'in scadenza'  se manca <= soglia_giorni
+      'futura'       altrimenti
+      ''             se la data e' assente
+    """
+    from datetime import date as _date
+    if saldato:
+        return 'saldato'
+    if not due_date:
+        return ''
+    oggi = _date.today()
+    delta = (due_date - oggi).days
+    if delta < 0:
+        return 'scaduta'
+    if delta <= soglia_giorni:
+        return 'in scadenza'
+    return 'futura'
+
+
 def build_client_summary(sponsor, event):
     """
     Costruisce il dizionario riepilogo per uno sponsor su un evento.
@@ -67,8 +90,10 @@ def build_client_summary(sponsor, event):
         tot_total += tot
 
         # pagamenti incassati di questo contratto (succeeded)
+        incassato_contratto = Decimal('0.00')
         for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
             incassato += _money(p.amount_gross)
+            incassato_contratto += _money(p.amount_gross)
             movimenti.append({
                 'contract_number': c.contract_number,
                 'amount': _money(p.amount_gross),
@@ -90,6 +115,12 @@ def build_client_summary(sponsor, event):
             'balance_amount': c.balance_amount,
             'deposit_due_date': c.deposit_due_date,
             'balance_due_date': c.balance_due_date,
+            'incassato_contratto': incassato_contratto,
+            'residuo_contratto': (tot - incassato_contratto),
+            'deposit_stato': _scadenza_stato(c.deposit_due_date,
+                                             saldato=(incassato_contratto >= tot)),
+            'balance_stato': _scadenza_stato(c.balance_due_date,
+                                             saldato=(incassato_contratto >= tot)),
         })
 
     residuo = tot_total - incassato

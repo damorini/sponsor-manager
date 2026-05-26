@@ -874,17 +874,21 @@ def generate_client_summary_pdf(sponsor, event):
                           f"IVA: € {cur(cd['vat_amount'])}   "
                           f"Totale (IVA incl.): € {cur(cd['total'])}")
 
-        # piano pagamento
+        # piano pagamento (con stato scadenze)
+        def _stato_label(s):
+            return f"  [{s}]" if s else ""
+        dep_st = _stato_label(cd.get('deposit_stato'))
+        bal_st = _stato_label(cd.get('balance_stato'))
         if cd['has_deposit']:
             doc.add_paragraph(
                 f"Acconto ({cd['deposit_percent']}%): € {cur(cd['deposit_amount'])} "
-                f"entro il {dt(cd['deposit_due_date'])}  -  "
-                f"Saldo: € {cur(cd['balance_amount'])} entro il {dt(cd['balance_due_date'])}"
+                f"entro il {dt(cd['deposit_due_date'])}{dep_st}  -  "
+                f"Saldo: € {cur(cd['balance_amount'])} entro il {dt(cd['balance_due_date'])}{bal_st}"
             )
         else:
             doc.add_paragraph(
                 f"Pagamento unico: € {cur(cd['balance_amount'])} "
-                f"entro il {dt(cd['balance_due_date'])}"
+                f"entro il {dt(cd['balance_due_date'])}{bal_st}"
             )
         doc.add_paragraph("")
 
