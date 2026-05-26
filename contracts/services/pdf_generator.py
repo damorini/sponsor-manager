@@ -880,17 +880,19 @@ def generate_client_summary_pdf(sponsor, event):
         rp.bold = True
         rp.font.size = Pt(12)
 
-        # tabella servizi
+        # tabella servizi (con descrizione)
         if cd['lines']:
-            table = doc.add_table(rows=1, cols=3)
+            table = doc.add_table(rows=1, cols=4)
             table.style = 'Table Grid'
             hdr = table.rows[0].cells
-            hdr[0].text = 'Servizio'; hdr[1].text = 'Q.tà'; hdr[2].text = 'Importo'
+            hdr[0].text = 'Servizio'; hdr[1].text = 'Descrizione'
+            hdr[2].text = 'Q.tà'; hdr[3].text = 'Importo'
             for ln in cd['lines']:
                 row = table.add_row().cells
                 row[0].text = ln['name']
-                row[1].text = str(ln['quantity'])
-                row[2].text = f"€ {cur(ln['line_total'])}"
+                row[1].text = ln.get('description', '') or ''
+                row[2].text = str(ln['quantity'])
+                row[3].text = f"€ {cur(ln['line_total'])}"
 
         # totali
         doc.add_paragraph(f"Imponibile: € {cur(cd['subtotal'])}   "

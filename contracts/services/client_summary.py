@@ -69,6 +69,7 @@ def build_client_summary(sponsor, event):
         for ln in c.lines.all():
             lines.append({
                 'name': ln.service_name_snapshot,
+                'description': (getattr(ln, 'service_description_snapshot', '') or '').strip(),
                 'quantity': ln.quantity,
                 'unit_price': _money(ln.unit_price),
                 'line_total': _money(ln.line_total),
