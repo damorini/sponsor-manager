@@ -141,3 +141,43 @@ def build_client_summary(sponsor, event):
             'movimenti': movimenti,
         },
     }
+
+
+def build_quote_summary_rows(contract):
+    """
+    Righe ordinate per l'Allegato 1 del preventivo (e riusabile altrove):
+    STAND in cima (con la sua descrizione), poi le altre righe servizi/dotazioni.
+
+    Ritorna lista di dict: {name, description, quantity, line_total, is_stand}.
+    La descrizione dello stand viene da stand_description_override del contratto,
+    altrimenti da stand/blocco.quote_description.
+    """
+    from decimal import Decimal
+
+    rows = []
+
+    # descrizione stand (override contratto -> stand/blocco)
+    stand_desc = (getattr(contract, 'stand_description_override', '') or '').strip()
+    if not stand_desc:
+        _obj = contract.stand or contract.stand_block
+        stand_desc = (getattr(_obj, 'quote_description', '') or '').strip() if _obj else ''
+
+    # marcatore riga-stand (vedi stand_line.py): la riga stand ha 'stand:'/'block:' nelle notes
+    stand_rows = []
+    other_rows = []
+    for ln in contract.lines.select_related('service').all():
+        is_stand = (ln.notes or '').startswith(('stand:', 'block:'))
+        row = {
+            'name': ln.service_name_snapshot,
+            'description': (getattr(ln, 'service_description_snapshot', '') or '').strip(),
+            'quantity': ln.quantity,
+            'line_total': ln.line_total if ln.line_total is not None else Decimal('0.00'),
+            'is_stand': is_stand,
+        }
+        # se e' la riga-stand e non ha descrizione propria, usa quella dello stand
+        if is_stand and not row['description'] and stand_desc:
+            row['description'] = stand_desc
+        (stand_rows if is_stand else other_rows).append(row)
+
+    rows = stand_rows + other_rows
+    return rows

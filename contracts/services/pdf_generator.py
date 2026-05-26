@@ -780,6 +780,40 @@ def generate_quote_pdf(contract):
         for r in para.runs:
             r.font.size = Pt(11)
 
+    # ----- 2b. ALLEGATO 1: riepilogo della proposta -----
+    from .client_summary import build_quote_summary_rows
+    rows = build_quote_summary_rows(contract)
+    if rows:
+        doc.add_page_break()
+        tit = doc.add_paragraph()
+        rt = tit.add_run("Allegato 1 - Riepilogo della proposta")
+        rt.bold = True
+        rt.font.size = Pt(14)
+        doc.add_paragraph("")
+
+        table = doc.add_table(rows=1, cols=4)
+        table.style = 'Table Grid'
+        hdr = table.rows[0].cells
+        hdr[0].text = 'Voce'; hdr[1].text = 'Descrizione'
+        hdr[2].text = 'Q.tà'; hdr[3].text = 'Importo'
+        for rw in rows:
+            cells = table.add_row().cells
+            cells[0].text = rw['name']
+            cells[1].text = rw['description'] or ''
+            cells[2].text = str(rw['quantity'])
+            cells[3].text = f"€ {format_currency_filter(rw['line_total'])}"
+
+        doc.add_paragraph("")
+        # Totali (dal contratto)
+        tot_p = doc.add_paragraph()
+        tot_r = tot_p.add_run(
+            f"Imponibile: € {format_currency_filter(contract.subtotal)}    "
+            f"IVA: € {format_currency_filter(contract.vat_amount)}    "
+            f"Totale (IVA incl.): € {format_currency_filter(contract.total)}"
+        )
+        tot_r.bold = True
+        tot_r.font.size = Pt(11)
+
     # ----- 3. Salva il .docx intermedio -----
     docx_filename = f"preventivo_{contract.contract_number}_{contract.event.id}.docx"
     relative_docx_path = f"documents/quotes/{contract.id}/{docx_filename}"
