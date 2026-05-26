@@ -28,6 +28,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.utils.text import slugify
 from django.core.files.storage import default_storage
 from django.utils import timezone
 
@@ -908,7 +909,10 @@ def generate_client_summary_pdf(sponsor, event):
             )
 
     # Salvataggio docx
-    docx_filename = f"scheda_{sponsor.id}_{event.id}.docx"
+    # Nome file leggibile: slug sponsor + slug evento (fallback agli id se vuoti)
+    _slug_sponsor = slugify(getattr(sponsor, "legal_name", "") or "") or str(sponsor.id)
+    _slug_event = getattr(event, "slug", "") or str(event.id)
+    docx_filename = f"scheda_{_slug_sponsor}_{_slug_event}.docx"
     relative_docx_path = f"documents/client_summaries/{sponsor.id}/{docx_filename}"
     full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
     full_docx_path.parent.mkdir(parents=True, exist_ok=True)
