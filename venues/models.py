@@ -73,6 +73,14 @@ class StandBlock(TimeStampedModel):
         verbose_name="Stato",
     )
 
+    quote_description = models.TextField(
+        blank=True,
+        verbose_name="Descrizione per preventivo",
+        help_text="Descrizione dello stand mostrata SOLO nel preventivo "
+                  "(es. 'stand rettangolare con 1 lato libero, senza arredo...'). "
+                  "Non compare nel contratto.",
+    )
+
     notes = models.TextField(blank=True, verbose_name="Note")
 
     class Meta:
@@ -216,6 +224,14 @@ class Stand(TimeStampedModel):
         null=True,
         blank=True,
         verbose_name="Prezzo base",
+    )
+
+    quote_description = models.TextField(
+        blank=True,
+        verbose_name="Descrizione per preventivo",
+        help_text="Descrizione dello stand mostrata SOLO nel preventivo "
+                  "(es. 'stand rettangolare con 1 lato libero, senza arredo...'). "
+                  "Non compare nel contratto.",
     )
 
     notes = models.TextField(blank=True, verbose_name="Note")

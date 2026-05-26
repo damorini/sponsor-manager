@@ -656,6 +656,13 @@ def build_quote_context(contract):
     # Stand assegnato (riusa l'helper esistente)
     stand = _get_stand_size(contract) or ""
 
+    # Descrizione stand per il preventivo: override del contratto, altrimenti
+    # quella dello stand/blocco assegnato. (Non usata nel contratto.)
+    descrizione_stand = (getattr(contract, 'stand_description_override', '') or '').strip()
+    if not descrizione_stand:
+        _obj = contract.stand or contract.stand_block
+        descrizione_stand = (getattr(_obj, 'quote_description', '') or '').strip() if _obj else ''
+
     # Lista servizi (riusa l'helper esistente, separati da '; ')
     servizi = _build_services_list_string(contract)
 
@@ -677,6 +684,7 @@ def build_quote_context(contract):
         'iva': format_currency_filter(contract.vat_amount),
         'aliquota_iva': aliquota_iva,
         'stand': stand,
+        'descrizione_stand': descrizione_stand,
         'servizi': servizi,
     }
     return context

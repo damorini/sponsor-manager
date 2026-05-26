@@ -252,6 +252,12 @@ class Contract(SoftDeleteModel):
         help_text="Se vuoto, calcolata come inizio evento - giorni impostati nelle Impostazioni segreteria.",
     )
 
+    stand_description_override = models.TextField(
+        blank=True,
+        verbose_name="Descrizione stand (preventivo, manuale)",
+        help_text="Se compilata, sostituisce la descrizione dello stand nel preventivo di questo contratto. Vuota = usa la descrizione dello stand/blocco.",
+    )
+
     # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
     requires_aifa = models.BooleanField(
         default=False,
