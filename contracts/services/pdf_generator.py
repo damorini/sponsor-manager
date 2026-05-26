@@ -779,3 +779,146 @@ def generate_quote_pdf(contract):
     logger.info("Contract %s: PDF preventivo generato (Document id=%s)",
                 contract.contract_number, document.id)
     return document
+
+
+# ============================================================================
+# SCHEDA CLIENTE: PDF riepilogo sponsor+evento (mattone 2)
+# ============================================================================
+
+def generate_client_summary_pdf(sponsor, event):
+    """
+    Genera la scheda cliente in PDF per uno sponsor su un evento.
+    Aggrega tutti i contratti non annullati (via build_client_summary),
+    costruisce un .docx al volo e lo converte in PDF.
+
+    Returns: Document creato. Raises ValueError se non ci sono contratti.
+    """
+    from datetime import date as _date
+    from docx import Document as _DocxDocument
+    from docx.shared import Pt, Mm
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from .client_summary import build_client_summary
+
+    data = build_client_summary(sponsor, event)
+    if not data['contracts']:
+        raise ValueError(
+            f"Nessun contratto (non annullato) per {sponsor.legal_name} "
+            f"su questo evento: scheda non generabile."
+        )
+
+    # contratto di riferimento (per header/footer e per agganciare il Document)
+    ref_contract = data['contracts'][0]['contract']
+    lang = getattr(ref_contract, 'language', None) or 'it'
+    event_name = event.get_name(lang) if hasattr(event, 'get_name') else str(event)
+
+    doc = _DocxDocument()
+    for section in doc.sections:
+        section.top_margin = Mm(38)
+        section.bottom_margin = Mm(32)
+        section.left_margin = Mm(20)
+        section.right_margin = Mm(20)
+
+    # Titolo
+    h = doc.add_paragraph()
+    r = h.add_run("Scheda cliente")
+    r.bold = True
+    r.font.size = Pt(16)
+
+    sub = doc.add_paragraph()
+    rs = sub.add_run(f"{sponsor.legal_name} - {event_name}")
+    rs.font.size = Pt(12)
+    doc.add_paragraph("")
+
+    cur = lambda v: format_currency_filter(v)
+    dt = lambda d: d.strftime('%d/%m/%Y') if d else '-'
+
+    # Per ogni contratto
+    for cd in data['contracts']:
+        p = doc.add_paragraph()
+        rp = p.add_run(f"Contratto {cd['numero']}"
+                       + (f" - Spazio: {cd['stand']}" if cd['stand'] else ""))
+        rp.bold = True
+        rp.font.size = Pt(12)
+
+        # tabella servizi
+        if cd['lines']:
+            table = doc.add_table(rows=1, cols=3)
+            table.style = 'Table Grid'
+            hdr = table.rows[0].cells
+            hdr[0].text = 'Servizio'; hdr[1].text = 'Q.tà'; hdr[2].text = 'Importo'
+            for ln in cd['lines']:
+                row = table.add_row().cells
+                row[0].text = ln['name']
+                row[1].text = str(ln['quantity'])
+                row[2].text = f"€ {cur(ln['line_total'])}"
+
+        # totali
+        doc.add_paragraph(f"Imponibile: € {cur(cd['subtotal'])}   "
+                          f"IVA: € {cur(cd['vat_amount'])}   "
+                          f"Totale (IVA incl.): € {cur(cd['total'])}")
+
+        # piano pagamento
+        if cd['has_deposit']:
+            doc.add_paragraph(
+                f"Acconto ({cd['deposit_percent']}%): € {cur(cd['deposit_amount'])} "
+                f"entro il {dt(cd['deposit_due_date'])}  -  "
+                f"Saldo: € {cur(cd['balance_amount'])} entro il {dt(cd['balance_due_date'])}"
+            )
+        else:
+            doc.add_paragraph(
+                f"Pagamento unico: € {cur(cd['balance_amount'])} "
+                f"entro il {dt(cd['balance_due_date'])}"
+            )
+        doc.add_paragraph("")
+
+    # Riepilogo economico complessivo
+    tot = data['totals']
+    pay = data['payments']
+    rsum = doc.add_paragraph()
+    rr = rsum.add_run("Riepilogo")
+    rr.bold = True
+    rr.font.size = Pt(12)
+    doc.add_paragraph(f"Totale contratti (IVA incl.): € {cur(tot['total'])}")
+    doc.add_paragraph(f"Incassato: € {cur(pay['incassato'])}")
+    doc.add_paragraph(f"Residuo da incassare: € {cur(pay['residuo'])}")
+
+    if pay['movimenti']:
+        doc.add_paragraph("")
+        mp = doc.add_paragraph(); mr = mp.add_run("Pagamenti ricevuti"); mr.bold = True
+        for m in pay['movimenti']:
+            doc.add_paragraph(
+                f"  - {dt(m['date'])}: € {cur(m['amount'])} ({m['method']}) "
+                f"- {m['contract_number']}"
+            )
+
+    # Salvataggio docx
+    docx_filename = f"scheda_{sponsor.id}_{event.id}.docx"
+    relative_docx_path = f"documents/client_summaries/{sponsor.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(full_docx_path))
+
+    try:
+        _add_header_footer_to_docx(full_docx_path, ref_contract)
+    except Exception as e:
+        logger.warning("Header/footer scheda cliente non applicati: %s", e)
+
+    pdf_path = _convert_docx_to_pdf(full_docx_path)
+    if not pdf_path:
+        logger.warning("Conversione PDF scheda cliente fallita, tengo .docx")
+        return _create_document_record(
+            ref_contract, full_docx_path, relative_docx_path,
+            file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='client_summary',
+        )
+
+    relative_pdf_path = relative_docx_path.replace('.docx', '.pdf')
+    document = _create_document_record(
+        ref_contract, pdf_path, relative_pdf_path,
+        file_name=pdf_path.name, mime='application/pdf',
+        document_type='client_summary',
+    )
+    logger.info("Scheda cliente generata per %s (Document id=%s)",
+                sponsor.legal_name, document.id)
+    return document

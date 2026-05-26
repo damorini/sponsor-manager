@@ -1,0 +1,111 @@
+"""
+Aggregazione dati per la SCHEDA CLIENTE (sponsor + evento).
+Usata dal generatore PDF della scheda riepilogo.
+"""
+from decimal import Decimal
+
+
+def _money(value):
+    """Decimal sicuro (mai None)."""
+    return value if value is not None else Decimal('0.00')
+
+
+def build_client_summary(sponsor, event):
+    """
+    Costruisce il dizionario riepilogo per uno sponsor su un evento.
+
+    Ritorna un dict con:
+      sponsor, event,
+      contracts: lista di dict (uno per contratto NON annullato), ciascuno con
+        contract, numero, stand, lines (lista), subtotal, vat_amount, total,
+        has_deposit, deposit_percent, deposit_amount, balance_amount,
+        deposit_due_date, balance_due_date
+      totals: dict con subtotal, vat_amount, total (somma su tutti i contratti)
+      payments: dict con incassato, residuo, lista movimenti (succeeded)
+    """
+    from contracts.models import Contract, ContractStatus
+    from contracts.payments import PaymentStatus
+
+    contracts_qs = (
+        Contract.objects
+        .filter(sponsor=sponsor, event=event)
+        .exclude(status=ContractStatus.CANCELLED)
+        .order_by('contract_number')
+    )
+
+    contracts_data = []
+    tot_subtotal = Decimal('0.00')
+    tot_vat = Decimal('0.00')
+    tot_total = Decimal('0.00')
+    incassato = Decimal('0.00')
+    movimenti = []
+
+    for c in contracts_qs:
+        # righe servizi
+        lines = []
+        for ln in c.lines.all():
+            lines.append({
+                'name': ln.service_name_snapshot,
+                'quantity': ln.quantity,
+                'unit_price': _money(ln.unit_price),
+                'line_total': _money(ln.line_total),
+            })
+
+        # stand / blocco
+        if c.stand:
+            stand_label = c.stand.code
+        elif c.stand_block:
+            stand_label = f"Blocco {c.stand_block.code}"
+        else:
+            stand_label = ""
+
+        sub = _money(c.subtotal)
+        vat = _money(c.vat_amount)
+        tot = _money(c.total)
+        tot_subtotal += sub
+        tot_vat += vat
+        tot_total += tot
+
+        # pagamenti incassati di questo contratto (succeeded)
+        for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
+            incassato += _money(p.amount_gross)
+            movimenti.append({
+                'contract_number': c.contract_number,
+                'amount': _money(p.amount_gross),
+                'method': p.get_payment_method_display() if hasattr(p, 'get_payment_method_display') else '',
+                'date': p.completed_at,
+            })
+
+        contracts_data.append({
+            'contract': c,
+            'numero': c.contract_number,
+            'stand': stand_label,
+            'lines': lines,
+            'subtotal': sub,
+            'vat_amount': vat,
+            'total': tot,
+            'has_deposit': c.has_deposit,
+            'deposit_percent': c.deposit_percent,
+            'deposit_amount': c.deposit_amount,
+            'balance_amount': c.balance_amount,
+            'deposit_due_date': c.deposit_due_date,
+            'balance_due_date': c.balance_due_date,
+        })
+
+    residuo = tot_total - incassato
+
+    return {
+        'sponsor': sponsor,
+        'event': event,
+        'contracts': contracts_data,
+        'totals': {
+            'subtotal': tot_subtotal,
+            'vat_amount': tot_vat,
+            'total': tot_total,
+        },
+        'payments': {
+            'incassato': incassato,
+            'residuo': residuo,
+            'movimenti': movimenti,
+        },
+    }

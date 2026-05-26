@@ -175,7 +175,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
 
     actions = ['action_send_quote', 'action_convert_to_contract',
-               'action_generate_stand_line',
+               'action_generate_stand_line', 'action_generate_client_summary',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -582,6 +582,36 @@ class ContractAdmin(admin.ModelAdmin):
             return '—'
         d = obj.balance_due_date
         return d.strftime('%d/%m/%Y') if d else '— (manca data evento)'
+
+    @admin.action(description='Genera SCHEDA CLIENTE (sponsor+evento)')
+    def action_generate_client_summary(self, request, queryset):
+        from .services.pdf_generator import generate_client_summary_pdf
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Seleziona UN solo contratto: la scheda aggrega tutti i contratti "
+                "di quello sponsor per quell'evento.",
+                level=messages.WARNING,
+            )
+            return
+        contract = queryset.first()
+        try:
+            document = generate_client_summary_pdf(contract.sponsor, contract.event)
+        except ValueError as e:
+            self.message_user(request, str(e), level=messages.ERROR)
+            return
+        except Exception as e:
+            self.message_user(request, f"Errore nella generazione della scheda: {e}",
+                              level=messages.ERROR)
+            return
+        self.message_user(
+            request,
+            format_html(
+                'Scheda cliente generata: <a href="{}" target="_blank">apri il PDF</a>',
+                document.storage_url,
+            ),
+            level=messages.SUCCESS,
+        )
 
     # Actions
 
