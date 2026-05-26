@@ -314,6 +314,15 @@ class Contract(SoftDeleteModel):
             raise ValidationError(
                 "Lo stand selezionato non appartiene a questo evento."
             )
+
+        # Uno stand che fa parte di un blocco NON e' vendibile singolarmente:
+        # va venduto il blocco intero (oppure lo stand va tolto dal blocco).
+        if self.stand and self.stand.stand_block_id:
+            raise ValidationError({'stand': (
+                f"Lo stand '{self.stand.code}' fa parte del blocco "
+                f"'{self.stand.stand_block.code}' e non puo' essere venduto "
+                f"singolarmente. Assegna il BLOCCO a questo contratto, oppure "
+                f"togli lo stand dal blocco.")})
         if self.stand_block and self.stand_block.event_id != self.event_id:
             raise ValidationError(
                 "Il blocco selezionato non appartiene a questo evento."
