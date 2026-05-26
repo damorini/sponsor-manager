@@ -113,6 +113,8 @@ class ContractAdmin(admin.ModelAdmin):
         'created_at', 'updated_at',
         'subtotal', 'vat_amount', 'total',
         'sent_date', 'cancelled_date',
+        'piano_acconto_display', 'piano_saldo_display',
+        'piano_scad_acconto_display', 'piano_scad_saldo_display',
     )
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
@@ -139,6 +141,18 @@ class ContractAdmin(admin.ModelAdmin):
         }),
         ('Pagamento', {
             'fields': ('payment_method', 'payment_terms', 'payment_installments'),
+        }),
+        ('Piano pagamento (acconto/saldo)', {
+            'fields': (
+                'deposit_percent',
+                ('deposit_due_date_override', 'balance_due_date_override'),
+                'piano_acconto_display', 'piano_saldo_display',
+                'piano_scad_acconto_display', 'piano_scad_saldo_display',
+            ),
+            'description': "Inserisci la percentuale di acconto (vuota = pagamento unico). "
+                           "Le scadenze si calcolano dai giorni in Impostazioni segreteria; "
+                           "compila le date manuali solo per forzare valori diversi. "
+                           "Gli importi sotto sono calcolati (IVA inclusa) e si aggiornano al salvataggio.",
         }),
         ('Template e clausole', {
             'fields': ('template_used', 'special_clauses', 'requires_aifa', 'requires_svc_medtech'),
@@ -539,6 +553,35 @@ class ContractAdmin(admin.ModelAdmin):
                 f"{creati} riga/e stand create. Totali contratto aggiornati.",
                 level=messages.SUCCESS,
             )
+
+    # ---- Piano pagamento: importi/scadenze calcolati (sola lettura) ----
+    @admin.display(description='Acconto (calcolato, IVA incl.)')
+    def piano_acconto_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        if not obj.has_deposit:
+            return 'nessun acconto (pagamento unico)'
+        return f"€ {obj.deposit_amount} ({obj.deposit_percent}%)"
+
+    @admin.display(description='Saldo (calcolato, IVA incl.)')
+    def piano_saldo_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        return f"€ {obj.balance_amount}"
+
+    @admin.display(description='Scadenza acconto (calcolata)')
+    def piano_scad_acconto_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        d = obj.deposit_due_date
+        return d.strftime('%d/%m/%Y') if d else '— (contratto non firmato)'
+
+    @admin.display(description='Scadenza saldo (calcolata)')
+    def piano_scad_saldo_display(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        d = obj.balance_due_date
+        return d.strftime('%d/%m/%Y') if d else '— (manca data evento)'
 
     # Actions
 
