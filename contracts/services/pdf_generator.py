@@ -414,10 +414,26 @@ def _convert_docx_to_pdf(docx_path):
 # ============================================================================
 
 def _create_document_record(contract, full_path, relative_path, file_name, mime, document_type='contract_pdf'):
-    """Crea il record Document collegato al contract."""
+    """Crea il record Document collegato al contract.
+
+    Anti-doppioni: Soft-elimina i Document precedenti VIVI dello stesso tipo e
+    stesso oggetto, cosi' resta sempre un solo documento vivo per tipo (sempre
+    aggiornato). I vecchi restano soft-deleted (recuperabili); i file su disco
+    non vengono toccati.
+    """
     from shared.models import Document
     
     contract_ct = ContentType.objects.get_for_model(contract.__class__)
+    
+    # Soft-elimina i Document precedenti dello stesso tipo per questo oggetto
+    previous = Document.objects.filter(
+        content_type=contract_ct,
+        object_id=contract.id,
+        document_type=document_type,
+        deleted_at__isnull=True,
+    )
+    for old_doc in previous:
+        old_doc.delete()  # soft-delete
     
     document = Document.objects.create(
         content_type=contract_ct,
