@@ -620,6 +620,13 @@ def build_quote_context(contract):
     # Lista servizi (riusa l'helper esistente, separati da '; ')
     servizi = _build_services_list_string(contract)
 
+    # Aliquota IVA come stringa leggibile (es. '22%')
+    try:
+        _rate = contract.vat_rate
+        aliquota_iva = f"{int(_rate)}%" if _rate == int(_rate) else f"{_rate}%"
+    except Exception:
+        aliquota_iva = ""
+
     context = {
         'azienda': sponsor.legal_name if sponsor else "",
         'evento': evento,
@@ -627,6 +634,9 @@ def build_quote_context(contract):
         'luogo_evento': luogo_evento,
         'numero': contract.contract_number or "",
         'totale': format_currency_filter(contract.total),
+        'imponibile': format_currency_filter(contract.subtotal),
+        'iva': format_currency_filter(contract.vat_amount),
+        'aliquota_iva': aliquota_iva,
         'stand': stand,
         'servizi': servizi,
     }

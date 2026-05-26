@@ -161,6 +161,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
 
     actions = ['action_send_quote', 'action_convert_to_contract',
+               'action_generate_stand_line',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -511,6 +512,33 @@ class ContractAdmin(admin.ModelAdmin):
         return HttpResponseRedirect(
             reverse('admin:contracts_contract_send_contract', args=[contract.pk])
         )
+
+    @admin.action(description='Genera riga dallo STAND (prezzo nel totale)')
+    def action_generate_stand_line(self, request, queryset):
+        from .services.stand_line import genera_riga_da_stand
+        creati = gia = senza = errori = 0
+        for contract in queryset:
+            esito, msg = genera_riga_da_stand(contract)
+            if esito == 'creata':
+                creati += 1
+            elif esito == 'gia_presente':
+                gia += 1
+                self.message_user(request, f"{contract.contract_number}: {msg}",
+                                  level=messages.INFO)
+            elif esito == 'no_stand':
+                senza += 1
+                self.message_user(request, f"{contract.contract_number}: {msg}",
+                                  level=messages.WARNING)
+            else:  # no_prezzo
+                errori += 1
+                self.message_user(request, f"{contract.contract_number}: {msg}",
+                                  level=messages.ERROR)
+        if creati:
+            self.message_user(
+                request,
+                f"{creati} riga/e stand create. Totali contratto aggiornati.",
+                level=messages.SUCCESS,
+            )
 
     # Actions
 
