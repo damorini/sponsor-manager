@@ -182,6 +182,13 @@ def generate_contract_pdf(contract):
         'services_list': services_list,
         'stand_size': _get_stand_size(contract),
         'signature_place': getattr(settings, 'SIGNATURE_PLACE', 'Bologna'),
+        # Piano pagamento (acconto/saldo), IVA inclusa
+        'has_deposit': contract.has_deposit,
+        'deposit_percent': contract.deposit_percent,
+        'deposit_amount': format_currency_filter(contract.deposit_amount),
+        'balance_amount': format_currency_filter(contract.balance_amount),
+        'deposit_due_date': format_date_filter(contract.deposit_due_date) if contract.deposit_due_date else '',
+        'balance_due_date': format_date_filter(contract.balance_due_date) if contract.balance_due_date else '',
     }
     
     # ========================================================================

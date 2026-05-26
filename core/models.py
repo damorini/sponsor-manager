@@ -127,6 +127,18 @@ class OrganizerSettings(models.Model):
         help_text="Logo mostrato nel footer delle email.",
     )
 
+    # Piano pagamento (acconto/saldo)
+    payment_deposit_days_after_signing = models.IntegerField(
+        default=0,
+        verbose_name="Giorni scadenza acconto (dopo firma)",
+        help_text="L'acconto scade questo numero di giorni dopo la firma del contratto.",
+    )
+    payment_balance_days_before_event = models.IntegerField(
+        default=0,
+        verbose_name="Giorni scadenza saldo (prima evento)",
+        help_text="Il saldo scade questo numero di giorni prima dell'inizio dell'evento.",
+    )
+
     class Meta:
         verbose_name = "Impostazioni segreteria"
         verbose_name_plural = "Impostazioni segreteria"

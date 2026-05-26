@@ -230,6 +230,28 @@ class Contract(SoftDeleteModel):
                   "I segnaposti vengono compilati con i dati di questo contratto.",
     )
 
+    deposit_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Acconto %",
+        help_text="Percentuale di acconto (es. 30 per il 30%). Vuoto = pagamento unico (tutto a saldo).",
+    )
+
+    deposit_due_date_override = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Scadenza acconto (manuale)",
+        help_text="Se vuoto, calcolata come data firma + giorni impostati nelle Impostazioni segreteria.",
+    )
+    balance_due_date_override = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Scadenza saldo (manuale)",
+        help_text="Se vuoto, calcolata come inizio evento - giorni impostati nelle Impostazioni segreteria.",
+    )
+
     # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
     requires_aifa = models.BooleanField(
         default=False,
@@ -400,6 +422,53 @@ class Contract(SoftDeleteModel):
 
         if save:
             self.save(update_fields=['subtotal', 'vat_amount', 'total', 'updated_at'])
+
+    # ---------------------------------------------------------------------
+    # Piano pagamento (acconto/saldo) - calcolato al volo, IVA inclusa
+    @property
+    def deposit_amount(self):
+        """Importo acconto (IVA inclusa). 0 se nessuna percentuale impostata."""
+        from decimal import Decimal
+        if not self.deposit_percent:
+            return Decimal('0.00')
+        return (self.total * self.deposit_percent / Decimal('100')).quantize(Decimal('0.01'))
+
+    @property
+    def balance_amount(self):
+        """Importo saldo (IVA inclusa) = totale - acconto. Se nessun acconto, = totale."""
+        return (self.total - self.deposit_amount)
+
+    @property
+    def deposit_due_date(self):
+        """Scadenza acconto: override manuale se presente, altrimenti
+        data firma + giorni (OrganizerSettings). None se non firmato e niente override."""
+        if self.deposit_due_date_override:
+            return self.deposit_due_date_override
+        from datetime import timedelta
+        from core.models import OrganizerSettings
+        if not self.signed_date:
+            return None
+        days = OrganizerSettings.load().payment_deposit_days_after_signing or 0
+        return self.signed_date + timedelta(days=days)
+
+    @property
+    def balance_due_date(self):
+        """Scadenza saldo: override manuale se presente, altrimenti
+        inizio evento - giorni (OrganizerSettings). None se manca data evento e niente override."""
+        if self.balance_due_date_override:
+            return self.balance_due_date_override
+        from datetime import timedelta
+        from core.models import OrganizerSettings
+        start = getattr(self.event, 'start_date', None)
+        if not start:
+            return None
+        days = OrganizerSettings.load().payment_balance_days_before_event or 0
+        return start - timedelta(days=days)
+
+    @property
+    def has_deposit(self):
+        """True se e' previsto un acconto (percentuale impostata e > 0)."""
+        return bool(self.deposit_percent and self.deposit_percent > 0)
 
     # ---------------------------------------------------------------------
     # Transizioni di stato
