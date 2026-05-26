@@ -561,7 +561,8 @@ class ContractAdmin(admin.ModelAdmin):
             return '—'
         if not obj.has_deposit:
             return 'nessun acconto (pagamento unico)'
-        return f"€ {obj.deposit_amount} ({obj.deposit_percent}%)"
+        from .services.pdf_generator import format_percent_filter
+        return f"€ {obj.deposit_amount} ({format_percent_filter(obj.deposit_percent)}%)"
 
     @admin.display(description='Saldo (calcolato, IVA incl.)')
     def piano_saldo_display(self, obj):

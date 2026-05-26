@@ -89,6 +89,21 @@ def format_currency_filter(value):
         return str(value)
 
 
+def format_percent_filter(value):
+    """Formatta una percentuale senza decimali inutili: 30.00 -> '30', 33.33 -> '33,33'."""
+    if value is None:
+        return ""
+    try:
+        f = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if f == int(f):
+        return str(int(f))
+    # decimali utili, virgola italiana, senza zeri finali
+    s = f"{f:.2f}".rstrip("0").rstrip(".")
+    return s.replace(".", ",")
+
+
 def get_jinja_env():
     """Restituisce un Jinja Environment con i filtri custom."""
     env = Environment()
@@ -881,7 +896,7 @@ def generate_client_summary_pdf(sponsor, event):
         bal_st = _stato_label(cd.get('balance_stato'))
         if cd['has_deposit']:
             doc.add_paragraph(
-                f"Acconto ({cd['deposit_percent']}%): € {cur(cd['deposit_amount'])} "
+                f"Acconto ({format_percent_filter(cd['deposit_percent'])}%): € {cur(cd['deposit_amount'])} "
                 f"entro il {dt(cd['deposit_due_date'])}{dep_st}  -  "
                 f"Saldo: € {cur(cd['balance_amount'])} entro il {dt(cd['balance_due_date'])}{bal_st}"
             )
