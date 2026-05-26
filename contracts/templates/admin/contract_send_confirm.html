@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Trasforma in contratto e invia</h1>
+
+<p>
+  Contratto <strong>{{ contract.contract_number }}</strong> &middot;
+  Sponsor <strong>{{ contract.sponsor.legal_name }}</strong> &middot;
+  Stato attuale <strong>{{ contract.get_status_display }}</strong>
+</p>
+
+{% if contract.status != "draft" %}
+<p style="color:#ba2121;">
+  <strong>Attenzione:</strong> questo contratto non e' in stato Bozza
+  (e' "{{ contract.get_status_display }}"). L'azione "Trasforma in contratto"
+  funziona solo su contratti in Bozza.
+</p>
+<a href="../" class="button">Torna indietro</a>
+{% else %}
+<div class="module" style="padding:10px 12px; margin-bottom:14px;
+     background:#fff8e5; border:1px solid #e6c200;">
+  Procedendo, il contratto passera' a <strong>INVIATO</strong>, verra' generato
+  il PDF del contratto e lo spazio espositivo verra' prenotato. Poi il PDF
+  verra' inviato via email ai destinatari selezionati.
+</div>
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <h2>Destinatari</h2>
+    {% if contacts %}
+    <p>Seleziona a chi inviare il contratto:</p>
+    {% for c in contacts %}
+      <div style="margin:6px 0;">
+        <label>
+          <input type="checkbox" name="recipients" value="{{ c.email }}"
+                 {% if c.preselected %}checked{% endif %}>
+          <strong>{{ c.full_name }}</strong>
+          &lt;{{ c.email }}&gt;
+          {% if c.role_labels %}<em>({{ c.role_labels }})</em>{% endif %}
+          {% if c.is_signer %}&mdash; firmatario{% endif %}
+        </label>
+      </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:#ba2121;">Questo sponsor non ha contatti con email.</p>
+    {% endif %}
+  </fieldset>
+
+  <fieldset class="module aligned">
+    <h2>Altri indirizzi (facoltativo)</h2>
+    <p>Email aggiuntive separate da virgola o spazio:</p>
+    <input type="text" name="extra_emails" size="60" style="width:100%; max-width:600px;">
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" value="Trasforma in contratto e invia" class="default">
+    <a href="../" class="button cancel-link">Annulla</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

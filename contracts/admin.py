@@ -17,6 +17,10 @@ from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
+from django.conf import settings
+from django.urls import path
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import HttpResponseRedirect
 
 from .models import (
     Contract, ContractKind, ContractLine, ContractStatus,
@@ -141,8 +145,10 @@ class ContractAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
         ('Preventivo', {
-            'fields': ('quote_intro_text',),
-            'description': "Testo della lettera di preventivo da inviare al cliente.",
+            'fields': ('letter_template', 'quote_intro_text',),
+            'description': "Scegli un template lettera: la lettera di preventivo "
+                           "verra' generata al volo compilando i segnaposti coi dati "
+                           "di questo contratto. (quote_intro_text e' un testo libero opzionale.)",
         }),
         ('Note interne', {
             'fields': ('internal_notes',),
@@ -154,7 +160,8 @@ class ContractAdmin(admin.ModelAdmin):
         }),
     )
 
-    actions = ['action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
+    actions = ['action_send_quote', 'action_convert_to_contract',
+               'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):
@@ -221,6 +228,289 @@ class ContractAdmin(admin.ModelAdmin):
     @admin.display(description='Data', ordering='created_at')
     def created_at_short(self, obj):
         return obj.created_at.strftime('%d/%m/%Y')
+
+    # ---- PREVENTIVO: URL custom per la pagina di conferma destinatari ----
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                '<path:object_id>/invia-preventivo/',
+                self.admin_site.admin_view(self.send_quote_view),
+                name='contracts_contract_send_quote',
+            ),
+            path(
+                '<path:object_id>/invia-contratto/',
+                self.admin_site.admin_view(self.send_contract_view),
+                name='contracts_contract_send_contract',
+            ),
+        ]
+        return custom + urls
+
+    def _contact_rows(self, contract):
+        """Costruisce le righe contatto per la pagina di conferma."""
+        from sponsors.models import ContactRole
+        role_map = dict(ContactRole.choices)
+        rows = []
+        contacts = contract.sponsor.contacts.filter(deleted_at__isnull=True)
+        signer = contract.sponsor_signer_contact
+        for c in contacts:
+            if not c.email:
+                continue
+            labels = ", ".join(role_map.get(r, r) for r in (c.roles or []))
+            preselected = bool(
+                (signer and c.id == signer.id) or c.is_signer
+            )
+            rows.append({
+                'full_name': c.full_name,
+                'email': c.email,
+                'role_labels': labels,
+                'is_signer': c.is_signer,
+                'preselected': preselected,
+            })
+        return rows
+
+    def send_quote_view(self, request, object_id):
+        """Pagina di conferma: scelta destinatari, poi genera PDF e invia."""
+        from .models import Contract
+        from .services.pdf_generator import generate_quote_pdf
+        from .services.email_sender import send_email
+        from django.core.files.storage import default_storage
+
+        contract = get_object_or_404(Contract, pk=object_id)
+        contacts = self._contact_rows(contract)
+
+        if request.method == 'POST':
+            if not contract.letter_template:
+                self.message_user(
+                    request,
+                    "Nessun template lettera selezionato sul contratto.",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            # raccogli destinatari: checkbox + email extra
+            recipients = list(request.POST.getlist('recipients'))
+            extra = (request.POST.get('extra_emails') or '').replace(',', ' ')
+            recipients += [e.strip() for e in extra.split() if e.strip()]
+            # dedup mantenendo l'ordine
+            seen = set()
+            recipients = [r for r in recipients if not (r in seen or seen.add(r))]
+
+            if not recipients:
+                self.message_user(
+                    request,
+                    "Seleziona almeno un destinatario.",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect(request.path)
+
+            # 1) genera il PDF del preventivo
+            try:
+                document = generate_quote_pdf(contract)
+            except Exception as e:
+                self.message_user(
+                    request, f"Errore nella generazione del PDF: {e}",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            # 2) leggi i bytes del PDF dal storage
+            try:
+                rel = document.storage_url.replace(settings.MEDIA_URL, '', 1)
+                pdf_bytes = default_storage.open(rel).read()
+            except Exception as e:
+                self.message_user(
+                    request, f"PDF generato ma non leggibile per l'allegato: {e}",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            # 3) invia email con allegato (in dev -> console)
+            event = contract.event
+            event_name = event.get_name(contract.language) if hasattr(event, 'get_name') else str(event)
+            try:
+                send_email(
+                    template_name='quote_email',
+                    context={'contract': contract, 'event': event,
+                             'event_name': event_name},
+                    to=recipients,
+                    subject=f"Preventivo {contract.contract_number} - {event_name}",
+                    language=contract.language or 'it',
+                    attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
+                    related_to=contract,
+                    communication_type='quote',
+                    triggered_by_user=getattr(request, 'user', None),
+                )
+            except Exception as e:
+                self.message_user(
+                    request, f"PDF generato ma invio email fallito: {e}",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            self.message_user(
+                request,
+                f"Preventivo inviato a: {', '.join(recipients)} (PDF allegato).",
+                level=messages.SUCCESS,
+            )
+            return HttpResponseRedirect('../')
+
+        # GET: mostra la pagina di conferma
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Genera e invia preventivo',
+            'contract': contract,
+            'contacts': contacts,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/quote_send_confirm.html', context)
+
+    def send_contract_view(self, request, object_id):
+        """Trasforma in contratto (mark_as_sent) e invia il PDF ai destinatari scelti."""
+        from .models import Contract, ContractStatus
+        from .services.email_sender import send_email
+        from shared.models import Document
+        from django.contrib.contenttypes.models import ContentType
+        from django.core.files.storage import default_storage
+
+        contract = get_object_or_404(Contract, pk=object_id)
+        contacts = self._contact_rows(contract)
+
+        if request.method == 'POST':
+            if contract.status != ContractStatus.DRAFT:
+                self.message_user(
+                    request,
+                    f"Il contratto non e' in Bozza (e' '{contract.get_status_display()}').",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            recipients = list(request.POST.getlist('recipients'))
+            extra = (request.POST.get('extra_emails') or '').replace(',', ' ')
+            recipients += [e.strip() for e in extra.split() if e.strip()]
+            seen = set()
+            recipients = [r for r in recipients if not (r in seen or seen.add(r))]
+
+            if not recipients:
+                self.message_user(
+                    request, "Seleziona almeno un destinatario.",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect(request.path)
+
+            # 1) transizione: genera PDF contratto + prenota stand + stato SENT
+            try:
+                contract.mark_as_sent()
+            except Exception as e:
+                self.message_user(
+                    request, f"Errore nella trasformazione in contratto: {e}",
+                    level=messages.ERROR,
+                )
+                return HttpResponseRedirect('../')
+
+            # 2) recupera il PDF contratto appena generato (Document 'contract_pdf'
+            #    piu' recente legato a questo contract)
+            ct = ContentType.objects.get_for_model(Contract)
+            document = (
+                Document.objects.filter(
+                    content_type=ct, object_id=contract.id,
+                    document_type='contract_pdf',
+                )
+                .order_by('-created_at')
+                .first()
+            )
+            if not document:
+                self.message_user(
+                    request,
+                    "Contratto trasformato (stato INVIATO), ma il PDF non e' stato "
+                    "trovato per l'invio email. Verifica i documenti del contratto.",
+                    level=messages.WARNING,
+                )
+                return HttpResponseRedirect('../')
+
+            # 3) leggi i bytes del PDF
+            try:
+                rel = document.storage_url.replace(settings.MEDIA_URL, '', 1)
+                pdf_bytes = default_storage.open(rel).read()
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Contratto trasformato, ma PDF non leggibile per l'allegato: {e}",
+                    level=messages.WARNING,
+                )
+                return HttpResponseRedirect('../')
+
+            # 4) invia email col PDF contratto allegato
+            event = contract.event
+            event_name = event.get_name(contract.language) if hasattr(event, 'get_name') else str(event)
+            try:
+                send_email(
+                    template_name='contract_email',
+                    context={'contract': contract, 'event': event,
+                             'event_name': event_name},
+                    to=recipients,
+                    subject=f"Contratto {contract.contract_number} - {event_name}",
+                    language=contract.language or 'it',
+                    attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
+                    related_to=contract,
+                    communication_type='contract',
+                    triggered_by_user=getattr(request, 'user', None),
+                )
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Contratto trasformato e PDF generato, ma invio email fallito: {e}",
+                    level=messages.WARNING,
+                )
+                return HttpResponseRedirect('../')
+
+            self.message_user(
+                request,
+                f"Contratto {contract.contract_number} creato e inviato a: "
+                f"{', '.join(recipients)} (PDF allegato).",
+                level=messages.SUCCESS,
+            )
+            return HttpResponseRedirect('../')
+
+        # GET: pagina di conferma
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Trasforma in contratto e invia',
+            'contract': contract,
+            'contacts': contacts,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/contract_send_confirm.html', context)
+
+    # ---- AZIONI (bottoni nella lista contratti) ----
+
+    @admin.action(description='Genera e invia PREVENTIVO (scegli destinatari)')
+    def action_send_quote(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Seleziona esattamente UN contratto per inviare il preventivo.",
+                level=messages.WARNING,
+            )
+            return
+        contract = queryset.first()
+        return HttpResponseRedirect(
+            reverse('admin:contracts_contract_send_quote', args=[contract.pk])
+        )
+
+    @admin.action(description='Trasforma PREVENTIVO in contratto (scegli destinatari)')
+    def action_convert_to_contract(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(
+                request,
+                "Seleziona esattamente UN contratto da trasformare.",
+                level=messages.WARNING,
+            )
+            return
+        contract = queryset.first()
+        return HttpResponseRedirect(
+            reverse('admin:contracts_contract_send_contract', args=[contract.pk])
+        )
 
     # Actions
 

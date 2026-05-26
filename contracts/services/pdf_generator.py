@@ -268,7 +268,16 @@ def _get_event_type(event):
 # ============================================================================
 
 def _get_signer_contact(contract):
-    """Trova il Contact con is_signer=True per lo sponsor del contratto."""
+    """
+    Trova il firmatario da usare per il contratto, in ordine di priorita':
+      1) il "Firmatario" scelto sul contratto (contract.sponsor_signer_contact),
+         se valorizzato e non cancellato;
+      2) FALLBACK: il primo Contact dello sponsor con is_signer=True
+         (comportamento storico, mantenuto invariato).
+    """
+    chosen = getattr(contract, 'sponsor_signer_contact', None)
+    if chosen is not None and getattr(chosen, 'deleted_at', None) is None:
+        return chosen
     return contract.sponsor.contacts.filter(
         is_signer=True,
         deleted_at__isnull=True,
@@ -397,7 +406,7 @@ def _convert_docx_to_pdf(docx_path):
 # Helper: crea record Document
 # ============================================================================
 
-def _create_document_record(contract, full_path, relative_path, file_name, mime):
+def _create_document_record(contract, full_path, relative_path, file_name, mime, document_type='contract_pdf'):
     """Crea il record Document collegato al contract."""
     from shared.models import Document
     
@@ -411,7 +420,7 @@ def _create_document_record(contract, full_path, relative_path, file_name, mime)
         file_size_bytes=full_path.stat().st_size,
         mime_type=mime,
         storage_url=settings.MEDIA_URL + relative_path,
-        document_type='contract',
+        document_type=document_type,
     )
     return document
 
@@ -564,3 +573,192 @@ def _add_header_footer_to_docx(docx_path, contract):
 
     if changed:
         d.save(str(docx_path))
+
+
+# ============================================================================
+# PREVENTIVO: costruzione context segnaposti per il template lettera
+# ============================================================================
+
+def build_quote_context(contract):
+    """
+    Costruisce il dizionario dei segnaposti per il body_template di un
+    LetterTemplate, a partire dai dati del contratto.
+
+    Segnaposti prodotti (coerenti con shared.LetterTemplate):
+        azienda, evento, date_evento, luogo_evento,
+        numero, totale, stand, servizi
+
+    Tutti i valori sono stringhe gia' formattate (date dd/mm/yyyy,
+    totale come valuta italiana). Pronto per il render Jinja2.
+    """
+    sponsor = contract.sponsor
+    event = contract.event
+
+    # Nome evento (JSONField multilingua -> stringa nella lingua del contratto)
+    lang = getattr(contract, 'language', None) or 'it'
+    if hasattr(event, 'get_name'):
+        evento = event.get_name(lang)
+    else:
+        evento = str(event)
+
+    # Date evento (es. "10/06/2026 - 12/06/2026" oppure singola se coincidono)
+    start = getattr(event, 'start_date', None)
+    end = getattr(event, 'end_date', None)
+    if start and end and start != end:
+        date_evento = f"{format_date_filter(start)} - {format_date_filter(end)}"
+    elif start:
+        date_evento = format_date_filter(start)
+    else:
+        date_evento = ""
+
+    # Luogo evento
+    luogo_evento = getattr(event, 'location', "") or ""
+
+    # Stand assegnato (riusa l'helper esistente)
+    stand = _get_stand_size(contract) or ""
+
+    # Lista servizi (riusa l'helper esistente, separati da '; ')
+    servizi = _build_services_list_string(contract)
+
+    context = {
+        'azienda': sponsor.legal_name if sponsor else "",
+        'evento': evento,
+        'date_evento': date_evento,
+        'luogo_evento': luogo_evento,
+        'numero': contract.contract_number or "",
+        'totale': format_currency_filter(contract.total),
+        'stand': stand,
+        'servizi': servizi,
+    }
+    return context
+
+
+def render_quote_body(contract):
+    """
+    Renderizza il body_template del LetterTemplate associato al contratto,
+    compilando i segnaposti con build_quote_context().
+
+    Ritorna la stringa di testo della lettera, oppure '' se non c'e' template.
+    """
+    template = getattr(contract, 'letter_template', None)
+    if not template or not template.body_template:
+        return ""
+    env = get_jinja_env()
+    jinja_template = env.from_string(template.body_template)
+    return jinja_template.render(**build_quote_context(contract))
+
+
+# ============================================================================
+# PREVENTIVO: generazione lettera PDF AL VOLO (mattone 5)
+# ============================================================================
+
+def generate_quote_pdf(contract):
+    """
+    Genera la lettera di preventivo in PDF, costruendo il .docx al volo con
+    python-docx (nessun template .docx dedicato).
+
+    Struttura della lettera:
+        - header di pagina = immagine evento (via _add_header_footer_to_docx)
+        - data e luogo (allineati a destra)
+        - corpo = testo del LetterTemplate con segnaposti compilati
+                  (render_quote_body), un paragrafo per riga
+        - footer = dati organizzatore (via _add_header_footer_to_docx)
+
+    Args:
+        contract: istanza Contract con letter_template valorizzato.
+
+    Returns:
+        Document creato (instance) per il PDF (o per il .docx se la
+        conversione PDF fallisce).
+
+    Raises:
+        ValueError se manca il LetterTemplate o il corpo risulta vuoto.
+    """
+    from datetime import date as _date
+    from docx import Document as _DocxDocument
+    from docx.shared import Pt, Mm
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    # ----- 1. Validazione: serve un template con corpo -----
+    template = getattr(contract, 'letter_template', None)
+    if not template:
+        raise ValueError(
+            f"Contract {contract.contract_number}: nessun template lettera "
+            "selezionato. Scegli un 'Template lettera preventivo' sul contratto."
+        )
+
+    body = render_quote_body(contract)
+    if not body.strip():
+        raise ValueError(
+            f"Contract {contract.contract_number}: il template '{template.name}' "
+            "ha prodotto un corpo vuoto. Controlla il body_template."
+        )
+
+    # ----- 2. Costruzione del .docx al volo -----
+    doc = _DocxDocument()
+
+    # Margini ragionevoli (lascia spazio a header immagine e footer)
+    for section in doc.sections:
+        section.top_margin = Mm(38)
+        section.bottom_margin = Mm(32)
+        section.left_margin = Mm(22)
+        section.right_margin = Mm(22)
+
+    # Riga data e luogo (in alto a destra)
+    luogo_firma = getattr(settings, 'SIGNATURE_PLACE', 'Bologna')
+    event_location = getattr(contract.event, 'location', '') or luogo_firma
+    luogo_data = f"{event_location.split(',')[0].strip()}, {format_date_filter(_date.today())}"
+    p_data = doc.add_paragraph(luogo_data)
+    p_data.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    for r in p_data.runs:
+        r.font.size = Pt(10)
+
+    doc.add_paragraph("")  # spazio
+
+    # Corpo: un paragrafo per ogni riga del testo renderizzato
+    for line in body.split("\n"):
+        para = doc.add_paragraph(line)
+        para.paragraph_format.space_after = Pt(6)
+        para.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+        for r in para.runs:
+            r.font.size = Pt(11)
+
+    # ----- 3. Salva il .docx intermedio -----
+    docx_filename = f"preventivo_{contract.contract_number}_{contract.event.id}.docx"
+    relative_docx_path = f"documents/quotes/{contract.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(full_docx_path))
+
+    # ----- 4. Header evento + footer organizzatore (riuso helper esistente) -----
+    try:
+        _add_header_footer_to_docx(full_docx_path, contract)
+    except Exception as e:
+        logger.warning("Header/footer preventivo non applicati per %s: %s",
+                       contract.contract_number, e)
+
+    logger.info("Generato .docx preventivo: %s", full_docx_path)
+
+    # ----- 5. Conversione in PDF -----
+    pdf_path = _convert_docx_to_pdf(full_docx_path)
+    if not pdf_path:
+        logger.warning("Conversione PDF preventivo fallita per %s, tengo .docx",
+                       contract.contract_number)
+        return _create_document_record(
+            contract, full_docx_path, relative_docx_path,
+            file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='quote',
+        )
+
+    # ----- 6. Record Document per il PDF -----
+    pdf_filename = pdf_path.name
+    relative_pdf_path = relative_docx_path.replace('.docx', '.pdf')
+    document = _create_document_record(
+        contract, pdf_path, relative_pdf_path,
+        file_name=pdf_filename, mime='application/pdf',
+        document_type='quote',
+    )
+    logger.info("Contract %s: PDF preventivo generato (Document id=%s)",
+                contract.contract_number, document.id)
+    return document

@@ -219,6 +219,17 @@ class Contract(SoftDeleteModel):
                   "Lasciare vuoto se non serve. Il sistema aggiunge intestazione e riepilogo dati.",
     )
 
+    letter_template = models.ForeignKey(
+        'shared.LetterTemplate',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='contracts',
+        verbose_name="Template lettera preventivo",
+        help_text="Template usato per generare la lettera di preventivo (al volo). "
+                  "I segnaposti vengono compilati con i dati di questo contratto.",
+    )
+
     # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
     requires_aifa = models.BooleanField(
         default=False,

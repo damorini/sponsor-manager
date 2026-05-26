@@ -19,6 +19,7 @@ from core.models import SoftDeleteModel, TimeStampedModel
 
 class DocumentType(models.TextChoices):
     CONTRACT_PDF = 'contract_pdf', 'Contratto PDF'
+    QUOTE = 'quote', 'Preventivo'
     SIGNED_CONTRACT = 'signed_contract', 'Contratto firmato'
     INVOICE = 'invoice', 'Fattura'
     LOGO = 'logo', 'Logo'

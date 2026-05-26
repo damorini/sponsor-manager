@@ -1,0 +1,55 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h1>Genera e invia preventivo</h1>
+
+<p>
+  Contratto <strong>{{ contract.contract_number }}</strong> &middot;
+  Sponsor <strong>{{ contract.sponsor.legal_name }}</strong>
+</p>
+
+{% if not contract.letter_template %}
+<p style="color:#ba2121;">
+  <strong>Attenzione:</strong> nessun "Template lettera preventivo" selezionato
+  su questo contratto. Selezionane uno e salva prima di inviare.
+</p>
+{% else %}
+<p>Template lettera: <strong>{{ contract.letter_template.name }}</strong>.
+   Verra' generato un PDF e allegato all'email.</p>
+
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <h2>Destinatari</h2>
+    {% if contacts %}
+    <p>Seleziona a chi inviare il preventivo:</p>
+    {% for c in contacts %}
+      <div style="margin:6px 0;">
+        <label>
+          <input type="checkbox" name="recipients" value="{{ c.email }}"
+                 {% if c.preselected %}checked{% endif %}>
+          <strong>{{ c.full_name }}</strong>
+          &lt;{{ c.email }}&gt;
+          {% if c.role_labels %}<em>({{ c.role_labels }})</em>{% endif %}
+          {% if c.is_signer %}&mdash; firmatario{% endif %}
+        </label>
+      </div>
+    {% endfor %}
+    {% else %}
+    <p style="color:#ba2121;">Questo sponsor non ha contatti con email. Aggiungine
+       almeno uno prima di inviare il preventivo.</p>
+    {% endif %}
+  </fieldset>
+
+  <fieldset class="module aligned">
+    <h2>Altri indirizzi (facoltativo)</h2>
+    <p>Email aggiuntive separate da virgola o spazio:</p>
+    <input type="text" name="extra_emails" size="60" style="width:100%; max-width:600px;">
+  </fieldset>
+
+  <div class="submit-row">
+    <input type="submit" value="Genera PDF e invia" class="default">
+    <a href="../" class="button cancel-link">Annulla</a>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
