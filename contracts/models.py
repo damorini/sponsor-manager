@@ -463,6 +463,7 @@ class Contract(SoftDeleteModel):
         super().save(*args, **kwargs)
         self._sync_option_venue(kwargs.get('update_fields'))
         self._sync_option_deadline(kwargs.get('update_fields'))
+        self._sync_stand_line(kwargs.get('update_fields'))
 
     def _sync_option_venue(self, update_fields=None):
         """
@@ -551,6 +552,57 @@ class Contract(SoftDeleteModel):
             import logging
             logging.getLogger(__name__).exception(
                 "Errore sincronizzazione Deadline opzione, contract %s",
+                getattr(self, 'contract_number', '?'),
+            )
+
+    def _sync_stand_line(self, update_fields=None):
+        """
+        Sincronizza la ContractLine 'stand' col stand/blocco del contratto.
+          - crea/aggiorna se c'e' stand/blocco e la riga non esiste (o e' di
+            uno stand/blocco diverso);
+          - elimina se non c'e' piu' ne' stand ne' blocco.
+        Idempotente sul marker (notes='stand:CODE' / 'block:CODE').
+        """
+        # salta i save mirati ai soli totali (evita loop)
+        if update_fields is not None:
+            campi = set(update_fields)
+            rilevanti = {'stand', 'stand_block', 'event'}
+            if not (campi & rilevanti):
+                return
+
+        if not self.pk:
+            return
+
+        try:
+            from contracts.services.stand_line import (
+                _stand_price_and_label, genera_riga_da_stand,
+            )
+
+            # determino il marker atteso (se c'e' stand/blocco)
+            marker_atteso = None
+            if self.stand_id or self.stand_block_id:
+                try:
+                    _p, _l, marker_atteso = _stand_price_and_label(self)
+                except ValueError:
+                    marker_atteso = None
+
+            # rimuovo righe stand obsolete (di stand/blocchi NON piu' assegnati)
+            obsolete = self.lines.filter(
+                models.Q(notes__startswith='stand:') | models.Q(notes__startswith='block:')
+            )
+            if marker_atteso:
+                obsolete = obsolete.exclude(notes=marker_atteso)
+            for r in obsolete:
+                r.delete()  # delete -> ContractLine.delete() ricalcola i totali
+
+            # se ho stand/blocco, crea la riga se non esiste (idempotente)
+            if marker_atteso:
+                genera_riga_da_stand(self)
+                # gli esiti: 'creata' (ok), 'gia_presente' (ok), 'no_prezzo' (lo logghiamo)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Errore sincronizzazione riga stand, contract %s",
                 getattr(self, 'contract_number', '?'),
             )
 

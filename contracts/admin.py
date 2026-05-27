@@ -180,7 +180,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
 
     actions = ['action_send_quote', 'action_convert_to_contract',
-               'action_generate_stand_line', 'action_generate_client_summary',
+               'action_generate_client_summary',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
