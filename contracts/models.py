@@ -953,7 +953,10 @@ class ContractLine(TimeStampedModel):
     unit_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
+        null=True,  # eredita da service.base_price se vuoto (vedi save)
+        blank=True,
         verbose_name="Prezzo unitario",
+        help_text="Lascia vuoto per usare il prezzo standard del servizio.",
     )
 
     # Sconti
