@@ -15,6 +15,14 @@
   and is overdue by {{ days_overdue }} days.
 </div>
 
+{% if is_pagamento and importo_scadenza %}
+<div class="alert-warning">
+  <strong>Amount due:</strong>
+  € {{ importo_scadenza|floatformat:2 }} (VAT included)
+</div>
+{% endif %}
+
+
 <p>The event <strong>{{ event_name }}</strong> will take place on
   <strong>{{ event.start_date|date:"Y-m-d" }}</strong> and meeting deadlines
   is essential for proper operational management.

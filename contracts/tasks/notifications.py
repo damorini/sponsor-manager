@@ -237,6 +237,23 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
         else ['marketing', 'operational']
     )
     recipients = get_recipients_for_contract(contract, roles=notify_roles)
+
+    # Scadenze di pagamento: il promemoria va al CLIENTE + STAFF interno (role='admin').
+    _is_pagamento = (deadline.deadline_type or '').startswith('pagamento')
+    if _is_pagamento:
+        # cliente: assicura almeno il contatto primario
+        if not recipients:
+            recipients = get_recipients_for_contract(contract, roles=None)
+        try:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            staff = list(User.objects.filter(role='admin', is_active=True).exclude(email=''))
+            for u in staff:
+                if u.email and u.email not in recipients:
+                    recipients.append(u.email)
+        except Exception:
+            logger.exception("Impossibile aggiungere staff ai destinatari del reminder pagamento")
+
     if not recipients:
         logger.warning("Nessun destinatario per deadline %s", deadline_id)
         return
@@ -265,6 +282,19 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
         'days_remaining': days_remaining,
         'days_overdue': days_overdue,
     }
+
+    # Importo della scadenza di pagamento (acconto o saldo, IVA inclusa)
+    if _is_pagamento:
+        _imp = None
+        try:
+            if deadline.deadline_type == 'pagamento_acconto':
+                _imp = contract.deposit_amount
+            elif deadline.deadline_type == 'pagamento_saldo':
+                _imp = contract.balance_amount
+        except Exception:
+            _imp = None
+        context['is_pagamento'] = True
+        context['importo_scadenza'] = _imp
 
     # Scegli template e subject in base al tipo
     if reminder_type == 'overdue':

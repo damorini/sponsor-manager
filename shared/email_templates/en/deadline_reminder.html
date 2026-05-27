@@ -15,6 +15,14 @@
   ({{ days_remaining }} days from now).
 </p>
 
+{% if is_pagamento and importo_scadenza %}
+<div class="alert-warning">
+  <strong>Amount due:</strong>
+  € {{ importo_scadenza|floatformat:2 }} (VAT included)
+</div>
+{% endif %}
+
+
 {% if deadline.description %}
 <div class="alert-warning">
   <strong>What is required:</strong><br>
