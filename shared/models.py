@@ -530,3 +530,24 @@ class LetterTemplate(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+    def clean(self):
+        """Verifica che le parentesi graffe dei segnaposti siano bilanciate."""
+        from django.core.exceptions import ValidationError
+
+        body = self.body_template or ""
+        n_open = body.count('{{')
+        n_close = body.count('}}')
+        if n_open != n_close:
+            raise ValidationError({'body_template': (
+                f"Segnaposti malformati: ho contato {n_open} aperture '{{{{' e "
+                f"{n_close} chiusure '}}}}'. Ogni segnaposto deve avere la forma "
+                f"{{{{ nome }}}} con doppie graffe bilanciate.")})
+
+        # Controllo graffe singole spaiate: tolgo le doppie corrette e vedo se
+        # restano graffe singole orfane.
+        ripulito = body.replace('{{', '').replace('}}', '')
+        if '{' in ripulito or '}' in ripulito:
+            raise ValidationError({'body_template': (
+                "Trovata una parentesi graffa singola spaiata. I segnaposti vanno "
+                "scritti con doppie graffe, es. {{ azienda }}.")})
