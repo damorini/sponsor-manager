@@ -78,7 +78,8 @@ def evento_dettaglio(request, pk):
         for c in qs.select_related('stand_block'):
             n_contratti += 1
             n_stand += _num_stand(c)
-            n_servizi += c.lines.exclude(notes__startswith='stand:').exclude(
+            n_servizi += c.lines.filter(service__event=ev).exclude(
+                notes__startswith='stand:').exclude(
                 notes__startswith='block:').count()
             totale += (c.total or Decimal('0.00'))
         return {'n_contratti': n_contratti, 'n_stand': n_stand,

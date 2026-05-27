@@ -959,6 +959,22 @@ class ContractLine(TimeStampedModel):
             raise ValidationError({'quantity': "La quantità deve essere almeno 1."})
         if self.discount_percent < 0 or self.discount_percent > 100:
             raise ValidationError({'discount_percent': "Lo sconto % deve essere 0-100."})
+        # Coerenza evento: il servizio deve appartenere all'evento del contratto
+        if (self.service_id and self.contract_id
+                and self.service.event_id != self.contract.event_id):
+            try:
+                _ev_serv = self.service.event.get_name()
+            except Exception:
+                _ev_serv = '?'
+            try:
+                _ev_contr = self.contract.event.get_name()
+            except Exception:
+                _ev_contr = '?'
+            raise ValidationError({'service': (
+                f"Il servizio '{self.service.code}' appartiene all'evento "
+                f"'{_ev_serv}', ma questo contratto e' per l'evento '{_ev_contr}'. "
+                f"Nella tendina del servizio digita il nome dell'evento "
+                f"'{_ev_contr}' per vedere solo i suoi servizi.")})
 
     def calculate_totals(self):
         """Calcola line_subtotal, line_vat, line_total dai dati base."""
