@@ -5,6 +5,8 @@ StandBlock raggruppa stand venduti come unico spazio.
 Stand sono le postazioni espositive fisiche.
 """
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 
 from core.models import TimeStampedModel
 from events.models import Event
@@ -123,9 +125,16 @@ class StandBlock(TimeStampedModel):
         if active_contract:
             new_status = StandStatus.ASSIGNED
         else:
+            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
+            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
+            _oggi = timezone.now().date()
             reserved_contract = self.contracts.filter(
-                status=ContractStatus.SENT,
                 deleted_at__isnull=True,
+            ).filter(
+                Q(status=ContractStatus.SENT)
+                | Q(status=ContractStatus.DRAFT,
+                    option_until__isnull=False,
+                    option_until__gte=_oggi)
             ).first()
             new_status = StandStatus.RESERVED if reserved_contract else StandStatus.AVAILABLE
 
@@ -287,9 +296,16 @@ class Stand(TimeStampedModel):
         if active_contract:
             self.status = StandStatus.ASSIGNED
         else:
+            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
+            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
+            _oggi = timezone.now().date()
             reserved = self.contracts.filter(
-                status=ContractStatus.SENT,
                 deleted_at__isnull=True,
+            ).filter(
+                Q(status=ContractStatus.SENT)
+                | Q(status=ContractStatus.DRAFT,
+                    option_until__isnull=False,
+                    option_until__gte=_oggi)
             ).first()
             self.status = StandStatus.RESERVED if reserved else StandStatus.AVAILABLE
 
