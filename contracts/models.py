@@ -602,6 +602,9 @@ class Contract(SoftDeleteModel):
         # Genera scadenze concrete dai template
         self._generate_deadlines()
 
+        # Genera le scadenze di pagamento (acconto/saldo) per i reminder automatici
+        self._generate_payment_deadlines()
+
         # Notifica email di conferma (sincrona in dev con EAGER=True).
         try:
             from contracts.tasks.notifications import send_contract_signed_notification
@@ -727,6 +730,48 @@ class Contract(SoftDeleteModel):
                     description=template.description,
                     due_date=due_date,
                 )
+
+    def _generate_payment_deadlines(self):
+        """
+        Crea le scadenze di PAGAMENTO (acconto/saldo) per abilitare i reminder
+        automatici. Idempotente: non duplica scadenze gia' presenti.
+        Le date vengono dalle property deposit_due_date / balance_due_date.
+        Si collega al DeadlineTemplate deadline_type='pagamento' se esiste
+        (porta reminder_days_before e notify_roles).
+        """
+        from contracts.models import Deadline
+
+        # template pagamento (opzionale): se c'e', le sue regole (7/3 gg, ruoli) valgono
+        pay_template = None
+        try:
+            from catalog.models import DeadlineTemplate
+            pay_template = DeadlineTemplate.objects.filter(
+                deadline_type='pagamento', is_active=True
+            ).first()
+        except Exception:
+            pay_template = None
+
+        def _crea(deadline_type, title, due_date):
+            if not due_date:
+                return
+            # idempotenza: non ricreare la stessa scadenza di pagamento
+            if self.deadlines.filter(deadline_type=deadline_type, contract_line__isnull=True).exists():
+                return
+            Deadline.objects.create(
+                contract=self,
+                contract_line=None,
+                deadline_template=pay_template,
+                deadline_type=deadline_type,
+                title=title,
+                description="",
+                due_date=due_date,
+            )
+
+        # Acconto solo se previsto
+        if self.has_deposit:
+            _crea('pagamento_acconto', "Scadenza acconto", self.deposit_due_date)
+        # Saldo sempre (se c'e' una data calcolabile)
+        _crea('pagamento_saldo', "Scadenza saldo", self.balance_due_date)
 
 
 class ContractLine(TimeStampedModel):
