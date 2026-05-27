@@ -309,6 +309,28 @@ class Contract(SoftDeleteModel):
         most_common = Counter(rates).most_common(1)[0][0]
         return int(most_common)
 
+    def _contratti_che_tengono(self, **filtro_spazio):
+        """
+        Contratti (diversi da self, non annullati) che 'tengono' lo spazio indicato:
+        - stati SENT/SIGNED/ACTIVE/COMPLETED, OPPURE
+        - DRAFT con opzione attiva (option_until >= oggi).
+        I DRAFT senza opzione o con opzione scaduta NON tengono lo spazio.
+        """
+        from django.db.models import Q
+        from django.utils import timezone
+        oggi = timezone.now().date()
+        tengono = (
+            Q(status__in=[ContractStatus.SENT, ContractStatus.SIGNED,
+                          ContractStatus.ACTIVE, ContractStatus.COMPLETED])
+            | Q(status=ContractStatus.DRAFT, option_until__isnull=False,
+                option_until__gte=oggi)
+        )
+        return (Contract.objects
+                .filter(**filtro_spazio)
+                .exclude(status=ContractStatus.CANCELLED)
+                .exclude(pk=self.pk)
+                .filter(tengono))
+
     def clean(self):
         """Validazione: stand e stand_block sono mutuamente esclusivi."""
         super().clean()
@@ -337,25 +359,26 @@ class Contract(SoftDeleteModel):
                 "Il blocco selezionato non appartiene a questo evento."
             )
 
-        # Unicità stand: uno stand può stare in un solo contratto NON annullato.
+        # Unicità stand: bloccato se un ALTRO contratto 'tiene' lo spazio
+        # (SENT/firmato, oppure DRAFT con opzione attiva). Vedi _contratti_che_tengono.
         if self.stand:
-            altro = Contract.objects.filter(stand=self.stand).exclude(
-                status=ContractStatus.CANCELLED).exclude(pk=self.pk).first()
+            altro = self._contratti_che_tengono(stand=self.stand).first()
             if altro:
                 raise ValidationError({'stand': (
-                    f"Lo stand '{self.stand.code}' è già assegnato al contratto "
+                    f"Lo stand '{self.stand.code}' è già impegnato dal contratto "
                     f"{altro.contract_number or '(in creazione)'} "
-                    f"({altro.sponsor}, stato: {altro.get_status_display()}). "
-                    f"Annulla quel contratto o scegli un altro stand.")})
+                    f"({altro.sponsor}, stato: {altro.get_status_display()}"
+                    f"{', opzionato fino al ' + altro.option_until.strftime('%d/%m/%Y') if altro.option_until else ''}). "
+                    f"Annulla/libera quel contratto o scegli un altro stand.")})
         if self.stand_block:
-            altro = Contract.objects.filter(stand_block=self.stand_block).exclude(
-                status=ContractStatus.CANCELLED).exclude(pk=self.pk).first()
+            altro = self._contratti_che_tengono(stand_block=self.stand_block).first()
             if altro:
                 raise ValidationError({'stand_block': (
-                    f"Il blocco '{self.stand_block.code}' è già assegnato al contratto "
+                    f"Il blocco '{self.stand_block.code}' è già impegnato dal contratto "
                     f"{altro.contract_number or '(in creazione)'} "
-                    f"({altro.sponsor}, stato: {altro.get_status_display()}). "
-                    f"Annulla quel contratto o scegli un altro blocco.")})
+                    f"({altro.sponsor}, stato: {altro.get_status_display()}"
+                    f"{', opzionato fino al ' + altro.option_until.strftime('%d/%m/%Y') if altro.option_until else ''}). "
+                    f"Annulla/libera quel contratto o scegli un altro blocco.")})
 
         # Validazioni parent_contract
         if self.contract_kind == ContractKind.MAIN and self.parent_contract:
