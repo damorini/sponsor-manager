@@ -663,6 +663,13 @@ def build_quote_context(contract):
         _obj = contract.stand or contract.stand_block
         descrizione_stand = (getattr(_obj, 'quote_description', '') or '').strip() if _obj else ''
 
+    # Frase opzione spazio (solo se il contratto ha un'opzione impostata)
+    _opt = getattr(contract, 'option_until', None)
+    if _opt:
+        opzione_testo = f"Tale spazio risulta opzionato per Voi fino al {_opt.strftime('%d/%m/%Y')}."
+    else:
+        opzione_testo = ""
+
     # Lista servizi (riusa l'helper esistente, separati da '; ')
     servizi = _build_services_list_string(contract)
 
@@ -685,6 +692,7 @@ def build_quote_context(contract):
         'aliquota_iva': aliquota_iva,
         'stand': stand,
         'descrizione_stand': descrizione_stand,
+        'opzione_testo': opzione_testo,
         'servizi': servizi,
     }
     return context
