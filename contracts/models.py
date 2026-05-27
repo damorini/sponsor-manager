@@ -93,6 +93,15 @@ class Contract(SoftDeleteModel):
         verbose_name="Blocco stand",
     )
 
+    option_until = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name="Spazio opzionato fino al",
+        help_text="Se valorizzata e non scaduta, lo spazio (stand/blocco) risulta "
+                  "opzionato (riservato) per questo cliente anche in bozza, e non e proponibile "
+                  "ad altri. Alla scadenza lo spazio torna disponibile.",
+    )
+
     # Tipo di contratto: distingue main da addon ecommerce
     contract_kind = models.CharField(
         max_length=20,
