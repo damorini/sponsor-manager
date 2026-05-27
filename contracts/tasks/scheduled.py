@@ -55,11 +55,13 @@ def check_upcoming_deadlines():
 
         # Reminder days: dal template se presente; altrimenti default per tipo.
         # Le scadenze di pagamento (acconto/saldo) usano 7 e 3 giorni prima.
-        PAYMENT_REMINDER_DAYS = [7, 3]
+        # 7/3 giorni per scadenze di pagamento e di opzione spazio
+        SHORT_REMINDER_DAYS = [7, 3]
+        _dtype = (deadline.deadline_type or '')
         if deadline.deadline_template:
             reminder_days = deadline.deadline_template.reminder_days_before
-        elif (deadline.deadline_type or '').startswith('pagamento'):
-            reminder_days = PAYMENT_REMINDER_DAYS
+        elif _dtype.startswith('pagamento') or _dtype == 'scadenza_opzione':
+            reminder_days = SHORT_REMINDER_DAYS
         else:
             reminder_days = [10, 3, 0]
 
