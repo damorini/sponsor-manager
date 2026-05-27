@@ -454,6 +454,7 @@ class Contract(SoftDeleteModel):
             self.contract_number = self._generate_contract_number()
         super().save(*args, **kwargs)
         self._sync_option_venue(kwargs.get('update_fields'))
+        self._sync_option_deadline(kwargs.get('update_fields'))
 
     def _sync_option_venue(self, update_fields=None):
         """
@@ -483,6 +484,65 @@ class Contract(SoftDeleteModel):
             import logging
             logging.getLogger(__name__).exception(
                 "Errore aggiornamento stato spazio per opzione, contract %s",
+                getattr(self, 'contract_number', '?'),
+            )
+
+    def _sync_option_deadline(self, update_fields=None):
+        """
+        Sincronizza la Deadline 'scadenza_opzione' con option_until.
+        - crea/aggiorna se: DRAFT + option_until + spazio assegnato;
+        - elimina (se pending) se: opzione tolta o contratto non piu' DRAFT.
+        Idempotente. La Deadline opzione e' una sola per contratto.
+        """
+        from contracts.models import ContractStatus, Deadline, DeadlineStatus
+
+        # salta i save mirati ai soli totali / campi non rilevanti
+        if update_fields is not None:
+            campi = set(update_fields)
+            rilevanti = {'status', 'option_until', 'stand', 'stand_block'}
+            if not (campi & rilevanti):
+                return
+
+        if not self.pk:
+            return
+
+        try:
+            esistente = self.deadlines.filter(deadline_type='scadenza_opzione').first()
+
+            vuole_opzione = (
+                self.status == ContractStatus.DRAFT
+                and self.option_until is not None
+                and (self.stand_id or self.stand_block_id)
+            )
+
+            if vuole_opzione:
+                if esistente:
+                    # aggiorna la data se cambiata (e riporta a pending se serve)
+                    if esistente.due_date != self.option_until:
+                        esistente.due_date = self.option_until
+                        if esistente.status == DeadlineStatus.OVERDUE:
+                            esistente.status = DeadlineStatus.PENDING
+                        esistente.save(update_fields=['due_date', 'status', 'updated_at'])
+                else:
+                    Deadline.objects.create(
+                        contract=self,
+                        contract_line=None,
+                        deadline_template=None,
+                        deadline_type='scadenza_opzione',
+                        title="Scadenza opzione spazio",
+                        description="Promemoria scadenza dell'opzione sullo spazio espositivo.",
+                        due_date=self.option_until,
+                    )
+            else:
+                # opzione non piu' valida: elimina la Deadline opzione se ancora pending
+                if esistente and esistente.status in (
+                    DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT, DeadlineStatus.OVERDUE
+                ):
+                    esistente.delete()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Errore sincronizzazione Deadline opzione, contract %s",
                 getattr(self, 'contract_number', '?'),
             )
 
