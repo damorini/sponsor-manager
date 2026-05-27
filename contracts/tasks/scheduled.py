@@ -53,12 +53,15 @@ def check_upcoming_deadlines():
     for deadline in deadlines:
         days_remaining = (deadline.due_date - today).days
 
-        # Reminder days dal template (con default)
-        reminder_days = (
-            deadline.deadline_template.reminder_days_before
-            if deadline.deadline_template
-            else [10, 3, 0]
-        )
+        # Reminder days: dal template se presente; altrimenti default per tipo.
+        # Le scadenze di pagamento (acconto/saldo) usano 7 e 3 giorni prima.
+        PAYMENT_REMINDER_DAYS = [7, 3]
+        if deadline.deadline_template:
+            reminder_days = deadline.deadline_template.reminder_days_before
+        elif (deadline.deadline_type or '').startswith('pagamento'):
+            reminder_days = PAYMENT_REMINDER_DAYS
+        else:
+            reminder_days = [10, 3, 0]
 
         if days_remaining in reminder_days:
             # Evita doppio invio nello stesso giorno
