@@ -430,6 +430,38 @@ class Contract(SoftDeleteModel):
         if not self.contract_number:
             self.contract_number = self._generate_contract_number()
         super().save(*args, **kwargs)
+        self._sync_option_venue(kwargs.get('update_fields'))
+
+    def _sync_option_venue(self, update_fields=None):
+        """
+        Dopo il salvataggio di una BOZZA con opzione (option_until), aggiorna lo
+        stato dello stand/blocco cosi' risulta riservato gia' in bozza.
+        Guardie:
+        - salta i salvataggi parziali dei soli totali (recalculate_totals) per
+          evitare lavoro inutile e ricorsioni;
+        - agisce solo se c'e' uno stand/blocco e un'opzione impostata.
+        """
+        from contracts.models import ContractStatus
+        # salta i save mirati ai soli totali / campi non rilevanti
+        if update_fields is not None:
+            campi = set(update_fields)
+            rilevanti = {'status', 'option_until', 'stand', 'stand_block'}
+            if not (campi & rilevanti):
+                return
+        if self.status != ContractStatus.DRAFT:
+            return
+        if not self.option_until:
+            return
+        if not (self.stand_id or self.stand_block_id):
+            return
+        try:
+            self._update_venue_status()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Errore aggiornamento stato spazio per opzione, contract %s",
+                getattr(self, 'contract_number', '?'),
+            )
 
     def recalculate_totals(self, save=True):
         """
