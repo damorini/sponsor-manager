@@ -239,8 +239,10 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
     recipients = get_recipients_for_contract(contract, roles=notify_roles)
 
     # Scadenze di pagamento: il promemoria va al CLIENTE + STAFF interno (role='admin').
-    _is_pagamento = (deadline.deadline_type or '').startswith('pagamento')
-    if _is_pagamento:
+    _dtype = (deadline.deadline_type or '')
+    _is_pagamento = _dtype.startswith('pagamento')
+    _is_opzione = (_dtype == 'scadenza_opzione')
+    if _is_pagamento or _is_opzione:
         # cliente: assicura almeno il contatto primario
         if not recipients:
             recipients = get_recipients_for_contract(contract, roles=None)
@@ -304,6 +306,14 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
         else:
             subject = f"Sollecito · {deadline.title}"
         comm_type = 'overdue_alert'
+    elif _is_opzione:
+        template_name = 'option_reminder'
+        _dd = deadline.due_date.strftime('%d/%m/%Y')
+        if language == 'en':
+            subject = f"Your space option expires on {_dd}"
+        else:
+            subject = f"La vostra opzione sullo spazio scade il {_dd}"
+        comm_type = 'reminder'
     else:
         template_name = 'deadline_reminder'
         if language == 'en':

@@ -1,0 +1,28 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Space option reminder
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<p>this is a reminder that the <strong>option</strong> on the exhibition space
+  for contract <strong>{{ contract.contract_number }}</strong>
+  (event <strong>{{ event_name }}</strong>) expires on
+  <strong class="text-primary">{{ deadline.due_date|date:"Y-m-d" }}</strong>
+  ({{ days_remaining }} days from now).
+</p>
+
+<div class="alert-warning">
+  After this date the space will become available again and may be offered to
+  other exhibitors. Please confirm your decision before the deadline.
+</div>
+
+<p>We remain at your disposal to confirm or for any information.</p>
+
+<p style="margin-top:24px;">
+  Best regards,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

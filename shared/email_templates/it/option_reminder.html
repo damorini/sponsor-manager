@@ -1,0 +1,29 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
+  Promemoria opzione spazio
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>vi ricordiamo che l'<strong>opzione</strong> sullo spazio espositivo
+  relativa al contratto <strong>{{ contract.contract_number }}</strong>
+  per l'evento <strong>{{ event_name }}</strong>
+  scade il
+  <strong class="text-primary">{{ deadline.due_date|date:"d/m/Y" }}</strong>
+  (tra {{ days_remaining }} giorni).
+</p>
+
+<div class="alert-warning">
+  Trascorsa tale data, lo spazio tornera' disponibile e potra' essere proposto
+  ad altri espositori. Vi invitiamo a confermarci la vostra decisione entro la scadenza.
+</div>
+
+<p>Per confermare o per qualsiasi informazione, restiamo a vostra disposizione.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}
