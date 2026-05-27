@@ -254,3 +254,32 @@ def servizio_dettaglio(request, pk, service_pk):
         'n_prenotazioni': len(prenotazioni),
     }
     return render(request, 'cruscotto/servizio.html', context)
+
+
+@staff_member_required
+def utility_home(request):
+    """Pagina Utility: bottoni per scaricare template e altri strumenti."""
+    context = {
+        **admin_site.each_context(request),
+        'title': 'Cruscotto · Utility',
+    }
+    return render(request, 'cruscotto/utility.html', context)
+
+
+@staff_member_required
+def download_template_servizi(request):
+    """Genera al volo il template Excel servizi e lo serve come download."""
+    from io import BytesIO
+    from django.http import HttpResponse
+    from catalog.utils.excel_template import build_template_servizi_workbook
+
+    wb = build_template_servizi_workbook()
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    resp = HttpResponse(
+        buffer.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    resp['Content-Disposition'] = 'attachment; filename="template_servizi.xlsx"'
+    return resp

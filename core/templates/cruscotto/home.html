@@ -19,6 +19,14 @@
   <p style="color:#666; margin-top:0;">Eventi in programmazione (vendita aperta o in corso).
     {% if n_eventi == 0 %}Nessun evento attivo al momento.{% else %}{{ n_eventi }} evento/i.{% endif %}</p>
 
+  <p style="margin: 8px 0 16px 0;">
+    <a href="{% url 'core:cruscotto_utility' %}"
+       style="display:inline-block; padding:6px 12px; background:#666; color:#fff;
+              border-radius:4px; text-decoration:none; font-size:13px;">
+      🛠 Utility
+    </a>
+  </p>
+
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
     {% for c in cards %}
       <a href="{% url 'core:cruscotto_evento' c.id %}"

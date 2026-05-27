@@ -1,0 +1,67 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; Utility
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1 style="margin-bottom: 4px;">🛠 Utility</h1>
+  <p style="color:#666; margin-top:0;">Strumenti operativi: download di template, import di dati,
+    e altre utilita' per gestire il sistema.</p>
+
+  <h2 style="margin-top: 28px;">Import da Excel</h2>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 12px;">
+    <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:18px;
+                box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+      <h3 style="margin: 0 0 6px 0; color:#222;">Servizi</h3>
+      <p style="color:#555; font-size:14px; line-height:1.5; margin: 0 0 14px 0;">
+        Scarica il template Excel con tutte le colonne necessarie e un paio di righe di esempio.
+        Compila il file con i tuoi servizi, poi importali nel sistema col comando
+        <code style="background:#f5f5f5; padding:2px 6px; border-radius:3px; font-size:12px;">manage.py importa_servizi</code>.
+      </p>
+      <a href="{% url 'core:cruscotto_download_template_servizi' %}"
+         style="display:inline-block; padding:8px 14px; background:#417690; color:#fff;
+                border-radius:4px; text-decoration:none; font-size:14px;">
+        ⬇ Scarica template_servizi.xlsx
+      </a>
+    </div>
+
+    <div style="background:#fafafa; border:1px solid #eee; border-radius:8px; padding:18px;
+                opacity:.7;">
+      <h3 style="margin: 0 0 6px 0; color:#222;">Stand <span style="font-size:12px; color:#888;">(prossimamente)</span></h3>
+      <p style="color:#555; font-size:14px; line-height:1.5; margin: 0;">
+        Il template per importare gli stand in massa sara' disponibile nella prossima versione.
+      </p>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 32px;">Come si usa l'import</h2>
+  <ol style="color:#555; line-height:1.8;">
+    <li>Scarica il template col bottone qui sopra.</li>
+    <li>Apri il file con Excel o LibreOffice; cancella le righe di esempio e compila una riga per ogni servizio.</li>
+    <li>Salva il file (dove preferisci) e dal terminale lancia (PRIMA in modalita' prova):
+      <pre style="background:#f5f5f5; padding:8px; border-radius:4px; font-size:12px; overflow-x:auto;">python manage.py importa_servizi --file &lt;percorso_del_file.xlsx&gt; --dry-run</pre>
+    </li>
+    <li>Se l'output e' quello che ti aspetti, rilancia <strong>senza</strong> <code>--dry-run</code>.</li>
+    <li>I servizi con <code>code</code> gia' esistente per quell'evento verranno <strong>aggiornati</strong>;
+        quelli nuovi verranno <strong>creati</strong>.</li>
+  </ol>
+
+  <p style="margin-top:24px;">
+    <a href="{% url 'core:cruscotto_home' %}"
+       style="display:inline-block; padding:8px 14px; background:#666; color:#fff;
+              border-radius:4px; text-decoration:none;">← Torna al cruscotto</a>
+  </p>
+{% endblock %}
