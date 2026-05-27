@@ -21,7 +21,7 @@
 
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
     {% for c in cards %}
-      <a href="{% url 'admin:events_event_change' c.id %}"
+      <a href="{% url 'core:cruscotto_evento' c.id %}"
          style="display:block; text-decoration:none; color:inherit;
                 background:#fff; border:1px solid #ddd; border-radius:8px;
                 padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04);

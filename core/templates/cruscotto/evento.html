@@ -1,0 +1,92 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; {{ nome_evento }}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1 style="margin-bottom: 4px;">{{ nome_evento }}</h1>
+  <p style="color:#666; margin-top:0;">
+    Stato: <strong>{{ evento.get_status_display }}</strong>
+    {% if evento.start_date %} · 📅 {{ evento.start_date|date:"d/m/Y" }}{% if evento.end_date %} – {{ evento.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
+    {% if evento.location %} · 📍 {{ evento.location }}{% endif %}
+  </p>
+
+  <h2 style="margin-top:24px;">Stand</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
+    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Confermati</div>
+      <div style="font-size:28px; font-weight:700; color:#1b5e20; margin-top:4px;">{{ confermati.n_stand }}</div>
+      <div style="font-size:12px; color:#666;">{{ confermati.n_contratti }} contratto/i</div>
+    </div>
+    <div style="background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">Opzionati</div>
+      <div style="font-size:28px; font-weight:700; color:#bf360c; margin-top:4px;">{{ opzionati.n_stand }}</div>
+      <div style="font-size:12px; color:#666;">{{ opzionati.n_contratti }} contratto/i</div>
+    </div>
+    <div style="background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#1565c0; text-transform:uppercase; letter-spacing:.5px;">In trattativa</div>
+      <div style="font-size:28px; font-weight:700; color:#0d47a1; margin-top:4px;">{{ trattativa.n_stand }}</div>
+      <div style="font-size:12px; color:#666;">{{ trattativa.n_contratti }} contratto/i (preventivo inviato)</div>
+    </div>
+    <div style="background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Capacita' totale</div>
+      <div style="font-size:28px; font-weight:700; color:#333; margin-top:4px;">{{ n_stand_totali }}</div>
+      <div style="font-size:12px; color:#666;">stand nell'evento</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:32px;">Importi</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Confermato</div>
+      <div style="font-size:24px; font-weight:700; color:#1b5e20; margin-top:4px;">€ {{ confermati.totale|floatformat:2 }}</div>
+      <div style="font-size:12px; color:#666;">IVA inclusa</div>
+    </div>
+    <div style="background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">In opzione</div>
+      <div style="font-size:24px; font-weight:700; color:#bf360c; margin-top:4px;">€ {{ opzionati.totale|floatformat:2 }}</div>
+      <div style="font-size:12px; color:#666;">IVA inclusa</div>
+    </div>
+    <div style="background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#1565c0; text-transform:uppercase; letter-spacing:.5px;">In trattativa</div>
+      <div style="font-size:24px; font-weight:700; color:#0d47a1; margin-top:4px;">€ {{ trattativa.totale|floatformat:2 }}</div>
+      <div style="font-size:12px; color:#666;">IVA inclusa</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:32px;">Servizi prenotati</h2>
+  <p style="color:#666; margin-top:0;">
+    Righe servizio totali (escluso lo stand):
+    <strong>{{ confermati.n_servizi }}</strong> confermate,
+    <strong>{{ opzionati.n_servizi }}</strong> in opzione,
+    <strong>{{ trattativa.n_servizi }}</strong> in trattativa.
+  </p>
+  <p style="color:#888; font-size:13px;">
+    👉 Nel prossimo mattone: un riquadro per ogni servizio dell'evento con il numero di prenotazioni,
+    cliccabile per vedere chi ha prenotato.
+  </p>
+
+  <h2 style="margin-top:32px;">Scorciatoie</h2>
+  <p>
+    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}"
+       style="display:inline-block; padding:8px 14px; background:#417690; color:#fff; border-radius:4px; text-decoration:none; margin-right:8px;">
+      Vedi contratti
+    </a>
+    <a href="{% url 'admin:events_event_change' evento.id %}"
+       style="display:inline-block; padding:8px 14px; background:#666; color:#fff; border-radius:4px; text-decoration:none;">
+      Modifica evento
+    </a>
+  </p>
+{% endblock %}

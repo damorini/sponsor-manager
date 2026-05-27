@@ -7,4 +7,5 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.cruscotto_home, name='cruscotto_home'),
+    path('evento/<uuid:pk>/', views.evento_dettaglio, name='cruscotto_evento'),
 ]
