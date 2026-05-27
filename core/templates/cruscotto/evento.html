@@ -25,26 +25,50 @@
 
   <h2 style="margin-top:24px;">Stand</h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
+    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
+       title="Mostra i contratti firmati di questo evento"
+       style="display:block; text-decoration:none; color:inherit;
+              background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;
+              transition: box-shadow .15s, transform .15s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
       <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Confermati</div>
       <div style="font-size:28px; font-weight:700; color:#1b5e20; margin-top:4px;">{{ confermati.n_stand }}</div>
       <div style="font-size:12px; color:#666;">{{ confermati.n_contratti }} contratto/i</div>
-    </div>
-    <div style="background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;">
+    </a>
+    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
+       title="Mostra le bozze (incluse le opzioni attive) di questo evento"
+       style="display:block; text-decoration:none; color:inherit;
+              background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;
+              transition: box-shadow .15s, transform .15s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
       <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">Opzionati</div>
       <div style="font-size:28px; font-weight:700; color:#bf360c; margin-top:4px;">{{ opzionati.n_stand }}</div>
       <div style="font-size:12px; color:#666;">{{ opzionati.n_contratti }} contratto/i</div>
-    </div>
-    <div style="background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;">
+    </a>
+    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=sent"
+       title="Mostra i preventivi inviati di questo evento"
+       style="display:block; text-decoration:none; color:inherit;
+              background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;
+              transition: box-shadow .15s, transform .15s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
       <div style="font-size:12px; color:#1565c0; text-transform:uppercase; letter-spacing:.5px;">In trattativa</div>
       <div style="font-size:28px; font-weight:700; color:#0d47a1; margin-top:4px;">{{ trattativa.n_stand }}</div>
       <div style="font-size:12px; color:#666;">{{ trattativa.n_contratti }} contratto/i (preventivo inviato)</div>
-    </div>
-    <div style="background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px;">
+    </a>
+    <a href="{% url 'admin:venues_stand_changelist' %}?event__id__exact={{ evento.id }}"
+       title="Mostra tutti gli stand di questo evento"
+       style="display:block; text-decoration:none; color:inherit;
+              background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px;
+              transition: box-shadow .15s, transform .15s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
       <div style="font-size:12px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Capacita' totale</div>
       <div style="font-size:28px; font-weight:700; color:#333; margin-top:4px;">{{ n_stand_totali }}</div>
       <div style="font-size:12px; color:#666;">stand nell'evento</div>
-    </div>
+    </a>
   </div>
 
   <h2 style="margin-top:32px;">Importi</h2>
