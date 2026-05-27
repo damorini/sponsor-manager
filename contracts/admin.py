@@ -129,7 +129,12 @@ class ContractAdmin(admin.ModelAdmin):
         }),
         ('Spazio espositivo', {
             'fields': ('stand', 'stand_block'),
-            'description': 'Scegli stand singolo OPPURE blocco, non entrambi.',
+            'description': (
+                'Scegli stand singolo OPPURE blocco, non entrambi. '
+                'IMPORTANTE: nella tendina digita il nome (o slug) dell\'evento '
+                'di questo contratto per vedere solo gli stand/blocchi di '
+                'quell\'evento. Selezionare uno spazio di un altro evento dara\' errore al salvataggio.'
+            ),
         }),
         ('Stato', {
             'fields': ('status', 'issued_date', 'sent_date', 'signed_date',

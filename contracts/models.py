@@ -342,9 +342,13 @@ class Contract(SoftDeleteModel):
 
         # Lo stand/blocco deve appartenere allo stesso evento del contratto
         if self.stand and self.stand.event_id != self.event_id:
-            raise ValidationError(
-                "Lo stand selezionato non appartiene a questo evento."
-            )
+            _ev_stand = self.stand.event.get_name() if self.stand.event_id else '-'
+            _ev_contr = self.event.get_name() if self.event_id else '-'
+            raise ValidationError({'stand': (
+                f"Lo stand '{self.stand.code}' appartiene all'evento '{_ev_stand}', "
+                f"ma questo contratto e' per l'evento '{_ev_contr}'. "
+                f"Nella tendina dello stand digita il nome dell'evento "
+                f"'{_ev_contr}' per vedere solo i suoi stand.")})
 
         # Uno stand che fa parte di un blocco NON e' vendibile singolarmente:
         # va venduto il blocco intero (oppure lo stand va tolto dal blocco).
@@ -355,9 +359,13 @@ class Contract(SoftDeleteModel):
                 f"singolarmente. Assegna il BLOCCO a questo contratto, oppure "
                 f"togli lo stand dal blocco.")})
         if self.stand_block and self.stand_block.event_id != self.event_id:
-            raise ValidationError(
-                "Il blocco selezionato non appartiene a questo evento."
-            )
+            _evb = self.stand_block.event.get_name() if self.stand_block.event_id else '-'
+            _evc = self.event.get_name() if self.event_id else '-'
+            raise ValidationError({'stand_block': (
+                f"Il blocco '{self.stand_block.code}' appartiene all'evento '{_evb}', "
+                f"ma questo contratto e' per l'evento '{_evc}'. "
+                f"Nella tendina del blocco digita il nome dell'evento "
+                f"'{_evc}' per vedere solo i suoi blocchi.")})
 
         # Unicità stand: bloccato se un ALTRO contratto 'tiene' lo spazio
         # (SENT/firmato, oppure DRAFT con opzione attiva). Vedi _contratti_che_tengono.
