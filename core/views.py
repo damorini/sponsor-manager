@@ -100,6 +100,7 @@ def evento_dettaglio(request, pk):
     except Exception:
         nome_ev = str(ev)
 
+    servizi = _servizi_riepilogo(ev)
     context = {
         **admin_site.each_context(request),
         'title': f'Cruscotto · {nome_ev}',
@@ -109,5 +110,146 @@ def evento_dettaglio(request, pk):
         'opzionati': opzionati,
         'trattativa': trattativa,
         'n_stand_totali': n_stand_totali,
+        'servizi': servizi,
     }
     return render(request, 'cruscotto/evento.html', context)
+
+
+def _categorie_per_contratto(qs_contratti):
+    """Restituisce un dict {contract_id: 'confermato'|'opzione'|'trattativa'}."""
+    from datetime import date
+    from contracts.models import ContractStatus
+    oggi = date.today()
+    CONFIRMED = {ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED}
+    out = {}
+    for c in qs_contratti:
+        if c.status in CONFIRMED:
+            out[c.id] = 'confermato'
+        elif (c.status == ContractStatus.DRAFT and c.option_until
+              and c.option_until >= oggi):
+            out[c.id] = 'opzione'
+        elif c.status == ContractStatus.SENT:
+            out[c.id] = 'trattativa'
+        # CANCELLED e altri stati: non incluso
+    return out
+
+
+def _servizi_riepilogo(ev):
+    """Per ogni Service dell'evento, calcola quantita' prenotate per categoria."""
+    from catalog.models import Service
+    from contracts.models import Contract, ContractStatus, ContractLine
+
+    contratti_ev = list(Contract.objects.filter(event=ev)
+                        .exclude(status=ContractStatus.CANCELLED))
+    cats = _categorie_per_contratto(contratti_ev)
+    if not cats:
+        # nessun contratto utile -> tutti i servizi a 0
+        servizi = []
+        for s in Service.objects.filter(event=ev, is_active=True).order_by('display_order', 'code'):
+            try:
+                nome = s.translated('name') if hasattr(s, 'translated') else s.code
+            except Exception:
+                nome = s.code
+            servizi.append({
+                'id': s.id, 'code': s.code, 'nome': nome,
+                'q_confermato': 0, 'q_opzione': 0, 'q_trattativa': 0, 'q_totale': 0,
+            })
+        return servizi
+
+    # carico le righe servizio dei contratti utili, esclusi gli stand
+    righe = (ContractLine.objects
+             .filter(contract_id__in=cats.keys(), service__event=ev)
+             .exclude(notes__startswith='stand:')
+             .exclude(notes__startswith='block:')
+             .values('service_id', 'contract_id', 'quantity'))
+
+    aggreg = {}  # service_id -> {confermato, opzione, trattativa}
+    for r in righe:
+        sid = r['service_id']
+        cat = cats.get(r['contract_id'])
+        if not cat:
+            continue
+        d = aggreg.setdefault(sid, {'confermato': 0, 'opzione': 0, 'trattativa': 0})
+        d[cat] += (r['quantity'] or 0)
+
+    servizi = []
+    for s in Service.objects.filter(event=ev, is_active=True).order_by('display_order', 'code'):
+        try:
+            nome = s.translated('name') if hasattr(s, 'translated') else s.code
+        except Exception:
+            nome = s.code
+        d = aggreg.get(s.id, {'confermato': 0, 'opzione': 0, 'trattativa': 0})
+        servizi.append({
+            'id': s.id,
+            'code': s.code,
+            'nome': nome,
+            'q_confermato': d['confermato'],
+            'q_opzione': d['opzione'],
+            'q_trattativa': d['trattativa'],
+            'q_totale': d['confermato'] + d['opzione'] + d['trattativa'],
+        })
+    return servizi
+
+
+@staff_member_required
+def servizio_dettaglio(request, pk, service_pk):
+    """Pagina di dettaglio di un servizio dell'evento: lista sponsor che l'hanno preso."""
+    from django.http import Http404
+    from catalog.models import Service
+    from contracts.models import Contract, ContractStatus, ContractLine
+
+    try:
+        ev = Event.objects.get(pk=pk)
+        servizio = Service.objects.get(pk=service_pk, event=ev)
+    except (Event.DoesNotExist, Service.DoesNotExist):
+        raise Http404("Evento o servizio non trovato")
+
+    contratti_ev = list(Contract.objects.filter(event=ev)
+                        .exclude(status=ContractStatus.CANCELLED)
+                        .select_related('sponsor'))
+    cats = _categorie_per_contratto(contratti_ev)
+
+    righe = (ContractLine.objects
+             .filter(service=servizio, contract_id__in=cats.keys())
+             .exclude(notes__startswith='stand:')
+             .exclude(notes__startswith='block:')
+             .select_related('contract', 'contract__sponsor')
+             .order_by('contract__contract_number'))
+
+    prenotazioni = []
+    for r in righe:
+        c = r.contract
+        prenotazioni.append({
+            'contract_id': c.id,
+            'contract_number': c.contract_number,
+            'sponsor_nome': str(c.sponsor) if c.sponsor_id else '(senza sponsor)',
+            'sponsor_id': c.sponsor_id,
+            'status_label': c.get_status_display(),
+            'categoria': cats.get(c.id, '-'),
+            'quantita': r.quantity,
+            'totale_riga': r.line_total or 0,
+        })
+
+    try:
+        nome_serv = servizio.translated('name') if hasattr(servizio, 'translated') else servizio.code
+    except Exception:
+        nome_serv = servizio.code
+    try:
+        nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
+    except Exception:
+        nome_ev = str(ev)
+
+    q_totale = sum(p['quantita'] for p in prenotazioni)
+
+    context = {
+        **admin_site.each_context(request),
+        'title': f'Cruscotto · {nome_ev} · {nome_serv}',
+        'evento': ev,
+        'nome_evento': nome_ev,
+        'servizio': servizio,
+        'nome_servizio': nome_serv,
+        'prenotazioni': prenotazioni,
+        'q_totale': q_totale,
+        'n_prenotazioni': len(prenotazioni),
+    }
+    return render(request, 'cruscotto/servizio.html', context)
