@@ -13,6 +13,7 @@ from django.urls import path, include
 
 
 urlpatterns = [
+    path('admin/cruscotto/', include('core.urls', namespace='core')),
     path('admin/', admin.site.urls),
     
     # Portale sponsor self-service
