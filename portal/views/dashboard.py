@@ -103,9 +103,9 @@ def dashboard_view(request):
     ).select_related('contract', 'contract__event').order_by('due_date')
 
     # Calcola days_until/days_overdue per il template
+    # days_until_due e' gia' una property del modello Deadline (sola lettura):
+    # il template la usa direttamente, non serve assegnarla qui.
     upcoming_deadlines = list(upcoming_deadlines_qs[:5])
-    for d in upcoming_deadlines:
-        d.days_until_due = (d.due_date - today).days
 
     overdue_deadlines = list(overdue_deadlines_qs[:5])
     for d in overdue_deadlines:
