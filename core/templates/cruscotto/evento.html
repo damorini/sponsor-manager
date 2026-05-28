@@ -1,7 +1,12 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
 
 {% block branding %}
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
@@ -16,147 +21,122 @@
 {% endblock %}
 
 {% block content %}
-  <h1 style="margin-bottom: 4px;">{{ nome_evento }}</h1>
-  <p style="color:#666; margin-top:0;">
-    Stato: <strong>{{ evento.get_status_display }}</strong>
-    {% if evento.start_date %} · 📅 {{ evento.start_date|date:"d/m/Y" }}{% if evento.end_date %} – {{ evento.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
-    {% if evento.location %} · 📍 {{ evento.location }}{% endif %}
-  </p>
-
-  <h2 style="margin-top:24px;">Incassi</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
-    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
-      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Incassato</div>
-      <div style="font-size:26px; font-weight:700; color:#1b5e20; margin-top:4px;">€ {{ incassi.incassato|floatformat:2 }}</div>
-      <div style="font-size:12px; color:#666;">su contratti confermati</div>
-    </div>
-    <a href="{% url 'core:cruscotto_da_incassare' evento.id %}"
-       title="Vedi il dettaglio dei residui da incassare"
-       style="display:block; text-decoration:none; color:inherit;
-              background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;
-              transition: box-shadow .15s, transform .15s;"
-       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
-      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">Da incassare</div>
-      <div style="font-size:26px; font-weight:700; color:#bf360c; margin-top:4px;">€ {{ incassi.da_incassare|floatformat:2 }}</div>
-      <div style="font-size:12px; color:#666;">clicca per il dettaglio &rsaquo;</div>
-    </a>
-  </div>
-
-  <h2 style="margin-top:24px;">Stand</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
-       title="Mostra i contratti firmati di questo evento"
-       style="display:block; text-decoration:none; color:inherit;
-              background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;
-              transition: box-shadow .15s, transform .15s;"
-       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
-      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Confermati</div>
-      <div style="font-size:28px; font-weight:700; color:#1b5e20; margin-top:4px;">{{ confermati.n_stand }}</div>
-      <div style="font-size:12px; color:#666;">{{ confermati.n_contratti }} contratto/i</div>
-    </a>
-    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
-       title="Mostra le bozze (incluse le opzioni attive) di questo evento"
-       style="display:block; text-decoration:none; color:inherit;
-              background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;
-              transition: box-shadow .15s, transform .15s;"
-       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
-      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">Opzionati</div>
-      <div style="font-size:28px; font-weight:700; color:#bf360c; margin-top:4px;">{{ opzionati.n_stand }}</div>
-      <div style="font-size:12px; color:#666;">{{ opzionati.n_contratti }} contratto/i</div>
-    </a>
-    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=sent"
-       title="Mostra i preventivi inviati di questo evento"
-       style="display:block; text-decoration:none; color:inherit;
-              background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;
-              transition: box-shadow .15s, transform .15s;"
-       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
-      <div style="font-size:12px; color:#1565c0; text-transform:uppercase; letter-spacing:.5px;">In trattativa</div>
-      <div style="font-size:28px; font-weight:700; color:#0d47a1; margin-top:4px;">{{ trattativa.n_stand }}</div>
-      <div style="font-size:12px; color:#666;">{{ trattativa.n_contratti }} contratto/i (preventivo inviato)</div>
-    </a>
-    <a href="{% url 'admin:venues_stand_changelist' %}?event__id__exact={{ evento.id }}"
-       title="Mostra tutti gli stand di questo evento"
-       style="display:block; text-decoration:none; color:inherit;
-              background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px;
-              transition: box-shadow .15s, transform .15s;"
-       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
-      <div style="font-size:12px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Capacita' totale</div>
-      <div style="font-size:28px; font-weight:700; color:#333; margin-top:4px;">{{ n_stand_totali }}</div>
-      <div style="font-size:12px; color:#666;">stand nell'evento</div>
-    </a>
-  </div>
-
-  <h2 style="margin-top:32px;">Importi</h2>
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
-    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
-      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Confermato</div>
-      <div style="font-size:24px; font-weight:700; color:#1b5e20; margin-top:4px;">€ {{ confermati.totale|floatformat:2 }}</div>
-      <div style="font-size:12px; color:#666;">IVA inclusa</div>
-    </div>
-    <div style="background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;">
-      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">In opzione</div>
-      <div style="font-size:24px; font-weight:700; color:#bf360c; margin-top:4px;">€ {{ opzionati.totale|floatformat:2 }}</div>
-      <div style="font-size:12px; color:#666;">IVA inclusa</div>
-    </div>
-    <div style="background:#e3f2fd; border:1px solid #bbdefb; border-radius:8px; padding:14px;">
-      <div style="font-size:12px; color:#1565c0; text-transform:uppercase; letter-spacing:.5px;">In trattativa</div>
-      <div style="font-size:24px; font-weight:700; color:#0d47a1; margin-top:4px;">€ {{ trattativa.totale|floatformat:2 }}</div>
-      <div style="font-size:12px; color:#666;">IVA inclusa</div>
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">{{ nome_evento }}</h1>
+    <div class="cr-meta">
+      <span><strong>Stato:</strong> {{ evento.get_status_display }}</span>
+      {% if evento.start_date %}<span class="dot"></span><span>📅 {{ evento.start_date|date:"d/m/Y" }}{% if evento.end_date %} – {{ evento.end_date|date:"d/m/Y" }}{% endif %}</span>{% endif %}
+      {% if evento.location %}<span class="dot"></span><span>📍 {{ evento.location }}</span>{% endif %}
     </div>
   </div>
 
-  <h2 style="margin-top:32px;">Servizi prenotati</h2>
-  <p style="color:#666; margin-top:0;">
-    Riepilogo righe servizio totali (escluso lo stand):
-    <strong>{{ confermati.n_servizi }}</strong> confermate,
-    <strong>{{ opzionati.n_servizi }}</strong> in opzione,
-    <strong>{{ trattativa.n_servizi }}</strong> in trattativa.
-  </p>
-
-  {% if servizi %}
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px;">
-    {% for s in servizi %}
-      <a href="{% url 'core:cruscotto_servizio' evento.id s.id %}"
-         style="display:block; text-decoration:none; color:inherit;
-                background:{% if s.q_totale %}#fff{% else %}#fafafa{% endif %};
-                border:1px solid {% if s.q_totale %}#ddd{% else %}#eee{% endif %};
-                border-radius:8px; padding:14px;
-                {% if not s.q_totale %}opacity:.7;{% endif %}
-                box-shadow:0 1px 3px rgba(0,0,0,0.04); transition: box-shadow .15s, transform .15s;"
-         onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-         onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)'; this.style.transform='none';">
-        <div style="font-size:12px; color:#888; text-transform:uppercase; letter-spacing:.5px;">{{ s.code }}</div>
-        <div style="font-size:15px; font-weight:600; color:#222; margin: 4px 0 8px 0; line-height:1.2;">{{ s.nome }}</div>
-        <div style="display:flex; align-items:baseline; gap:6px; margin-bottom:6px;">
-          <span style="font-size:28px; font-weight:700; color:#222;">{{ s.q_totale }}</span>
-          <span style="font-size:12px; color:#888;">prenotato/i</span>
-        </div>
-        <div style="font-size:12px; line-height:1.6;">
-          <span style="color:#2e7d32;">● {{ s.q_confermato }} confermati</span><br>
-          <span style="color:#e65100;">● {{ s.q_opzione }} in opzione</span><br>
-          <span style="color:#1565c0;">● {{ s.q_trattativa }} in trattativa</span>
-        </div>
+  <div class="cr-section">
+    <h2 class="cr-h2">Incassi</h2>
+    <div class="cr-grid">
+      <div class="cr-card cr-card--green">
+        <div class="cr-label">Incassato</div>
+        <div class="cr-value">€ {{ incassi.incassato|floatformat:2|intcomma }}</div>
+        <div class="cr-hint">su contratti confermati</div>
+      </div>
+      <a href="{% url 'core:cruscotto_da_incassare' evento.id %}" class="cr-card cr-card--terra"
+         title="Vedi il dettaglio dei residui da incassare">
+        <div class="cr-label">Da incassare</div>
+        <div class="cr-value">€ {{ incassi.da_incassare|floatformat:2|intcomma }}</div>
+        <div class="cr-hint"><span class="cr-arrow">Clicca per il dettaglio →</span></div>
       </a>
-    {% endfor %}
+    </div>
   </div>
-  {% else %}
-    <p style="color:#888; font-style:italic;">Nessun servizio attivo per questo evento.</p>
-  {% endif %}
 
-  <h2 style="margin-top:32px;">Scorciatoie</h2>
-  <p>
-    <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}"
-       style="display:inline-block; padding:8px 14px; background:#417690; color:#fff; border-radius:4px; text-decoration:none; margin-right:8px;">
-      Vedi contratti
-    </a>
-    <a href="{% url 'admin:events_event_change' evento.id %}"
-       style="display:inline-block; padding:8px 14px; background:#666; color:#fff; border-radius:4px; text-decoration:none;">
-      Modifica evento
-    </a>
-  </p>
+  <div class="cr-section">
+    <h2 class="cr-h2">Stand</h2>
+    <div class="cr-grid-sm">
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
+         class="cr-card cr-card--green" title="Mostra i contratti firmati di questo evento">
+        <div class="cr-label">Confermati</div>
+        <div class="cr-value">{{ confermati.n_stand }}</div>
+        <div class="cr-hint">{{ confermati.n_contratti }} contratto/i</div>
+      </a>
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
+         class="cr-card cr-card--terra" title="Mostra le bozze/opzioni attive">
+        <div class="cr-label">Opzionati</div>
+        <div class="cr-value">{{ opzionati.n_stand }}</div>
+        <div class="cr-hint">{{ opzionati.n_contratti }} contratto/i</div>
+      </a>
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=sent"
+         class="cr-card cr-card--indigo" title="Mostra i preventivi inviati">
+        <div class="cr-label">In trattativa</div>
+        <div class="cr-value">{{ trattativa.n_stand }}</div>
+        <div class="cr-hint">{{ trattativa.n_contratti }} contratto/i (preventivo inviato)</div>
+      </a>
+      <a href="{% url 'admin:venues_stand_changelist' %}?event__id__exact={{ evento.id }}"
+         class="cr-card cr-card--neutral" title="Mostra tutti gli stand">
+        <div class="cr-label">Capacità totale</div>
+        <div class="cr-value">{{ n_stand_totali }}</div>
+        <div class="cr-hint">stand nell'evento</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="cr-section">
+    <h2 class="cr-h2">Importi</h2>
+    <div class="cr-grid">
+      <div class="cr-card cr-card--green">
+        <div class="cr-label">Confermato</div>
+        <div class="cr-value">€ {{ confermati.totale|floatformat:2|intcomma }}</div>
+        <div class="cr-hint">IVA inclusa</div>
+      </div>
+      <div class="cr-card cr-card--terra">
+        <div class="cr-label">In opzione</div>
+        <div class="cr-value">€ {{ opzionati.totale|floatformat:2|intcomma }}</div>
+        <div class="cr-hint">IVA inclusa</div>
+      </div>
+      <div class="cr-card cr-card--indigo">
+        <div class="cr-label">In trattativa</div>
+        <div class="cr-value">€ {{ trattativa.totale|floatformat:2|intcomma }}</div>
+        <div class="cr-hint">IVA inclusa</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cr-section">
+    <div class="cr-h2-row">
+      <h2 class="cr-h2">Servizi prenotati</h2>
+      <span class="cr-note">
+        <strong>{{ confermati.n_servizi }}</strong> conf · <strong>{{ opzionati.n_servizi }}</strong> opz · <strong>{{ trattativa.n_servizi }}</strong> tratt
+      </span>
+    </div>
+    {% if servizi %}
+    <div class="cr-grid">
+      {% for s in servizi %}
+        <a href="{% url 'core:cruscotto_servizio' evento.id s.id %}"
+           class="cr-card{% if not s.q_totale %} cr-card--muted{% endif %}">
+          <div class="cr-svc-code">{{ s.code }}</div>
+          <div class="cr-svc-name">{{ s.nome }}</div>
+          <div class="cr-svc-q">
+            <span class="n">{{ s.q_totale }}</span>
+            <span class="lbl">prenotato/i</span>
+          </div>
+          <div class="cr-svc-detail">
+            <div class="row"><span class="bullet b-green"></span>{{ s.q_confermato }} confermati</div>
+            <div class="row"><span class="bullet b-terra"></span>{{ s.q_opzione }} in opzione</div>
+            <div class="row"><span class="bullet b-indigo"></span>{{ s.q_trattativa }} in trattativa</div>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+    {% else %}
+      <p style="color: var(--ink-3); font-style: italic;">Nessun servizio attivo per questo evento.</p>
+    {% endif %}
+  </div>
+
+  <div class="cr-section">
+    <h2 class="cr-h2">Scorciatoie</h2>
+    <p>
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}" class="cr-btn cr-btn--primary">Vedi contratti</a>
+      &nbsp;
+      <a href="{% url 'admin:events_event_change' evento.id %}" class="cr-btn cr-btn--ghost">Modifica evento</a>
+    </p>
+  </div>
+</div>
 {% endblock %}

@@ -1,7 +1,12 @@
 {% extends "admin/base_site.html" %}
 {% load static %}
+{% load humanize %}
 
 {% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
 
 {% block branding %}
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
@@ -12,67 +17,76 @@
     <a href="{% url 'admin:index' %}">Home admin</a>
     &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
     &rsaquo; <a href="{% url 'core:cruscotto_evento' evento.id %}">{{ nome_evento }}</a>
-    &rsaquo; {{ nome_servizio }}
+    &rsaquo; {{ servizio.code }}
   </div>
 {% endblock %}
 
 {% block content %}
-  <h1 style="margin-bottom: 4px;">{{ nome_servizio }}</h1>
-  <p style="color:#666; margin-top:0;">
-    Servizio dell'evento <strong>{{ nome_evento }}</strong> ·
-    codice <strong>{{ servizio.code }}</strong>
-  </p>
-
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px; margin-top: 20px;">
-    <div style="background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px;">
-      <div style="font-size:12px; color:#555; text-transform:uppercase; letter-spacing:.5px;">Quantita' prenotata</div>
-      <div style="font-size:28px; font-weight:700; color:#222; margin-top:4px;">{{ q_totale }}</div>
-      <div style="font-size:12px; color:#666;">{{ n_prenotazioni }} riga/righe contratto</div>
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">{{ nome_servizio }}</h1>
+    <div class="cr-meta">
+      <span><strong>{{ servizio.code }}</strong></span>
+      <span class="dot"></span>
+      <span>{{ nome_evento }}</span>
     </div>
   </div>
 
-  <h2 style="margin-top:28px;">Chi ha prenotato</h2>
-  {% if prenotazioni %}
-    <table style="width:100%; border-collapse: collapse; background:#fff; border:1px solid #ddd;">
-      <thead style="background:#f5f5f5;">
-        <tr>
-          <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Sponsor</th>
-          <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Contratto</th>
-          <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Stato</th>
-          <th style="text-align:right; padding:10px; border-bottom:1px solid #ddd;">Q.tà</th>
-          <th style="text-align:right; padding:10px; border-bottom:1px solid #ddd;">Importo riga</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in prenotazioni %}
-          <tr style="border-bottom:1px solid #eee;">
-            <td style="padding:10px;">{{ p.sponsor_nome }}</td>
-            <td style="padding:10px;">
-              <a href="{% url 'admin:contracts_contract_change' p.contract_id %}">{{ p.contract_number }}</a>
-            </td>
-            <td style="padding:10px;">
-              {% if p.categoria == 'confermato' %}
-                <span style="background:#e8f5e9; color:#1b5e20; padding:2px 8px; border-radius:4px; font-size:12px;">Confermato</span>
-              {% elif p.categoria == 'opzione' %}
-                <span style="background:#fff3e0; color:#bf360c; padding:2px 8px; border-radius:4px; font-size:12px;">In opzione</span>
-              {% elif p.categoria == 'trattativa' %}
-                <span style="background:#e3f2fd; color:#0d47a1; padding:2px 8px; border-radius:4px; font-size:12px;">In trattativa</span>
-              {% else %}{{ p.status_label }}{% endif %}
-            </td>
-            <td style="padding:10px; text-align:right;">{{ p.quantita }}</td>
-            <td style="padding:10px; text-align:right;">€ {{ p.totale_riga|floatformat:2 }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p style="color:#888; font-style:italic;">Nessuna prenotazione per questo servizio.</p>
-  {% endif %}
+  <div class="cr-section">
+    <h2 class="cr-h2">Riepilogo</h2>
+    <div class="cr-grid">
+      <div class="cr-card cr-card--green">
+        <div class="cr-label">Confermati</div>
+        <div class="cr-value">{{ riepilogo.confermati|default:0 }}</div>
+        <div class="cr-hint">in contratti firmati</div>
+      </div>
+      <div class="cr-card cr-card--terra">
+        <div class="cr-label">In opzione</div>
+        <div class="cr-value">{{ riepilogo.opzione|default:0 }}</div>
+        <div class="cr-hint">in bozza</div>
+      </div>
+      <div class="cr-card cr-card--indigo">
+        <div class="cr-label">In trattativa</div>
+        <div class="cr-value">{{ riepilogo.trattativa|default:0 }}</div>
+        <div class="cr-hint">preventivo inviato</div>
+      </div>
+    </div>
+  </div>
 
-  <p style="margin-top:24px;">
-    <a href="{% url 'core:cruscotto_evento' evento.id %}"
-       style="display:inline-block; padding:8px 14px; background:#666; color:#fff; border-radius:4px; text-decoration:none;">
-      ← Torna alla dashboard evento
-    </a>
-  </p>
+  <div class="cr-section">
+    <h2 class="cr-h2">Sponsor che lo hanno prenotato</h2>
+    {% if righe %}
+    <div class="cr-table-wrap">
+      <table class="cr-table">
+        <thead><tr>
+          <th>Sponsor</th>
+          <th>Contratto</th>
+          <th>Stato</th>
+          <th class="num">Quantità</th>
+          <th class="num">Importo</th>
+        </tr></thead>
+        <tbody>
+          {% for r in righe %}
+          <tr>
+            <td class="strong">{{ r.sponsor }}</td>
+            <td><a href="{% url 'admin:contracts_contract_change' r.contract_id %}">{{ r.contract_number }}</a></td>
+            <td>{{ r.status_label }}</td>
+            <td class="num">{{ r.quantity }}</td>
+            <td class="num strong">€ {{ r.importo|floatformat:2|intcomma }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color: var(--ink-3); font-style:italic;">Nessuna prenotazione per questo servizio.</p>
+    {% endif %}
+  </div>
+
+  <div class="cr-section">
+    <p>
+      <a href="{% url 'core:cruscotto_evento' evento.id %}" class="cr-btn cr-btn--ghost">← Torna al cruscotto evento</a>
+    </p>
+  </div>
+</div>
 {% endblock %}

@@ -1,0 +1,209 @@
+/* Cruscotto Sponsor Manager — restyle editoriale moderno
+   palette calda + tipografia espressiva. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Geist:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-warm: #FAF8F5;
+  --bg-card: #FFFFFF;
+  --bg-soft: #F2EFEA;
+  --line: #E8E2D8;
+  --line-strong: #D4CCBE;
+  --ink: #1A1612;
+  --ink-2: #4A4137;
+  --ink-3: #8A7F71;
+  --ink-mute: #B3A899;
+  --green-bg: #EBF1E7;
+  --green-ink: #3D6B2B;
+  --green-acc: #2F5421;
+  --terra-bg: #F5E8DC;
+  --terra-ink: #9C4A1F;
+  --terra-acc: #7A3613;
+  --indigo-bg: #E5E7F4;
+  --indigo-ink: #2E3A8C;
+  --indigo-acc: #1F2868;
+  --rose-bg: #F4E1DC;
+  --rose-ink: #9C2A27;
+  --shadow-1: 0 1px 2px rgba(26,22,18,0.04);
+  --shadow-2: 0 8px 24px -8px rgba(26,22,18,0.12);
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+}
+
+/* sfondo content area (admin standard ha #f8f8f8 di base) */
+#content, .cr-content { background: var(--bg-warm) !important; }
+body.cr-page { background: var(--bg-warm); }
+
+/* Hero / intestazione pagina */
+.cr-hero { margin: -10px -20px 24px -20px; padding: 32px 28px 28px 28px;
+  background: linear-gradient(180deg, #F5EFE6 0%, var(--bg-warm) 100%);
+  border-bottom: 1px solid var(--line); }
+.cr-hero h1, h1.cr-title {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500; font-size: 38px; line-height: 1.1;
+  color: var(--ink); letter-spacing: -0.02em; margin: 0 0 6px 0;
+  font-variation-settings: "opsz" 144; }
+.cr-hero p, p.cr-sub {
+  color: var(--ink-3); font-family: 'Geist', system-ui, sans-serif;
+  font-size: 14px; margin: 0; font-weight: 400; }
+.cr-hero p strong, .cr-meta strong { color: var(--ink-2); font-weight: 600; }
+
+.cr-meta { display: flex; flex-wrap: wrap; gap: 14px 22px;
+  font-family: 'Geist', system-ui, sans-serif; font-size: 13px; color: var(--ink-3); }
+.cr-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.cr-meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-mute); }
+
+/* Sezioni e titoli */
+.cr-section { margin-top: 32px; }
+.cr-section h2, h2.cr-h2 {
+  font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+  font-size: 22px; color: var(--ink); margin: 0 0 14px 0;
+  letter-spacing: -0.01em; font-variation-settings: "opsz" 72; }
+.cr-section .cr-h2-row { display: flex; align-items: baseline; gap: 16px; margin-bottom: 14px; }
+.cr-section .cr-h2-row h2 { margin: 0; }
+.cr-section .cr-h2-row .cr-note {
+  font-family: 'Geist', system-ui, sans-serif; font-size: 13px; color: var(--ink-3); }
+
+/* Tipografia globale corpo */
+body { font-family: 'Geist', system-ui, sans-serif; }
+
+/* Grid card */
+.cr-grid { display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.cr-grid-sm { display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+/* Card base */
+.cr-card {
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: var(--r-md);
+  padding: 18px 18px 16px 18px; box-shadow: var(--shadow-1);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  text-decoration: none; color: inherit; display: block;
+  font-family: 'Geist', system-ui, sans-serif;
+}
+a.cr-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); border-color: var(--line-strong); }
+.cr-card .cr-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 8px;
+}
+.cr-card .cr-value {
+  font-family: 'Geist', system-ui, sans-serif; font-weight: 600;
+  font-size: 30px; line-height: 1.05; color: var(--ink);
+  letter-spacing: -0.01em; font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+}
+.cr-card .cr-value.cr-eur::before { content:""; }
+.cr-card .cr-hint { font-size: 12px; color: var(--ink-3); line-height: 1.4; }
+.cr-card .cr-arrow { color: var(--ink-mute); font-size: 12px; }
+
+/* Varianti colore */
+.cr-card--green { background: var(--green-bg); border-color: rgba(61,107,43,0.18); }
+.cr-card--green .cr-label { color: var(--green-acc); }
+.cr-card--green .cr-value { color: var(--green-acc); }
+.cr-card--terra { background: var(--terra-bg); border-color: rgba(156,74,31,0.18); }
+.cr-card--terra .cr-label { color: var(--terra-acc); }
+.cr-card--terra .cr-value { color: var(--terra-acc); }
+.cr-card--indigo { background: var(--indigo-bg); border-color: rgba(46,58,140,0.18); }
+.cr-card--indigo .cr-label { color: var(--indigo-acc); }
+.cr-card--indigo .cr-value { color: var(--indigo-acc); }
+.cr-card--neutral { background: var(--bg-soft); }
+.cr-card--muted { opacity: 0.7; }
+
+/* Event cards (home) */
+.cr-event-card .cr-status {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+  background: var(--bg-soft); color: var(--ink-2); margin-bottom: 12px;
+}
+.cr-event-card .cr-status.live { background: var(--green-bg); color: var(--green-acc); }
+.cr-event-card .cr-event-name {
+  font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+  font-size: 22px; line-height: 1.2; color: var(--ink); letter-spacing: -0.01em;
+  margin-bottom: 14px; font-variation-settings: "opsz" 96;
+}
+.cr-event-card .cr-event-meta { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+.cr-event-card .cr-event-meta .ico { color: var(--ink-mute); margin-right: 4px; }
+.cr-event-card .cr-event-slug { font-size: 11px; color: var(--ink-mute); margin-top: 8px;
+  font-family: 'Geist', monospace; letter-spacing: 0.02em; }
+
+/* Servizio card */
+.cr-svc-code { font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-mute); }
+.cr-svc-name { font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+  font-size: 17px; line-height: 1.25; color: var(--ink); margin: 6px 0 12px 0;
+  letter-spacing: -0.005em; }
+.cr-svc-q { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.cr-svc-q .n { font-family: 'Geist', system-ui, sans-serif; font-weight: 600;
+  font-size: 32px; line-height: 1.05; color: var(--ink); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em; }
+.cr-svc-q .lbl { font-size: 11px; color: var(--ink-3); text-transform: uppercase;
+  letter-spacing: 0.12em; }
+.cr-svc-detail { font-size: 12px; line-height: 1.7; }
+.cr-svc-detail .row { display: flex; align-items: center; gap: 6px; }
+.cr-svc-detail .row .bullet { width: 7px; height: 7px; border-radius: 50%; }
+.cr-svc-detail .b-green { background: var(--green-ink); }
+.cr-svc-detail .b-terra { background: var(--terra-ink); }
+.cr-svc-detail .b-indigo { background: var(--indigo-ink); }
+
+/* Pulsanti azione (link "Vedi contratti" ecc.) */
+.cr-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 8px; font-weight: 500; font-size: 13px;
+  text-decoration: none; transition: transform .12s ease, background .12s ease;
+  font-family: 'Geist', system-ui, sans-serif; letter-spacing: 0.01em;
+}
+.cr-btn:hover { transform: translateY(-1px); }
+.cr-btn--primary { background: var(--ink); color: #fff; }
+.cr-btn--primary:hover { background: var(--ink-2); color: #fff; }
+.cr-btn--ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); }
+.cr-btn--ghost:hover { background: var(--bg-soft); }
+.cr-btn--small { padding: 6px 12px; font-size: 12px; }
+.cr-btn--accent { background: var(--green-acc); color: #fff; }
+.cr-btn--accent:hover { background: var(--green-ink); color: #fff; }
+
+/* Empty state */
+.cr-empty { grid-column: 1 / -1; padding: 40px 24px; text-align: center;
+  background: var(--bg-soft); border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md); color: var(--ink-3); font-family: 'Geist', system-ui, sans-serif; }
+.cr-empty a { color: var(--ink); font-weight: 600; }
+
+/* Tabella (da_incassare) */
+.cr-table-wrap { background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--r-md); overflow: hidden; box-shadow: var(--shadow-1); }
+table.cr-table { width: 100%; border-collapse: collapse; font-size: 13px;
+  font-family: 'Geist', system-ui, sans-serif; }
+table.cr-table thead tr { background: var(--bg-soft); }
+table.cr-table th { text-align: left; padding: 12px 14px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-3); border-bottom: 1px solid var(--line); }
+table.cr-table td { padding: 12px 14px; border-bottom: 1px solid var(--line);
+  color: var(--ink-2); }
+table.cr-table tr:last-child td { border-bottom: none; }
+table.cr-table tr:hover td { background: var(--bg-warm); }
+table.cr-table .num { font-variant-numeric: tabular-nums; text-align: right; }
+table.cr-table .strong { font-weight: 600; color: var(--ink); }
+table.cr-table .residuo { font-weight: 700; color: var(--terra-acc); }
+table.cr-table .incassato { color: var(--green-acc); }
+table.cr-table .scaduta { color: var(--rose-ink); font-weight: 600; }
+table.cr-table a { color: var(--indigo-acc); text-decoration: none; font-weight: 500; }
+table.cr-table a:hover { text-decoration: underline; }
+
+/* Utility */
+.cr-panel { background: var(--bg-card); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 18px; margin-bottom: 16px;
+  box-shadow: var(--shadow-1); }
+.cr-panel h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+  font-size: 17px; margin: 0 0 4px 0; color: var(--ink); }
+.cr-panel p { color: var(--ink-3); font-size: 13px; margin: 0 0 12px 0; }
+.cr-panel .cr-form-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.cr-panel input[type="file"] { font-size: 13px; }
+.cr-panel label.cr-check { font-size: 13px; color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 6px; }
+
+.cr-result { background: var(--bg-soft); border: 1px solid var(--line);
+  border-radius: var(--r-md); padding: 14px; margin: 14px 0; }
+.cr-result strong { font-family: 'Fraunces', Georgia, serif; font-weight: 500; color: var(--ink); }
+.cr-result pre { white-space: pre-wrap; font-family: 'Geist', monospace;
+  font-size: 12px; color: var(--ink-2); margin: 6px 0 0 0; }
+
+/* Riduco "rumore" del pulsante Cruscotto in admin (lo lascio com'e' ma ben centrato) */

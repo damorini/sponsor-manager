@@ -1,0 +1,121 @@
+{% load i18n %}
+{# === Menu admin riorganizzato in 6 gruppi (Sponsor Manager) === #}
+
+{% if app_list %}
+  {# costruisco la lista "piatta" di tutti i modelli #}
+  {% with all_models='' %}{% endwith %}
+
+  {# definizione gruppi: (icona, titolo, lista object_name in ordine) #}
+  {# I nomi seguono il verbose_name dei modelli, che e' gia' in italiano #}
+
+  {# === 1. EVENTI E CATALOGO === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">🎯 Eventi e catalogo</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'Event' or model.object_name == 'Service' or model.object_name == 'Stand' or model.object_name == 'StandBlock' or model.object_name == 'DeadlineTemplate' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+  {# === 2. CLIENTI === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">👥 Clienti</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'Sponsor' or model.object_name == 'Contact' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+  {# === 3. VENDITE === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">📝 Vendite</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'Contract' or model.object_name == 'Deadline' or model.object_name == 'Payment' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+  {# === 4. DOCUMENTI E COMUNICAZIONI === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">📄 Documenti e comunicazioni</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'Document' or model.object_name == 'EmailTemplate' or model.object_name == 'LetterTemplate' or model.object_name == 'Communication' or model.object_name == 'InvoiceExport' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+  {# === 5. PORTALE === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">🛒 Portale</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'Wishlist' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+  {# === 6. IMPOSTAZIONI === #}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">⚙️ Impostazioni</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name == 'OrganizerSettings' or model.object_name == 'User' %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+
+{% else %}
+  <p>{% translate 'You don\u2019t have permission to view or edit anything.' %}</p>
+{% endif %}

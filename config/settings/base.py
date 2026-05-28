@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'django.contrib.postgres',
 
     'django_extensions',
@@ -108,6 +109,7 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = 'login'
 
 LANGUAGE_CODE = 'it'
+USE_THOUSAND_SEPARATOR = True
 TIME_ZONE = 'Europe/Rome'
 USE_I18N = True
 USE_TZ = True

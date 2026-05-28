@@ -3,6 +3,10 @@
 
 {% block title %}Cruscotto · {{ site_title|default:_("Django site admin") }}{% endblock %}
 
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
 {% block branding %}
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
 {% endblock %}
@@ -15,45 +19,37 @@
 {% endblock %}
 
 {% block content %}
-  <h1 style="margin-bottom: 8px;">Cruscotto</h1>
-  <p style="color:#666; margin-top:0;">Eventi in programmazione (vendita aperta o in corso).
-    {% if n_eventi == 0 %}Nessun evento attivo al momento.{% else %}{{ n_eventi }} evento/i.{% endif %}</p>
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">Cruscotto</h1>
+    <p class="cr-sub">
+      Eventi in vendita o in corso.
+      {% if n_eventi == 0 %}Nessun evento attivo al momento.{% else %}<strong>{{ n_eventi }}</strong> evento{% if n_eventi != 1 %}i{% endif %} attivo{% if n_eventi != 1 %}i{% endif %}.{% endif %}
+    </p>
+    <p style="margin-top:18px;">
+      <a href="{% url 'core:cruscotto_utility' %}" class="cr-btn cr-btn--ghost cr-btn--small">
+        <span>⚙</span> Utility
+      </a>
+    </p>
+  </div>
 
-  <p style="margin: 8px 0 16px 0;">
-    <a href="{% url 'core:cruscotto_utility' %}"
-       style="display:inline-block; padding:6px 12px; background:#666; color:#fff;
-              border-radius:4px; text-decoration:none; font-size:13px;">
-      🛠 Utility
-    </a>
-  </p>
-
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 16px;">
+  <div class="cr-grid">
     {% for c in cards %}
-      <a href="{% url 'core:cruscotto_evento' c.id %}"
-         style="display:block; text-decoration:none; color:inherit;
-                background:#fff; border:1px solid #ddd; border-radius:8px;
-                padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04);
-                transition: box-shadow .15s ease, transform .15s ease;"
-         onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
-         onmouseout="this.style.boxShadow='0 1px 3px rgba(0,0,0,0.04)'; this.style.transform='none';">
-        <div style="font-size: 13px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px;">
-          {{ c.status_label }}
+      <a href="{% url 'core:cruscotto_evento' c.id %}" class="cr-card cr-event-card">
+        <span class="cr-status {% if 'corso' in c.status_label|lower or 'live' in c.status_label|lower %}live{% endif %}">{{ c.status_label }}</span>
+        <div class="cr-event-name">{{ c.nome }}</div>
+        <div class="cr-event-meta">
+          {% if c.start_date %}<div><span class="ico">📅</span> {{ c.start_date|date:"d/m/Y" }}{% if c.end_date %} – {{ c.end_date|date:"d/m/Y" }}{% endif %}</div>{% endif %}
+          {% if c.location %}<div><span class="ico">📍</span> {{ c.location }}</div>{% endif %}
         </div>
-        <div style="font-size: 18px; font-weight:600; margin-bottom:8px; color:#222;">
-          {{ c.nome }}
-        </div>
-        <div style="font-size: 14px; color:#555; line-height:1.5;">
-          {% if c.start_date %}<div>📅 {{ c.start_date|date:"d/m/Y" }}{% if c.end_date %} – {{ c.end_date|date:"d/m/Y" }}{% endif %}</div>{% endif %}
-          {% if c.location %}<div>📍 {{ c.location }}</div>{% endif %}
-          <div style="color:#888; font-size:12px; margin-top:6px;">slug: {{ c.slug }}</div>
-        </div>
+        <div class="cr-event-slug">{{ c.slug }}</div>
       </a>
     {% empty %}
-      <div style="grid-column: 1 / -1; padding:24px; text-align:center; color:#888;
-                  background:#fafafa; border:1px dashed #ddd; border-radius:8px;">
-        Nessun evento con status "Vendita aperta" o "In corso".
-        <br><a href="{% url 'admin:events_event_changelist' %}">Vai alla lista eventi</a>
+      <div class="cr-empty">
+        Nessun evento con status "Vendita aperta" o "In corso".<br>
+        <a href="{% url 'admin:events_event_changelist' %}">Vai alla lista eventi →</a>
       </div>
     {% endfor %}
   </div>
+</div>
 {% endblock %}

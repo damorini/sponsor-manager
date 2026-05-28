@@ -3,6 +3,10 @@
 
 {% block title %}{{ title }}{% endblock %}
 
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
 {% block branding %}
   <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
 {% endblock %}
@@ -16,125 +20,84 @@
 {% endblock %}
 
 {% block content %}
-  <h1 style="margin-bottom: 4px;">🛠 Utility</h1>
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">Utility</h1>
+    <p class="cr-sub">Strumenti per gestire servizi e stand: scarica modelli, esporta dati, importa file Excel.</p>
+  </div>
+
   {% if import_risultato %}
-  <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:6px; padding:12px; margin:12px 0;">
-    <strong>Risultato ultimo import:</strong>
-    <pre style="white-space:pre-wrap; font-size:12px; margin:8px 0 0 0;">{{ import_risultato }}</pre>
+  <div class="cr-result">
+    <strong>Risultato ultimo import</strong>
+    <pre>{{ import_risultato }}</pre>
   </div>
   {% endif %}
-  <p style="color:#666; margin-top:0;">Strumenti operativi: download di template, import di dati,
-    e altre utilita' per gestire il sistema.</p>
 
-  <h2 style="margin-top: 28px;">Esporta dati esistenti</h2>
-  <p style="color:#555; font-size:14px; margin: 0 0 12px 0;">
-    Scarica un Excel con i servizi o gli stand gia' inseriti per un evento. Il file ha le
-    stesse colonne del template: puoi correggerlo e ri-caricarlo dall'import qui sotto.</p>
-  <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:8px;">
-    <label style="font-size:14px; font-weight:600;">Evento:</label>
-    <select id="export-evento" style="padding:6px 10px; font-size:14px; margin:0 8px;">
-      {% for ev in eventi %}
-      <option value="{{ ev.slug }}">{{ ev.get_name }} ({{ ev.slug }})</option>
-      {% endfor %}
-    </select>
-    <a id="btn-export-servizi" href="#"
-       style="display:inline-block; padding:7px 12px; background:#2e7d32; color:#fff;
-              border-radius:4px; text-decoration:none; font-size:14px; margin-right:6px;">
-      ⬇ Esporta servizi</a>
-    <a id="btn-export-stand" href="#"
-       style="display:inline-block; padding:7px 12px; background:#2e7d32; color:#fff;
-              border-radius:4px; text-decoration:none; font-size:14px;">
-      ⬇ Esporta stand</a>
-  </div>
-  <script>
-    (function() {
-      var sel = document.getElementById('export-evento');
-      function upd() {
-        var slug = encodeURIComponent(sel.value);
-        document.getElementById('btn-export-servizi').href =
-          "{% url 'core:cruscotto_export_servizi' %}?evento=" + slug;
-        document.getElementById('btn-export-stand').href =
-          "{% url 'core:cruscotto_export_stand' %}?evento=" + slug;
-      }
-      if (sel) { sel.addEventListener('change', upd); upd(); }
-    })();
-  </script>
-
-  <h2 style="margin-top: 28px;">Import da Excel</h2>
-
-  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 12px;">
-    <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:18px;
-                box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-      <h3 style="margin: 0 0 6px 0; color:#222;">Servizi</h3>
-      <p style="color:#555; font-size:14px; line-height:1.5; margin: 0 0 14px 0;">
-        Scarica il template Excel con tutte le colonne necessarie e un paio di righe di esempio.
-        Compila il file con i tuoi servizi, poi importali nel sistema col comando
-        <code style="background:#f5f5f5; padding:2px 6px; border-radius:3px; font-size:12px;">manage.py importa_servizi</code>.
-      </p>
-      <a href="{% url 'core:cruscotto_download_template_servizi' %}"
-         style="display:inline-block; padding:8px 14px; background:#417690; color:#fff;
-                border-radius:4px; text-decoration:none; font-size:14px;">
-        ⬇ Scarica template_servizi.xlsx
-      </a>
-      <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
-            enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid #eee; padding-top:14px;">
-        {% csrf_token %}
-        <input type="file" name="file_excel" accept=".xlsx,.xls" required style="font-size:13px;">
-        <label style="display:block; margin:8px 0; font-size:13px;">
-          <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
-        </label>
-        <button type="submit"
-                style="padding:6px 12px; background:#2e7d32; color:#fff; border:none;
-                       border-radius:4px; font-size:13px; cursor:pointer;">
-          ⬆ Importa servizi
-        </button>
-      </form>
+  <div class="cr-section">
+    <h2 class="cr-h2">Esporta dati esistenti</h2>
+    <p style="color: var(--ink-3); font-size:13px; margin-top:-6px;">
+      Scarica un Excel con i servizi o gli stand già inseriti per un evento.
+      Le colonne sono identiche a quelle dell'import: puoi correggere e ricaricare.
+    </p>
+    <div class="cr-panel">
+      <div class="cr-form-row">
+        <label style="font-weight:500; color: var(--ink-2);">Evento:</label>
+        <select id="export-evento" style="padding:7px 10px; font-size:13px; border:1px solid var(--line-strong); border-radius:6px; background:#fff;">
+          {% for ev in eventi %}
+          <option value="{{ ev.slug }}">{{ ev.get_name }} ({{ ev.slug }})</option>
+          {% endfor %}
+        </select>
+        <a id="btn-export-servizi" href="#" class="cr-btn cr-btn--accent cr-btn--small">⬇ Esporta servizi</a>
+        <a id="btn-export-stand" href="#" class="cr-btn cr-btn--accent cr-btn--small">⬇ Esporta stand</a>
+      </div>
     </div>
-
-    <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:18px;
-                box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-      <h3 style="margin: 0 0 6px 0; color:#222;">Stand</h3>
-      <p style="color:#555; font-size:14px; line-height:1.5; margin: 0 0 14px 0;">
-        Scarica il template Excel per gli stand (codice, blocco, prezzo, dimensioni, allacci...).
-        Compila e importa col comando
-        <code style="background:#f5f5f5; padding:2px 6px; border-radius:3px; font-size:12px;">manage.py importa_stand</code>.
-      </p>
-      <a href="{% url 'core:cruscotto_download_template_stand' %}"
-         style="display:inline-block; padding:8px 14px; background:#417690; color:#fff;
-                border-radius:4px; text-decoration:none; font-size:14px;">
-        ⬇ Scarica template_stand.xlsx
-      </a>
-      <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
-            enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid #eee; padding-top:14px;">
-        {% csrf_token %}
-        <input type="file" name="file_excel" accept=".xlsx,.xls" required style="font-size:13px;">
-        <label style="display:block; margin:8px 0; font-size:13px;">
-          <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
-        </label>
-        <button type="submit"
-                style="padding:6px 12px; background:#2e7d32; color:#fff; border:none;
-                       border-radius:4px; font-size:13px; cursor:pointer;">
-          ⬆ Importa stand
-        </button>
-      </form>
-    </div>
+    <script>
+      (function() {
+        var sel = document.getElementById('export-evento');
+        function upd() {
+          var slug = encodeURIComponent(sel.value);
+          document.getElementById('btn-export-servizi').href =
+            "{% url 'core:cruscotto_export_servizi' %}?evento=" + slug;
+          document.getElementById('btn-export-stand').href =
+            "{% url 'core:cruscotto_export_stand' %}?evento=" + slug;
+        }
+        if (sel) { sel.addEventListener('change', upd); upd(); }
+      })();
+    </script>
   </div>
 
-  <h2 style="margin-top: 32px;">Come si usa l'import</h2>
-  <ol style="color:#555; line-height:1.8;">
-    <li>Scarica il template col bottone qui sopra.</li>
-    <li>Apri il file con Excel o LibreOffice; cancella le righe di esempio e compila una riga per ogni servizio.</li>
-    <li>Salva il file (dove preferisci) e dal terminale lancia (PRIMA in modalita' prova):
-      <pre style="background:#f5f5f5; padding:8px; border-radius:4px; font-size:12px; overflow-x:auto;">python manage.py importa_servizi --file &lt;percorso_del_file.xlsx&gt; --dry-run</pre>
-    </li>
-    <li>Se l'output e' quello che ti aspetti, rilancia <strong>senza</strong> <code>--dry-run</code>.</li>
-    <li>I servizi con <code>code</code> gia' esistente per quell'evento verranno <strong>aggiornati</strong>;
-        quelli nuovi verranno <strong>creati</strong>.</li>
-  </ol>
-
-  <p style="margin-top:24px;">
-    <a href="{% url 'core:cruscotto_home' %}"
-       style="display:inline-block; padding:8px 14px; background:#666; color:#fff;
-              border-radius:4px; text-decoration:none;">← Torna al cruscotto</a>
-  </p>
+  <div class="cr-section">
+    <h2 class="cr-h2">Import da Excel</h2>
+    <div class="cr-grid">
+      <div class="cr-panel">
+        <h3>Servizi</h3>
+        <p>Scarica il modello, compilalo e ricarica qui per importare.</p>
+        <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello servizi</a>
+        <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
+              enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
+          {% csrf_token %}
+          <input type="file" name="file_excel" accept=".xlsx,.xls" required>
+          <label class="cr-check" style="display:block; margin:8px 0;">
+            <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+          </label>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">⬆ Importa servizi</button>
+        </form>
+      </div>
+      <div class="cr-panel">
+        <h3>Stand</h3>
+        <p>Scarica il modello, compilalo e ricarica qui per importare.</p>
+        <a href="{% url 'core:cruscotto_download_template_stand' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello stand</a>
+        <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
+              enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
+          {% csrf_token %}
+          <input type="file" name="file_excel" accept=".xlsx,.xls" required>
+          <label class="cr-check" style="display:block; margin:8px 0;">
+            <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+          </label>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">⬆ Importa stand</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
