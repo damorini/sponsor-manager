@@ -200,7 +200,7 @@ def cart_add_view(request):
         if days_to_event < service.self_purchase_cutoff_days:
             messages.error(
                 request,
-                f"Il termine per acquistare '{service.name}' è scaduto."
+                f"Il termine per acquistare '{service.translated('name')}' è scaduto."
             )
             return redirect('portal:service_detail', service_id=service.id)
 
@@ -222,7 +222,7 @@ def cart_add_view(request):
         existing_line.save()  # save() ricalcola da solo i totali
         messages.success(
             request,
-            f"Quantità di '{service.name}' aggiornata."
+            f"Quantità di '{service.translated('name')}' aggiornata."
         )
     else:
         # Crea nuova riga
@@ -240,7 +240,7 @@ def cart_add_view(request):
         line.save()
         messages.success(
             request,
-            f"'{service.name}' aggiunto al carrello."
+            f"'{service.translated('name')}' aggiunto al carrello."
         )
 
     # Ricalcola totali contratto
