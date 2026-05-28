@@ -803,21 +803,21 @@ def generate_quote_pdf(contract):
         table.style = 'Table Grid'
         hdr = table.rows[0].cells
         hdr[0].text = 'Voce'; hdr[1].text = 'Descrizione'
-        hdr[2].text = 'Q.tà'; hdr[3].text = 'Importo'
+        hdr[2].text = 'Q.tà'; hdr[3].text = 'Imponibile'
         for rw in rows:
             cells = table.add_row().cells
             cells[0].text = rw['name']
             cells[1].text = rw['description'] or ''
             cells[2].text = str(rw['quantity'])
-            cells[3].text = f"€ {format_currency_filter(rw['line_total'])}"
+            cells[3].text = f"€ {format_currency_filter(rw.get('line_subtotal', rw['line_total']))}"
 
         doc.add_paragraph("")
         # Totali (dal contratto)
+        doc.add_paragraph(f"Totale imponibile: € {format_currency_filter(contract.subtotal)}")
+        doc.add_paragraph(f"Totale IVA: € {format_currency_filter(contract.vat_amount)}")
         tot_p = doc.add_paragraph()
         tot_r = tot_p.add_run(
-            f"Imponibile: € {format_currency_filter(contract.subtotal)}    "
-            f"IVA: € {format_currency_filter(contract.vat_amount)}    "
-            f"Totale (IVA incl.): € {format_currency_filter(contract.total)}"
+            f"Totale complessivo (IVA inclusa): € {format_currency_filter(contract.total)}"
         )
         tot_r.bold = True
         tot_r.font.size = Pt(11)
@@ -928,18 +928,20 @@ def generate_client_summary_pdf(sponsor, event):
             table.style = 'Table Grid'
             hdr = table.rows[0].cells
             hdr[0].text = 'Servizio'; hdr[1].text = 'Descrizione'
-            hdr[2].text = 'Q.tà'; hdr[3].text = 'Importo'
+            hdr[2].text = 'Q.tà'; hdr[3].text = 'Imponibile'
             for ln in cd['lines']:
                 row = table.add_row().cells
                 row[0].text = ln['name']
                 row[1].text = ln.get('description', '') or ''
                 row[2].text = str(ln['quantity'])
-                row[3].text = f"€ {cur(ln['line_total'])}"
+                row[3].text = f"€ {cur(ln.get('line_subtotal', ln['line_total']))}"
 
-        # totali
-        doc.add_paragraph(f"Imponibile: € {cur(cd['subtotal'])}   "
-                          f"IVA: € {cur(cd['vat_amount'])}   "
-                          f"Totale (IVA incl.): € {cur(cd['total'])}")
+        # totali (scorporati e chiari)
+        doc.add_paragraph(f"Totale imponibile: € {cur(cd['subtotal'])}")
+        doc.add_paragraph(f"Totale IVA: € {cur(cd['vat_amount'])}")
+        _pc = doc.add_paragraph()
+        _rc = _pc.add_run(f"Totale complessivo (IVA inclusa): € {cur(cd['total'])}")
+        _rc.bold = True
 
         # piano pagamento (con stato scadenze)
         def _stato_label(s):
