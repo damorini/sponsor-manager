@@ -2,6 +2,7 @@
 {% block title %}La mia Wishlist{% endblock %}
 
 {% block content %}
+<form style="display:none">{% csrf_token %}</form>
 <div class="max-w-6xl mx-auto px-4 py-8">
   <div class="mb-8">
     <h1 class="text-4xl font-bold text-gray-900 mb-2">♥ La mia Wishlist</h1>
@@ -88,6 +89,24 @@ document.querySelectorAll('.remove-from-wishlist-btn').forEach(btn => {
     } catch (error) {
       console.error('Errore:', error);
     }
+  });
+});
+
+// Bottone "Carrello": invia un POST a cart_add (la view fa redirect al carrello)
+document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const serviceId = this.dataset.serviceId;
+    if (!serviceId) return;
+    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{% url "portal:cart_add" %}';
+    form.innerHTML =
+      '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf + '">' +
+      '<input type="hidden" name="service_id" value="' + serviceId + '">' +
+      '<input type="hidden" name="quantity" value="1">';
+    document.body.appendChild(form);
+    form.submit();
   });
 });
 </script>
