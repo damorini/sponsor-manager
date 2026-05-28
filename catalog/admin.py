@@ -66,13 +66,26 @@ class ServiceAdmin(admin.ModelAdmin):
     search_fields = ('code', 'name', 'event__name', 'event__slug')
     list_select_related = ('event',)
     autocomplete_fields = ['event']
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at', 'image_preview')
+    @admin.display(description='Anteprima immagine')
+    def image_preview(self, obj):
+        from django.utils.html import format_html
+        if getattr(obj, 'image', None):
+            try:
+                return format_html(
+                    '<img src="{}" style="max-height:120px; max-width:240px; '
+                    'object-fit:contain; border:1px solid #ddd; border-radius:4px;">',
+                    obj.image.url)
+            except Exception:
+                return "(immagine non disponibile)"
+        return "(nessuna immagine)"
+
     ordering = ('event', 'display_order')
     inlines = [DeadlineTemplateInline]
 
     fieldsets = (
         (None, {
-            'fields': ('event', 'code', 'name', 'description', 'image', 'category'),
+            'fields': ('event', 'code', 'name', 'description', 'image', 'image_preview', 'category'),
         }),
         ('Pricing', {
             'fields': ('pricing_mode', 'base_price', 'pricing_tiers',
