@@ -77,3 +77,78 @@ def build_template_servizi_workbook():
     ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
     ws2.column_dimensions["A"].width = 80
     return wb
+
+
+def build_template_stand_workbook():
+    """Crea e ritorna un openpyxl Workbook col template Excel per importa_stand."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.comments import Comment
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Stand"
+
+    headers = [
+        ("evento_slug", "OBBLIGATORIO. Slug dell'evento, es. AITEB2026"),
+        ("code", "OBBLIGATORIO. Codice univoco per evento, es. A-12"),
+        ("blocco_code", "Opzionale. Codice del blocco (StandBlock) cui appartiene lo stand"),
+        ("prezzo_base", "OBBLIGATORIO. Prezzo base in euro (es. 1500.00)"),
+        ("larghezza_m", "Opzionale. Larghezza in metri (es. 3)"),
+        ("profondita_m", "Opzionale. Profondita' in metri (es. 2)"),
+        ("tipologia", "Opzionale. Testo libero (es. corner_premium, linear, island, custom)"),
+        ("stato", "Default 'available'. Valori: available, reserved, assigned, unavailable"),
+        ("allaccio_elettrico", "s/n (default n)"),
+        ("potenza_kw", "Opzionale. Potenza in kW (es. 3)"),
+        ("allaccio_idrico", "s/n (default n)"),
+        ("internet", "s/n (default n)"),
+        ("altezza_max_m", "Opzionale. Altezza massima in metri"),
+        ("descrizione_preventivo", "Opzionale. Descrizione mostrata nel preventivo"),
+    ]
+
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, (name, comment) in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=name)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.comment = Comment(comment, "Sponsor Manager")
+
+    esempio1 = ["AITEB2026", "A-01", "", 1500.00, 3, 2, "linear", "available",
+                "s", 3, "n", "s", 2.5, "Stand lineare 3x2 m, fronte corridoio"]
+    esempio2 = ["AITEB2026", "A-02", "", 2500.00, 4, 4, "island", "available",
+                "s", 6, "s", "s", 3.0, "Isola 4x4 m, doppio fronte"]
+    for col, v in enumerate(esempio1, start=1):
+        ws.cell(row=2, column=col, value=v)
+    for col, v in enumerate(esempio2, start=1):
+        ws.cell(row=3, column=col, value=v)
+
+    larghezze = [14, 10, 14, 14, 12, 12, 16, 14, 18, 12, 16, 10, 14, 32]
+    for i, w in enumerate(larghezze, start=1):
+        ws.column_dimensions[chr(64 + i)].width = w
+
+    ws2 = wb.create_sheet("Istruzioni")
+    istr = [
+        "IMPORT STAND - Istruzioni",
+        "",
+        "1. Le PRIME 2 RIGHE del foglio 'Stand' sono esempi: cancellali o sovrascrivili.",
+        "2. Compila una riga per ogni stand da importare/aggiornare.",
+        "3. Colonne OBBLIGATORIE: evento_slug, code, prezzo_base.",
+        "4. evento_slug: lo slug dell'evento gia' esistente (es. AITEB2026).",
+        "5. code: univoco per evento. Se esiste -> AGGIORNA, sennò -> CREA.",
+        "6. blocco_code: opzionale. Se valorizzato, lo stand viene collegato al blocco",
+        "   (StandBlock) con quel codice NELLO STESSO evento. Se il blocco non esiste -> errore.",
+        "7. stato valido (default 'available'): available / reserved / assigned / unavailable",
+        "8. allaccio_elettrico / allaccio_idrico / internet: s/n (default n).",
+        "9. Numeri: usa il punto o la virgola decimale.",
+        "",
+        "Lancio:",
+        "  python manage.py importa_stand --file <percorso_file.xlsx> --dry-run",
+        "  (verifica cosa farebbe, poi togli --dry-run per eseguire davvero)",
+    ]
+    for r, riga in enumerate(istr, start=1):
+        ws2.cell(row=r, column=1, value=riga)
+    ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
+    ws2.column_dimensions["A"].width = 80
+    return wb
