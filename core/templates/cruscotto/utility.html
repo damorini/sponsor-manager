@@ -71,12 +71,18 @@
     <div class="cr-grid">
       <div class="cr-panel">
         <h3>Servizi</h3>
-        <p>Scarica il modello, compilalo e ricarica qui per importare.</p>
         <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello servizi</a>
         <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
           {% csrf_token %}
-          <input type="file" name="file_excel" accept=".xlsx,.xls" required>
+          <label class="cr-dropzone">
+            <input type="file" name="file_excel" accept=".xlsx,.xls" hidden>
+            <span class="cr-dz-icon">⬆</span>
+            <span class="cr-dz-text">Trascina qui il file Excel
+              <span class="cr-dz-sub">oppure clicca per sceglierlo (.xlsx)</span>
+            </span>
+            <span class="cr-dz-file"></span>
+          </label>
           <label class="cr-check" style="display:block; margin:8px 0;">
             <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
           </label>
@@ -85,12 +91,18 @@
       </div>
       <div class="cr-panel">
         <h3>Stand</h3>
-        <p>Scarica il modello, compilalo e ricarica qui per importare.</p>
         <a href="{% url 'core:cruscotto_download_template_stand' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello stand</a>
         <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
           {% csrf_token %}
-          <input type="file" name="file_excel" accept=".xlsx,.xls" required>
+          <label class="cr-dropzone">
+            <input type="file" name="file_excel" accept=".xlsx,.xls" hidden>
+            <span class="cr-dz-icon">⬆</span>
+            <span class="cr-dz-text">Trascina qui il file Excel
+              <span class="cr-dz-sub">oppure clicca per sceglierlo (.xlsx)</span>
+            </span>
+            <span class="cr-dz-file"></span>
+          </label>
           <label class="cr-check" style="display:block; margin:8px 0;">
             <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
           </label>
@@ -100,4 +112,27 @@
     </div>
   </div>
 </div>
+<script>
+  // Attiva ogni riquadro drag & drop della pagina
+  document.querySelectorAll(".cr-dropzone").forEach(function (dz) {
+    var input = dz.querySelector('input[type="file"]');
+    var nome = dz.querySelector(".cr-dz-file");
+    function mostra() {
+      var has = input.files && input.files.length > 0;
+      nome.textContent = has ? ("\u2713 " + input.files[0].name) : "";
+      dz.classList.toggle("has-file", has);
+    }
+    input.addEventListener("change", mostra);
+    ["dragenter", "dragover"].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.add("drag"); });
+    });
+    ["dragleave", "drop"].forEach(function (ev) {
+      dz.addEventListener(ev, function (e) { e.preventDefault(); dz.classList.remove("drag"); });
+    });
+    dz.addEventListener("drop", function (e) {
+      if (e.dataTransfer.files.length) { input.files = e.dataTransfer.files; mostra(); }
+    });
+  });
+</script>
+
 {% endblock %}
