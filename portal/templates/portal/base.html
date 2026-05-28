@@ -86,6 +86,12 @@
       
       <!-- User menu -->
       <div class="flex items-center space-x-4">
+        {% if user.contact_profile.sponsor.logo_url %}
+        <img src="{{ user.contact_profile.sponsor.logo_url }}"
+             alt="{{ user.contact_profile.sponsor.legal_name }}"
+             class="h-9 w-auto max-w-[140px] object-contain hidden sm:block"
+             title="{{ user.contact_profile.sponsor.legal_name }}">
+        {% endif %}
         <div class="hidden sm:block text-sm text-gray-600">
           {{ user.contact_profile.full_name }}
           {% if user.contact_profile.sponsor %}
