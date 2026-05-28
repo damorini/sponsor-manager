@@ -40,4 +40,28 @@ def cart_count(request):
                     count += c.lines.count()
     except Exception:
         count = 0
-    return {'cart_count': count}
+
+    # Servizi acquistabili: serve per mostrare "Acquista servizi" nel menu
+    # su TUTTE le pagine del portale (prima era calcolato solo in dashboard).
+    has_purchasable = False
+    try:
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            contact = getattr(user, 'contact_profile', None)
+            sponsor = getattr(contact, 'sponsor', None) if contact else None
+            if sponsor:
+                from contracts.models import Contract
+                from catalog.models import Service
+                eventi_ids = list(
+                    Contract.objects.filter(sponsor=sponsor)
+                    .values_list('event_id', flat=True)
+                )
+                has_purchasable = Service.objects.filter(
+                    event_id__in=eventi_ids,
+                    is_active=True,
+                    is_self_purchasable=True,
+                ).exists()
+    except Exception:
+        has_purchasable = False
+
+    return {'cart_count': count, 'has_purchasable_services': has_purchasable}

@@ -3,6 +3,22 @@
 
 {% block title %}{{ title }} | {{ site_title|default:_("Django site admin") }}{% endblock %}
 
+{% block extrastyle %}{{ block.super }}
+<style>/* no-number-spinners */
+  /* Niente frecce su/giu sui campi numero (cambiavano valore per sbaglio) */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+</style>
+<script>
+  // Evita che la rotellina del mouse cambi un campo numero a fuoco
+  document.addEventListener('wheel', function () {
+    var el = document.activeElement;
+    if (el && el.type === 'number') { el.blur(); }
+  }, { passive: true });
+</script>
+{% endblock %}
+
 {% block branding %}
 <h1 id="site-name">
   <a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a>
