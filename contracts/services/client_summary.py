@@ -72,7 +72,10 @@ def build_client_summary(sponsor, event):
                 'description': (getattr(ln, 'service_description_snapshot', '') or '').strip(),
                 'quantity': ln.quantity,
                 'unit_price': _money(ln.unit_price),
-                'line_total': _money(ln.line_total),
+                'line_subtotal': _money(ln.line_subtotal),  # imponibile riga (no IVA)
+                'line_vat': _money(ln.line_vat),             # IVA riga
+                'vat_rate': _money(ln.vat_rate),
+                'line_total': _money(ln.line_total),         # totale riga (IVA incl.)
             })
 
         # stand / blocco
@@ -171,6 +174,8 @@ def build_quote_summary_rows(contract):
             'name': ln.service_name_snapshot,
             'description': (getattr(ln, 'service_description_snapshot', '') or '').strip(),
             'quantity': ln.quantity,
+            'line_subtotal': ln.line_subtotal if ln.line_subtotal is not None else Decimal('0.00'),
+            'line_vat': ln.line_vat if ln.line_vat is not None else Decimal('0.00'),
             'line_total': ln.line_total if ln.line_total is not None else Decimal('0.00'),
             'is_stand': is_stand,
         }
