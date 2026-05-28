@@ -77,6 +77,32 @@ class PaymentInline(admin.TabularInline):
         return False
 
 
+class RegistraIncassoInline(admin.TabularInline):
+    """Inline per REGISTRARE incassi manuali (bonifici sponsorizzazioni)."""
+    model = Payment
+    extra = 0
+    verbose_name = "Registra incasso (manuale/bonifico)"
+    verbose_name_plural = "Registra incasso (manuale/bonifico)"
+    fields = (
+        'payment_method', 'amount_gross', 'status',
+        'completed_at', 'bank_transfer_reference', 'notes',
+    )
+    # mostra solo i pagamenti manuali/bonifico (i PayPal restano nell'altro inline)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        from contracts.payments import PaymentMethodChoice
+        return qs.filter(payment_method__in=[
+            PaymentMethodChoice.BANK_TRANSFER, PaymentMethodChoice.MANUAL])
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        from contracts.payments import PaymentMethodChoice, PaymentStatus
+        # default comodi: bonifico + completato
+        formset.form.base_fields['payment_method'].initial = PaymentMethodChoice.BANK_TRANSFER
+        formset.form.base_fields['status'].initial = PaymentStatus.SUCCEEDED
+        return formset
+
+
 # =============================================================================
 # CONTRACT
 # =============================================================================
@@ -118,7 +144,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
-    inlines = [ContractLineInline, DeadlineInline, PaymentInline]
+    inlines = [ContractLineInline, DeadlineInline, PaymentInline, RegistraIncassoInline]
 
     fieldsets = (
         (None, {
