@@ -191,22 +191,33 @@ class Command(BaseCommand):
                         n_create += 1
                         self.stdout.write(f"  {n_riga:>4}: + CREATO '{code}' su {evento_slug}")
                     else:
-                        # AGGIORNA i campi
+                        # Il servizio e' gia' usato in qualche contratto?
+                        gia_venduto = svc.contract_lines.exists()
+                        # Campi sempre sicuri da aggiornare
                         svc.name = name_json
                         if desc_json:
                             svc.description = desc_json
                         svc.category = cat
                         svc.accounting_category = acc_cat
-                        svc.pricing_mode = pmode
-                        svc.base_price = prezzo
-                        if iva is not None:
-                            svc.vat_rate = iva
-                        svc.is_active = attivo
-                        svc.max_quantity = qmax
                         svc.display_order = ordine
-                        svc.save()
-                        n_update += 1
-                        self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
+                        if gia_venduto:
+                            # PROTEZIONE: non tocco prezzo, IVA, disponibilita', stato, pricing
+                            svc.save()
+                            n_update += 1
+                            self.stdout.write(self.style.WARNING(
+                                f"  {n_riga:>4}: ~ AGGIORNATO (PROTETTO: ha contratti) '{code}' "
+                                f"su {evento_slug} - prezzo/disponibilita'/stato NON modificati"))
+                        else:
+                            # aggiornamento completo
+                            svc.pricing_mode = pmode
+                            svc.base_price = prezzo
+                            if iva is not None:
+                                svc.vat_rate = iva
+                            svc.is_active = attivo
+                            svc.max_quantity = qmax
+                            svc.save()
+                            n_update += 1
+                            self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
 
             except Exception as e:
                 n_err += 1
