@@ -22,6 +22,7 @@ SPONSOR_FIELDS = [
     ('legal_name', 'Ragione sociale'),
     ('vat_number', 'Partita IVA'),
     ('tax_code', 'Codice fiscale'),
+    ('sdi_code', 'Codice destinatario SDI'),
     ('pec_email', 'PEC'),
     ('address_street', 'Indirizzo'),
     ('address_city', 'Città'),
