@@ -5,7 +5,7 @@ Da SOSTITUIRE al portal/urls.py della parte 2.
 """
 from django.urls import path
 
-from portal.views import auth, dashboard, contract, catalog, cart, materials, wishlist
+from portal.views import auth, dashboard, contract, catalog, cart, materials, wishlist, profile
 from contracts.views import checkout
 
 app_name = 'portal'
@@ -26,6 +26,7 @@ urlpatterns = [
     
     # Dashboard
     path('', dashboard.dashboard_view, name='dashboard'),
+    path('profilo/', profile.profile_view, name='profile'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),

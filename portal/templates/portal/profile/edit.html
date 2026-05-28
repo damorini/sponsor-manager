@@ -1,0 +1,132 @@
+{% extends "portal/base.html" %}
+
+{% block title %}I miei dati{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+  <h1 class="text-2xl font-semibold text-gray-900 mb-2">I miei dati</h1>
+  <p class="text-gray-600 mb-6">Controlla e aggiorna i dati della tua azienda e del contatto.
+    Le modifiche vengono salvate subito.</p>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="mb-4 px-4 py-3 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" class="space-y-8">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Dati azienda</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% for f in sponsor_fields %}
+        <div class="{% if f.name == 'sponsor_business_description' or f.name == 'sponsor_address_street' %}sm:col-span-2{% endif %}">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ f.label }}</label>
+          <input type="text" name="{{ f.name }}" value="{{ f.value }}"
+                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-brand-500 focus:border-brand-500">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Contatto di riferimento</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {% for f in contact_fields %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{{ f.label }}</label>
+          <input type="text" name="{{ f.name }}" value="{{ f.value }}"
+                 class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-brand-500 focus:border-brand-500">
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      <a href="{% url 'portal:dashboard' %}"
+         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</a>
+      <button type="submit"
+              class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">
+        Salva modifiche
+      </button>
+    </div>
+  </form>
+
+  <!-- Altri contatti aziendali -->
+  <div class="bg-white border border-gray-200 rounded-lg p-6 mt-8">
+    <h2 class="text-lg font-medium text-gray-900 mb-4">Altri contatti aziendali</h2>
+
+    {% if contatti %}
+    <table class="w-full text-sm mb-6">
+      <thead>
+        <tr class="text-left text-gray-500 border-b">
+          <th class="py-2">Nome</th><th class="py-2">Email</th>
+          <th class="py-2">Telefono</th><th class="py-2">Ruoli</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in contatti %}
+        <tr class="border-b border-gray-100">
+          <td class="py-2">{{ c.full_name }}{% if c.job_title %} <span class="text-gray-400">· {{ c.job_title }}</span>{% endif %}</td>
+          <td class="py-2">{{ c.email }}</td>
+          <td class="py-2">{{ c.phone|default:"—" }}</td>
+          <td class="py-2">{{ c.ruoli|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-gray-500 mb-6">Nessun altro contatto registrato.</p>
+    {% endif %}
+
+    <h3 class="text-md font-medium text-gray-800 mb-3">Aggiungi un contatto</h3>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="azione" value="add_contact">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome e cognome *</label>
+          <input type="text" name="nuovo_full_name" required
+                 class="w-full border border-gray-300 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+          <input type="email" name="nuovo_email" required
+                 class="w-full border border-gray-300 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+          <input type="text" name="nuovo_phone"
+                 class="w-full border border-gray-300 rounded-md px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Ruolo aziendale</label>
+          <input type="text" name="nuovo_job_title" placeholder="es. Responsabile marketing"
+                 class="w-full border border-gray-300 rounded-md px-3 py-2">
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Ruoli funzionali (chi riceve quali comunicazioni)</label>
+        <div class="flex flex-wrap gap-4">
+          {% for value, label in role_choices %}
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" name="nuovo_roles" value="{{ value }}"
+                   class="rounded border-gray-300">
+            <span class="text-sm text-gray-700">{{ label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit"
+                class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">
+          Aggiungi contatto
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
