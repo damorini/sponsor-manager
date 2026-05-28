@@ -19,3 +19,25 @@ def branding(request):
         'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
         'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
     }
+
+
+def cart_count(request):
+    """Numero di articoli nel carrello (righe dei contratti ADDON draft del cliente)."""
+    count = 0
+    try:
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            contact = getattr(user, 'contact_profile', None)
+            sponsor = getattr(contact, 'sponsor', None) if contact else None
+            if sponsor:
+                from contracts.models import Contract, ContractKind, ContractStatus
+                carts = Contract.objects.filter(
+                    sponsor=sponsor,
+                    contract_kind=ContractKind.ADDON,
+                    status=ContractStatus.DRAFT,
+                )
+                for c in carts:
+                    count += c.lines.count()
+    except Exception:
+        count = 0
+    return {'cart_count': count}
