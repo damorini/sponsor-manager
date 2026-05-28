@@ -42,6 +42,7 @@ CONTACT_ROLE_CHOICES = [
     ('finance', 'Amministrazione'),
     ('operational', 'Operativo'),
     ('cc', 'CC'),
+    ('educational', 'Educational manager'),
 ]
 
 # Campi modificabili (nome_campo_modello -> etichetta)

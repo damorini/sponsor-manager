@@ -20,6 +20,7 @@ class ContactRole(models.TextChoices):
     FINANCE = 'finance', 'Amministrazione'
     OPERATIONAL = 'operational', 'Operativo'
     CC = 'cc', 'CC'
+    EDUCATIONAL = 'educational', 'Educational manager'
 
 
 class Sponsor(SoftDeleteModel):
