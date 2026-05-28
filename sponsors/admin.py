@@ -241,6 +241,7 @@ class ContactAdmin(admin.ModelAdmin):
     list_select_related = ('sponsor',)
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at')
+    actions = ['action_invita_al_portale']
 
     fieldsets = (
         ('Persona', {
@@ -282,6 +283,29 @@ class ContactAdmin(admin.ModelAdmin):
     def sponsor_link(self, obj):
         url = reverse('admin:sponsors_sponsor_change', args=[obj.sponsor_id])
         return format_html('<a href="{}">{}</a>', url, obj.sponsor.legal_name)
+
+    @admin.action(description='Invita al portale (crea utente + password)')
+    def action_invita_al_portale(self, request, queryset):
+        from portal.services.invitation import invite_contact_to_portal
+        ok_creati, ok_reset, errori = 0, 0, []
+        righe = []
+        for contact in queryset:
+            try:
+                user, pwd, created = invite_contact_to_portal(contact, send_email=False)
+                righe.append(f"{contact.full_name} ({user.email}) - password: {pwd}"
+                             + ("" if created else " (rigenerata)"))
+                if created:
+                    ok_creati += 1
+                else:
+                    ok_reset += 1
+            except Exception as e:
+                errori.append(f"{contact.full_name}: {e}")
+
+        if ok_creati or ok_reset:
+            msg = "Inviti completati. " + " | ".join(righe)
+            self.message_user(request, msg, level='SUCCESS')
+        if errori:
+            self.message_user(request, "Errori: " + " | ".join(errori), level='ERROR')
 
     @admin.display(description='Ruoli')
     def roles_display(self, obj):
