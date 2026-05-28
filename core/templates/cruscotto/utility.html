@@ -26,6 +26,40 @@
   <p style="color:#666; margin-top:0;">Strumenti operativi: download di template, import di dati,
     e altre utilita' per gestire il sistema.</p>
 
+  <h2 style="margin-top: 28px;">Esporta dati esistenti</h2>
+  <p style="color:#555; font-size:14px; margin: 0 0 12px 0;">
+    Scarica un Excel con i servizi o gli stand gia' inseriti per un evento. Il file ha le
+    stesse colonne del template: puoi correggerlo e ri-caricarlo dall'import qui sotto.</p>
+  <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:8px;">
+    <label style="font-size:14px; font-weight:600;">Evento:</label>
+    <select id="export-evento" style="padding:6px 10px; font-size:14px; margin:0 8px;">
+      {% for ev in eventi %}
+      <option value="{{ ev.slug }}">{{ ev.get_name }} ({{ ev.slug }})</option>
+      {% endfor %}
+    </select>
+    <a id="btn-export-servizi" href="#"
+       style="display:inline-block; padding:7px 12px; background:#2e7d32; color:#fff;
+              border-radius:4px; text-decoration:none; font-size:14px; margin-right:6px;">
+      ⬇ Esporta servizi</a>
+    <a id="btn-export-stand" href="#"
+       style="display:inline-block; padding:7px 12px; background:#2e7d32; color:#fff;
+              border-radius:4px; text-decoration:none; font-size:14px;">
+      ⬇ Esporta stand</a>
+  </div>
+  <script>
+    (function() {
+      var sel = document.getElementById('export-evento');
+      function upd() {
+        var slug = encodeURIComponent(sel.value);
+        document.getElementById('btn-export-servizi').href =
+          "{% url 'core:cruscotto_export_servizi' %}?evento=" + slug;
+        document.getElementById('btn-export-stand').href =
+          "{% url 'core:cruscotto_export_stand' %}?evento=" + slug;
+      }
+      if (sel) { sel.addEventListener('change', upd); upd(); }
+    })();
+  </script>
+
   <h2 style="margin-top: 28px;">Import da Excel</h2>
 
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-top: 12px;">

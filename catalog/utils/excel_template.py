@@ -152,3 +152,93 @@ def build_template_stand_workbook():
     ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
     ws2.column_dimensions["A"].width = 80
     return wb
+
+
+def _norm_bool_out(v):
+    return 's' if v else 'n'
+
+
+def export_servizi_workbook(event):
+    """Workbook con i servizi esistenti di un evento (stesse colonne del template)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font
+    from catalog.models import Service
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "servizi"
+    headers = ["evento_slug", "code", "nome_it", "nome_en", "descrizione_it",
+               "descrizione_en", "categoria", "categoria_contabile", "prezzo_base",
+               "iva_percento", "attivo", "quantita_max", "ordine", "pricing_mode"]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, name in enumerate(headers, start=1):
+        c = ws.cell(row=1, column=i, value=name)
+        c.fill = header_fill
+        c.font = header_font
+
+    r = 2
+    for s in Service.objects.filter(event=event).order_by('display_order', 'code'):
+        nome = s.name if isinstance(s.name, dict) else {}
+        desc = s.description if isinstance(s.description, dict) else {}
+        ws.cell(row=r, column=1, value=event.slug)
+        ws.cell(row=r, column=2, value=s.code)
+        ws.cell(row=r, column=3, value=nome.get('it', ''))
+        ws.cell(row=r, column=4, value=nome.get('en', ''))
+        ws.cell(row=r, column=5, value=desc.get('it', ''))
+        ws.cell(row=r, column=6, value=desc.get('en', ''))
+        ws.cell(row=r, column=7, value=s.category or '')
+        ws.cell(row=r, column=8, value=s.accounting_category or '')
+        ws.cell(row=r, column=9, value=float(s.base_price) if s.base_price is not None else '')
+        ws.cell(row=r, column=10, value=float(s.vat_rate) if s.vat_rate is not None else '')
+        ws.cell(row=r, column=11, value=_norm_bool_out(s.is_active))
+        ws.cell(row=r, column=12, value=s.max_quantity if s.max_quantity is not None else '')
+        ws.cell(row=r, column=13, value=s.display_order or 0)
+        ws.cell(row=r, column=14, value=s.pricing_mode or 'fixed')
+        r += 1
+
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
+    return wb
+
+
+def export_stand_workbook(event):
+    """Workbook con gli stand esistenti di un evento (stesse colonne del template)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font
+    from venues.models import Stand
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "stand"
+    headers = ["evento_slug", "code", "blocco_code", "prezzo_base", "larghezza_m",
+               "profondita_m", "tipologia", "stato", "allaccio_elettrico", "potenza_kw",
+               "allaccio_idrico", "internet", "altezza_max_m", "descrizione_preventivo"]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, name in enumerate(headers, start=1):
+        c = ws.cell(row=1, column=i, value=name)
+        c.fill = header_fill
+        c.font = header_font
+
+    r = 2
+    for st in Stand.objects.filter(event=event).select_related('stand_block').order_by('code'):
+        ws.cell(row=r, column=1, value=event.slug)
+        ws.cell(row=r, column=2, value=st.code)
+        ws.cell(row=r, column=3, value=st.stand_block.code if st.stand_block_id else '')
+        ws.cell(row=r, column=4, value=float(st.base_price) if st.base_price is not None else '')
+        ws.cell(row=r, column=5, value=float(st.width_meters) if st.width_meters is not None else '')
+        ws.cell(row=r, column=6, value=float(st.depth_meters) if st.depth_meters is not None else '')
+        ws.cell(row=r, column=7, value=st.stand_type or '')
+        ws.cell(row=r, column=8, value=st.status or 'available')
+        ws.cell(row=r, column=9, value=_norm_bool_out(st.has_power))
+        ws.cell(row=r, column=10, value=float(st.power_kw) if st.power_kw is not None else '')
+        ws.cell(row=r, column=11, value=_norm_bool_out(st.has_water))
+        ws.cell(row=r, column=12, value=_norm_bool_out(st.has_internet))
+        ws.cell(row=r, column=13, value=float(st.max_height_meters) if st.max_height_meters is not None else '')
+        ws.cell(row=r, column=14, value=st.quote_description or '')
+        r += 1
+
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
+    return wb

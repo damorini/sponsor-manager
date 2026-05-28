@@ -277,10 +277,13 @@ def servizio_dettaglio(request, pk, service_pk):
 def utility_home(request):
     """Pagina Utility: bottoni per scaricare template e altri strumenti."""
     risultato = request.session.pop('import_risultato', None)
+    from events.models import Event
+    eventi = Event.objects.all().order_by('-start_date')
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto · Utility',
         'import_risultato': risultato,
+        'eventi': eventi,
     }
     return render(request, 'cruscotto/utility.html', context)
 
@@ -449,3 +452,55 @@ def importa_stand_upload(request):
         from django.shortcuts import redirect
         return redirect('core:cruscotto_utility')
     return _esegui_import_excel(request, 'importa_stand', 'core:cruscotto_utility')
+
+
+@staff_member_required
+def export_servizi(request):
+    """Scarica un Excel con i servizi esistenti dell'evento scelto (?evento=slug)."""
+    from django.http import HttpResponse, Http404
+    from events.models import Event
+    from catalog.utils.excel_template import export_servizi_workbook
+
+    slug = request.GET.get('evento')
+    if not slug:
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, "Scegli un evento prima di esportare.")
+        return redirect('core:cruscotto_utility')
+    try:
+        ev = Event.objects.get(slug=slug)
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    wb = export_servizi_workbook(ev)
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="servizi_{ev.slug}.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+@staff_member_required
+def export_stand(request):
+    """Scarica un Excel con gli stand esistenti dell'evento scelto (?evento=slug)."""
+    from django.http import HttpResponse, Http404
+    from events.models import Event
+    from catalog.utils.excel_template import export_stand_workbook
+
+    slug = request.GET.get('evento')
+    if not slug:
+        from django.contrib import messages
+        from django.shortcuts import redirect
+        messages.error(request, "Scegli un evento prima di esportare.")
+        return redirect('core:cruscotto_utility')
+    try:
+        ev = Event.objects.get(slug=slug)
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    wb = export_stand_workbook(ev)
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="stand_{ev.slug}.xlsx"'
+    wb.save(resp)
+    return resp
