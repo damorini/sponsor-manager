@@ -40,7 +40,7 @@ class SponsorAdmin(admin.ModelAdmin):
         'legal_name', 'display_name', 'vat_number', 'tax_code',
         'address_city', 'pec_email',
     )
-    readonly_fields = ('created_at', 'updated_at', 'contracts_summary')
+    readonly_fields = ('created_at', 'updated_at', 'contracts_summary', 'logo_preview')
     ordering = ('legal_name',)
     inlines = [ContactInline]
     actions = ['action_generate_client_summary']
@@ -139,7 +139,7 @@ class SponsorAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Anagrafica', {
-            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url'),
+            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview'),
         }),
         ('Dati fiscali', {
             'fields': ('vat_number', 'tax_code', 'sdi_code', 'pec_email'),
@@ -195,6 +195,23 @@ class SponsorAdmin(admin.ModelAdmin):
                 active
             )
         return '—'
+
+    @admin.display(description='Anteprima logo')
+    def logo_preview(self, obj):
+        from django.utils.html import format_html
+        url = None
+        if getattr(obj, 'logo_file', None):
+            try:
+                url = obj.logo_file.url
+            except Exception:
+                url = None
+        if not url and getattr(obj, 'logo_url', ''):
+            url = obj.logo_url
+        if url:
+            return format_html(
+                '<img src="{}" style="max-height:80px; max-width:200px; '
+                'object-fit:contain; border:1px solid #ddd; border-radius:4px;">', url)
+        return "(nessun logo)"
 
     @admin.display(description='Riepilogo')
     def contracts_summary(self, obj):
