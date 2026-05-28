@@ -16,8 +16,30 @@
     {% endfor %}
   {% endif %}
 
-  <form method="post" class="space-y-8">
+  <form method="post" class="space-y-8" enctype="multipart/form-data">
     {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 rounded-lg p-6">
+      <h2 class="text-lg font-medium text-gray-900 mb-4">Logo aziendale</h2>
+      <div class="flex items-center gap-4 mb-2">
+        {% if sponsor.logo_file %}
+          <img src="{{ sponsor.logo_file.url }}" alt="logo"
+               class="h-16 w-auto max-w-[160px] object-contain border border-gray-200 rounded">
+        {% elif sponsor.logo_url %}
+          <img src="{{ sponsor.logo_url }}" alt="logo"
+               class="h-16 w-auto max-w-[160px] object-contain border border-gray-200 rounded">
+        {% else %}
+          <span class="text-gray-400 text-sm">Nessun logo caricato</span>
+        {% endif %}
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Carica un nuovo logo</label>
+          <input type="file" name="sponsor_logo_file" accept="image/*"
+                 class="text-sm">
+          <p class="text-xs text-gray-500 mt-1">L'immagine viene ridimensionata e compressa
+            automaticamente. In alternativa puoi indicare un URL qui sotto.</p>
+        </div>
+      </div>
+    </div>
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">Dati azienda</h2>

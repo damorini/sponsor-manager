@@ -100,6 +100,13 @@ class Sponsor(SoftDeleteModel):
         help_text="Es. pharma, medtech, diagnostics",
     )
     website = models.URLField(blank=True, verbose_name="Sito web")
+    logo_file = models.ImageField(
+        upload_to='sponsor_logos/',
+        blank=True,
+        null=True,
+        verbose_name="Logo (file caricato)",
+        help_text="Immagine caricata dal cliente; ha priorita' sull'URL.",
+    )
     logo_url = models.URLField(
         max_length=500,
         blank=True,

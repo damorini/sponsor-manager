@@ -1,10 +1,37 @@
 """Vista profilo: lo sponsor modifica la propria anagrafica."""
 import logging
+from io import BytesIO
 
 from django.contrib import messages
+from django.core.files.base import ContentFile
 from django.shortcuts import redirect, render
 
 from portal.views.dashboard import sponsor_required
+
+
+def _comprimi_logo(uploaded_file, max_side=400):
+    """Ridimensiona (max_side px lato lungo) e comprime un'immagine caricata.
+    Ritorna un ContentFile PNG ottimizzato. Solleva ValueError se non e' immagine."""
+    from PIL import Image
+    try:
+        img = Image.open(uploaded_file)
+        img.load()
+    except Exception:
+        raise ValueError("Il file caricato non e' un'immagine valida.")
+    # converti in RGBA per preservare trasparenza, poi salva PNG ottimizzato
+    if img.mode not in ('RGB', 'RGBA'):
+        img = img.convert('RGBA')
+    w, h = img.size
+    if max(w, h) > max_side:
+        if w >= h:
+            nw, nh = max_side, int(h * max_side / w)
+        else:
+            nw, nh = int(w * max_side / h), max_side
+        img = img.resize((nw, nh), Image.LANCZOS)
+    buf = BytesIO()
+    img.save(buf, format='PNG', optimize=True)
+    buf.seek(0)
+    return ContentFile(buf.read())
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +115,20 @@ def profile_view(request):
                 if field in ('email', 'full_name') and not val:
                     continue
                 setattr(contact, field, val)
+        # logo caricato (opzionale)
+        logo_caricato = request.FILES.get('sponsor_logo_file')
+        if logo_caricato:
+            try:
+                compresso = _comprimi_logo(logo_caricato)
+                nome = f"logo_{sponsor.id}.png"
+                sponsor.logo_file.save(nome, compresso, save=False)
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('portal:profile')
+            except Exception as e:
+                logger.exception("Errore compressione logo sponsor %s", sponsor.id)
+                messages.error(request, f"Errore nel caricamento del logo: {e}")
+                return redirect('portal:profile')
         try:
             sponsor.save()
             contact.save()
