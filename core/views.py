@@ -276,9 +276,11 @@ def servizio_dettaglio(request, pk, service_pk):
 @staff_member_required
 def utility_home(request):
     """Pagina Utility: bottoni per scaricare template e altri strumenti."""
+    risultato = request.session.pop('import_risultato', None)
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto · Utility',
+        'import_risultato': risultato,
     }
     return render(request, 'cruscotto/utility.html', context)
 
@@ -384,3 +386,66 @@ def da_incassare_evento(request, pk):
         'oggi': date.today(),
     }
     return render(request, 'cruscotto/da_incassare.html', context)
+
+
+def _esegui_import_excel(request, comando, redirect_name):
+    """Helper: salva l'upload in un file temp e lancia il comando management."""
+    import os
+    import tempfile
+    from io import StringIO
+    from django.contrib import messages
+    from django.core.management import call_command
+    from django.shortcuts import redirect
+
+    f = request.FILES.get('file_excel')
+    if not f:
+        messages.error(request, "Nessun file selezionato.")
+        return redirect(redirect_name)
+    if not f.name.lower().endswith(('.xlsx', '.xls')):
+        messages.error(request, "Il file deve essere un Excel (.xlsx).")
+        return redirect(redirect_name)
+
+    dry = request.POST.get('dry_run') == 'on'
+
+    # salva in file temporaneo
+    tmp = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
+    try:
+        for chunk in f.chunks():
+            tmp.write(chunk)
+        tmp.close()
+        out = StringIO()
+        try:
+            if dry:
+                call_command(comando, file=tmp.name, dry_run=True, stdout=out)
+            else:
+                call_command(comando, file=tmp.name, stdout=out)
+            risultato = out.getvalue()
+            etichetta = "[ANTEPRIMA] " if dry else ""
+            messages.success(request, f"{etichetta}Import completato.")
+            # passo il dettaglio testuale via session per mostrarlo
+            request.session['import_risultato'] = risultato
+        except Exception as e:
+            messages.error(request, f"Errore durante l'import: {e}")
+            request.session['import_risultato'] = out.getvalue()
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except Exception:
+            pass
+    return redirect(redirect_name)
+
+
+@staff_member_required
+def importa_servizi_upload(request):
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('core:cruscotto_utility')
+    return _esegui_import_excel(request, 'importa_servizi', 'core:cruscotto_utility')
+
+
+@staff_member_required
+def importa_stand_upload(request):
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('core:cruscotto_utility')
+    return _esegui_import_excel(request, 'importa_stand', 'core:cruscotto_utility')

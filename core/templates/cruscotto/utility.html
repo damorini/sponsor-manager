@@ -17,6 +17,12 @@
 
 {% block content %}
   <h1 style="margin-bottom: 4px;">🛠 Utility</h1>
+  {% if import_risultato %}
+  <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:6px; padding:12px; margin:12px 0;">
+    <strong>Risultato ultimo import:</strong>
+    <pre style="white-space:pre-wrap; font-size:12px; margin:8px 0 0 0;">{{ import_risultato }}</pre>
+  </div>
+  {% endif %}
   <p style="color:#666; margin-top:0;">Strumenti operativi: download di template, import di dati,
     e altre utilita' per gestire il sistema.</p>
 
@@ -36,6 +42,19 @@
                 border-radius:4px; text-decoration:none; font-size:14px;">
         ⬇ Scarica template_servizi.xlsx
       </a>
+      <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
+            enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid #eee; padding-top:14px;">
+        {% csrf_token %}
+        <input type="file" name="file_excel" accept=".xlsx,.xls" required style="font-size:13px;">
+        <label style="display:block; margin:8px 0; font-size:13px;">
+          <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+        </label>
+        <button type="submit"
+                style="padding:6px 12px; background:#2e7d32; color:#fff; border:none;
+                       border-radius:4px; font-size:13px; cursor:pointer;">
+          ⬆ Importa servizi
+        </button>
+      </form>
     </div>
 
     <div style="background:#fff; border:1px solid #ddd; border-radius:8px; padding:18px;
@@ -51,6 +70,19 @@
                 border-radius:4px; text-decoration:none; font-size:14px;">
         ⬇ Scarica template_stand.xlsx
       </a>
+      <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
+            enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid #eee; padding-top:14px;">
+        {% csrf_token %}
+        <input type="file" name="file_excel" accept=".xlsx,.xls" required style="font-size:13px;">
+        <label style="display:block; margin:8px 0; font-size:13px;">
+          <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+        </label>
+        <button type="submit"
+                style="padding:6px 12px; background:#2e7d32; color:#fff; border:none;
+                       border-radius:4px; font-size:13px; cursor:pointer;">
+          ⬆ Importa stand
+        </button>
+      </form>
     </div>
   </div>
 

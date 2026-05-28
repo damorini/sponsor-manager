@@ -13,4 +13,6 @@ urlpatterns = [
     path('utility/', views.utility_home, name='cruscotto_utility'),
     path('utility/template-servizi/', views.download_template_servizi, name='cruscotto_download_template_servizi'),
     path('utility/template-stand/', views.download_template_stand, name='cruscotto_download_template_stand'),
+    path('utility/importa-servizi/', views.importa_servizi_upload, name='cruscotto_importa_servizi'),
+    path('utility/importa-stand/', views.importa_stand_upload, name='cruscotto_importa_stand'),
 ]
