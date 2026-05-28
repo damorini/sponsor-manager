@@ -166,11 +166,25 @@ class Command(BaseCommand):
                         n_create += 1
                         self.stdout.write(f"  {n_riga:>4}: + CREATO '{code}' su {evento_slug}")
                     else:
-                        for k, v in campi.items():
-                            setattr(stand, k, v)
-                        stand.save()
-                        n_update += 1
-                        self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
+                        gia_assegnato = stand.contracts.exists()
+                        if gia_assegnato:
+                            # PROTEZIONE: non tocco base_price, status, stand_block
+                            protetti = {'base_price', 'status', 'stand_block'}
+                            for k, v in campi.items():
+                                if k in protetti:
+                                    continue
+                                setattr(stand, k, v)
+                            stand.save()
+                            n_update += 1
+                            self.stdout.write(self.style.WARNING(
+                                f"  {n_riga:>4}: ~ AGGIORNATO (PROTETTO: ha contratti) '{code}' "
+                                f"su {evento_slug} - prezzo/stato/blocco NON modificati"))
+                        else:
+                            for k, v in campi.items():
+                                setattr(stand, k, v)
+                            stand.save()
+                            n_update += 1
+                            self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
 
             except Exception as e:
                 n_err += 1
