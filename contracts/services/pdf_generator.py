@@ -198,6 +198,14 @@ def generate_contract_pdf(contract):
         'services_list': services_list,
         'stand_size': _get_stand_size(contract),
         'signature_place': getattr(settings, 'SIGNATURE_PLACE', 'Bologna'),
+        # IVA scorporata (variabili pronte per il template Word del contratto)
+        'imponibile': format_currency_filter(contract.subtotal),
+        'iva': format_currency_filter(contract.vat_amount),
+        'totale': format_currency_filter(contract.total),
+        'aliquota_iva': (
+            (f"{int(contract.vat_rate)}%" if contract.vat_rate == int(contract.vat_rate)
+             else f"{contract.vat_rate}%") if contract.vat_rate else ''
+        ),
         # Piano pagamento (acconto/saldo), IVA inclusa
         'has_deposit': contract.has_deposit,
         'deposit_percent': contract.deposit_percent,
