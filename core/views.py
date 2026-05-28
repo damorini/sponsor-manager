@@ -96,6 +96,22 @@ def evento_dettaglio(request, pk):
     # Stand TOTALI dell'evento (capacita' espositiva): singoli + dentro blocchi
     n_stand_totali = Stand.objects.filter(event=ev).count()
 
+    # ---- Incassi (sui contratti confermati) ----
+    from contracts.payments import PaymentStatus
+    confermati_qs = contratti_ev.filter(status__in=CONFIRMED)
+    tot_confermato = Decimal('0.00')
+    incassato = Decimal('0.00')
+    for c in confermati_qs:
+        tot_confermato += (c.total or Decimal('0.00'))
+        for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
+            incassato += (p.amount_gross or Decimal('0.00'))
+    da_incassare = tot_confermato - incassato
+    incassi = {
+        'incassato': incassato,
+        'da_incassare': da_incassare,
+        'tot_confermato': tot_confermato,
+    }
+
     try:
         nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
     except Exception:
@@ -112,6 +128,7 @@ def evento_dettaglio(request, pk):
         'trattativa': trattativa,
         'n_stand_totali': n_stand_totali,
         'servizi': servizi,
+        'incassi': incassi,
     }
     return render(request, 'cruscotto/evento.html', context)
 
@@ -302,3 +319,68 @@ def download_template_stand(request):
     )
     resp['Content-Disposition'] = 'attachment; filename="template_stand.xlsx"'
     return resp
+
+
+@staff_member_required
+def da_incassare_evento(request, pk):
+    """Listato dei residui da incassare per i contratti confermati di un evento."""
+    from datetime import date
+    from decimal import Decimal
+    from django.http import Http404
+    from contracts.models import Contract, ContractStatus
+    from contracts.payments import PaymentStatus
+
+    try:
+        ev = Event.objects.get(pk=pk)
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    CONFIRMED = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+    confermati = (Contract.objects
+                  .filter(event=ev, status__in=CONFIRMED)
+                  .select_related('sponsor')
+                  .order_by('sponsor__legal_name'))
+
+    righe = []
+    tot_residuo = Decimal('0.00')
+    for c in confermati:
+        incassato_c = Decimal('0.00')
+        for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
+            incassato_c += (p.amount_gross or Decimal('0.00'))
+        residuo = (c.total or Decimal('0.00')) - incassato_c
+        if residuo <= 0:
+            continue  # gia' saldato
+        # prossima scadenza utile (acconto se non ancora coperto, sennò saldo)
+        if c.has_deposit and incassato_c < (c.deposit_amount or Decimal('0.00')):
+            scadenza = c.deposit_due_date
+            tipo_scad = f"Acconto ({c.deposit_percent}%)"
+        else:
+            scadenza = c.balance_due_date
+            tipo_scad = "Saldo" if c.has_deposit else "Pagamento unico"
+        righe.append({
+            'contract': c,
+            'numero': c.contract_number,
+            'cliente': c.sponsor.legal_name if c.sponsor_id else '-',
+            'totale': c.total or Decimal('0.00'),
+            'incassato': incassato_c,
+            'residuo': residuo,
+            'scadenza': scadenza,
+            'tipo_scadenza': tipo_scad,
+        })
+        tot_residuo += residuo
+
+    try:
+        nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
+    except Exception:
+        nome_ev = str(ev)
+
+    context = {
+        **admin_site.each_context(request),
+        'title': f'Da incassare · {nome_ev}',
+        'evento': ev,
+        'nome_evento': nome_ev,
+        'righe': righe,
+        'tot_residuo': tot_residuo,
+        'oggi': date.today(),
+    }
+    return render(request, 'cruscotto/da_incassare.html', context)

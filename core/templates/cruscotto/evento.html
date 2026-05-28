@@ -23,6 +23,26 @@
     {% if evento.location %} · 📍 {{ evento.location }}{% endif %}
   </p>
 
+  <h2 style="margin-top:24px;">Incassi</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+    <div style="background:#e8f5e9; border:1px solid #c8e6c9; border-radius:8px; padding:14px;">
+      <div style="font-size:12px; color:#2e7d32; text-transform:uppercase; letter-spacing:.5px;">Incassato</div>
+      <div style="font-size:26px; font-weight:700; color:#1b5e20; margin-top:4px;">€ {{ incassi.incassato|floatformat:2 }}</div>
+      <div style="font-size:12px; color:#666;">su contratti confermati</div>
+    </div>
+    <a href="{% url 'core:cruscotto_da_incassare' evento.id %}"
+       title="Vedi il dettaglio dei residui da incassare"
+       style="display:block; text-decoration:none; color:inherit;
+              background:#fff3e0; border:1px solid #ffe0b2; border-radius:8px; padding:14px;
+              transition: box-shadow .15s, transform .15s;"
+       onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.10)'; this.style.transform='translateY(-1px)';"
+       onmouseout="this.style.boxShadow='none'; this.style.transform='none';">
+      <div style="font-size:12px; color:#e65100; text-transform:uppercase; letter-spacing:.5px;">Da incassare</div>
+      <div style="font-size:26px; font-weight:700; color:#bf360c; margin-top:4px;">€ {{ incassi.da_incassare|floatformat:2 }}</div>
+      <div style="font-size:12px; color:#666;">clicca per il dettaglio &rsaquo;</div>
+    </a>
+  </div>
+
   <h2 style="margin-top:24px;">Stand</h2>
   <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
     <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
