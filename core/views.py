@@ -2,6 +2,9 @@
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from events.models import Event, EventStatus
 
@@ -504,3 +507,25 @@ def export_stand(request):
     resp['Content-Disposition'] = f'attachment; filename="stand_{ev.slug}.xlsx"'
     wb.save(resp)
     return resp
+
+
+@staff_member_required
+@require_POST
+def translate_view(request):
+    # Traduce un testo (IT->EN di default) per i campi bilingue dell'admin.
+    from core.translation import translate_text, TranslationError
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except Exception:
+        return JsonResponse({'error': 'Richiesta non valida'}, status=400)
+    text = (payload.get('text') or '').strip()
+    source = (payload.get('source') or 'it')
+    target = (payload.get('target') or 'en')
+    if not text:
+        return JsonResponse({'error': 'Testo vuoto'}, status=400)
+    try:
+        return JsonResponse({'translated': translate_text(text, source=source, target=target)})
+    except TranslationError as e:
+        return JsonResponse({'error': str(e)}, status=400)
+    except Exception:
+        return JsonResponse({'error': 'Errore durante la traduzione'}, status=500)

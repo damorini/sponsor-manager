@@ -85,10 +85,33 @@ class TranslatableJSONWidget(forms.MultiWidget):
     def format_output(self, rendered_widgets):
         return mark_safe(''.join(rendered_widgets))
 
+    def render(self, name, value, attrs=None, renderer=None):
+        rendered = super().render(name, value, attrs, renderer)
+        if len(self.languages) < 2:
+            return rendered
+        base_id = (attrs or {}).get('id') or ('id_' + name)
+        src = self.languages[0]
+        buttons = []
+        for i, lang in enumerate(self.languages):
+            if i == 0:
+                continue
+            buttons.append(
+                '<button type="button" class="cr-translate-btn" '
+                'data-src="%s_0" data-dst="%s_%d" data-source="%s" data-target="%s" '
+                'style="margin-top:5px; font-size:11px; padding:3px 10px; cursor:pointer;">'
+                'Traduci %s\u2192%s</button>' % (
+                    base_id, base_id, i, src, lang, src.upper(), lang.upper())
+            )
+        return mark_safe(
+            rendered + '<div class="cr-translate-wrap" style="margin-top:4px;">'
+            + ''.join(buttons) + '</div>'
+        )
+
     class Media:
         css = {
             'all': ('admin/css/translatable_widget.css',)
         }
+        js = ('admin/js/translatable_translate.js',)
 
 
 class TranslatableJSONField(forms.JSONField):
