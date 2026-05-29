@@ -11,7 +11,7 @@ from django.utils.html import format_html
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import DeadlineTemplate, PricingMode, Service
+from .models import DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service
 
 
 class ServiceAdminForm(forms.ModelForm):
@@ -37,8 +37,9 @@ class DeadlineTemplateInline(admin.TabularInline):
     """Template scadenze associate a un servizio, editabili inline."""
     model = DeadlineTemplate
     extra = 0
+    show_change_link = True
     fields = (
-        'deadline_type', 'title', 'days_before_event',
+        'deadline_type', 'title', 'submission_kind', 'days_before_event',
         'reminder_days_before', 'is_active',
     )
 
@@ -158,9 +159,17 @@ class ServiceAdmin(admin.ModelAdmin):
         return format_html('<small>{} gg prima</small>', obj.self_purchase_cutoff_days)
 
 
+class DeadlineFieldTemplateInline(admin.TabularInline):
+    """Campi che il cliente deve compilare, come righe."""
+    model = DeadlineFieldTemplate
+    extra = 0
+    fields = ('display_order', 'label', 'field_type', 'required', 'help_text')
+
+
 @admin.register(DeadlineTemplate)
 class DeadlineTemplateAdmin(admin.ModelAdmin):
     """Admin separato per cercare template scadenze."""
+    inlines = [DeadlineFieldTemplateInline]
     list_display = (
         'title', 'service_link', 'deadline_type',
         'days_before_event', 'reminder_days_before', 'is_active',

@@ -760,10 +760,23 @@ class DeadlineAdmin(admin.ModelAdmin):
     autocomplete_fields = ['contract', 'contract_line', 'completed_by_contact']
     date_hierarchy = 'due_date'
     readonly_fields = ('created_at', 'updated_at', 'last_reminder_sent_at',
-                       'reminder_count')
+                       'reminder_count', 'content_schema', 'submitted_content')
     ordering = ('due_date',)
 
     actions = ['action_mark_as_received']
+
+    @admin.display(description='Dati inviati dal cliente')
+    def submitted_content(self, obj):
+        data = obj.content_data or {}
+        if not data:
+            return format_html('<em>nessun dato inviato</em>')
+        from django.utils.html import format_html_join
+        labels = {f.get('key'): f.get('label', f.get('key'))
+                  for f in (obj.content_schema or [])}
+        return format_html_join(
+            '', '<div style="margin-bottom:4px;"><strong>{}:</strong> {}</div>',
+            ((labels.get(k, k), v) for k, v in data.items())
+        )
 
     @admin.display(description='Contratto', ordering='contract__contract_number')
     def contract_link(self, obj):

@@ -265,6 +265,17 @@ class Service(TranslatableMixin, TimeStampedModel):
         return days_until_event >= self.self_purchase_cutoff_days
 
 
+class SubmissionKind(models.TextChoices):
+    FILE = 'file', 'Solo file'
+    CONTENT = 'content', 'Solo campi da compilare'
+    BOTH = 'both', 'File + campi da compilare'
+
+
+class FieldType(models.TextChoices):
+    SHORT_TEXT = 'short_text', 'Testo breve'
+    LONG_TEXT = 'long_text', 'Testo lungo'
+
+
 class DeadlineTemplate(TimeStampedModel):
     """
     Template di scadenza associato a un servizio.
@@ -283,6 +294,14 @@ class DeadlineTemplate(TimeStampedModel):
     )
     title = models.CharField(max_length=255, verbose_name="Titolo")
     description = models.TextField(blank=True, verbose_name="Descrizione")
+
+    submission_kind = models.CharField(
+        max_length=20,
+        choices=SubmissionKind.choices,
+        default=SubmissionKind.FILE,
+        verbose_name="Cosa deve fornire il cliente",
+        help_text="File, campi da compilare, oppure entrambi.",
+    )
 
     days_before_event = models.IntegerField(
         verbose_name="Giorni prima dell'evento",
@@ -310,3 +329,47 @@ class DeadlineTemplate(TimeStampedModel):
 
     def __str__(self):
         return f"{self.title} ({self.service.translated('name')})"
+
+
+class DeadlineFieldTemplate(TimeStampedModel):
+    """
+    Un campo che il cliente deve compilare per soddisfare una richiesta
+    (DeadlineTemplate con submission_kind 'content' o 'both').
+    Editabile come riga inline nella richiesta.
+    """
+    deadline_template = models.ForeignKey(
+        DeadlineTemplate,
+        on_delete=models.CASCADE,
+        related_name='content_fields',
+        verbose_name="Richiesta",
+    )
+    label = models.CharField(max_length=255, verbose_name="Etichetta")
+    key = models.SlugField(
+        max_length=60, blank=True, verbose_name="Chiave",
+        help_text="Lasciare vuoto: viene generata dall'etichetta.",
+    )
+    field_type = models.CharField(
+        max_length=20,
+        choices=FieldType.choices,
+        default=FieldType.SHORT_TEXT,
+        verbose_name="Tipo",
+    )
+    required = models.BooleanField(default=True, verbose_name="Obbligatorio")
+    help_text = models.CharField(
+        max_length=255, blank=True, verbose_name="Testo di aiuto",
+    )
+    display_order = models.IntegerField(default=0, verbose_name="Ordine")
+
+    class Meta:
+        verbose_name = "Campo da compilare"
+        verbose_name_plural = "Campi da compilare"
+        ordering = ['deadline_template', 'display_order']
+
+    def save(self, *args, **kwargs):
+        if not self.key:
+            from django.utils.text import slugify
+            self.key = (slugify(self.label)[:60] or 'campo').replace('-', '_')
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.label} ({self.get_field_type_display()})"

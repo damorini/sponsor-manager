@@ -849,6 +849,17 @@ class Contract(SoftDeleteModel):
                     title=template.title,
                     description=template.description,
                     due_date=due_date,
+                    submission_kind=getattr(template, 'submission_kind', 'file'),
+                    content_schema=[
+                        {
+                            'key': f.key,
+                            'label': f.label,
+                            'type': f.field_type,
+                            'required': f.required,
+                            'help_text': f.help_text,
+                        }
+                        for f in template.content_fields.all().order_by('display_order')
+                    ],
                 )
 
     def _generate_payment_deadlines(self):
@@ -1150,6 +1161,18 @@ class Deadline(TimeStampedModel):
     reminder_count = models.IntegerField(default=0, verbose_name="N. reminder inviati")
 
     notes = models.TextField(blank=True, verbose_name="Note")
+
+    # --- Servizi compilabili dal cliente (snapshot dal DeadlineTemplate) ---
+    submission_kind = models.CharField(
+        max_length=20, default='file', verbose_name="Tipo consegna",
+    )
+    content_schema = models.JSONField(
+        default=list, blank=True, verbose_name="Campi richiesti",
+        help_text="Definizione dei campi che il cliente deve compilare.",
+    )
+    content_data = models.JSONField(
+        default=dict, blank=True, verbose_name="Dati inviati dal cliente",
+    )
 
     class Meta:
         verbose_name = "Scadenza"
