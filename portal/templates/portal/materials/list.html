@@ -141,7 +141,7 @@
       {% endif %}
       
       <!-- Form upload (solo file / entrambi) -->
-      {% if m.deadline.status != 'waived' and m.deadline.submission_kind != 'content' %}
+      {% if m.deadline.status != 'waived' and m.needs_file %}
       <div class="px-5 py-4 bg-gray-50">
         <form method="post" action="{% url 'portal:material_upload' m.deadline.id %}" 
               enctype="multipart/form-data" class="upload-form">

@@ -5,36 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Portale Sponsor{% endblock %} · {{ organizer_name|default:"Sponsor Manager" }}</title>
 
-<!-- Tailwind CSS via CDN (Play CDN, no build needed) -->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          'brand': {
-            50:  '#eff6ff',
-            100: '#dbeafe',
-            500: '{{ brand_primary_color|default:"#1f4e79" }}',
-            600: '{{ brand_primary_color|default:"#1f4e79" }}',
-            700: '#1a3f63',
-            900: '#0f2942',
-          },
-        },
-      }
-    }
+    theme: { extend: { colors: { 'brand': {
+      50:'#eff6ff', 100:'#dbeafe',
+      500:'{{ brand_primary_color|default:"#1f4e79" }}',
+      600:'{{ brand_primary_color|default:"#1f4e79" }}',
+      700:'#1a3f63', 900:'#0f2942' } } } }
   }
 </script>
 
 <style>
-  /* Stili custom oltre Tailwind */
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
-  /* no-number-spinners */
-  /* Niente frecce su/giu sui campi numero (cambiavano valore per sbaglio) */
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-
   .alert-success { @apply bg-green-50 border-l-4 border-green-500 text-green-800 p-4; }
   .alert-error { @apply bg-red-50 border-l-4 border-red-500 text-red-800 p-4; }
   .alert-warning { @apply bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4; }
@@ -44,174 +30,117 @@
 {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 min-h-screen flex flex-col">
+<body class="bg-gray-50 min-h-screen">
 
 {% if user.is_authenticated and user.is_sponsor %}
-<!-- ========================================================================
-     HEADER con menu (solo per sponsor autenticati)
-     ======================================================================== -->
-<header class="bg-white border-b border-gray-200 shadow-sm">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center h-16">
-      
-      <!-- Logo / brand -->
-      <div class="flex items-center">
-        <a href="{% url 'portal:dashboard' %}" class="flex items-center">
-          {% if brand_logo_url %}
-            <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}"
-                 class="h-8 w-auto">
-          {% else %}
-            <span class="text-xl font-semibold text-brand-500">
-              {{ organizer_name|default:"Sponsor Portal" }}
-            </span>
-          {% endif %}
-        </a>
-      </div>
-      
-      <!-- Menu desktop -->
-      <nav class="hidden md:flex space-x-8">
-        <a href="{% url 'portal:dashboard' %}" 
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          Dashboard
-        </a>
-        <a href="{% url 'portal:events' %}"
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          I miei eventi
-        </a>
-        <a href="{% url 'portal:contracts_list' %}"
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          Contratti
-        </a>
-        <a href="{% url 'portal:profile' %}"
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          I miei dati
-        </a>
-        <a href="{% url 'portal:wishlist_page' %}"
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          Wishlist
-        </a>
-        {% if has_purchasable_services %}
-        <a href="{% url 'portal:catalog' %}"
-           class="text-gray-700 hover:text-brand-500 font-medium">
-          Acquista servizi
-        </a>
-        {% endif %}
-      </nav>
-      
-      <!-- User menu -->
-      <div class="flex items-center space-x-4">
-        {% if user.contact_profile.sponsor.logo_file %}
-        <img src="{{ user.contact_profile.sponsor.logo_file.url }}"
-             alt="{{ user.contact_profile.sponsor.legal_name }}"
-             class="h-9 w-auto max-w-[140px] object-contain hidden sm:block"
-             title="{{ user.contact_profile.sponsor.legal_name }}">
-        {% elif user.contact_profile.sponsor.logo_url %}
-        <img src="{{ user.contact_profile.sponsor.logo_url }}"
-             alt="{{ user.contact_profile.sponsor.legal_name }}"
-             class="h-9 w-auto max-w-[140px] object-contain hidden sm:block"
-             title="{{ user.contact_profile.sponsor.legal_name }}">
-        {% endif %}
-        <a href="{% url 'portal:cart_view' %}" class="relative inline-flex items-center mr-1"
-           title="Carrello" aria-label="Carrello">
-          <svg class="w-6 h-6 text-gray-600 hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-          </svg>
-          {% if cart_count and cart_count > 0 %}
-          <span class="absolute -top-2 -right-2 bg-brand-500 text-white text-xs font-bold
-                       rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">
-            {{ cart_count }}
-          </span>
-          {% endif %}
-        </a>
-        <div class="hidden sm:block text-sm text-gray-600">
-          {{ user.contact_profile.full_name }}
-          {% if user.contact_profile.sponsor %}
-          <span class="text-gray-400">·</span>
-          <span class="font-medium">{{ user.contact_profile.sponsor.legal_name }}</span>
-          {% endif %}
-        </div>
-        <form action="{% url 'portal:logout' %}" method="post" class="inline">
-          {% csrf_token %}
-          <button type="submit" 
-                  class="text-sm text-gray-600 hover:text-red-600 font-medium">
-            Esci
-          </button>
-        </form>
-      </div>
-      
-      <!-- Hamburger mobile (semplice toggle JS) -->
-      <button class="md:hidden text-gray-700"
-              onclick="document.getElementById('mobile-menu').classList.toggle('hidden')"
-              aria-label="Apri menu">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </button>
-    </div>
-    
-    <!-- Menu mobile (toggle) -->
-    <div id="mobile-menu" class="md:hidden hidden pb-3 space-y-1">
-      <a href="{% url 'portal:dashboard' %}" 
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Dashboard</a>
-      <a href="{% url 'portal:events' %}"
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">I miei eventi</a>
-      <a href="{% url 'portal:contracts_list' %}"
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Contratti</a>
-      <a href="{% url 'portal:profile' %}"
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">I miei dati</a>
-      <a href="{% url 'portal:wishlist_page' %}"
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Wishlist</a>
-      {% if has_purchasable_services %}
-      <a href="{% url 'portal:catalog' %}"
-         class="block px-3 py-2 text-gray-700 hover:bg-gray-50 rounded">Acquista servizi</a>
+{% with un=request.resolver_match.url_name %}
+<div id="sidebar-overlay" onclick="toggleSidebar()"
+     class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+<aside id="sidebar"
+       class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40
+              flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200">
+
+  <div class="h-16 flex items-center px-6 border-b border-gray-200">
+    <a href="{% url 'portal:dashboard' %}" class="flex items-center">
+      {% if brand_logo_url %}
+        <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}" class="h-8 w-auto">
+      {% else %}
+        <span class="text-lg font-semibold text-brand-500">{{ organizer_name|default:"Sponsor Portal" }}</span>
       {% endif %}
-    </div>
+    </a>
   </div>
+
+  <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+    <a href="{% url 'portal:dashboard' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Dashboard</a>
+    <a href="{% url 'portal:events' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei eventi</a>
+    <a href="{% url 'portal:contracts_list' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Contratti</a>
+    <a href="{% url 'portal:profile' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei dati</a>
+    <a href="{% url 'portal:wishlist_page' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'wishlist_page' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Wishlist</a>
+    {% if has_purchasable_services %}
+    <a href="{% url 'portal:catalog' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Acquista servizi</a>
+    {% endif %}
+    <a href="{% url 'portal:cart_view' %}"
+       class="flex items-center justify-between px-4 py-2.5 rounded-lg font-medium {% if un == 'cart_view' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+      <span>Carrello</span>
+      {% if cart_count and cart_count > 0 %}
+      <span class="bg-brand-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
+      {% endif %}
+    </a>
+  </nav>
+
+  <div class="border-t border-gray-200 px-4 py-4">
+    {% if user.contact_profile.sponsor.logo_file %}
+    <img src="{{ user.contact_profile.sponsor.logo_file.url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-8 w-auto max-w-[160px] object-contain mb-2">
+    {% elif user.contact_profile.sponsor.logo_url %}
+    <img src="{{ user.contact_profile.sponsor.logo_url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-8 w-auto max-w-[160px] object-contain mb-2">
+    {% endif %}
+    <div class="text-sm text-gray-700 font-medium leading-tight">{{ user.contact_profile.full_name }}</div>
+    {% if user.contact_profile.sponsor %}
+    <div class="text-xs text-gray-500 mb-2">{{ user.contact_profile.sponsor.legal_name }}</div>
+    {% endif %}
+    <form action="{% url 'portal:logout' %}" method="post">
+      {% csrf_token %}
+      <button type="submit" class="text-sm text-gray-600 hover:text-red-600 font-medium">Esci</button>
+    </form>
+  </div>
+</aside>
+{% endwith %}
+
+<header class="md:hidden fixed top-0 inset-x-0 h-14 bg-white border-b border-gray-200 z-20 flex items-center px-4">
+  <button onclick="toggleSidebar()" class="text-gray-700 mr-3" aria-label="Apri menu">
+    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+  </button>
+  <span class="font-semibold text-brand-500">{{ organizer_name|default:"Sponsor Portal" }}</span>
+  <a href="{% url 'portal:cart_view' %}" class="relative ml-auto" aria-label="Carrello">
+    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+    {% if cart_count and cart_count > 0 %}
+    <span class="absolute -top-2 -right-2 bg-brand-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
+    {% endif %}
+  </a>
 </header>
 {% endif %}
 
-<!-- ========================================================================
-     MESSAGES (notifiche flash)
-     ======================================================================== -->
-{% if messages %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 space-y-2">
-  {% for message in messages %}
-  <div class="alert-{{ message.tags|default:'info' }} rounded">
-    {{ message }}
+<div class="{% if user.is_authenticated and user.is_sponsor %}md:pl-64 pt-14 md:pt-0{% endif %} min-h-screen flex flex-col">
+
+  {% if messages %}
+  <div class="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4 space-y-2">
+    {% for message in messages %}
+    <div class="alert-{{ message.tags|default:'info' }} rounded">{{ message }}</div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% endif %}
+  {% endif %}
 
-<!-- ========================================================================
-     CONTENUTO principale
-     ======================================================================== -->
-<main class="flex-1">
-  {% block content %}{% endblock %}
-</main>
+  <main class="flex-1">
+    {% block content %}{% endblock %}
+  </main>
 
-<!-- ========================================================================
-     FOOTER
-     ======================================================================== -->
-<footer class="bg-white border-t border-gray-200 mt-12">
-  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-    <div class="text-center text-sm text-gray-500">
-      <p>
-        © {% now "Y" %} {{ organizer_name|default:"Sponsor Manager" }}.
-        Per assistenza:
-        <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">
-          {{ support_email|default:"info@example.com" }}
-        </a>
-      </p>
+  <footer class="bg-white border-t border-gray-200 mt-12">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="text-center text-sm text-gray-500">
+        <p>&copy; {% now "Y" %} {{ organizer_name|default:"Sponsor Manager" }}. Per assistenza:
+          <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">{{ support_email|default:"info@example.com" }}</a>
+        </p>
+      </div>
     </div>
-  </div>
-</footer>
+  </footer>
+</div>
 
 {% block extra_scripts %}{% endblock %}
 <script>
-  // Evita che la rotellina del mouse cambi un campo numero a fuoco
+  function toggleSidebar(){
+    var s=document.getElementById('sidebar');
+    var o=document.getElementById('sidebar-overlay');
+    if(!s) return;
+    s.classList.toggle('-translate-x-full');
+    if(o) o.classList.toggle('hidden');
+  }
   document.addEventListener('wheel', function () {
     var el = document.activeElement;
     if (el && el.type === 'number') { el.blur(); }

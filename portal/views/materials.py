@@ -73,13 +73,6 @@ def _get_materials_for_contract(contract):
             deleted_at__isnull=True,
         ).order_by('-created_at')
 
-        if d.due_date >= today:
-            d.days_remaining = (d.due_date - today).days
-            d.is_overdue = False
-        else:
-            d.days_remaining = (today - d.due_date).days
-            d.is_overdue = True
-
         content_fields = []
         for f in (d.content_schema or []):
             content_fields.append({
@@ -99,6 +92,11 @@ def _get_materials_for_contract(contract):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
+            'needs_file': (
+                getattr(d, 'submission_kind', 'file') in ('file', 'both')
+                and not (d.deadline_type or '').startswith('pagamento')
+                and (d.deadline_type or '') != 'scadenza_opzione'
+            ),
         })
 
     return materials
@@ -418,13 +416,6 @@ def _materials_from_deadlines(deadlines):
             deleted_at__isnull=True,
         ).order_by('-created_at')
 
-        if d.due_date >= today:
-            d.days_remaining = (d.due_date - today).days
-            d.is_overdue = False
-        else:
-            d.days_remaining = (today - d.due_date).days
-            d.is_overdue = True
-
         content_fields = []
         for fld in (d.content_schema or []):
             content_fields.append({
@@ -444,6 +435,11 @@ def _materials_from_deadlines(deadlines):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
+            'needs_file': (
+                getattr(d, 'submission_kind', 'file') in ('file', 'both')
+                and not (d.deadline_type or '').startswith('pagamento')
+                and (d.deadline_type or '') != 'scadenza_opzione'
+            ),
         })
     return materials
 
