@@ -160,92 +160,14 @@ class StandBlockAdmin(admin.ModelAdmin):
 
     @admin.display(description='Stato')
     def status_badge(self, obj):
-        return _stand_status_badge(obj.status, obj.get_status_display())
-
-
-@admin.register(Stand)
-class StandAdmin(admin.ModelAdmin):
-    list_display = (
-        'code', 'event_link', 'block_link', 'dimensions_display',
-        'stand_type', 'amenities_display', 'status_badge', 'base_price_display',
-    )
-    list_filter = ('status', 'stand_type', 'has_power', 'has_water', 'event')
-    search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
-    list_select_related = ('event', 'stand_block')
-    autocomplete_fields = ['event', 'stand_block']
-    readonly_fields = ('created_at', 'updated_at', 'area_sqm_display')
-    ordering = ('event', 'code')
-
-    fieldsets = (
-        (None, {
-            'fields': ('event', 'stand_block', 'code', 'stand_type', 'status'),
-        }),
-        ('Dimensioni', {
-            'fields': (
-                ('width_meters', 'depth_meters'),
-                'area_sqm_display',
-                'max_height_meters',
-            ),
-        }),
-        ('Dotazioni', {
-            'fields': (
-                ('has_power', 'power_kw'),
-                'has_water',
-                'has_internet',
-            ),
-        }),
-        ('Posizionamento', {
-            'fields': (('map_x', 'map_y'),),
-            'classes': ('collapse',),
-        }),
-        ('Prezzo', {
-            'fields': ('base_price',),
-        }),
-        ('Note', {
-            'fields': ('notes',),
-            'classes': ('collapse',),
-        }),
-        ('Sistema', {
-            'fields': ('created_at', 'updated_at'),
-            'classes': ('collapse',),
-        }),
-    )
-
-    @admin.display(description='Evento', ordering='event__slug')
-    def event_link(self, obj):
-        url = reverse('admin:events_event_change', args=[obj.event_id])
-        return format_html('<a href="{}">{}</a>', url, obj.event.slug)
-
-    @admin.display(description='Blocco')
-    def block_link(self, obj):
-        if not obj.stand_block_id:
-            return '—'
-        url = reverse('admin:venues_standblock_change', args=[obj.stand_block_id])
-        return format_html('<a href="{}">{}</a>', url, obj.stand_block.code)
-
-    @admin.display(description='Dimensioni')
-    def dimensions_display(self, obj):
-        if obj.width_meters and obj.depth_meters:
-            return f"{obj.width_meters}×{obj.depth_meters} m ({obj.area_sqm} m²)"
-        return '—'
-
-    @admin.display(description='Area')
-    def area_sqm_display(self, obj):
-        return f"{obj.area_sqm} m²" if obj.area_sqm else '—'
-
-    @admin.display(description='Dotazioni')
-    def amenities_display(self, obj):
-        amenities = []
-        if obj.has_power:
-            amenities.append('⚡')
-        if obj.has_water:
-            amenities.append('💧')
-        if obj.has_internet:
-            amenities.append('🌐')
-        return ' '.join(amenities) if amenities else '—'
-
-    @admin.display(description='Stato')
-    def status_badge(self, obj):
+        # Stand dentro un blocco: spazio bloccato, non vendibile singolarmente
+        if obj.stand_block_id and obj.status == StandStatus.AVAILABLE:
+            return format_html(
+                '<span style="background:{}; color:white; padding:2px 8px; '
+                'border-radius:3px; font-size:0.85em; font-weight:700; '
+                'letter-spacing:0.3px;">IN BLOCCO</span>',
+                '#8e44ad'
+            )
         return _stand_status_badge(obj.status, obj.get_status_display())
 
     @admin.display(description='Prezzo')
