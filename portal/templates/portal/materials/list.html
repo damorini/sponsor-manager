@@ -1,6 +1,6 @@
 {% extends "portal/base.html" %}
 
-{% block title %}Materiali · {{ contract.contract_number }}{% endblock %}
+{% block title %}{% if event_mode %}Scadenze · {{ event.get_name }}{% else %}Materiali · {{ contract.contract_number }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -9,19 +9,31 @@
   <nav class="text-sm text-gray-500 mb-4">
     <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">Dashboard</a>
     <span class="mx-2">/</span>
+    {% if event_mode %}
+    <a href="{% url 'portal:events' %}" class="hover:text-brand-500">I miei eventi</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">{{ event.get_name }}</span>
+    {% else %}
     <a href="{% url 'portal:contract_detail' contract.id %}" class="hover:text-brand-500">
       {{ contract.contract_number }}
     </a>
     <span class="mx-2">/</span>
     <span class="text-gray-700">Materiali</span>
+    {% endif %}
   </nav>
   
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Materiali e scadenze</h1>
+  {% if event_mode %}
+  <p class="text-gray-600 mb-6">
+    Scadenze e materiali per l'evento <strong>{{ event.get_name }}</strong>.
+  </p>
+  {% else %}
   <p class="text-gray-600 mb-6">
     Carica i materiali richiesti per il contratto
     <strong>{{ contract.contract_number }}</strong>
     ({{ contract.event.get_name }})
   </p>
+  {% endif %}
   
   <!-- KPI -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -80,7 +92,7 @@
             {% elif m.deadline.days_remaining <= 3 %}text-yellow-600 font-medium
             {% else %}text-gray-500{% endif %}">
             {% if m.deadline.status == 'received' %}
-              Ricevuto il {{ m.deadline.received_at|date:"d/m/Y" }}
+              Ricevuto il {{ m.deadline.completed_at|date:"d/m/Y" }}
             {% elif m.deadline.status == 'waived' %}
               Esonerato
             {% elif m.deadline.is_overdue %}
@@ -128,8 +140,8 @@
       </div>
       {% endif %}
       
-      <!-- Form upload -->
-      {% if m.deadline.status != 'waived' %}
+      <!-- Form upload (solo file / entrambi) -->
+      {% if m.deadline.status != 'waived' and m.deadline.submission_kind != 'content' %}
       <div class="px-5 py-4 bg-gray-50">
         <form method="post" action="{% url 'portal:material_upload' m.deadline.id %}" 
               enctype="multipart/form-data" class="upload-form">
@@ -159,6 +171,47 @@
             Carica file
           </button>
         </form>
+      </div>
+      {% endif %}
+
+      <!-- Form campi da compilare (campi / entrambi) -->
+      {% if m.deadline.status != 'waived' and m.needs_content %}
+      <div class="px-5 py-4 bg-gray-50 border-t border-gray-100">
+        <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
+          Dati da compilare
+        </h4>
+        {% if m.content_locked %}
+        <p class="text-xs text-gray-500 mb-3">Scadenza passata: i dati non sono piu' modificabili.</p>
+        {% for f in m.content_fields %}
+        <div class="mb-2">
+          <span class="text-sm font-medium text-gray-700">{{ f.label }}:</span>
+          <span class="text-sm text-gray-900">{{ f.value|default:"—" }}</span>
+        </div>
+        {% endfor %}
+        {% else %}
+        <form method="post" action="{% url 'portal:material_content' m.deadline.id %}" class="space-y-3">
+          {% csrf_token %}
+          {% for f in m.content_fields %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              {{ f.label }}{% if f.required %} <span class="text-red-500">*</span>{% endif %}
+            </label>
+            {% if f.type == 'long_text' %}
+            <textarea name="field_{{ f.key }}" rows="4" {% if f.required %}required{% endif %}
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">{{ f.value }}</textarea>
+            {% else %}
+            <input type="text" name="field_{{ f.key }}" value="{{ f.value }}" {% if f.required %}required{% endif %}
+                   class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+            {% endif %}
+            {% if f.help_text %}<p class="text-xs text-gray-500 mt-1">{{ f.help_text }}</p>{% endif %}
+          </div>
+          {% endfor %}
+          <button type="submit"
+                  class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
+            Salva i dati
+          </button>
+        </form>
+        {% endif %}
       </div>
       {% endif %}
       

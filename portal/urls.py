@@ -26,6 +26,9 @@ urlpatterns = [
     
     # Dashboard
     path('', dashboard.dashboard_view, name='dashboard'),
+    path('eventi/', dashboard.events_view, name='events'),
+    path('eventi/<uuid:event_id>/scadenze/', materials.event_materials_view,
+         name='event_materials'),
     path('profilo/', profile.profile_view, name='profile'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
@@ -54,6 +57,8 @@ urlpatterns = [
          name='materials_list'),
     path('materials/upload/<uuid:deadline_id>/', materials.material_upload_view,
          name='material_upload'),
+    path('materials/content/<uuid:deadline_id>/', materials.material_content_view,
+         name='material_content'),
     path('materials/download/<uuid:document_id>/', materials.material_download_view,
          name='material_download'),
     path('materials/delete/<uuid:document_id>/', materials.material_delete_view,

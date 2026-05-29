@@ -199,3 +199,46 @@ def contracts_list_view(request):
         'total_count': qs.count(),
         'available_events': available_events,
     })
+
+
+# ============================================================================
+# I miei eventi (landing per il cliente)
+# ============================================================================
+
+@sponsor_required
+def events_view(request):
+    """Eventi a cui il cliente partecipa, con riepilogo scadenze."""
+    from contracts.models import Contract, Deadline, DeadlineStatus
+
+    sponsor = request.sponsor
+    today = date.today()
+
+    contracts = (Contract.objects
+                 .filter(sponsor=sponsor, deleted_at__isnull=True)
+                 .select_related('event'))
+
+    events_map = {}
+    contracts_by_event = {}
+    for c in contracts:
+        if not c.event_id:
+            continue
+        events_map.setdefault(c.event_id, c.event)
+        contracts_by_event.setdefault(c.event_id, []).append(c.id)
+
+    items = []
+    for ev_id, ev in events_map.items():
+        dls = Deadline.objects.filter(contract_id__in=contracts_by_event[ev_id])
+        open_status = [DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT]
+        items.append({
+            'event': ev,
+            'total': dls.count(),
+            'completed': dls.filter(
+                status__in=[DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED]
+            ).count(),
+            'overdue': dls.filter(status__in=open_status, due_date__lt=today).count(),
+            'pending': dls.filter(status__in=open_status, due_date__gte=today).count(),
+        })
+
+    items.sort(key=lambda x: (x['event'].start_date or date.max))
+
+    return render(request, 'portal/events/list.html', {'events_items': items})

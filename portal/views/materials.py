@@ -80,11 +80,25 @@ def _get_materials_for_contract(contract):
             d.days_remaining = (today - d.due_date).days
             d.is_overdue = True
 
+        content_fields = []
+        for f in (d.content_schema or []):
+            content_fields.append({
+                'key': f.get('key'),
+                'label': f.get('label', f.get('key')),
+                'type': f.get('type', 'short_text'),
+                'required': f.get('required', False),
+                'help_text': f.get('help_text', ''),
+                'value': (d.content_data or {}).get(f.get('key'), ''),
+            })
+
         materials.append({
             'deadline': d,
             'documents': list(docs),
             'has_documents': docs.exists(),
             'is_completed': d.status in [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED],
+            'content_fields': content_fields,
+            'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
+            'content_locked': d.due_date < today,
         })
 
     return materials
@@ -224,9 +238,7 @@ def material_upload_view(request, deadline_id):
             errors.append(f"'{f.name}': errore di salvataggio")
 
     if uploaded_count > 0 and deadline.status != DeadlineStatus.RECEIVED:
-        deadline.status = DeadlineStatus.RECEIVED
-        deadline.received_at = timezone.now()
-        deadline.save(update_fields=['status', 'received_at', 'updated_at'])
+        deadline.mark_as_received(contact=getattr(request, 'contact', None))
 
     if uploaded_count > 0:
         messages.success(
@@ -328,3 +340,149 @@ def material_delete_view(request, document_id):
 
     messages.success(request, f"File '{document.file_name}' rimosso.")
     return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+
+# ============================================================================
+# View: salvataggio campi compilati dal cliente
+# ============================================================================
+
+@sponsor_required
+@require_POST
+@transaction.atomic
+def material_content_view(request, deadline_id):
+    """Salva i campi di testo compilati dal cliente per una Deadline."""
+    from contracts.models import Deadline, DeadlineStatus
+
+    deadline = get_object_or_404(
+        Deadline.objects.select_related('contract'),
+        id=deadline_id,
+    )
+    if deadline.contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+    if deadline.status == DeadlineStatus.WAIVED:
+        messages.warning(request, "Questa richiesta e' stata esonerata.")
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+    if getattr(deadline, 'submission_kind', 'file') not in ('content', 'both'):
+        messages.error(request, "Questa richiesta non prevede dati da compilare.")
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    if deadline.due_date < date.today():
+        messages.error(request, "La scadenza e' passata: i dati non sono piu' modificabili.")
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    schema = deadline.content_schema or []
+    data = dict(deadline.content_data or {})
+    missing = []
+    for fld in schema:
+        key = fld.get('key')
+        if not key:
+            continue
+        val = (request.POST.get('field_' + key) or '').strip()
+        data[key] = val
+        if fld.get('required') and not val:
+            missing.append(fld.get('label', key))
+
+    deadline.content_data = data
+    deadline.save(update_fields=['content_data', 'updated_at'])
+
+    if missing:
+        messages.error(
+            request,
+            "Salvato, ma mancano i campi obbligatori: " + ", ".join(missing)
+        )
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    if deadline.status != DeadlineStatus.RECEIVED:
+        deadline.mark_as_received(contact=getattr(request, 'contact', None))
+    messages.success(request, "Dati salvati per '%s'." % deadline.title)
+    return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+
+# ============================================================================
+# Vista materiali AGGREGATA PER EVENTO (scadenze di tutti i contratti del
+# cliente per quell'evento)
+# ============================================================================
+
+def _materials_from_deadlines(deadlines):
+    """Costruisce la lista materiali da una queryset di Deadline."""
+    from contracts.models import Deadline, DeadlineStatus
+    from shared.models import Document
+
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+    today = date.today()
+    materials = []
+    for d in deadlines:
+        docs = Document.objects.filter(
+            content_type=deadline_ct,
+            object_id=d.id,
+            deleted_at__isnull=True,
+        ).order_by('-created_at')
+
+        if d.due_date >= today:
+            d.days_remaining = (d.due_date - today).days
+            d.is_overdue = False
+        else:
+            d.days_remaining = (today - d.due_date).days
+            d.is_overdue = True
+
+        content_fields = []
+        for fld in (d.content_schema or []):
+            content_fields.append({
+                'key': fld.get('key'),
+                'label': fld.get('label', fld.get('key')),
+                'type': fld.get('type', 'short_text'),
+                'required': fld.get('required', False),
+                'help_text': fld.get('help_text', ''),
+                'value': (d.content_data or {}).get(fld.get('key'), ''),
+            })
+
+        materials.append({
+            'deadline': d,
+            'documents': list(docs),
+            'has_documents': docs.exists(),
+            'is_completed': d.status in [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED],
+            'content_fields': content_fields,
+            'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
+            'content_locked': d.due_date < today,
+        })
+    return materials
+
+
+@sponsor_required
+def event_materials_view(request, event_id):
+    """Scadenze/materiali del cliente per UN evento (tutti i suoi contratti)."""
+    from contracts.models import Contract, Deadline, DeadlineStatus
+    from events.models import Event
+
+    sponsor = request.sponsor
+    event = get_object_or_404(Event, id=event_id)
+
+    contracts = Contract.objects.filter(
+        sponsor=sponsor, event_id=event_id, deleted_at__isnull=True,
+    )
+    if not contracts.exists():
+        return HttpResponseForbidden("Accesso negato.")
+
+    contract_ids = list(contracts.values_list('id', flat=True))
+    deadlines = (Deadline.objects
+                 .filter(contract_id__in=contract_ids)
+                 .select_related('deadline_template')
+                 .order_by('due_date'))
+    materials = _materials_from_deadlines(deadlines)
+
+    total_count = len(materials)
+    completed_count = sum(1 for m in materials if m['is_completed'])
+    overdue_count = sum(
+        1 for m in materials
+        if m['deadline'].is_overdue and not m['is_completed']
+    )
+
+    return render(request, 'portal/materials/list.html', {
+        'event': event,
+        'event_mode': True,
+        'materials': materials,
+        'total_count': total_count,
+        'completed_count': completed_count,
+        'overdue_count': overdue_count,
+        'max_upload_mb': DEFAULT_MAX_UPLOAD_SIZE_MB,
+    })
