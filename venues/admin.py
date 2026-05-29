@@ -3,7 +3,10 @@ Admin per Stand e StandBlock (spazi espositivi).
 
 Stand inline dentro StandBlock per editare un blocco e i suoi stand insieme.
 """
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -21,6 +24,61 @@ class StandInline(admin.TabularInline):
     show_change_link = True
 
 
+class StandBlockForm(forms.ModelForm):
+    """Form del blocco: permette di SCEGLIERE quali stand (gia' esistenti e
+    disponibili) fanno parte del blocco, tramite selettore a doppia lista."""
+    stands = forms.ModelMultipleChoiceField(
+        queryset=Stand.objects.none(),
+        required=False,
+        widget=FilteredSelectMultiple("stand", is_stacked=False),
+        label="Stand del blocco",
+        help_text="Solo stand DISPONIBILI di questo evento (non prenotati/"
+                  "assegnati). Gli stand si creano prima (import Excel o lista "
+                  "Stand); qui scegli quali raggruppare nel blocco.",
+    )
+
+    class Meta:
+        model = StandBlock
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        inst = self.instance
+        f = self.fields['stands']
+        if inst and inst.pk and inst.event_id:
+            # in modifica: stand disponibili-non-assegnati di QUESTO evento
+            # + quelli gia' nel blocco (per poterli togliere)
+            f.queryset = (Stand.objects
+                .filter(event=inst.event)
+                .filter(Q(stand_block__isnull=True, status=StandStatus.AVAILABLE)
+                        | Q(stand_block=inst))
+                .select_related('event').order_by('code'))
+            f.initial = Stand.objects.filter(stand_block=inst)
+        else:
+            # nuovo blocco: evento non ancora salvato -> mostro i disponibili
+            # liberi di tutti gli eventi (la validazione controlla l'evento)
+            f.queryset = (Stand.objects
+                .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
+                .select_related('event').order_by('event__slug', 'code'))
+        f.label_from_instance = lambda st: (
+            f"{st.code} \u00b7 {st.event.slug}"
+            + (f" ({st.width_meters}\u00d7{st.depth_meters}m)"
+               if st.width_meters and st.depth_meters else "")
+        )
+
+    def clean_stands(self):
+        stands = self.cleaned_data.get('stands')
+        event = self.cleaned_data.get('event') or (
+            self.instance.event if self.instance.pk else None)
+        if stands and event:
+            wrong = [st.code for st in stands if st.event_id != event.id]
+            if wrong:
+                raise forms.ValidationError(
+                    "Questi stand non appartengono all'evento del blocco: "
+                    + ", ".join(wrong))
+        return stands
+
+
 @admin.register(StandBlock)
 class StandBlockAdmin(admin.ModelAdmin):
     list_display = (
@@ -33,11 +91,18 @@ class StandBlockAdmin(admin.ModelAdmin):
     list_select_related = ('event',)
     autocomplete_fields = ['event']
     readonly_fields = ('created_at', 'updated_at')
-    inlines = [StandInline]
+    form = StandBlockForm
 
     fieldsets = (
         (None, {
             'fields': ('event', 'code', 'name', 'block_type', 'status'),
+        }),
+        ('Stand del blocco', {
+            'fields': ('stands',),
+        }),
+        ('Descrizione per il preventivo', {
+            'fields': ('quote_description',),
+            'description': "Questo testo compare SOLO nel preventivo del cliente.",
         }),
         ('Dimensioni e prezzo', {
             'fields': ('total_area_sqm', 'block_price'),
@@ -51,6 +116,22 @@ class StandBlockAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        block = form.instance
+        selected = form.cleaned_data.get('stands')
+        if selected is None:
+            return
+        current = set(Stand.objects.filter(stand_block=block)
+                      .values_list('id', flat=True))
+        chosen = set(st.id for st in selected)
+        to_remove = current - chosen
+        to_add = chosen - current
+        if to_remove:
+            Stand.objects.filter(id__in=to_remove).update(stand_block=None)
+        if to_add:
+            Stand.objects.filter(id__in=to_add).update(stand_block=block)
 
     @admin.display(description='Nome')
     def name_or_dash(self, obj):
