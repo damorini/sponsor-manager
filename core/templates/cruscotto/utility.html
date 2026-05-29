@@ -42,13 +42,13 @@
     <div class="cr-panel">
       <div class="cr-form-row">
         <label style="font-weight:500; color: var(--ink-2);">Evento:</label>
-        <select id="export-evento" style="padding:7px 10px; font-size:13px; border:1px solid var(--line-strong); border-radius:6px; background:#fff;">
+        <select id="export-evento" style="padding:8px 12px; font-size:14px; font-weight:500; color:var(--ink); border:1px solid var(--line-strong); border-radius:6px; background:#fff;">
           {% for ev in eventi %}
           <option value="{{ ev.slug }}">{{ ev.get_name }} ({{ ev.slug }})</option>
           {% endfor %}
         </select>
-        <a id="btn-export-servizi" href="#" class="cr-btn cr-btn--accent cr-btn--small">⬇ Esporta servizi</a>
-        <a id="btn-export-stand" href="#" class="cr-btn cr-btn--accent cr-btn--small">⬇ Esporta stand</a>
+        <a id="btn-export-servizi" href="#" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta servizi</a>
+        <a id="btn-export-stand" href="#" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta stand</a>
       </div>
     </div>
     <script>
@@ -71,7 +71,7 @@
     <div class="cr-grid">
       <div class="cr-panel">
         <h3>Servizi</h3>
-        <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello servizi</a>
+        <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello servizi</a>
         <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
           {% csrf_token %}
@@ -86,12 +86,12 @@
           <label class="cr-check" style="display:block; margin:8px 0;">
             <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
           </label>
-          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">⬆ Importa servizi</button>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">↑ Importa servizi</button>
         </form>
       </div>
       <div class="cr-panel">
         <h3>Stand</h3>
-        <a href="{% url 'core:cruscotto_download_template_stand' %}" class="cr-btn cr-btn--primary cr-btn--small">⬇ Modello stand</a>
+        <a href="{% url 'core:cruscotto_download_template_stand' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello stand</a>
         <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
           {% csrf_token %}
@@ -106,7 +106,7 @@
           <label class="cr-check" style="display:block; margin:8px 0;">
             <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
           </label>
-          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">⬆ Importa stand</button>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">↑ Importa stand</button>
         </form>
       </div>
     </div>

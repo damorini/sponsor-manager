@@ -8,11 +8,19 @@ from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Func, CharField
+from django.db.models.functions import Lower
 from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import Contact, ContactRole, Sponsor
+
+
+class _Cognome(Func):
+    """Ultima parola del 'Nome completo' (= cognome), per l'ordinamento."""
+    function = 'regexp_replace'
+    template = "regexp_replace(trim(%(expressions)s), '^.* ', '')"
+    output_field = CharField()
 
 
 class ContactInline(admin.TabularInline):
@@ -41,7 +49,7 @@ class SponsorAdmin(admin.ModelAdmin):
         'address_city', 'pec_email',
     )
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary', 'logo_preview')
-    ordering = ('legal_name',)
+    ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
     actions = ['action_generate_client_summary']
 
@@ -242,6 +250,12 @@ class ContactAdmin(admin.ModelAdmin):
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at')
     actions = ['action_invita_al_portale']
+    ordering = ('_cognome',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            _cognome=Lower(_Cognome('full_name'))
+        )
 
     fieldsets = (
         ('Persona', {

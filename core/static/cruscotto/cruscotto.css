@@ -148,7 +148,7 @@ a.cr-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); bord
 /* Pulsanti azione (link "Vedi contratti" ecc.) */
 .cr-btn {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 9px 16px; border-radius: 8px; font-weight: 500; font-size: 13px;
+  padding: 9px 16px; border-radius: 8px; font-weight: 600; font-size: 13px;
   text-decoration: none; transition: transform .12s ease, background .12s ease;
   font-family: 'Geist', system-ui, sans-serif; letter-spacing: 0.01em;
 }
