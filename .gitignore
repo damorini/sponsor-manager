@@ -43,3 +43,4 @@ celerybeat-schedule
 celerybeat.pid
 
 *.mo
+*.bak*
