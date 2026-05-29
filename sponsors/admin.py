@@ -250,7 +250,8 @@ class ContactAdmin(admin.ModelAdmin):
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at')
     actions = ['action_invita_al_portale']
-    ordering = ('_cognome',)
+    def get_ordering(self, request):
+        return ('_cognome',)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
