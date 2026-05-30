@@ -237,6 +237,9 @@ def servizio_dettaglio(request, pk, service_pk):
              .select_related('contract', 'contract__sponsor')
              .order_by('contract__contract_number'))
 
+    from django.utils import timezone as _tz
+    from contracts.models import Deadline, DeadlineStatus
+    _oggi = _tz.now().date()
     righe_out = []
     riepilogo = {'confermati': 0, 'opzione': 0, 'trattativa': 0}
     cat_to_key = {'confermato': 'confermati', 'opzione': 'opzione',
@@ -247,6 +250,17 @@ def servizio_dettaglio(request, pk, service_pk):
         k = cat_to_key.get(categoria)
         if k:
             riepilogo[k] += 1
+        consegne = []
+        for dl in (Deadline.objects
+                   .filter(contract_line=r, deadline_template__isnull=False)
+                   .exclude(status=DeadlineStatus.WAIVED)):
+            received = dl.status == DeadlineStatus.RECEIVED
+            late = (not received) and dl.due_date and dl.due_date < _oggi
+            consegne.append({
+                'id': dl.id,
+                'titolo': dl.title,
+                'stato': 'completata' if received else ('ritardo' if late else 'dafare'),
+            })
         righe_out.append({
             'contract_id': c.id,
             'contract_number': c.contract_number,
@@ -256,6 +270,7 @@ def servizio_dettaglio(request, pk, service_pk):
             'categoria': categoria,
             'quantity': r.quantity,
             'importo': r.line_total or 0,
+            'consegne': consegne,
         })
 
     try:

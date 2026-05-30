@@ -64,6 +64,7 @@
           <th>Stato</th>
           <th class="num">Quantità</th>
           <th class="num">Importo</th>
+          <th>Consegna</th>
         </tr></thead>
         <tbody>
           {% for r in righe %}
@@ -73,6 +74,9 @@
             <td>{{ r.status_label }}</td>
             <td class="num">{{ r.quantity }}</td>
             <td class="num strong">€ {{ r.importo|floatformat:2|intcomma }}</td>
+            <td>
+              {% for dz in r.consegne %}{% if dz.stato == 'completata' %}<span style="background:#41ad7c;color:#fff;padding:1px 6px;border-radius:3px;font-size:.8em;">Completata</span>{% elif dz.stato == 'ritardo' %}<span style="background:#ba2121;color:#fff;padding:1px 6px;border-radius:3px;font-size:.8em;">In ritardo</span>{% else %}<span style="background:#e6a23c;color:#fff;padding:1px 6px;border-radius:3px;font-size:.8em;">Da fare</span>{% endif %} <a href="{% url 'core:cruscotto_scadenza_dettaglio' dz.id %}">dati</a>{% if not forloop.last %}<br>{% endif %}{% empty %}<span style="color:#bbb;">—</span>{% endfor %}
+            </td>
           </tr>
           {% endfor %}
         </tbody>
