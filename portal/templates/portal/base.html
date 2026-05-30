@@ -53,7 +53,7 @@
 
   <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
     <a href="{% url 'portal:dashboard' %}"
-       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Dashboard</a>
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">In evidenza</a>
     <a href="{% url 'portal:events' %}"
        class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei eventi</a>
     <a href="{% url 'portal:contracts_list' %}"

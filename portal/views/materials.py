@@ -460,10 +460,24 @@ def event_materials_view(request, event_id):
         return HttpResponseForbidden("Accesso negato.")
 
     contract_ids = list(contracts.values_list('id', flat=True))
-    deadlines = (Deadline.objects
-                 .filter(contract_id__in=contract_ids)
-                 .select_related('deadline_template')
-                 .order_by('due_date'))
+    deadlines = list(Deadline.objects
+                     .filter(contract_id__in=contract_ids)
+                     .select_related('deadline_template')
+                     .order_by('due_date'))
+
+    cat = request.GET.get('cat')
+
+    def _is_admin(d):
+        t = (d.deadline_type or '').lower()
+        return t.startswith('pagament') or t == 'scadenza_opzione'
+
+    if cat == 'amm':
+        deadlines = [d for d in deadlines if _is_admin(d)]
+    elif cat == 'tec':
+        deadlines = [d for d in deadlines if not _is_admin(d)]
+    else:
+        cat = None
+
     materials = _materials_from_deadlines(deadlines)
 
     total_count = len(materials)
@@ -473,6 +487,8 @@ def event_materials_view(request, event_id):
         if m['deadline'].is_overdue and not m['is_completed']
     )
 
+    category_label = {'amm': 'Amministrative', 'tec': 'Tecniche'}.get(cat, '')
+
     return render(request, 'portal/materials/list.html', {
         'event': event,
         'event_mode': True,
@@ -480,5 +496,7 @@ def event_materials_view(request, event_id):
         'total_count': total_count,
         'completed_count': completed_count,
         'overdue_count': overdue_count,
+        'category': cat,
+        'category_label': category_label,
         'max_upload_mb': DEFAULT_MAX_UPLOAD_SIZE_MB,
     })

@@ -55,84 +55,50 @@ def sponsor_required(view_func):
 
 @sponsor_required
 def dashboard_view(request):
-    """Pagina home del portale: KPI, scadenze, contratti recenti."""
-    from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
-    from catalog.models import Service
+    """Home del portale: In evidenza generale - scadenze immediate di tutti gli eventi."""
+    from contracts.models import Contract, Deadline, DeadlineStatus
 
     sponsor = request.sponsor
     today = date.today()
 
-    # Tutti i contratti dello sponsor (non eliminati)
-    all_contracts = Contract.objects.filter(
-        sponsor=sponsor,
-        deleted_at__isnull=True,
-    ).select_related('event', 'stand', 'stand_block')
+    contracts = (Contract.objects
+                 .filter(sponsor=sponsor, deleted_at__isnull=True)
+                 .select_related('event'))
+    contract_event = {c.id: c.event for c in contracts if c.event_id}
+    contract_ids = list(contract_event.keys())
 
-    # KPI counts
-    active_contracts_count = all_contracts.filter(
-        status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE]
-    ).count()
+    done = [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED]
+    open_dls = list(
+        Deadline.objects.filter(contract_id__in=contract_ids)
+        .exclude(status__in=done)
+        .order_by('due_date')
+    )
 
-    pending_contracts_count = all_contracts.filter(
-        status=ContractStatus.PENDING_PAYMENT
-    ).count()
+    def _is_admin(d):
+        t = (d.deadline_type or '').lower()
+        return t.startswith('pagament') or t == 'scadenza_opzione'
 
-    # Eventi attivi (con almeno un contratto signed/active)
-    active_events_count = all_contracts.filter(
-        status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE]
-    ).values('event_id').distinct().count()
-
-    # Deadlines
-    contract_ids = list(all_contracts.values_list('id', flat=True))
-
-    upcoming_deadlines_qs = Deadline.objects.filter(
-        contract_id__in=contract_ids,
-        status__in=[DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT],
-        due_date__gte=today,
-        due_date__lte=today + timedelta(days=14),
-    ).select_related('contract', 'contract__event').order_by('due_date')
-
-    overdue_deadlines_qs = Deadline.objects.filter(
-        contract_id__in=contract_ids,
-        status__in=[
-            DeadlineStatus.PENDING,
-            DeadlineStatus.REMINDER_SENT,
-            DeadlineStatus.OVERDUE,
-        ],
-        due_date__lt=today,
-    ).select_related('contract', 'contract__event').order_by('due_date')
-
-    # Calcola days_until/days_overdue per il template
-    # days_until_due e' gia' una property del modello Deadline (sola lettura):
-    # il template la usa direttamente, non serve assegnarla qui.
-    upcoming_deadlines = list(upcoming_deadlines_qs[:5])
-
-    overdue_deadlines = list(overdue_deadlines_qs[:5])
-    for d in overdue_deadlines:
-        d.days_overdue = (today - d.due_date).days
-
-    # Recent contracts (ultimi 5)
-    recent_contracts = all_contracts.order_by('-created_at')[:5]
-
-    # Verifica se ci sono servizi acquistabili (per mostrare CTA "Esplora servizi")
-    has_purchasable_services = Service.objects.filter(
-        event__in=all_contracts.values('event'),
-        is_active=True,
-        is_self_purchasable=True,
-    ).exists()
+    admin_items, tech_items = [], []
+    for d in open_dls:
+        ev = contract_event.get(d.contract_id)
+        if ev is None:
+            continue
+        row = {
+            'title': d.title,
+            'due_date': d.due_date,
+            'overdue': bool(d.due_date and d.due_date < today),
+            'event': ev,
+            'event_id': ev.id,
+        }
+        (admin_items if _is_admin(d) else tech_items).append(row)
 
     return render(request, 'portal/dashboard/dashboard.html', {
-        'sponsor': sponsor,
-        'active_contracts_count': active_contracts_count,
-        'pending_contracts_count': pending_contracts_count,
-        'active_events_count': active_events_count,
-        'upcoming_deadlines_count': upcoming_deadlines_qs.count(),
-        'overdue_deadlines_count': overdue_deadlines_qs.count(),
-        'upcoming_deadlines': upcoming_deadlines,
-        'overdue_deadlines': overdue_deadlines,
-        'recent_contracts': recent_contracts,
-        'has_purchasable_services': has_purchasable_services,
+        'admin_items': admin_items[:15],
+        'tech_items': tech_items[:15],
+        'has_events': bool(contract_ids),
+        'portal_message': (getattr(sponsor, 'portal_message', '') or '').strip(),
     })
+
 
 
 # ============================================================================
@@ -246,10 +212,11 @@ def events_view(request):
 
 @sponsor_required
 def event_dashboard_view(request, event_id):
-    """In evidenza: fotografia delle scadenze immediate (amministrative e tecniche)."""
+    """Pagina evento: info dell'evento + servizi disponibili."""
     from django.shortcuts import get_object_or_404
-    from contracts.models import Contract, Deadline, DeadlineStatus
+    from contracts.models import Contract, ContractStatus
     from events.models import Event
+    from portal.views.catalog import _get_purchasable_services
 
     sponsor = request.sponsor
     today = date.today()
@@ -260,29 +227,17 @@ def event_dashboard_view(request, event_id):
     if not contracts.exists():
         return HttpResponseForbidden("Accesso negato.")
 
-    contract_ids = list(contracts.values_list('id', flat=True))
-    done = [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED]
-    open_dls = list(
-        Deadline.objects.filter(contract_id__in=contract_ids)
-        .exclude(status__in=done)
-        .order_by('due_date')
-    )
+    has_active_contract = contracts.filter(
+        status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE]
+    ).exists()
 
-    def _is_admin(d):
-        t = (d.deadline_type or '').lower()
-        return t.startswith('pagament') or t == 'scadenza_opzione'
-
-    admin_deadlines, tech_deadlines = [], []
-    for d in open_dls:
-        row = {
-            'title': d.title,
-            'due_date': d.due_date,
-            'overdue': bool(d.due_date and d.due_date < today),
-        }
-        (admin_deadlines if _is_admin(d) else tech_deadlines).append(row)
+    try:
+        services = list(_get_purchasable_services(event, today))
+    except Exception:
+        services = []
 
     return render(request, 'portal/events/dashboard.html', {
         'event': event,
-        'admin_deadlines': admin_deadlines[:8],
-        'tech_deadlines': tech_deadlines[:8],
+        'services': services,
+        'has_active_contract': has_active_contract,
     })

@@ -264,6 +264,10 @@ class SponsorAdmin(admin.ModelAdmin):
             'fields': ('notes',),
             'classes': ('collapse',),
         }),
+        ('Messaggio portale', {
+            'fields': ('portal_message',),
+            'description': 'Mostrato a questo sponsor nella home del portale (In evidenza).',
+        }),
         ('Riepilogo contratti', {
             'fields': ('contracts_summary',),
         }),

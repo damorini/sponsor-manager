@@ -117,6 +117,13 @@ class Sponsor(SoftDeleteModel):
 
     notes = models.TextField(blank=True, verbose_name="Note")
 
+    portal_message = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Messaggio in evidenza (portale)",
+        help_text="Mostrato a questo sponsor nella home del portale.",
+    )
+
     class Meta:
         verbose_name = "Sponsor"
         verbose_name_plural = "Sponsor"

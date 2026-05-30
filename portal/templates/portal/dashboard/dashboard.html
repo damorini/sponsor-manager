@@ -1,193 +1,72 @@
 {% extends "portal/base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}In evidenza{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  
-  <!-- Welcome -->
-  <div class="mb-8">
-    <h1 class="text-3xl font-bold text-gray-900">
-      Buongiorno, {{ user.contact_profile.full_name|default:user.first_name|default:user.email }}
-    </h1>
-    <p class="mt-1 text-gray-600">
-      Panoramica delle attività di
-      <strong>{{ sponsor.legal_name }}</strong>
-    </p>
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <h1 class="text-3xl font-bold text-gray-900">In evidenza</h1>
+  <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-6">Scadenze immediate · tutti i tuoi eventi</p>
+
+  {% if portal_message %}
+  <div class="bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-4 mb-6 text-sm leading-relaxed">
+    {{ portal_message|linebreaks }}
   </div>
-  
-  <!-- KPI Cards -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-    
-    <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-brand-500">
-      <div class="text-sm text-gray-600">Contratti attivi</div>
-      <div class="text-3xl font-bold text-gray-900 mt-1">{{ active_contracts_count }}</div>
-      {% if pending_contracts_count %}
-      <div class="text-xs text-yellow-600 mt-1">
-        + {{ pending_contracts_count }} in attesa pagamento
-      </div>
-      {% endif %}
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 {% if upcoming_deadlines_count > 0 %}border-yellow-500{% else %}border-gray-300{% endif %}">
-      <div class="text-sm text-gray-600">Scadenze prossime</div>
-      <div class="text-3xl font-bold text-gray-900 mt-1">{{ upcoming_deadlines_count }}</div>
-      <div class="text-xs text-gray-500 mt-1">nei prossimi 14 giorni</div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 {% if overdue_deadlines_count > 0 %}border-red-500{% else %}border-gray-300{% endif %}">
-      <div class="text-sm text-gray-600">Scadenze in ritardo</div>
-      <div class="text-3xl font-bold {% if overdue_deadlines_count > 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
-        {{ overdue_deadlines_count }}
-      </div>
-    </div>
-    
-    <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
-      <div class="text-sm text-gray-600">Eventi attivi</div>
-      <div class="text-3xl font-bold text-gray-900 mt-1">{{ active_events_count }}</div>
-    </div>
-    
+  {% endif %}
+
+
+  {% if not has_events %}
+  <div class="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+    Non risultano eventi associati al tuo profilo.
   </div>
-  
-  <!-- Layout 2 colonne -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    <!-- Colonna sinistra: scadenze prossime + ritardi -->
-    <div class="lg:col-span-2 space-y-6">
-      
-      {% if overdue_deadlines %}
-      <!-- Ritardi -->
-      <div class="bg-white rounded-lg shadow-sm">
-        <div class="px-5 py-4 border-b border-gray-200 bg-red-50">
-          <h2 class="text-lg font-semibold text-red-900">
-            ⚠ Scadenze in ritardo
-          </h2>
-        </div>
-        <ul class="divide-y divide-gray-100">
-          {% for d in overdue_deadlines %}
-          <li class="px-5 py-3 flex justify-between items-center">
-            <div>
-              <a href="{% url 'portal:contract_detail' d.contract_id %}" 
-                 class="text-gray-900 font-medium hover:text-brand-500">
-                {{ d.title }}
-              </a>
-              <div class="text-xs text-gray-500">
-                {{ d.contract.contract_number }} · {{ d.contract.event.get_name }}
-              </div>
+  {% else %}
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- AMMINISTRATIVE -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-brand-500">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Amministrative</h2>
+      {% if admin_items %}
+      <ul class="space-y-2">
+        {% for d in admin_items %}
+        <li>
+          <a href="{% url 'portal:event_materials' d.event_id %}?cat=amm" class="block hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded">
+            <div class="flex items-start justify-between gap-3">
+              <span class="text-gray-800 text-sm">{{ d.title }}</span>
+              <span class="text-sm whitespace-nowrap {% if d.overdue %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">{{ d.due_date|date:"d/m/Y" }}{% if d.overdue %} · in ritardo{% endif %}</span>
             </div>
-            <span class="text-sm font-medium text-red-600">
-              {{ d.days_overdue }} gg in ritardo
-            </span>
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-      {% endif %}
-      
-      <!-- Scadenze in arrivo -->
-      <div class="bg-white rounded-lg shadow-sm">
-        <div class="px-5 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Scadenze prossime</h2>
-        </div>
-        {% if upcoming_deadlines %}
-        <ul class="divide-y divide-gray-100">
-          {% for d in upcoming_deadlines %}
-          <li class="px-5 py-3 flex justify-between items-center">
-            <div>
-              <a href="{% url 'portal:contract_detail' d.contract_id %}" 
-                 class="text-gray-900 font-medium hover:text-brand-500">
-                {{ d.title }}
-              </a>
-              <div class="text-xs text-gray-500">
-                {{ d.contract.contract_number }} · {{ d.contract.event.get_name }}
-              </div>
-            </div>
-            <div class="text-right">
-              <div class="text-sm font-medium text-gray-900">
-                {{ d.due_date|date:"d/m/Y" }}
-              </div>
-              <div class="text-xs {% if d.days_until_due <= 3 %}text-yellow-600 font-medium{% else %}text-gray-500{% endif %}">
-                tra {{ d.days_until_due }} giorni
-              </div>
-            </div>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <div class="px-5 py-8 text-center text-gray-500">
-          Nessuna scadenza nei prossimi 14 giorni.
-        </div>
-        {% endif %}
-      </div>
-      
-    </div>
-    
-    <!-- Colonna destra: contratti recenti + azioni rapide -->
-    <div class="space-y-6">
-      
-      <!-- Contratti recenti -->
-      <div class="bg-white rounded-lg shadow-sm">
-        <div class="px-5 py-4 border-b border-gray-200 flex justify-between items-center">
-          <h2 class="text-lg font-semibold text-gray-900">Contratti</h2>
-          <a href="{% url 'portal:contracts_list' %}" 
-             class="text-sm text-brand-500 hover:underline">
-            Vedi tutti
+            <div class="text-xs text-gray-400">{{ d.event.get_name }}</div>
           </a>
-        </div>
-        {% if recent_contracts %}
-        <ul class="divide-y divide-gray-100">
-          {% for c in recent_contracts %}
-          <li class="px-5 py-3">
-            <a href="{% url 'portal:contract_detail' c.id %}" 
-               class="block hover:bg-gray-50 -mx-2 px-2 py-1 rounded">
-              <div class="flex justify-between items-start">
-                <div>
-                  <div class="font-medium text-gray-900 text-sm">
-                    {{ c.contract_number }}
-                  </div>
-                  <div class="text-xs text-gray-500 mt-1">
-                    {{ c.event.get_name|truncatechars:35 }}
-                  </div>
-                </div>
-                <span class="text-xs px-2 py-1 rounded font-medium
-                  {% if c.status == 'signed' or c.status == 'active' %}bg-green-100 text-green-800
-                  {% elif c.status == 'pending_payment' %}bg-yellow-100 text-yellow-800
-                  {% elif c.status == 'sent' %}bg-blue-100 text-blue-800
-                  {% else %}bg-gray-100 text-gray-700{% endif %}">
-                  {{ c.get_status_display }}
-                </span>
-              </div>
-              <div class="text-xs text-gray-600 mt-1">
-                <strong>€ {{ c.total|floatformat:2 }}</strong>
-              </div>
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <div class="px-5 py-8 text-center text-gray-500 text-sm">
-          Nessun contratto al momento.
-        </div>
-        {% endif %}
-      </div>
-      
-      <!-- Azioni rapide -->
-      {% if has_purchasable_services %}
-      <div class="bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg shadow-sm p-5 text-white">
-        <h3 class="font-semibold mb-1">Servizi disponibili</h3>
-        <p class="text-sm text-brand-50 mb-3">
-          Aggiungi workshop, hostess o spazi promozionali ai tuoi contratti.
-        </p>
-        <a href="{% url 'portal:catalog' %}" 
-           class="inline-block bg-white text-brand-700 font-medium px-4 py-2 rounded text-sm hover:bg-brand-50 transition-colors">
-          Esplora servizi
-        </a>
-      </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-green-600 text-sm">Nessuna scadenza amministrativa in sospeso.</p>
       {% endif %}
-      
     </div>
-    
+
+    <!-- TECNICHE -->
+    <div class="bg-white rounded-xl shadow-sm p-6 border-t-4 border-gray-700">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Tecniche</h2>
+      {% if tech_items %}
+      <ul class="space-y-2">
+        {% for d in tech_items %}
+        <li>
+          <a href="{% url 'portal:event_materials' d.event_id %}?cat=tec" class="block hover:bg-gray-50 -mx-2 px-2 py-1.5 rounded">
+            <div class="flex items-start justify-between gap-3">
+              <span class="text-gray-800 text-sm">{{ d.title }}</span>
+              <span class="text-sm whitespace-nowrap {% if d.overdue %}text-red-600 font-semibold{% else %}text-gray-500{% endif %}">{{ d.due_date|date:"d/m/Y" }}{% if d.overdue %} · in ritardo{% endif %}</span>
+            </div>
+            <div class="text-xs text-gray-400">{{ d.event.get_name }}</div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-green-600 text-sm">Nessuna scadenza tecnica in sospeso.</p>
+      {% endif %}
+    </div>
+
   </div>
-  
+  {% endif %}
 </div>
 {% endblock %}

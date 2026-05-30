@@ -7,7 +7,7 @@
   
   <!-- Breadcrumb -->
   <nav class="text-sm text-gray-500 mb-4">
-    <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">Dashboard</a>
+    <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">In evidenza</a>
     <span class="mx-2">/</span>
     {% if event_mode %}
     <a href="{% url 'portal:events' %}" class="hover:text-brand-500">I miei eventi</a>
@@ -24,9 +24,15 @@
   
   <h1 class="text-3xl font-bold text-gray-900 mb-2">Materiali e scadenze</h1>
   {% if event_mode %}
-  <p class="text-gray-600 mb-6">
+  <p class="text-gray-600 mb-2">
     Scadenze e materiali per l'evento <strong>{{ event.get_name }}</strong>.
   </p>
+  {% if category_label %}
+  <p class="text-sm text-gray-500 mb-6">
+    Filtro attivo: <strong>{{ category_label }}</strong> ·
+    <a href="{% url 'portal:event_materials' event.id %}" class="text-brand-500 hover:underline">Vedi tutte</a>
+  </p>
+  {% endif %}
   {% else %}
   <p class="text-gray-600 mb-6">
     Carica i materiali richiesti per il contratto
