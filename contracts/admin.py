@@ -206,7 +206,7 @@ class ContractAdmin(admin.ModelAdmin):
     )
 
     actions = ['action_send_quote', 'action_convert_to_contract',
-               'action_generate_client_summary',
+               'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -669,6 +669,28 @@ class ContractAdmin(admin.ModelAdmin):
             )
 
     @admin.action(description='Marca come FIRMATO')
+    @admin.action(description="Genera scadenze dai template (per contratti gia' firmati/attivi)")
+    def action_genera_scadenze(self, request, queryset):
+        tot = 0
+        for contract in queryset:
+            before = contract.deadlines.count()
+            try:
+                contract._generate_deadlines()
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"Errore su {contract.contract_number}: {e}",
+                    level=messages.ERROR,
+                )
+                continue
+            tot += contract.deadlines.count() - before
+        self.message_user(
+            request,
+            f"Scadenze generate: {tot}. (Nota: il servizio deve avere 'Genera "
+            f"scadenze' attivo e almeno un Template scadenze attivo.)",
+            level=messages.SUCCESS if tot else messages.WARNING,
+        )
+
     def action_mark_as_signed(self, request, queryset):
         ok = err = 0
         for contract in queryset:
