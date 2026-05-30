@@ -119,13 +119,19 @@ class EmailTemplateForm(forms.ModelForm):
     body_template = TranslatableJSONField(
         languages=['it', 'en'],
         required_languages=['it'],
-        use_textarea=True,
+        wysiwyg=True,
         label='Corpo email',
     )
 
     class Meta:
         model = EmailTemplate
         fields = '__all__'
+
+    class Media:
+        js = (
+            'https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
+            'admin/js/email_wysiwyg.js',
+        )
 
 
 @admin.register(EmailTemplate)

@@ -31,7 +31,7 @@ class TranslatableJSONWidget(forms.MultiWidget):
     """
 
     def __init__(self, languages=None, language_labels=None, attrs=None,
-                 use_textarea=False):
+                 use_textarea=False, wysiwyg=False):
         self.languages = languages or ['it', 'en']
         self.language_labels = language_labels or {
             'it': 'Italiano',
@@ -40,12 +40,15 @@ class TranslatableJSONWidget(forms.MultiWidget):
             'de': 'Deutsch',
             'es': 'Español',
         }
-        self.use_textarea = use_textarea
+        self.wysiwyg = wysiwyg
+        self.use_textarea = use_textarea or wysiwyg
 
-        widget_class = forms.Textarea if use_textarea else forms.TextInput
+        widget_class = forms.Textarea if self.use_textarea else forms.TextInput
         widget_attrs = {'class': 'vTextField'}
-        if use_textarea:
+        if self.use_textarea:
             widget_attrs['rows'] = 4
+        if wysiwyg:
+            widget_attrs['data-wysiwyg'] = '1'
 
         widgets = [
             widget_class(attrs={**widget_attrs, 'data-lang': lang})
@@ -87,6 +90,8 @@ class TranslatableJSONWidget(forms.MultiWidget):
 
     def render(self, name, value, attrs=None, renderer=None):
         rendered = super().render(name, value, attrs, renderer)
+        if getattr(self, 'wysiwyg', False):
+            return rendered
         if len(self.languages) < 2:
             return rendered
         base_id = (attrs or {}).get('id') or ('id_' + name)
@@ -126,14 +131,15 @@ class TranslatableJSONField(forms.JSONField):
     """
 
     def __init__(self, languages=None, required_languages=None,
-                 use_textarea=False, *args, **kwargs):
+                 use_textarea=False, wysiwyg=False, *args, **kwargs):
         self.languages = languages or ['it', 'en']
         self.required_languages = required_languages or ['it']
-        self.use_textarea = use_textarea
+        self.use_textarea = use_textarea or wysiwyg
 
         kwargs['widget'] = TranslatableJSONWidget(
             languages=self.languages,
             use_textarea=use_textarea,
+            wysiwyg=wysiwyg,
         )
         super().__init__(*args, **kwargs)
 
