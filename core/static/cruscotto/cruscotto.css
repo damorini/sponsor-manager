@@ -223,3 +223,16 @@ table.cr-table a:hover { text-decoration: underline; }
 .cr-dz-text { font-size: 13px; color: var(--ink-2); }
 .cr-dz-sub { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
 .cr-dz-file { font-size: 12px; font-weight: 600; color: var(--green-acc); min-height: 1em; }
+
+
+/* === Fix contrasto pulsanti cruscotto ===
+   I pulsanti sono <a>: lo stile a:link/a:visited dell'admin sovrascriveva
+   il colore del testo. Queste regole, piu' specifiche, ripristinano il bianco. */
+a.cr-btn--primary, a.cr-btn--primary:link, a.cr-btn--primary:visited,
+a.cr-btn--primary:hover { color: #fff; }
+a.cr-btn--accent, a.cr-btn--accent:link, a.cr-btn--accent:visited,
+a.cr-btn--accent:hover { color: #fff; }
+a.cr-btn--ghost, a.cr-btn--ghost:link, a.cr-btn--ghost:visited { color: var(--ink-2); }
+
+/* Menu evento (Utility): testo non tagliato e larghezza adeguata */
+#export-evento { line-height: 1.4; min-width: 320px; max-width: 100%; }
