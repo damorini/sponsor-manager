@@ -1,0 +1,79 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Dati consegnati · Cruscotto{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_scadenze_cliente' %}">Scadenze cliente</a>
+    &rsaquo; Dati consegnati
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">{{ titolo }}</h1>
+    <p class="cr-sub">{{ evento }} &middot; <strong>{{ sponsor }}</strong></p>
+  </div>
+
+  <div style="display:flex; gap:18px; flex-wrap:wrap; margin:14px 0; color:#444;">
+    <div><span style="color:#888;">Tipo:</span> {{ tipo }}</div>
+    <div><span style="color:#888;">Entro il:</span> {% if due_date %}{{ due_date|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+    <div><span style="color:#888;">Stato:</span>
+      {% if stato == 'completata' %}<span style="background:#41ad7c; color:#fff; padding:2px 8px; border-radius:3px; font-size:.85em;">Completata</span>
+      {% elif stato == 'ritardo' %}<span style="background:#ba2121; color:#fff; padding:2px 8px; border-radius:3px; font-size:.85em;">In ritardo</span>
+      {% else %}<span style="background:#e6a23c; color:#fff; padding:2px 8px; border-radius:3px; font-size:.85em;">Da fare</span>{% endif %}
+    </div>
+    {% if stato == 'completata' %}<div><span style="color:#888;">Consegnata da:</span> {{ completata_da|default:"—" }}{% if completata_il %} &middot; {{ completata_il|date:"d/m/Y" }}{% endif %}</div>{% endif %}
+  </div>
+
+  <div class="cr-section">
+    <h2 class="cr-h2">Testi inviati</h2>
+    {% if campi %}
+    <table style="width:100%; border-collapse:collapse; background:#fff;">
+      <tbody>
+        {% for c in campi %}
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:8px; width:30%; color:#555; font-weight:600; vertical-align:top;">{{ c.label }}</td>
+          <td style="padding:8px;">{{ c.value|default:"—"|linebreaksbr }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888; font-style:italic;">Nessun campo di testo richiesto.</p>
+    {% endif %}
+  </div>
+
+  <div class="cr-section">
+    <h2 class="cr-h2">File inviati</h2>
+    {% if files %}
+    <ul style="list-style:none; padding:0;">
+      {% for f in files %}
+      <li style="padding:8px 0; border-bottom:1px solid #f0f0f0;">
+        <a href="{% url 'core:cruscotto_scadenza_file' f.id %}">{{ f.nome }}</a>
+        <span style="color:#999; font-size:.85em;">{% if f.size %}· {{ f.size|filesizeformat }}{% endif %}{% if f.data %} · {{ f.data|date:"d/m/Y" }}{% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color:#888; font-style:italic;">Nessun file caricato.</p>
+    {% endif %}
+  </div>
+
+  <div class="cr-section">
+    <a href="{% url 'core:cruscotto_scadenze_cliente' %}" class="cr-btn cr-btn--ghost cr-btn--small">&larr; Torna alle scadenze cliente</a>
+  </div>
+</div>
+{% endblock %}

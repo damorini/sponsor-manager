@@ -75,7 +75,7 @@
       <tr style="border-bottom:1px solid #f0f0f0;">
         <td style="padding:8px;">{{ r.evento }}</td>
         <td style="padding:8px;">{{ r.sponsor }}</td>
-        <td style="padding:8px;"><a href="{% url 'admin:contracts_deadline_change' r.deadline_id %}">{{ r.titolo }}</a></td>
+        <td style="padding:8px;"><a href="{% url 'core:cruscotto_scadenza_dettaglio' r.deadline_id %}">{{ r.titolo }}</a></td>
         <td style="padding:8px;">{{ r.tipo }}</td>
         <td style="padding:8px;">{% if r.due_date %}{{ r.due_date|date:"d/m/Y" }}{% else %}—{% endif %}</td>
         <td style="padding:8px;">

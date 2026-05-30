@@ -625,3 +625,83 @@ def cruscotto_scadenze_cliente(request):
     }
     return render(request, 'cruscotto/scadenze_cliente.html', context)
 
+
+@staff_member_required
+def cruscotto_scadenza_dettaglio(request, deadline_id):
+    """Dati consegnati dal cliente per una scadenza: testi + file."""
+    from django.shortcuts import get_object_or_404
+    from django.contrib.contenttypes.models import ContentType
+    from django.utils import timezone
+    from contracts.models import Deadline, DeadlineStatus
+    from shared.models import Document
+
+    d = get_object_or_404(
+        Deadline.objects.select_related(
+            'contract', 'contract__sponsor', 'contract__event',
+            'completed_by_contact'),
+        id=deadline_id)
+
+    schema = d.content_schema or []
+    data = d.content_data or {}
+    campi = [{'label': f.get('label', f.get('key')),
+              'value': data.get(f.get('key'), '')} for f in schema]
+
+    deadline_ct = ContentType.objects.get_for_model(Deadline)
+    docs = (Document.objects
+            .filter(content_type=deadline_ct, object_id=d.id,
+                    deleted_at__isnull=True)
+            .order_by('created_at'))
+    files = [{'id': x.id, 'nome': x.file_name, 'size': x.file_size_bytes,
+              'data': x.created_at} for x in docs]
+
+    today = timezone.now().date()
+    received = d.status == DeadlineStatus.RECEIVED
+    late = (not received) and d.due_date and d.due_date < today
+    stato = 'completata' if received else ('ritardo' if late else 'dafare')
+    tipo_map = {'content': 'Testi', 'file': 'File', 'both': 'Testi + file'}
+
+    ev = d.contract.event
+    sp = d.contract.sponsor
+    try:
+        evnome = ev.get_name() if ev else '—'
+    except Exception:
+        evnome = str(ev) if ev else '—'
+
+    context = {
+        **admin_site.each_context(request),
+        'title': 'Dati consegnati',
+        'titolo': d.title,
+        'evento': evnome,
+        'sponsor': sp.legal_name if sp else '—',
+        'tipo': tipo_map.get(getattr(d, 'submission_kind', 'file'),
+                             getattr(d, 'submission_kind', '')),
+        'due_date': d.due_date,
+        'stato': stato,
+        'completata_da': (d.completed_by_contact.full_name
+                          if d.completed_by_contact else ''),
+        'completata_il': d.completed_at,
+        'campi': campi,
+        'files': files,
+        'deadline_id': d.id,
+    }
+    return render(request, 'cruscotto/scadenza_dettaglio.html', context)
+
+
+@staff_member_required
+def cruscotto_scadenza_file(request, document_id):
+    """Download (staff) di un file consegnato dal cliente."""
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+    from django.http import FileResponse, Http404
+    from django.shortcuts import get_object_or_404
+    from shared.models import Document
+
+    document = get_object_or_404(
+        Document.objects.filter(deleted_at__isnull=True), id=document_id)
+    relative_path = (document.storage_url or '').replace(settings.MEDIA_URL, '')
+    if not relative_path or not default_storage.exists(relative_path):
+        raise Http404("File non trovato sul server.")
+    return FileResponse(
+        default_storage.open(relative_path, 'rb'),
+        as_attachment=True, filename=document.file_name)
+
