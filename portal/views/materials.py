@@ -469,7 +469,11 @@ def event_materials_view(request, event_id):
 
     def _is_admin(d):
         t = (d.deadline_type or '').lower()
-        return t.startswith('pagament') or t == 'scadenza_opzione'
+        title = (d.title or '').lower()
+        if t.startswith('pagament') or t == 'scadenza_opzione':
+            return True
+        kw = ('pagament', 'acconto', 'caparra', 'saldo', 'fattura', 'bonifico', 'opzione')
+        return any(k in t for k in kw) or any(k in title for k in kw)
 
     if cat == 'amm':
         deadlines = [d for d in deadlines if _is_admin(d)]
