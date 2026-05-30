@@ -10,12 +10,18 @@
   {% csrf_token %}
   <fieldset class="module aligned">
     <div class="form-row">
-      <label for="to_email">Destinatario:</label>
-      <select name="to_email" id="to_email">
+      <label>Destinatari:</label>
+      <div style="display:inline-block; vertical-align:top;">
         {% for c in contacts %}
-          <option value="{{ c.email }}" {% if c.email == form_data.to_email %}selected{% endif %}>{{ c.full_name }} &lt;{{ c.email }}&gt;{% if c.is_primary %} (principale){% endif %}</option>
+          <div style="margin:2px 0;">
+            <label style="font-weight:normal;">
+              <input type="checkbox" name="to_emails" value="{{ c.email }}"
+                     {% if c.email in form_data.to_emails %}checked{% endif %}>
+              {{ c.full_name }} &lt;{{ c.email }}&gt;{% if c.is_primary %} (principale){% endif %}
+            </label>
+          </div>
         {% endfor %}
-      </select>
+      </div>
     </div>
     <div class="form-row">
       <label for="event_id">Evento (per l'intestazione, opzionale):</label>

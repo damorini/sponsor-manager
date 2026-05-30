@@ -242,3 +242,47 @@ def events_view(request):
     items.sort(key=lambda x: (x['event'].start_date or date.max))
 
     return render(request, 'portal/events/list.html', {'events_items': items})
+
+
+@sponsor_required
+def event_dashboard_view(request, event_id):
+    """In evidenza: fotografia delle scadenze immediate (amministrative e tecniche)."""
+    from django.shortcuts import get_object_or_404
+    from contracts.models import Contract, Deadline, DeadlineStatus
+    from events.models import Event
+
+    sponsor = request.sponsor
+    today = date.today()
+    event = get_object_or_404(Event, id=event_id)
+
+    contracts = Contract.objects.filter(
+        sponsor=sponsor, event_id=event_id, deleted_at__isnull=True)
+    if not contracts.exists():
+        return HttpResponseForbidden("Accesso negato.")
+
+    contract_ids = list(contracts.values_list('id', flat=True))
+    done = [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED]
+    open_dls = list(
+        Deadline.objects.filter(contract_id__in=contract_ids)
+        .exclude(status__in=done)
+        .order_by('due_date')
+    )
+
+    def _is_admin(d):
+        t = (d.deadline_type or '').lower()
+        return t.startswith('pagament') or t == 'scadenza_opzione'
+
+    admin_deadlines, tech_deadlines = [], []
+    for d in open_dls:
+        row = {
+            'title': d.title,
+            'due_date': d.due_date,
+            'overdue': bool(d.due_date and d.due_date < today),
+        }
+        (admin_deadlines if _is_admin(d) else tech_deadlines).append(row)
+
+    return render(request, 'portal/events/dashboard.html', {
+        'event': event,
+        'admin_deadlines': admin_deadlines[:8],
+        'tech_deadlines': tech_deadlines[:8],
+    })

@@ -27,6 +27,8 @@ urlpatterns = [
     # Dashboard
     path('', dashboard.dashboard_view, name='dashboard'),
     path('eventi/', dashboard.events_view, name='events'),
+    path('eventi/<uuid:event_id>/', dashboard.event_dashboard_view,
+         name='event_dashboard'),
     path('eventi/<uuid:event_id>/scadenze/', materials.event_materials_view,
          name='event_materials'),
     path('profilo/', profile.profile_view, name='profile'),

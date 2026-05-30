@@ -14,7 +14,7 @@
   {% if events_items %}
   <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
     {% for it in events_items %}
-    <a href="{% url 'portal:event_materials' it.event.id %}"
+    <a href="{% url 'portal:event_dashboard' it.event.id %}"
        class="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-5 border-l-4
               {% if it.overdue > 0 %}border-red-500{% elif it.pending > 0 %}border-brand-500{% else %}border-green-500{% endif %}">
       <h2 class="text-xl font-semibold text-gray-900">{{ it.event.get_name }}</h2>
@@ -29,7 +29,7 @@
         {% endif %}
         <span class="text-green-600"><span class="font-semibold">{{ it.completed }}</span> completate</span>
       </div>
-      <div class="mt-4 text-brand-500 text-sm font-medium">Apri scadenze →</div>
+      <div class="mt-4 text-brand-500 text-sm font-medium">Apri evento →</div>
     </a>
     {% endfor %}
   </div>

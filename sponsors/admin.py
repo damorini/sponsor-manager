@@ -173,20 +173,23 @@ class SponsorAdmin(admin.ModelAdmin):
             return HttpResponseRedirect('../../')
 
         if request.method == 'POST':
-            to_email = (request.POST.get('to_email') or '').strip()
+            to_emails = request.POST.getlist('to_emails')
             subject = (request.POST.get('subject') or '').strip()
             body = request.POST.get('body') or ''
             language = (request.POST.get('language') or 'it').strip()
             ev_id = request.POST.get('event_id') or ''
 
-            contact = next((c for c in contacts if c.email == to_email), None)
+            # solo contatti dello sponsor (niente indirizzi arbitrari)
+            chosen = [c for c in contacts if c.email in to_emails]
+            contact = (next((c for c in chosen if getattr(c, 'is_primary', False)), None)
+                       or (chosen[0] if chosen else None))
             event = None
             if ev_id:
                 event = next((e['obj'] for e in events if str(e['id']) == str(ev_id)), None)
 
             errors = []
-            if not contact:
-                errors.append("Scegli un destinatario tra i contatti dello sponsor.")
+            if not chosen:
+                errors.append("Scegli almeno un destinatario tra i contatti dello sponsor.")
             if not subject:
                 errors.append("L'oggetto e' obbligatorio.")
             if not body.strip():
@@ -203,7 +206,7 @@ class SponsorAdmin(admin.ModelAdmin):
                     send_email(
                         template_name='manual',
                         context=ctx,
-                        to=[contact.email],
+                        to=[c.email for c in chosen],
                         subject=subject,
                         language=language or 'it',
                         related_to=sponsor,
@@ -211,9 +214,10 @@ class SponsorAdmin(admin.ModelAdmin):
                         triggered_by_user=request.user,
                         custom_body_html=body,
                     )
+                    dest = ", ".join(c.email for c in chosen)
                     self.message_user(
                         request,
-                        f"Email inviata a {contact.full_name} ({contact.email}).",
+                        f"Email inviata a {len(chosen)} destinatario/i: {dest}.",
                         level=messages.SUCCESS,
                     )
                     return HttpResponseRedirect('../../')
@@ -222,12 +226,12 @@ class SponsorAdmin(admin.ModelAdmin):
 
             for m in errors:
                 self.message_user(request, m, level=messages.ERROR)
-            form_data = {'to_email': to_email, 'subject': subject,
+            form_data = {'to_emails': to_emails, 'subject': subject,
                          'body': body, 'language': language, 'event_id': ev_id}
         else:
             primary = next((c for c in contacts if getattr(c, 'is_primary', False)), None)
-            default_to = primary.email if primary else contacts[0].email
-            form_data = {'to_email': default_to, 'subject': '', 'body': '',
+            default_to = [primary.email] if primary else ([contacts[0].email] if contacts else [])
+            form_data = {'to_emails': default_to, 'subject': '', 'body': '',
                          'language': 'it', 'event_id': ''}
 
         context = {
