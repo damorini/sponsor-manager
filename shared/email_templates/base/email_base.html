@@ -94,21 +94,17 @@
         </tr>
         {% endif %}
 
-        <!-- HEADER con logo/brand -->
+        <!-- HEADER testuale: compare SOLO se l'evento non ha un'immagine.
+             In cima c'e' sempre l'evento; la segreteria resta solo nel footer. -->
+        {% if not event or not event.email_header_image %}
         <tr>
           <td class="brand-primary" align="center" style="padding:24px 16px;">
-            <!-- Sostituisci con la tua immagine logo (ospitala su URL pubblico,
-                 oppure usa un'inline image gestita lato server) -->
-            {% if brand_logo_url %}
-              <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}"
-                   width="160" style="max-width:160px; height:auto;">
-            {% else %}
-              <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:600;">
-                {{ organizer_name|default:"Sponsor Manager" }}
-              </h1>
-            {% endif %}
+            <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:600;">
+              {% if event_name %}{{ event_name }}{% elif organizer_name %}{{ organizer_name }}{% else %}Sponsor Manager{% endif %}
+            </h1>
           </td>
         </tr>
+        {% endif %}
 
         <!-- CONTENUTO principale (override negli specifici template) -->
         <tr>
