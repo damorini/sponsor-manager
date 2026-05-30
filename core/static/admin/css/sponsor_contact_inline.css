@@ -1,0 +1,4 @@
+/* Sponsor > Contatti: evita che la tabella inline esca/venga tagliata a destra */
+.inline-group fieldset.module { overflow-x: auto; }
+.inline-group .vTextField { width: 11em; box-sizing: border-box; }
+.inline-group select { max-width: 9em; }

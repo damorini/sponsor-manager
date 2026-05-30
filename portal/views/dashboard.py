@@ -245,3 +245,22 @@ def event_dashboard_view(request, event_id):
         'services': services,
         'has_active_contract': has_active_contract,
     })
+
+
+@sponsor_required
+def purchases_view(request):
+    """I miei acquisti: contratti addon ecommerce pagati (data + importo)."""
+    from contracts.models import Contract, ContractStatus, ContractKind
+
+    sponsor = request.sponsor
+    paid = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+    orders = list(
+        Contract.objects
+        .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
+                status__in=paid, deleted_at__isnull=True)
+        .select_related('event')
+        .prefetch_related('lines')
+        .order_by('-signed_date', '-created_at')
+    )
+    return render(request, 'portal/purchases/list.html', {'orders': orders})
+

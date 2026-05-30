@@ -33,6 +33,9 @@ class ContactInline(admin.TabularInline):
     )
     show_change_link = True
 
+    class Media:
+        css = {'all': ('admin/css/sponsor_contact_inline.css',)}
+
 
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):

@@ -33,6 +33,7 @@ urlpatterns = [
          name='event_materials'),
     path('profilo/', profile.profile_view, name='profile'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
+    path('acquisti/', dashboard.purchases_view, name='purchases'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),
     

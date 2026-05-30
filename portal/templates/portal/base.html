@@ -63,6 +63,8 @@
        class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei eventi</a>
     <a href="{% url 'portal:contracts_list' %}"
        class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">Contratti</a>
+    <a href="{% url 'portal:purchases' %}"
+       class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei acquisti</a>
     <a href="{% url 'portal:profile' %}"
        class="block px-4 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-brand-50 text-brand-500{% else %}text-gray-700 hover:bg-gray-100{% endif %}">I miei dati</a>
     <a href="{% url 'portal:wishlist_page' %}"
