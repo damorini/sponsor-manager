@@ -237,18 +237,25 @@ def servizio_dettaglio(request, pk, service_pk):
              .select_related('contract', 'contract__sponsor')
              .order_by('contract__contract_number'))
 
-    prenotazioni = []
+    righe_out = []
+    riepilogo = {'confermati': 0, 'opzione': 0, 'trattativa': 0}
+    cat_to_key = {'confermato': 'confermati', 'opzione': 'opzione',
+                  'trattativa': 'trattativa'}
     for r in righe:
         c = r.contract
-        prenotazioni.append({
+        categoria = cats.get(c.id, '-')
+        k = cat_to_key.get(categoria)
+        if k:
+            riepilogo[k] += 1
+        righe_out.append({
             'contract_id': c.id,
             'contract_number': c.contract_number,
-            'sponsor_nome': str(c.sponsor) if c.sponsor_id else '(senza sponsor)',
+            'sponsor': str(c.sponsor) if c.sponsor_id else '(senza sponsor)',
             'sponsor_id': c.sponsor_id,
             'status_label': c.get_status_display(),
-            'categoria': cats.get(c.id, '-'),
-            'quantita': r.quantity,
-            'totale_riga': r.line_total or 0,
+            'categoria': categoria,
+            'quantity': r.quantity,
+            'importo': r.line_total or 0,
         })
 
     try:
@@ -260,18 +267,20 @@ def servizio_dettaglio(request, pk, service_pk):
     except Exception:
         nome_ev = str(ev)
 
-    q_totale = sum(p['quantita'] for p in prenotazioni)
+    q_totale = sum(x['quantity'] for x in righe_out)
 
     context = {
         **admin_site.each_context(request),
-        'title': f'Cruscotto · {nome_ev} · {nome_serv}',
+        'title': f'Cruscotto \u00b7 {nome_ev} \u00b7 {nome_serv}',
         'evento': ev,
         'nome_evento': nome_ev,
         'servizio': servizio,
         'nome_servizio': nome_serv,
-        'prenotazioni': prenotazioni,
+        'righe': righe_out,
+        'riepilogo': riepilogo,
+        'prenotazioni': righe_out,
         'q_totale': q_totale,
-        'n_prenotazioni': len(prenotazioni),
+        'n_prenotazioni': len(righe_out),
     }
     return render(request, 'cruscotto/servizio.html', context)
 
