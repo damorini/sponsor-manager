@@ -42,7 +42,7 @@
     <div class="cr-panel">
       <div class="cr-form-row">
         <label style="font-weight:500; color: var(--ink-2);">Evento:</label>
-        <select id="export-evento" style="padding:8px 12px; font-size:14px; font-weight:500; color:var(--ink); border:1px solid var(--line-strong); border-radius:6px; background:#fff;">
+        <select id="export-evento" style="padding:8px 12px; font-size:14px; font-weight:500; color:var(--ink); border:1px solid var(--line-strong); border-radius:6px; background:#fff; min-width:320px; max-width:100%;">
           {% for ev in eventi %}
           <option value="{{ ev.slug }}">{{ ev.get_name }} ({{ ev.slug }})</option>
           {% endfor %}
