@@ -11,7 +11,7 @@ from django.utils.html import format_html
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service
+from .models import DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service, ServiceVariant
 
 
 class ServiceAdminForm(forms.ModelForm):
@@ -42,6 +42,12 @@ class DeadlineTemplateInline(admin.TabularInline):
         'deadline_type', 'title', 'submission_kind', 'days_before_event',
         'reminder_days_before', 'is_active',
     )
+
+
+class ServiceVariantInline(admin.TabularInline):
+    model = ServiceVariant
+    extra = 0
+    fields = ('label', 'code', 'base_price', 'total_available', 'is_active', 'display_order')
 
 
 @admin.register(Service)
@@ -82,7 +88,7 @@ class ServiceAdmin(admin.ModelAdmin):
         return "(nessuna immagine)"
 
     ordering = ('event', 'display_order')
-    inlines = [DeadlineTemplateInline]
+    inlines = [DeadlineTemplateInline, ServiceVariantInline]
 
     fieldsets = (
         (None, {

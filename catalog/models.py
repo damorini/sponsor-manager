@@ -265,6 +265,62 @@ class Service(TranslatableMixin, TimeStampedModel):
         return days_until_event >= self.self_purchase_cutoff_days
 
 
+class ServiceVariant(TimeStampedModel):
+    """Variante di un Service (es. colore/misura) con prezzo e scorte proprie."""
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE,
+        related_name='variants',
+        verbose_name="Servizio",
+    )
+    label = models.CharField(
+        max_length=120, verbose_name="Variante",
+        help_text="Es. Rosso, Taglia L, ...",
+    )
+    code = models.CharField(max_length=50, blank=True, verbose_name="Codice")
+    base_price = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        verbose_name="Prezzo variante",
+        help_text="Prezzo di questa variante (sostituisce il prezzo base del servizio).",
+    )
+    total_available = models.IntegerField(
+        null=True, blank=True, verbose_name="Scorte",
+        help_text="Quantita' disponibile di questa variante. Vuoto = illimitate.",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Attiva")
+    display_order = models.IntegerField(default=0, verbose_name="Ordine")
+
+    class Meta:
+        verbose_name = "Variante servizio"
+        verbose_name_plural = "Varianti servizio"
+        ordering = ['display_order', 'label']
+
+    def __str__(self):
+        return self.label
+
+    def quantity_committed(self, exclude_contract_id=None):
+        from django.db.models import Sum
+        from contracts.models import ContractStatus
+        qs = self.variant_lines.filter(
+            contract__status__in=[
+                ContractStatus.SENT, ContractStatus.SIGNED,
+                ContractStatus.ACTIVE, ContractStatus.COMPLETED,
+            ]
+        )
+        if exclude_contract_id:
+            qs = qs.exclude(contract_id=exclude_contract_id)
+        return qs.aggregate(tot=Sum('quantity'))['tot'] or 0
+
+    def quantity_available(self, exclude_contract_id=None):
+        if self.total_available is None:
+            return None
+        return self.total_available - self.quantity_committed(exclude_contract_id)
+
+    def is_sold_out(self):
+        avail = self.quantity_available()
+        return avail is not None and avail <= 0
+
+
 class SubmissionKind(models.TextChoices):
     FILE = 'file', 'Solo file'
     CONTENT = 'content', 'Solo campi da compilare'

@@ -956,6 +956,15 @@ class ContractLine(TimeStampedModel):
     # Snapshot servizio
     service_name_snapshot = models.CharField(max_length=255, verbose_name="Nome servizio")
     service_description_snapshot = models.TextField(blank=True, verbose_name="Descrizione")
+    service_variant = models.ForeignKey(
+        'catalog.ServiceVariant',
+        on_delete=models.PROTECT,
+        null=True, blank=True,
+        related_name='variant_lines',
+        verbose_name="Variante",
+    )
+    variant_label_snapshot = models.CharField(
+        max_length=120, blank=True, verbose_name="Variante (etichetta)")
 
     quantity = models.IntegerField(
         default=1,
