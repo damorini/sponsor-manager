@@ -168,15 +168,19 @@ def send_email(
     """
     from shared.models import Communication, CommunicationStatus
 
-    # 1. Risolvi template
-    template_path = get_template_path(template_name, language)
-
     # 2. Costruisci contesto completo
     full_context = build_common_context(context, language)
     full_context['subject'] = subject
 
-    # 3. Renderizza il body HTML
-    body_html = render_to_string(template_path, full_context)
+    # 3. Renderizza il body HTML.
+    #    Prima si prova un EmailTemplate ATTIVO dall'admin (override del testo);
+    #    altrimenti si usa il file su disco (comportamento storico).
+    body_html, subject_override = _render_email_body(
+        template_name, language, full_context
+    )
+    if subject_override:
+        subject = subject_override
+        full_context['subject'] = subject
     body_text = strip_tags(body_html)  # versione testuale fallback
 
     # 4. Crea record Communication PRIMA dell'invio (status='queued')
@@ -315,3 +319,77 @@ def get_signer_email(contract) -> Optional[str]:
     if contract.sponsor_signer_contact and contract.sponsor_signer_contact.email:
         return contract.sponsor_signer_contact.email
     return None
+
+
+# ============================================================================
+# Override dei template email dall'admin (modello EmailTemplate)
+# ============================================================================
+
+def _pick_lang(raw, language):
+    """Estrae la lingua da un valore bilingue JSON {it,en}; se e' testo
+    semplice lo restituisce cosi' com'e'."""
+    if not raw:
+        return ''
+    try:
+        import json
+        data = json.loads(raw)
+        if isinstance(data, dict):
+            return (data.get(language) or data.get('it')
+                    or next((v for v in data.values() if v), ''))
+    except (ValueError, TypeError):
+        pass
+    return raw
+
+
+def _render_email_body(template_name, language, context):
+    """
+    Ritorna (body_html, subject_override).
+    Se esiste un EmailTemplate attivo con code == template_name, usa il testo
+    dall'admin avvolto nel layout grafico email_base.html. Altrimenti (o in caso
+    di errore) ripiega sul file su disco. subject_override e' None se non
+    sovrascritto dall'admin.
+    """
+    tpl = None
+    try:
+        from shared.models import EmailTemplate
+        tpl = EmailTemplate.objects.filter(
+            code=template_name, is_active=True
+        ).first()
+    except Exception:
+        tpl = None
+
+    if tpl:
+        try:
+            from django.template import engines
+            from django.utils.html import linebreaks
+            dj = engines['django']
+
+            body_src = _pick_lang(tpl.body_template, language)
+            subj_src = _pick_lang(tpl.subject_template, language)
+
+            # pass 1: risolve i placeholder DENTRO il corpo
+            body_resolved = dj.from_string(body_src).render(context)
+            # se il corpo e' testo semplice (nessun tag HTML), converte gli a-capo
+            if '<' not in (body_src or ''):
+                body_resolved = linebreaks(body_resolved)
+
+            # pass 2: avvolge il corpo nel layout grafico condiviso
+            wrap_ctx = dict(context)
+            wrap_ctx['email_body_html'] = body_resolved
+            body_html = render_to_string(
+                'shared/email_templates/base/_db_wrapper.html', wrap_ctx
+            )
+
+            subject_override = None
+            if subj_src:
+                subject_override = dj.from_string(subj_src).render(context).strip()
+            return body_html, subject_override
+        except Exception:
+            logger.exception(
+                "Errore nel rendering EmailTemplate '%s' dall'admin: uso il file",
+                template_name,
+            )
+
+    # fallback: file su disco (comportamento storico)
+    template_path = get_template_path(template_name, language)
+    return render_to_string(template_path, context), None
