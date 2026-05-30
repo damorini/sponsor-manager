@@ -27,6 +27,9 @@
       {% if n_eventi == 0 %}Nessun evento attivo al momento.{% else %}<strong>{{ n_eventi }}</strong> evento{% if n_eventi != 1 %}i{% endif %} attivo{% if n_eventi != 1 %}i{% endif %}.{% endif %}
     </p>
     <p style="margin-top:18px;">
+      <a href="{% url 'core:cruscotto_scadenze_cliente' %}" class="cr-btn cr-btn--ghost cr-btn--small">
+        <span>🗓</span> Scadenze cliente
+      </a>
       <a href="{% url 'core:cruscotto_utility' %}" class="cr-btn cr-btn--ghost cr-btn--small">
         <span>⚙</span> Utility
       </a>

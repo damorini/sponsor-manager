@@ -530,3 +530,89 @@ def translate_view(request):
         return JsonResponse({'error': str(e)}, status=400)
     except Exception:
         return JsonResponse({'error': 'Errore durante la traduzione'}, status=500)
+
+
+@staff_member_required
+def cruscotto_scadenze_cliente(request):
+    """Cruscotto: scadenze a cura del cliente (generate dai template di servizio).
+
+    Mostra totali, completate, da fare, in ritardo, con chi/quando ha consegnato.
+    """
+    from django.utils import timezone
+    from contracts.models import Deadline, DeadlineStatus
+
+    today = timezone.now().date()
+
+    qs = (Deadline.objects
+          .filter(deadline_template__isnull=False)
+          .exclude(status=DeadlineStatus.WAIVED)
+          .select_related('contract', 'contract__sponsor', 'contract__event',
+                          'completed_by_contact')
+          .order_by('contract__event__start_date', 'due_date'))
+
+    event_id = request.GET.get('event') or ''
+    if event_id:
+        qs = qs.filter(contract__event_id=event_id)
+
+    deadlines = list(qs)
+
+    tipo_map = {'content': 'Testi', 'file': 'File', 'both': 'Testi + file'}
+    righe = []
+    completate = in_ritardo = da_fare = 0
+    for d in deadlines:
+        received = d.status == DeadlineStatus.RECEIVED
+        late = (not received) and d.due_date and d.due_date < today
+        if received:
+            stato = 'completata'; completate += 1
+        elif late:
+            stato = 'ritardo'; in_ritardo += 1
+        else:
+            stato = 'dafare'; da_fare += 1
+        ev = d.contract.event
+        sp = d.contract.sponsor
+        try:
+            evnome = ev.get_name() if ev else '—'
+        except Exception:
+            evnome = str(ev) if ev else '—'
+        righe.append({
+            'evento': evnome,
+            'sponsor': sp.legal_name if sp else '—',
+            'titolo': d.title,
+            'tipo': tipo_map.get(getattr(d, 'submission_kind', 'file'),
+                                 getattr(d, 'submission_kind', '')),
+            'due_date': d.due_date,
+            'stato': stato,
+            'completata_da': (d.completed_by_contact.full_name
+                              if d.completed_by_contact else ''),
+            'completata_il': d.completed_at,
+            'deadline_id': d.id,
+        })
+
+    # eventi con scadenze cliente, per il filtro
+    ev_ids = set(Deadline.objects
+                 .filter(deadline_template__isnull=False)
+                 .exclude(status=DeadlineStatus.WAIVED)
+                 .values_list('contract__event_id', flat=True))
+    eventi = (Event.objects.filter(id__in=[x for x in ev_ids if x])
+              .order_by('start_date'))
+    ev_list = []
+    for e in eventi:
+        try:
+            n = e.get_name() if hasattr(e, 'get_name') else str(e)
+        except Exception:
+            n = str(e)
+        ev_list.append({'id': e.id, 'nome': n})
+
+    context = {
+        **admin_site.each_context(request),
+        'title': 'Scadenze cliente',
+        'righe': righe,
+        'tot': len(deadlines),
+        'completate': completate,
+        'da_fare': da_fare,
+        'in_ritardo': in_ritardo,
+        'eventi': ev_list,
+        'event_id': event_id,
+    }
+    return render(request, 'cruscotto/scadenze_cliente.html', context)
+
