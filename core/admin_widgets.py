@@ -90,8 +90,6 @@ class TranslatableJSONWidget(forms.MultiWidget):
 
     def render(self, name, value, attrs=None, renderer=None):
         rendered = super().render(name, value, attrs, renderer)
-        if getattr(self, 'wysiwyg', False):
-            return rendered
         if len(self.languages) < 2:
             return rendered
         base_id = (attrs or {}).get('id') or ('id_' + name)

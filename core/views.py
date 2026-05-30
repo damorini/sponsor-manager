@@ -521,10 +521,11 @@ def translate_view(request):
     text = (payload.get('text') or '').strip()
     source = (payload.get('source') or 'it')
     target = (payload.get('target') or 'en')
+    is_html = bool(payload.get('html'))
     if not text:
         return JsonResponse({'error': 'Testo vuoto'}, status=400)
     try:
-        return JsonResponse({'translated': translate_text(text, source=source, target=target)})
+        return JsonResponse({'translated': translate_text(text, source=source, target=target, html=is_html)})
     except TranslationError as e:
         return JsonResponse({'error': str(e)}, status=400)
     except Exception:

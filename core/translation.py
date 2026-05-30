@@ -8,7 +8,7 @@ class TranslationError(Exception):
     pass
 
 
-def translate_text(text, source='it', target='en'):
+def translate_text(text, source='it', target='en', html=False):
     key = (getattr(settings, 'DEEPL_API_KEY', '') or '').strip()
     if not key:
         raise TranslationError(
@@ -25,6 +25,7 @@ def translate_text(text, source='it', target='en'):
                 "text": text,
                 "source_lang": source.upper(),
                 "target_lang": target.upper(),
+                **({"tag_handling": "html"} if html else {}),
             },
             timeout=15,
         )
