@@ -359,12 +359,10 @@ class ContactAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
-        return ('_cognome',)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).annotate(
-            _cognome=Lower(_Cognome('full_name'))
-        )
+        # Espressione autosufficiente: ordina per "cognome" ricavato da full_name,
+        # senza annotazioni. Cosi' funziona anche quando un altro admin (es. il
+        # Contratto) costruisce la tendina dei Contatti via get_field_queryset.
+        return (Lower(_Cognome('full_name')),)
 
     fieldsets = (
         ('Persona', {
