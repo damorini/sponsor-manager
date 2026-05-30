@@ -143,6 +143,7 @@ def send_email(
     communication_type: str = 'manual',
     triggered_by_user=None,
     is_automated: bool = False,
+    custom_body_html: str = None,
 ) -> 'Communication':
     """
     Invia un'email transazionale renderizzando il template specificato.
@@ -173,14 +174,17 @@ def send_email(
     full_context['subject'] = subject
 
     # 3. Renderizza il body HTML.
-    #    Prima si prova un EmailTemplate ATTIVO dall'admin (override del testo);
-    #    altrimenti si usa il file su disco (comportamento storico).
-    body_html, subject_override = _render_email_body(
-        template_name, language, full_context
-    )
-    if subject_override:
-        subject = subject_override
-        full_context['subject'] = subject
+    #    Se e' passato un corpo libero (email singola scritta a mano) lo si
+    #    avvolge nel layout; altrimenti EmailTemplate attivo o file su disco.
+    if custom_body_html is not None:
+        body_html = _render_custom_body(custom_body_html, full_context)
+    else:
+        body_html, subject_override = _render_email_body(
+            template_name, language, full_context
+        )
+        if subject_override:
+            subject = subject_override
+            full_context['subject'] = subject
     body_text = strip_tags(body_html)  # versione testuale fallback
 
     # 4. Crea record Communication PRIMA dell'invio (status='queued')
@@ -393,3 +397,17 @@ def _render_email_body(template_name, language, context):
     # fallback: file su disco (comportamento storico)
     template_path = get_template_path(template_name, language)
     return render_to_string(template_path, context), None
+
+
+def _render_custom_body(body_src, context):
+    """Avvolge un corpo libero (HTML o testo semplice) nel layout email_base,
+    risolvendo i placeholder. Usato per le email singole scritte a mano."""
+    from django.template import engines
+    from django.utils.html import linebreaks
+    dj = engines['django']
+    body_resolved = dj.from_string(body_src or '').render(context)
+    if '<' not in (body_src or ''):
+        body_resolved = linebreaks(body_resolved)
+    wrap_ctx = dict(context)
+    wrap_ctx['email_body_html'] = body_resolved
+    return render_to_string('shared/email_templates/base/_db_wrapper.html', wrap_ctx)

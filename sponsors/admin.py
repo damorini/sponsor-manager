@@ -51,7 +51,7 @@ class SponsorAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary', 'logo_preview')
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
-    actions = ['action_generate_client_summary']
+    actions = ['action_generate_client_summary', 'action_compose_email']
 
     def get_urls(self):
         urls = super().get_urls()
@@ -60,6 +60,11 @@ class SponsorAdmin(admin.ModelAdmin):
                 '<path:object_id>/genera-scheda/',
                 self.admin_site.admin_view(self.generate_summary_view),
                 name='sponsors_sponsor_generate_summary',
+            ),
+            path(
+                '<path:object_id>/invia-email/',
+                self.admin_site.admin_view(self.compose_email_view),
+                name='sponsors_sponsor_compose_email',
             ),
         ]
         return custom + urls
@@ -143,6 +148,98 @@ class SponsorAdmin(admin.ModelAdmin):
             'opts': self.model._meta,
         }
         return render(request, 'admin/client_summary_event_choice.html', context)
+
+    # ---- Invio email singola a uno sponsor (Fase C) ----
+    @admin.action(description='INVIA EMAIL a questo sponsor')
+    def action_compose_email(self, request, queryset):
+        if queryset.count() != 1:
+            self.message_user(request, "Seleziona UN solo sponsor.",
+                              level=messages.WARNING)
+            return
+        sponsor = queryset.first()
+        return HttpResponseRedirect(
+            reverse('admin:sponsors_sponsor_compose_email', args=[sponsor.pk])
+        )
+
+    def compose_email_view(self, request, object_id):
+        sponsor = get_object_or_404(Sponsor, pk=object_id)
+        contacts = list(sponsor.contacts.all())
+        events = self._events_of_sponsor(sponsor)
+
+        if not contacts:
+            self.message_user(request,
+                              f"{sponsor.legal_name} non ha contatti con email.",
+                              level=messages.WARNING)
+            return HttpResponseRedirect('../../')
+
+        if request.method == 'POST':
+            to_email = (request.POST.get('to_email') or '').strip()
+            subject = (request.POST.get('subject') or '').strip()
+            body = request.POST.get('body') or ''
+            language = (request.POST.get('language') or 'it').strip()
+            ev_id = request.POST.get('event_id') or ''
+
+            contact = next((c for c in contacts if c.email == to_email), None)
+            event = None
+            if ev_id:
+                event = next((e['obj'] for e in events if str(e['id']) == str(ev_id)), None)
+
+            errors = []
+            if not contact:
+                errors.append("Scegli un destinatario tra i contatti dello sponsor.")
+            if not subject:
+                errors.append("L'oggetto e' obbligatorio.")
+            if not body.strip():
+                errors.append("Il corpo dell'email e' obbligatorio.")
+
+            if not errors:
+                from contracts.services.email_sender import send_email
+                ctx = {'sponsor': sponsor, 'contact': contact}
+                if event is not None:
+                    ctx['event'] = event
+                    ctx['event_name'] = (event.get_name(language)
+                                         if hasattr(event, 'get_name') else str(event))
+                try:
+                    send_email(
+                        template_name='manual',
+                        context=ctx,
+                        to=[contact.email],
+                        subject=subject,
+                        language=language or 'it',
+                        related_to=sponsor,
+                        communication_type='manual',
+                        triggered_by_user=request.user,
+                        custom_body_html=body,
+                    )
+                    self.message_user(
+                        request,
+                        f"Email inviata a {contact.full_name} ({contact.email}).",
+                        level=messages.SUCCESS,
+                    )
+                    return HttpResponseRedirect('../../')
+                except Exception as e:
+                    errors.append(f"Invio non riuscito: {e}")
+
+            for m in errors:
+                self.message_user(request, m, level=messages.ERROR)
+            form_data = {'to_email': to_email, 'subject': subject,
+                         'body': body, 'language': language, 'event_id': ev_id}
+        else:
+            primary = next((c for c in contacts if getattr(c, 'is_primary', False)), None)
+            default_to = primary.email if primary else contacts[0].email
+            form_data = {'to_email': default_to, 'subject': '', 'body': '',
+                         'language': 'it', 'event_id': ''}
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Invia email',
+            'sponsor': sponsor,
+            'contacts': contacts,
+            'events': events,
+            'form_data': form_data,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/compose_email.html', context)
 
 
     fieldsets = (

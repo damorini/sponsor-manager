@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrahead %}{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js"></script>
+<script src="{% static 'admin/js/email_wysiwyg.js' %}"></script>
+{% endblock %}
+{% block content %}
+<h1>Invia email a {{ sponsor.legal_name }}</h1>
+<form method="post">
+  {% csrf_token %}
+  <fieldset class="module aligned">
+    <div class="form-row">
+      <label for="to_email">Destinatario:</label>
+      <select name="to_email" id="to_email">
+        {% for c in contacts %}
+          <option value="{{ c.email }}" {% if c.email == form_data.to_email %}selected{% endif %}>{{ c.full_name }} &lt;{{ c.email }}&gt;{% if c.is_primary %} (principale){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="event_id">Evento (per l'intestazione, opzionale):</label>
+      <select name="event_id" id="event_id">
+        <option value="">&mdash; nessuno &mdash;</option>
+        {% for ev in events %}
+          <option value="{{ ev.id }}" {% if ev.id|stringformat:'s' == form_data.event_id %}selected{% endif %}>{{ ev.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="language">Lingua:</label>
+      <select name="language" id="language">
+        <option value="it" {% if form_data.language == 'it' %}selected{% endif %}>Italiano</option>
+        <option value="en" {% if form_data.language == 'en' %}selected{% endif %}>English</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label for="subject">Oggetto:</label>
+      <input type="text" name="subject" id="subject" size="80" value="{{ form_data.subject }}">
+    </div>
+    <div class="form-row">
+      <label for="body">Corpo:</label>
+      <textarea name="body" id="body" data-wysiwyg="1" data-translate-inplace="1" rows="12" style="width:100%;">{{ form_data.body }}</textarea>
+    </div>
+  </fieldset>
+  <div class="submit-row">
+    <input type="submit" value="Invia email" class="default">
+    <a href="../../" class="button cancel-link">Annulla</a>
+  </div>
+</form>
+{% endblock %}
