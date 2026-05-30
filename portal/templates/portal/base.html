@@ -41,12 +41,17 @@
        class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 z-40
               flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200">
 
-  <div class="h-16 flex items-center px-6 border-b border-gray-200">
-    <a href="{% url 'portal:dashboard' %}" class="flex items-center">
-      {% if brand_logo_url %}
-        <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}" class="h-8 w-auto">
-      {% else %}
-        <span class="text-lg font-semibold text-brand-500">{{ organizer_name|default:"Sponsor Portal" }}</span>
+  <div class="px-6 py-4 border-b border-gray-200">
+    <a href="{% url 'portal:dashboard' %}" class="block">
+      {% if user.contact_profile.sponsor.logo_file %}
+        <img src="{{ user.contact_profile.sponsor.logo_file.url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-10 w-auto max-w-[180px] object-contain mb-2">
+      {% elif user.contact_profile.sponsor.logo_url %}
+        <img src="{{ user.contact_profile.sponsor.logo_url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-10 w-auto max-w-[180px] object-contain mb-2">
+      {% endif %}
+      <div class="text-sm text-gray-500">Ciao,</div>
+      <div class="text-base font-semibold text-gray-900 leading-tight">{{ user.contact_profile.full_name }}</div>
+      {% if user.contact_profile.sponsor %}
+      <div class="text-xs text-gray-500 mt-0.5">{{ user.contact_profile.sponsor.legal_name }}</div>
       {% endif %}
     </a>
   </div>
@@ -75,15 +80,11 @@
     </a>
   </nav>
 
-  <div class="border-t border-gray-200 px-4 py-4">
-    {% if user.contact_profile.sponsor.logo_file %}
-    <img src="{{ user.contact_profile.sponsor.logo_file.url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-8 w-auto max-w-[160px] object-contain mb-2">
-    {% elif user.contact_profile.sponsor.logo_url %}
-    <img src="{{ user.contact_profile.sponsor.logo_url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-8 w-auto max-w-[160px] object-contain mb-2">
-    {% endif %}
-    <div class="text-sm text-gray-700 font-medium leading-tight">{{ user.contact_profile.full_name }}</div>
-    {% if user.contact_profile.sponsor %}
-    <div class="text-xs text-gray-500 mb-2">{{ user.contact_profile.sponsor.legal_name }}</div>
+  <div class="border-t border-gray-200 px-6 py-4">
+    {% if brand_logo_url %}
+    <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}" class="h-7 w-auto max-w-[150px] object-contain mb-2">
+    {% else %}
+    <div class="text-sm font-semibold text-brand-500 mb-2">{{ organizer_name|default:"Sponsor Manager" }}</div>
     {% endif %}
     <form action="{% url 'portal:logout' %}" method="post">
       {% csrf_token %}
@@ -97,7 +98,7 @@
   <button onclick="toggleSidebar()" class="text-gray-700 mr-3" aria-label="Apri menu">
     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
   </button>
-  <span class="font-semibold text-brand-500">{{ organizer_name|default:"Sponsor Portal" }}</span>
+  <span class="font-semibold text-brand-500">{{ user.contact_profile.sponsor.legal_name|default:"Portale" }}</span>
   <a href="{% url 'portal:cart_view' %}" class="relative ml-auto" aria-label="Carrello">
     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
     {% if cart_count and cart_count > 0 %}
