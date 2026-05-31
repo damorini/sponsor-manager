@@ -28,6 +28,17 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
         ("Logo", {
             "fields": ("logo",),
         }),
+        ("Scadenze pagamento (calcolo automatico)", {
+            "fields": ("payment_deposit_days_after_signing",
+                       "payment_balance_days_before_event"),
+            "description": (
+                "Regole con cui il sistema calcola le date delle scadenze di "
+                "pagamento alla firma del contratto. L'acconto scade questo numero "
+                "di giorni DOPO la firma; il saldo questo numero di giorni PRIMA "
+                "dell'inizio evento. Sul singolo contratto puoi forzare date "
+                "diverse coi campi manuali del Piano pagamento."
+            ),
+        }),
     )
 
     def has_add_permission(self, request):
