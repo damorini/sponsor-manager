@@ -56,7 +56,7 @@ def sponsor_required(view_func):
 @sponsor_required
 def dashboard_view(request):
     """Home del portale: In evidenza generale - scadenze immediate di tutti gli eventi."""
-    from contracts.models import Contract, Deadline, DeadlineStatus
+    from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
 
     sponsor = request.sponsor
     today = date.today()
@@ -180,7 +180,7 @@ def contracts_list_view(request):
 @sponsor_required
 def events_view(request):
     """Eventi a cui il cliente partecipa, con riepilogo scadenze."""
-    from contracts.models import Contract, Deadline, DeadlineStatus
+    from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
 
     sponsor = request.sponsor
     today = date.today()
