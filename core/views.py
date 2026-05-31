@@ -743,3 +743,27 @@ def importa_sponsor_upload(request):
         from django.shortcuts import redirect
         return redirect('core:cruscotto_utility')
     return _esegui_import_excel(request, 'importa_sponsor', 'core:cruscotto_utility')
+
+@staff_member_required
+def download_template_contatti(request):
+    """Genera al volo il template Excel contatti e lo serve come download."""
+    from io import BytesIO
+    from django.http import HttpResponse
+    from catalog.utils.excel_template import build_template_contatti_workbook
+    wb = build_template_contatti_workbook()
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    resp = HttpResponse(
+        buffer.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="template_contatti.xlsx"'
+    return resp
+
+
+@staff_member_required
+def importa_contatti_upload(request):
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('core:cruscotto_utility')
+    return _esegui_import_excel(request, 'importa_contatti', 'core:cruscotto_utility')

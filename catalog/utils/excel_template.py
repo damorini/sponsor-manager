@@ -315,3 +315,70 @@ def build_template_sponsor_workbook():
     ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
     ws2.column_dimensions["A"].width = 80
     return wb
+
+def build_template_contatti_workbook():
+    """Crea e ritorna un Workbook col template Excel per importa_contatti."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Contatti"
+
+    headers = [
+        ("sponsor_partita_iva", "Consigliato. P.IVA dello sponsor a cui collegare il contatto."),
+        ("sponsor_ragione_sociale", "Alternativa: ragione sociale dello sponsor (se non metti la P.IVA)."),
+        ("nome_completo", "OBBLIGATORIO. Nome e cognome del contatto."),
+        ("email", "OBBLIGATORIO. Email del contatto."),
+        ("telefono", "Opzionale."),
+        ("ruolo_aziendale", "Opzionale. Es. Responsabile marketing."),
+        ("ruoli_funzionali", "Opzionale. Uno o piu' tra: firmatario, marketing, amministrazione, "
+         "operativo, cc, educational (separati da virgola)."),
+        ("principale", "s/n. Se 's' diventa il contatto principale dello sponsor."),
+        ("consenso_marketing", "s/n."),
+        ("lingua", "it/en (default it)."),
+        ("note", "Opzionale."),
+    ]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, (name, comment) in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=name)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.comment = Comment(comment, "Sponsor Manager")
+
+    esempio1 = ["01234567890", "Rossi Pharma S.p.A.", "Maria Bianchi", "maria.bianchi@rossipharma.it",
+                "051 123456", "Responsabile marketing", "marketing, cc", "s", "s", "it", ""]
+    esempio2 = ["", "Verdi Medical S.r.l.", "Luca Verdi", "luca.verdi@verdimedical.it",
+                "", "Amministrazione", "amministrazione, firmatario", "n", "n", "it", "Referente fatture"]
+    for col, v in enumerate(esempio1, start=1):
+        ws.cell(row=2, column=col, value=v)
+    for col, v in enumerate(esempio2, start=1):
+        ws.cell(row=3, column=col, value=v)
+
+    larghezze = [18, 26, 22, 30, 16, 24, 34, 12, 16, 10, 24]
+    for i, w in enumerate(larghezze, start=1):
+        ws.column_dimensions[chr(64 + i)].width = w
+
+    ws2 = wb.create_sheet("Istruzioni")
+    istr = [
+        "IMPORT CONTATTI - Istruzioni",
+        "",
+        "1. Le PRIME 2 RIGHE del foglio 'Contatti' sono esempi: cancellali o sovrascrivili.",
+        "2. Compila una riga per ogni contatto da importare o aggiornare.",
+        "3. Colonne OBBLIGATORIE: nome_completo, email.",
+        "4. COLLEGAMENTO ALLO SPONSOR: indica sponsor_partita_iva (consigliato) oppure",
+        "   sponsor_ragione_sociale. Lo sponsor deve gia' esistere (importalo prima se serve).",
+        "5. RICONOSCIMENTO: il contatto e' identificato da sponsor + email. Se esiste -> AGGIORNA,",
+        "   altrimenti -> CREA. In aggiornamento le celle vuote NON cancellano i dati presenti.",
+        "6. ruoli_funzionali: uno o piu' valori separati da virgola tra:",
+        "   firmatario, marketing, amministrazione, operativo, cc, educational.",
+        "7. principale: 's' rende il contatto il principale dello sponsor (gli altri vengono declassati).",
+        "8. lingua: it/en (default it). consenso_marketing: s/n.",
+        "   NB: l'import NON crea l'accesso al portale: lo abiliti tu dall'admin quando vuoi.",
+        "",
+        "Consiglio: lascia spuntato 'Solo anteprima' al primo caricamento per vedere cosa farebbe.",
+    ]
+    for r, riga in enumerate(istr, start=1):
+        ws2.cell(row=r, column=1, value=riga)
+    ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
+    ws2.column_dimensions["A"].width = 82
+    return wb
