@@ -33,6 +33,34 @@
     sb.insertBefore(wrap, sb.firstChild);
   });
 </script>
+<script>
+  // Anagrafica: prima lettera maiuscola di ogni parola, all'uscita dal campo (solo campi nome/azienda/citta...).
+  (function () {
+    var CAMPI = ['first_name', 'last_name', 'full_name', 'legal_name', 'display_name',
+                 'address_city', 'residence_city', 'rea_city', 'birth_place',
+                 'job_title', 'business_description', 'industry'];
+    function isTarget(el) {
+      if (!el || el.tagName !== 'INPUT') return false;
+      if (el.type && el.type !== 'text') return false;
+      var n = el.name || '';
+      return CAMPI.some(function (f) { return n === f || n.endsWith('-' + f); });
+    }
+    function capWords(s) {
+      try {
+        return s.replace(/(^|[\s'’\-])(\p{L})/gu, function (m, p1, p2) { return p1 + p2.toUpperCase(); });
+      } catch (e) {
+        return s.replace(/(^|[\s'\-])([a-zà-ÿ])/g, function (m, p1, p2) { return p1 + p2.toUpperCase(); });
+      }
+    }
+    document.addEventListener('blur', function (e) {
+      var el = e.target;
+      if (isTarget(el) && el.value) {
+        var v = capWords(el.value);
+        if (v !== el.value) el.value = v;
+      }
+    }, true);
+  })();
+</script>
 {% endblock %}
 
 {% block branding %}
