@@ -116,6 +116,27 @@ def get_jinja_env():
 # Generazione PDF principale
 # ============================================================================
 
+class _EventForTemplate:
+    """Proxy: espone i campi dell'evento ma con .name come stringa localizzata.
+    Corregge il caso in cui event.name e' un campo multilingua (dizionario)."""
+    def __init__(self, ev):
+        self._ev = ev
+
+    @property
+    def name(self):
+        try:
+            return self._ev.get_name() or ''
+        except Exception:
+            return getattr(self._ev, 'name', '')
+
+    def __getattr__(self, attr):
+        return getattr(self._ev, attr)
+
+
+def _event_for_template(event):
+    return _EventForTemplate(event) if event is not None else event
+
+
 def generate_contract_pdf(contract):
     """
     Genera il PDF (e il .docx intermedio) del contratto.
@@ -193,7 +214,7 @@ def generate_contract_pdf(contract):
         'sponsor': sponsor,
         'signer': signer,
         'contact_referente': referente,
-        'event': event,
+        'event': _event_for_template(event),
         'lines_by_category': lines_by_category,
         'services_list': services_list,
         'stand_size': _get_stand_size(contract),
