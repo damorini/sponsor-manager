@@ -14,6 +14,7 @@ Azioni admin custom:
 - Annulla contratto
 """
 from django.contrib import admin, messages
+from core.admin_filters import evento_filter
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
@@ -757,7 +758,7 @@ class ContractLineAdmin(admin.ModelAdmin):
         'contract_link', 'service_name_snapshot', 'quantity',
         'unit_price', 'discount_display', 'line_total',
     )
-    list_filter = ('contract__event', 'service__category')
+    list_filter = (evento_filter('contract__event'), 'service__category')
     search_fields = (
         'contract__contract_number', 'service_name_snapshot',
         'contract__sponsor__legal_name',
@@ -791,7 +792,7 @@ class DeadlineAdmin(admin.ModelAdmin):
         'title', 'contract_link', 'due_date', 'status_badge',
         'days_until_due_display', 'reminder_count',
     )
-    list_filter = ('status', 'deadline_type', 'contract__event')
+    list_filter = (evento_filter('contract__event'), 'status', 'deadline_type')
     search_fields = (
         'title', 'contract__contract_number',
         'contract__sponsor__legal_name',
@@ -878,7 +879,7 @@ class PaymentAdmin(admin.ModelAdmin):
         'amount_fee', 'amount_net_display', 'status_badge',
         'reference_display', 'completed_at_short',
     )
-    list_filter = ('payment_method', 'status', 'currency')
+    list_filter = (evento_filter('contract__event'), 'payment_method', 'status', 'currency')
     search_fields = (
         'contract__contract_number', 'paypal_order_id',
         'bank_transfer_reference', 'paypal_payer_email',

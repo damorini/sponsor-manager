@@ -6,6 +6,7 @@ DeadlineTemplate inline dentro Service.
 """
 from django import forms
 from django.contrib import admin
+from core.admin_filters import evento_filter
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -67,8 +68,9 @@ class ServiceAdmin(admin.ModelAdmin):
         'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
     )
     list_filter = (
+        evento_filter('event'),
         'is_active', 'is_self_purchasable', 'pricing_mode',
-        'category', 'event', 'triggers_deadlines',
+        'category', 'triggers_deadlines',
     )
     search_fields = ('code', 'name', 'event__name', 'event__slug')
     list_select_related = ('event',)
@@ -180,7 +182,7 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
         'title', 'service_link', 'deadline_type',
         'days_before_event', 'reminder_days_before', 'is_active',
     )
-    list_filter = ('is_active', 'service__event', 'deadline_type')
+    list_filter = (evento_filter('service__event'), 'is_active', 'deadline_type')
     search_fields = ('title', 'service__name', 'service__event__name')
     list_select_related = ('service', 'service__event')
     autocomplete_fields = ['service']

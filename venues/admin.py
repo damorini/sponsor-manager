@@ -7,6 +7,7 @@ incluso 'IN BLOCCO' per gli stand che fanno parte di un blocco.
 """
 from django import forms
 from django.contrib import admin
+from core.admin_filters import evento_filter
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Q
 from django.urls import reverse
@@ -75,7 +76,7 @@ class StandBlockAdmin(admin.ModelAdmin):
         'stands_count_display', 'total_area_display',
         'block_price_display', 'status_badge',
     )
-    list_filter = ('status', 'block_type', 'event')
+    list_filter = (evento_filter('event'), 'status', 'block_type')
     search_fields = ('code', 'name', 'event__name', 'event__slug')
     list_select_related = ('event',)
     autocomplete_fields = ['event']
@@ -182,7 +183,7 @@ class StandAdmin(admin.ModelAdmin):
         'code', 'event_link', 'block_link', 'dimensions_display',
         'stand_type', 'amenities_display', 'status_badge', 'base_price_display',
     )
-    list_filter = ('status', 'stand_type', 'has_power', 'has_water', 'event')
+    list_filter = (evento_filter('event'), 'status', 'stand_type', 'has_power', 'has_water')
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
     list_select_related = ('event', 'stand_block')
     autocomplete_fields = ['event', 'stand_block']

@@ -6,6 +6,7 @@ EmailTemplate ha widget multilingua per subject e body.
 """
 from django import forms
 from django.contrib import admin
+from core.admin_filters import evento_filter
 from django.contrib.contenttypes.models import ContentType
 from django.urls import reverse
 from django.utils.html import format_html
@@ -171,7 +172,7 @@ class CommunicationAdmin(admin.ModelAdmin):
         'recipients_short', 'status_badge', 'is_automated_icon',
         'sent_at_short', 'open_count',
     )
-    list_filter = ('status', 'communication_type', 'channel', 'is_automated')
+    list_filter = (evento_filter('contract__event'), 'status', 'communication_type', 'channel', 'is_automated')
     search_fields = ('subject', 'body_text')
     readonly_fields = (
         'created_at', 'updated_at',
