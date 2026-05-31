@@ -1221,6 +1221,14 @@ class Deadline(TimeStampedModel):
             models.Index(fields=['status', 'due_date']),
         ]
 
+    @property
+    def portal_title(self):
+        """Titolo mostrato al cliente nel portale. Lato admin resta 'title'."""
+        return {
+            'pagamento_saldo': 'Saldo da pagare',
+            'pagamento_acconto': 'Acconto da pagare',
+        }.get(self.deadline_type, self.title)
+
     def __str__(self):
         return f"{self.title} · {self.due_date}"
 

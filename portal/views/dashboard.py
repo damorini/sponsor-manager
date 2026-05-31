@@ -99,7 +99,7 @@ def dashboard_view(request):
         if ev is None:
             continue
         row = {
-            'title': d.title,
+            'title': d.portal_title,
             'due_date': d.due_date,
             'overdue': bool(d.due_date and d.due_date < today),
             'event': ev,
