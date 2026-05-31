@@ -5,8 +5,17 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-  <h1 class="text-3xl font-bold text-gray-900">In evidenza</h1>
-  <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-6">Scadenze immediate · tutti i tuoi eventi</p>
+  <div class="flex flex-wrap justify-between items-start gap-4 mb-2">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">In evidenza</h1>
+      <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Scadenze immediate · tutti i tuoi eventi</p>
+    </div>
+    <a id="cta-acquista" href="{% url 'portal:catalog' %}"
+       class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm transition-colors">
+      🛒 Acquista servizi
+    </a>
+  </div>
+  <div class="mb-6"></div>
 
   {% if n_scadenze %}
   <div class="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg p-4 mb-6 flex items-start gap-3 shadow-sm">
