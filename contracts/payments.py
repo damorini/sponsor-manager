@@ -161,6 +161,16 @@ class Payment(TimeStampedModel):
         """Netto incassato (lordo - commissioni)."""
         return self.amount_gross - self.amount_fee
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.status == PaymentStatus.SUCCEEDED and self.contract_id:
+            try:
+                self.contract.reconcile_payment_deadlines()
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Riconciliazione scadenze pagamento fallita per payment %s", self.id)
+
     def mark_succeeded(self, completed_at=None, paypal_capture_id=None):
         """
         Marca pagamento come completato e firma il contratto associato.

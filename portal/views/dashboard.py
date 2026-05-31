@@ -100,6 +100,7 @@ def dashboard_view(request):
         'admin_items': admin_items[:15],
         'tech_items': tech_items[:15],
         'has_events': bool(contract_ids),
+        'n_scadenze': len(open_dls),
         'portal_message': (getattr(sponsor, 'portal_message', '') or '').strip(),
     })
 

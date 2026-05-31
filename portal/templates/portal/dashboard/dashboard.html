@@ -8,6 +8,16 @@
   <h1 class="text-3xl font-bold text-gray-900">In evidenza</h1>
   <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-6">Scadenze immediate · tutti i tuoi eventi</p>
 
+  {% if n_scadenze %}
+  <div class="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg p-4 mb-6 flex items-start gap-3 shadow-sm">
+    <span class="text-2xl leading-none">&#9888;</span>
+    <div>
+      <p class="font-semibold">Ci sono scadenze che meritano la tua attenzione</p>
+      <p class="text-sm">Hai {{ n_scadenze }} scadenz{{ n_scadenze|pluralize:"a,e" }} ancora da completare. Controlla l'elenco qui sotto.</p>
+    </div>
+  </div>
+  {% endif %}
+
   {% if portal_message %}
   <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-900 rounded-lg p-4 mb-6 text-sm leading-relaxed shadow-sm">
     {{ portal_message|linebreaks }}

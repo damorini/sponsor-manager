@@ -862,6 +862,29 @@ class Contract(SoftDeleteModel):
                     ],
                 )
 
+    def reconcile_payment_deadlines(self):
+        """Marca Ricevute le scadenze di pagamento coperte dagli incassi
+        registrati (status SUCCEEDED). Chiamata al salvataggio di un Payment."""
+        from decimal import Decimal
+        from django.db.models import Sum
+        from contracts.payments import Payment, PaymentStatus
+        paid = (Payment.objects
+                .filter(contract=self, status=PaymentStatus.SUCCEEDED)
+                .aggregate(s=Sum('amount_gross'))['s'] or Decimal('0'))
+        dep = self.deposit_amount or Decimal('0')
+        tot = self.total or Decimal('0')
+
+        def _close(dtype):
+            dl = self.deadlines.filter(deadline_type=dtype).first()
+            if dl and dl.status != DeadlineStatus.RECEIVED:
+                dl.mark_as_received()
+
+        if dep and paid >= dep:
+            _close('pagamento_acconto')
+        if tot and paid >= tot:
+            _close('pagamento_acconto')
+            _close('pagamento_saldo')
+
     def _generate_payment_deadlines(self):
         """
         Crea le scadenze di PAGAMENTO (acconto/saldo) per abilitare i reminder
