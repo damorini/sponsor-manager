@@ -686,7 +686,6 @@ class ContractAdmin(admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
 
-    @admin.action(description='Marca come FIRMATO')
     @admin.action(description="Genera scadenze dai template (per contratti gia' firmati/attivi)")
     def action_genera_scadenze(self, request, queryset):
         tot = 0
@@ -709,6 +708,7 @@ class ContractAdmin(admin.ModelAdmin):
             level=messages.SUCCESS if tot else messages.WARNING,
         )
 
+    @admin.action(description='Marca come FIRMATO')
     def action_mark_as_signed(self, request, queryset):
         ok = err = 0
         for contract in queryset:
