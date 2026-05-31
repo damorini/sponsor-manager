@@ -1,0 +1,9 @@
+{% load i18n %}
+<h3>{% translate "Per evento" %}</h3>
+<select class="evento-dropdown-filter"
+        style="width:100%; max-width:230px; padding:5px; border:1px solid var(--border-color,#ccc); border-radius:4px;"
+        onchange="if(this.value){window.location.href=this.value;}">
+  {% for choice in choices %}
+    <option value="{{ choice.query_string|iriencode }}"{% if choice.selected %} selected{% endif %}>{{ choice.display }}</option>
+  {% endfor %}
+</select>

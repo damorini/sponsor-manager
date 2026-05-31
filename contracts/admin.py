@@ -107,6 +107,23 @@ class RegistraIncassoInline(admin.TabularInline):
 # CONTRACT
 # =============================================================================
 
+class EventoFilter(admin.SimpleListFilter):
+    """Filtro 'Per evento' a menu a tendina: mostra solo i contratti dell'evento scelto."""
+    title = "Evento"
+    parameter_name = "event"
+    template = "admin/evento_dropdown_filter.html"
+
+    def lookups(self, request, model_admin):
+        from events.models import Event
+        return [(str(e.pk), str(e)) for e in Event.objects.all().order_by("-created_at")]
+
+    def queryset(self, request, queryset):
+        v = self.value()
+        if v:
+            return queryset.filter(event_id=v)
+        return queryset
+
+
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
     @admin.display(description="Numero contratto")
@@ -122,8 +139,9 @@ class ContractAdmin(admin.ModelAdmin):
         'total_display', 'origin_badge', 'created_at_short',
     )
     list_filter = (
+        EventoFilter,
         'status', 'contract_kind', 'origin', 'language',
-        'event', 'vat_applicable',
+        'vat_applicable',
     )
     search_fields = (
         'contract_number', 'sponsor__legal_name', 'sponsor__vat_number',
