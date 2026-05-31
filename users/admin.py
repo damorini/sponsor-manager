@@ -6,6 +6,30 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import User, UserRole
 
+from django.contrib.auth.forms import AdminPasswordChangeForm
+
+
+class ItAdminPasswordChangeForm(AdminPasswordChangeForm):
+    """Traduce in italiano la voce 'Password-based authentication' (novita' Django 5.1)."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        f = self.fields.get('usable_password')
+        if f is not None:
+            f.label = "Autenticazione tramite password"
+            f.help_text = (
+                "Se la imposti su «Disabilitata», l'utente non potra' piu' accedere con una "
+                "password. In teoria potrebbe ancora entrare con altri sistemi (es. accesso "
+                "unico SSO o LDAP) se fossero configurati: in questo gestionale pero' c'e' solo "
+                "l'accesso con password, quindi disabilitandola l'utente non potra' piu' entrare "
+                "finche' non la riabiliti e gli imposti una nuova password."
+            )
+            scelte = [("true", "Abilitata"), ("false", "Disabilitata")]
+            f.choices = scelte
+            try:
+                f.widget.choices = scelte
+            except Exception:
+                pass
+
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
@@ -13,6 +37,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('role', 'is_active', 'is_staff', 'is_superuser')
     search_fields = ('email', 'first_name', 'last_name', 'username')
     ordering = ('email',)
+    change_password_form = ItAdminPasswordChangeForm
     
     fieldsets = (
         (None, {
