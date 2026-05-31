@@ -45,6 +45,7 @@ class SponsorAdmin(admin.ModelAdmin):
         'address_city', 'industry',
         'contracts_count', 'has_active_contracts',
     )
+    list_display_links = ('legal_name',)
     list_filter = (
         'industry', 'address_country',
     )

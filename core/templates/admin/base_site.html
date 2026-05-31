@@ -17,6 +17,22 @@
     if (el && el.type === 'number') { el.blur(); }
   }, { passive: true });
 </script>
+<script>
+  // Link "Cruscotto" in cima al menu laterale sinistro dell'admin
+  document.addEventListener('DOMContentLoaded', function () {
+    var sb = document.getElementById('nav-sidebar');
+    if (!sb || document.getElementById('cruscotto-sidebar-link')) return;
+    var wrap = document.createElement('div');
+    wrap.id = 'cruscotto-sidebar-link';
+    wrap.style.cssText = 'padding:10px 12px;';
+    var a = document.createElement('a');
+    a.href = '/admin/cruscotto/';
+    a.textContent = '📊 Cruscotto';
+    a.style.cssText = 'display:block;text-align:center;font-weight:bold;background:#417690;color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;';
+    wrap.appendChild(a);
+    sb.insertBefore(wrap, sb.firstChild);
+  });
+</script>
 {% endblock %}
 
 {% block branding %}

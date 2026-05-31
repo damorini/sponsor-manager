@@ -43,28 +43,3 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
         from django.shortcuts import redirect
         url = reverse("admin:core_organizersettings_change", args=[obj.pk])
         return redirect(url)
-
-# --- Link "Cruscotto" nel menu laterale sinistro dell'admin ---
-_orig_get_app_list = admin.site.get_app_list
-
-def _cruscotto_app_list(request, app_label=None):
-    try:
-        base = list(_orig_get_app_list(request, app_label))
-    except TypeError:
-        base = list(_orig_get_app_list(request))
-    entry = {
-        'name': 'Cruscotto',
-        'app_label': 'cruscotto_link',
-        'app_url': '/admin/cruscotto/',
-        'has_module_perms': True,
-        'models': [{
-            'name': 'Apri Cruscotto',
-            'object_name': 'Cruscotto',
-            'admin_url': '/admin/cruscotto/',
-            'add_url': None,
-            'view_only': True,
-        }],
-    }
-    return [entry] + base
-
-admin.site.get_app_list = _cruscotto_app_list
