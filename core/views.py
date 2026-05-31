@@ -720,3 +720,26 @@ def cruscotto_scadenza_file(request, document_id):
         default_storage.open(relative_path, 'rb'),
         as_attachment=True, filename=document.file_name)
 
+@staff_member_required
+def download_template_sponsor(request):
+    """Genera al volo il template Excel sponsor/clienti e lo serve come download."""
+    from io import BytesIO
+    from django.http import HttpResponse
+    from catalog.utils.excel_template import build_template_sponsor_workbook
+    wb = build_template_sponsor_workbook()
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    resp = HttpResponse(
+        buffer.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="template_sponsor.xlsx"'
+    return resp
+
+
+@staff_member_required
+def importa_sponsor_upload(request):
+    if request.method != 'POST':
+        from django.shortcuts import redirect
+        return redirect('core:cruscotto_utility')
+    return _esegui_import_excel(request, 'importa_sponsor', 'core:cruscotto_utility')

@@ -109,6 +109,26 @@
           <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">↑ Importa stand</button>
         </form>
       </div>
+      <div class="cr-panel">
+        <h3>Sponsor / clienti</h3>
+        <a href="{% url 'core:cruscotto_download_template_sponsor' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello sponsor</a>
+        <form method="post" action="{% url 'core:cruscotto_importa_sponsor' %}"
+              enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
+          {% csrf_token %}
+          <label class="cr-dropzone">
+            <input type="file" name="file_excel" accept=".xlsx,.xls" hidden>
+            <span class="cr-dz-icon">⬆</span>
+            <span class="cr-dz-text">Trascina qui il file Excel
+              <span class="cr-dz-sub">oppure clicca per sceglierlo (.xlsx)</span>
+            </span>
+            <span class="cr-dz-file"></span>
+          </label>
+          <label class="cr-check" style="display:block; margin:8px 0;">
+            <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+          </label>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">↑ Importa sponsor</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>

@@ -20,5 +20,7 @@ urlpatterns = [
     path('utility/importa-stand/', views.importa_stand_upload, name='cruscotto_importa_stand'),
     path('utility/export-servizi/', views.export_servizi, name='cruscotto_export_servizi'),
     path('utility/export-stand/', views.export_stand, name='cruscotto_export_stand'),
+    path('utility/template-sponsor/', views.download_template_sponsor, name='cruscotto_download_template_sponsor'),
+    path('utility/importa-sponsor/', views.importa_sponsor_upload, name='cruscotto_importa_sponsor'),
     path('traduci/', views.translate_view, name='translate'),
 ]

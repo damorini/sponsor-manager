@@ -242,3 +242,76 @@ def export_stand_workbook(event):
     for col in range(1, len(headers) + 1):
         ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
     return wb
+
+def build_template_sponsor_workbook():
+    """Crea e ritorna un Workbook col template Excel per importa_sponsor."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sponsor"
+
+    headers = [
+        ("ragione_sociale", "OBBLIGATORIO. Ragione sociale / nome azienda."),
+        ("nome_commerciale", "Opzionale. Nome commerciale se diverso."),
+        ("partita_iva", "Consigliato. Se presente e gia' esistente, lo sponsor viene AGGIORNATO."),
+        ("codice_fiscale", "Opzionale."),
+        ("codice_sdi", "Opzionale. Codice destinatario SDI (max 7)."),
+        ("pec", "Opzionale. Indirizzo PEC."),
+        ("indirizzo", "Opzionale. Via e civico sede legale."),
+        ("citta", "Opzionale."),
+        ("cap", "Opzionale."),
+        ("provincia", "Opzionale. Sigla provincia (es. BO)."),
+        ("paese", "Default IT. Sigla nazione, 2 lettere."),
+        ("settore", "Opzionale. Settore merceologico."),
+        ("sito_web", "Opzionale. URL completo (https://...)."),
+        ("note", "Opzionale."),
+        ("referente_nome", "Opzionale. Nome e cognome del referente (crea un contatto)."),
+        ("referente_email", "Opzionale. Email del referente (serve INSIEME al nome)."),
+        ("referente_telefono", "Opzionale."),
+        ("referente_ruolo", "Opzionale. Es. Responsabile marketing."),
+    ]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, (name, comment) in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=name)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.comment = Comment(comment, "Sponsor Manager")
+
+    esempio1 = ["Rossi Pharma S.p.A.", "Rossi Pharma", "01234567890", "", "", "rossipharma@pec.it",
+                "Via Roma 1", "Bologna", "40100", "BO", "IT", "Farmaceutico",
+                "https://www.rossipharma.it", "",
+                "Maria Bianchi", "maria.bianchi@rossipharma.it", "051 123456", "Responsabile marketing"]
+    esempio2 = ["Verdi Medical S.r.l.", "", "09876543210", "", "", "",
+                "Viale Italia 22", "Milano", "20100", "MI", "IT", "Dispositivi medici", "", "Cliente storico",
+                "", "", "", ""]
+    for col, v in enumerate(esempio1, start=1):
+        ws.cell(row=2, column=col, value=v)
+    for col, v in enumerate(esempio2, start=1):
+        ws.cell(row=3, column=col, value=v)
+
+    larghezze = [26, 20, 16, 16, 12, 24, 24, 16, 8, 10, 8, 18, 26, 24, 22, 28, 16, 22]
+    for i, w in enumerate(larghezze, start=1):
+        ws.column_dimensions[chr(64 + i)].width = w
+
+    ws2 = wb.create_sheet("Istruzioni")
+    istr = [
+        "IMPORT SPONSOR / CLIENTI - Istruzioni",
+        "",
+        "1. Le PRIME 2 RIGHE del foglio 'Sponsor' sono esempi: cancellali o sovrascrivili.",
+        "2. Compila una riga per ogni sponsor/cliente da importare o aggiornare.",
+        "3. Unica colonna OBBLIGATORIA: ragione_sociale.",
+        "4. RICONOSCIMENTO: se metti la partita_iva e ne esiste gia' una uguale lo sponsor",
+        "   viene AGGIORNATO; altrimenti si cerca per ragione sociale; sennò si CREA.",
+        "5. In aggiornamento le celle VUOTE NON cancellano i dati gia' presenti.",
+        "6. Referente: compila SIA referente_nome SIA referente_email per creare il contatto.",
+        "   Diventa 'principale' se lo sponsor non ne ha gia' uno.",
+        "   NB: l'import NON crea l'accesso al portale: lo abiliti tu dall'admin quando vuoi.",
+        "",
+        "Consiglio: lascia spuntato 'Solo anteprima' al primo caricamento per vedere cosa farebbe.",
+    ]
+    for r, riga in enumerate(istr, start=1):
+        ws2.cell(row=r, column=1, value=riga)
+    ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
+    ws2.column_dimensions["A"].width = 80
+    return wb
