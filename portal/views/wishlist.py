@@ -141,10 +141,22 @@ def wishlist_page(request):
     """
     try:
         wishlist = request.user.wishlist_obj
-        services = wishlist.services.all()
+        services = list(wishlist.services.all())
     except Wishlist.DoesNotExist:
         wishlist = None
         services = []
+
+    # Mostra solo i servizi di eventi dove lo sponsor ha un contratto attivo (non annullato).
+    # Il dato resta nel database: e' solo un filtro di visualizzazione.
+    if services:
+        from contracts.models import Contract, ContractStatus
+        eventi_validi = set(
+            Contract.objects
+            .filter(sponsor=request.sponsor, deleted_at__isnull=True)
+            .exclude(status=ContractStatus.CANCELLED)
+            .values_list('event_id', flat=True)
+        )
+        services = [s for s in services if s.event_id in eventi_validi]
     
     context = {
         'wishlist': wishlist,
