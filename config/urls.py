@@ -10,10 +10,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic.base import RedirectView
 
 
 urlpatterns = [
     path('admin/cruscotto/', include('core.urls', namespace='core')),
+    path('admin/', RedirectView.as_view(pattern_name='core:cruscotto_home', permanent=False)),  # /admin/ -> cruscotto (landing dopo login)
     path('admin/', admin.site.urls),
     
     # Portale sponsor self-service
