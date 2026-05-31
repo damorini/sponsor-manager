@@ -59,7 +59,7 @@ def invite_contact_to_portal(contact: Contact, send_email: bool = True):
             temp_password = generate_temp_password()
             user.set_password(temp_password)
             user.is_active = True
-            user.save(update_fields=['password', 'is_active', 'updated_at'])
+            user.save(update_fields=['password', 'is_active'])
             was_created = False
         except User.DoesNotExist:
             user = None
