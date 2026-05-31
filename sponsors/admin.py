@@ -40,6 +40,7 @@ class ContactInline(admin.TabularInline):
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):
     list_display = (
+        'impersona_link',
         'legal_name', 'display_name_or_dash', 'vat_number',
         'address_city', 'industry',
         'contracts_count', 'has_active_contracts',
@@ -295,6 +296,18 @@ class SponsorAdmin(admin.ModelAdmin):
         )
 
     @admin.display(description='Nome breve')
+    @admin.display(description="Entra")
+    def impersona_link(self, obj):
+        from django.urls import reverse
+        from django.utils.html import format_html
+        try:
+            url = reverse('portal:impersonate_start', args=[obj.pk])
+        except Exception:
+            return ""
+        return format_html(
+            '<a href="{}" title="Entra come questo cliente" '
+            'style="font-size:18px;text-decoration:none;">&#128065;&#65039;</a>', url)
+
     def display_name_or_dash(self, obj):
         return obj.display_name or '—'
 

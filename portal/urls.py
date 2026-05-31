@@ -23,6 +23,7 @@ urlpatterns = [
          name='password_reset_confirm'),
     path('password-reset/complete/', auth.password_reset_complete_view,
          name='password_reset_complete'),
+    path('password-change/', auth.password_change_view, name='password_change'),
     
     # Dashboard
     path('', dashboard.dashboard_view, name='dashboard'),
@@ -32,6 +33,8 @@ urlpatterns = [
     path('eventi/<uuid:event_id>/scadenze/', materials.event_materials_view,
          name='event_materials'),
     path('profilo/', profile.profile_view, name='profile'),
+    path('impersona/<uuid:sponsor_id>/', auth.impersonate_start, name='impersonate_start'),
+    path('smetti-impersona/', auth.impersonate_stop, name='impersonate_stop'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
     path('acquisti/', dashboard.purchases_view, name='purchases'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,

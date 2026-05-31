@@ -209,3 +209,57 @@ def _get_user_from_uid(uidb64):
         return User.objects.get(pk=uid, is_active=True, role='sponsor')
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return None
+
+@login_required
+def password_change_view(request):
+    """Cambio password per il cliente loggato."""
+    from django.contrib.auth.forms import PasswordChangeForm
+    from django.contrib.auth import update_session_auth_hash
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Password aggiornata correttamente.")
+            return redirect('portal:profile')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'portal/auth/password_change.html', {'form': form})
+
+def impersonate_start(request, sponsor_id):
+    """Staff: entra nel portale come il cliente (contatto principale dello sponsor)."""
+    from django.contrib.auth import login as dj_login
+    from django.http import HttpResponseForbidden
+    from django.shortcuts import get_object_or_404
+    from sponsors.models import Sponsor
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Non autorizzato.")
+    sponsor = get_object_or_404(Sponsor, pk=sponsor_id)
+    qs = sponsor.contacts.filter(has_portal_access=True, portal_user__isnull=False)
+    contact = qs.filter(is_primary=True).first() or qs.first()
+    if not contact:
+        messages.error(request, "Questo sponsor non ha contatti con accesso al portale.")
+        return redirect(request.META.get('HTTP_REFERER') or '/admin/sponsors/sponsor/')
+    target = contact.portal_user
+    staff_pk = request.user.pk
+    target.backend = 'django.contrib.auth.backends.ModelBackend'
+    dj_login(request, target)
+    request.session['impersonator_id'] = staff_pk
+    messages.info(request, "Stai navigando come cliente. Usa il banner in alto per tornare all'amministrazione.")
+    return redirect('portal:dashboard')
+
+
+def impersonate_stop(request):
+    """Torna all'amministrazione dopo l'impersonificazione."""
+    from django.contrib.auth import login as dj_login
+    from users.models import User
+    staff_pk = request.session.get('impersonator_id')
+    if not staff_pk:
+        return redirect('/admin/')
+    try:
+        staff = User.objects.get(pk=staff_pk, is_staff=True)
+    except User.DoesNotExist:
+        return redirect('portal:logout')
+    staff.backend = 'django.contrib.auth.backends.ModelBackend'
+    dj_login(request, staff)
+    return redirect('/admin/sponsors/sponsor/')

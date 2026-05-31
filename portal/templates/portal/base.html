@@ -121,6 +121,12 @@
   {% endif %}
 
   <main class="flex-1">
+    {% if request.session.impersonator_id %}
+    <div style="background:#b45309;color:#fff;padding:10px 16px;text-align:center;font-size:14px;">
+      &#128065;&#65039; Stai navigando come cliente: <strong>{{ request.user.get_full_name|default:request.user.email }}</strong>.
+      <a href="{% url 'portal:impersonate_stop' %}" style="color:#fff;text-decoration:underline;font-weight:700;margin-left:8px;">Torna all'amministrazione</a>
+    </div>
+    {% endif %}
     {% block content %}{% endblock %}
   </main>
 
