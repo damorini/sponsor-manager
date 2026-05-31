@@ -244,7 +244,7 @@ def impersonate_start(request, sponsor_id):
     staff_pk = request.user.pk
     target.backend = 'django.contrib.auth.backends.ModelBackend'
     dj_login(request, target)
-    request.session['impersonator_id'] = staff_pk
+    request.session['impersonator_id'] = str(staff_pk)
     messages.info(request, "Stai navigando come cliente. Usa il banner in alto per tornare all'amministrazione.")
     return redirect('portal:dashboard')
 

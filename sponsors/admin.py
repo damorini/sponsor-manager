@@ -300,6 +300,12 @@ class SponsorAdmin(admin.ModelAdmin):
     def impersona_link(self, obj):
         from django.urls import reverse
         from django.utils.html import format_html
+        has_portal = obj.contacts.filter(
+            has_portal_access=True, portal_user__isnull=False).exists()
+        if not has_portal:
+            return format_html(
+                '<span title="Nessun contatto con accesso al portale" '
+                'style="font-size:18px;opacity:0.25;">&#128065;&#65039;</span>')
         try:
             url = reverse('portal:impersonate_start', args=[obj.pk])
         except Exception:
