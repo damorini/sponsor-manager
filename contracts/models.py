@@ -807,6 +807,12 @@ class Contract(SoftDeleteModel):
         # Libera lo stand/blocco
         self._update_venue_status()
 
+        # Le scadenze di un contratto annullato non sono piu' dovute: le esonero.
+        self.deadlines.filter(
+            status__in=[DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT,
+                        DeadlineStatus.OVERDUE]
+        ).update(status=DeadlineStatus.WAIVED)
+
     # ---------------------------------------------------------------------
     # Helper privati
     # ---------------------------------------------------------------------

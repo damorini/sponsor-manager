@@ -63,6 +63,7 @@ def dashboard_view(request):
 
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
+                 .exclude(status=ContractStatus.CANCELLED)
                  .select_related('event'))
     contract_event = {c.id: c.event for c in contracts if c.event_id}
     contract_ids = list(contract_event.keys())
@@ -122,7 +123,7 @@ def contracts_list_view(request):
     qs = Contract.objects.filter(
         sponsor=sponsor,
         deleted_at__isnull=True,
-    ).select_related('event', 'stand', 'stand_block')
+    ).exclude(status=ContractStatus.CANCELLED).select_related('event', 'stand', 'stand_block')
 
     # Filtro per evento
     event_id = request.GET.get('event')
@@ -186,6 +187,7 @@ def events_view(request):
 
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
+                 .exclude(status=ContractStatus.CANCELLED)
                  .select_related('event'))
 
     events_map = {}

@@ -120,6 +120,10 @@ def materials_view(request, contract_id):
     if contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
 
+    from contracts.models import ContractStatus
+    if contract.status == ContractStatus.CANCELLED:
+        return HttpResponseForbidden("Questo contratto è stato annullato.")
+
     materials = _get_materials_for_contract(contract)
 
     # Statistiche
