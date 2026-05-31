@@ -168,6 +168,8 @@ def profile_view(request):
             'ruoli': ruoli_txt,
         })
 
+    manca_operativo = not any('operational' in (c.roles or []) for c in contatti)
+
     return render(request, 'portal/profile/edit.html', {
         'sponsor': sponsor,
         'contact': contact,
@@ -175,4 +177,5 @@ def profile_view(request):
         'contact_fields': contact_fields,
         'contatti': contatti_view,
         'role_choices': CONTACT_ROLE_CHOICES,
+        'manca_operativo': manca_operativo,
     })

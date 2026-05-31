@@ -5,6 +5,13 @@
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8">
   <h1 class="text-2xl font-semibold text-gray-900 mb-2">I miei dati</h1>
+
+  {% if manca_operativo %}
+  <div class="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg p-4 mb-5 shadow-sm">
+    <p class="font-semibold mb-1">⚠️ Manca un soggetto operativo</p>
+    <p class="text-sm leading-relaxed">Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale.</p>
+  </div>
+  {% endif %}
   <a href="{% url 'portal:password_change' %}" class="inline-block mb-4 text-sm text-brand-500 hover:underline">&#128273; Cambia password</a>
   <p class="text-gray-600 mb-6">Controlla e aggiorna i dati della tua azienda e del contatto.
     Le modifiche vengono salvate subito.</p>

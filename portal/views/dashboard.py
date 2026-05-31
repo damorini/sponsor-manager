@@ -44,6 +44,16 @@ def sponsor_required(view_func):
 
         request.contact = contact
         request.sponsor = contact.sponsor
+
+        # Cancello: serve almeno un contatto OPERATIVO. Senza, manda a "I miei dati".
+        _allow = {'profile', 'logout', 'impersonate_stop'}
+        _name = getattr(getattr(request, 'resolver_match', None), 'url_name', None)
+        if _name not in _allow:
+            _has_op = contact.sponsor.contacts.filter(
+                roles__contains=['operational']).exists()
+            if not _has_op:
+                return redirect('portal:profile')
+
         return view_func(request, *args, **kwargs)
 
     return wrapper
