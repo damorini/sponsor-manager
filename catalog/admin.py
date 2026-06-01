@@ -73,8 +73,17 @@ class ServiceAdmin(admin.ModelAdmin):
         'category', 'triggers_deadlines',
     )
     search_fields = ('code', 'name', 'event__name', 'event__slug')
+
+    def get_search_results(self, request, queryset, search_term):
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            _ev = request.GET.get("event")
+            if _ev:
+                queryset = queryset.filter(event_id=_ev)
+        return queryset, may_dup
+
     list_select_related = ('event',)
-    autocomplete_fields = ['event']
+    autocomplete_fields = ['event', 'included_services']
     readonly_fields = ('created_at', 'updated_at', 'image_preview')
     @admin.display(description='Anteprima immagine')
     def image_preview(self, obj):
@@ -115,6 +124,12 @@ class ServiceAdmin(admin.ModelAdmin):
             'fields': ('triggers_deadlines',),
             'description': "Se attivato, vendere questo servizio crea le "
                            "scadenze definite nei DeadlineTemplate sotto.",
+        }),
+        ('Servizi inclusi (accessori)', {
+            'fields': ('included_services',),
+            'description': "Servizi aggiunti automaticamente a € 0 quando questo "
+                           "servizio viene venduto. Se hanno scadenze materiali, "
+                           "vengono generate alla firma.",
         }),
         ('Sistema', {
             'fields': ('created_at', 'updated_at'),

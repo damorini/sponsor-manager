@@ -260,7 +260,9 @@ class Stand(TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"{self.code} ({self.event.name})"
+        if self.event_id:
+            return f"{self.code} ({self.event.get_name()})"
+        return self.code
 
     @property
     def area_sqm(self):

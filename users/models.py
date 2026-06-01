@@ -41,6 +41,16 @@ class User(AbstractUser):
         verbose_name="Ruolo",
     )
 
+    managed_events = models.ManyToManyField(
+        'events.Event',
+        blank=True,
+        related_name='managers',
+        verbose_name="Eventi abilitati",
+        help_text="Eventi che questo utente puo' gestire (contratti, scadenze, "
+                  "pagamenti, eventi, stand). Vuoto = nessun evento. "
+                  "Amministratori e superuser vedono tutto.",
+    )
+
     # Email come campo di login al posto di username
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']  # username resta richiesto da AbstractUser
@@ -74,3 +84,8 @@ class User(AbstractUser):
     def is_internal_user(self):
         """Vero per admin/operator/readonly, false per sponsor."""
         return self.role in [UserRole.ADMIN, UserRole.OPERATOR, UserRole.READONLY]
+
+    @property
+    def can_see_all_events(self):
+        """Superuser e Amministratori vedono tutti gli eventi."""
+        return self.is_superuser or self.role == UserRole.ADMIN

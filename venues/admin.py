@@ -71,6 +71,10 @@ class StandBlockForm(forms.ModelForm):
 
 @admin.register(StandBlock)
 class StandBlockAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'event')
+
     list_display = (
         'code', 'name_or_dash', 'event_link', 'block_type',
         'stands_count_display', 'total_area_display',
@@ -78,6 +82,20 @@ class StandBlockAdmin(admin.ModelAdmin):
     )
     list_filter = (evento_filter('event'), 'status', 'block_type')
     search_fields = ('code', 'name', 'event__name', 'event__slug')
+
+    def get_search_results(self, request, queryset, search_term):
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
+        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
+        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        queryset, may_dup = super().get_search_results(
+            request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            queryset = queryset.filter(status=StandStatus.AVAILABLE)
+            _ev = request.GET.get("event")
+            if _ev:
+                queryset = queryset.filter(event_id=_ev)
+        return queryset, may_dup
+
     list_select_related = ('event',)
     autocomplete_fields = ['event']
     readonly_fields = ('created_at', 'updated_at')
@@ -179,12 +197,30 @@ class StandBlockAdmin(admin.ModelAdmin):
 
 @admin.register(Stand)
 class StandAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'event')
+
     list_display = (
         'code', 'event_link', 'block_link', 'dimensions_display',
         'stand_type', 'amenities_display', 'status_badge', 'base_price_display',
     )
     list_filter = (evento_filter('event'), 'status', 'stand_type', 'has_power', 'has_water')
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
+
+    def get_search_results(self, request, queryset, search_term):
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
+        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
+        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        queryset, may_dup = super().get_search_results(
+            request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            queryset = queryset.filter(status=StandStatus.AVAILABLE)
+            _ev = request.GET.get("event")
+            if _ev:
+                queryset = queryset.filter(event_id=_ev)
+        return queryset, may_dup
+
     list_select_related = ('event', 'stand_block')
     autocomplete_fields = ['event', 'stand_block']
     readonly_fields = ('created_at', 'updated_at', 'area_sqm_display')

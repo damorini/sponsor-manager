@@ -25,8 +25,16 @@ def build_template_servizi_workbook():
         ("iva_percento", "IVA in percentuale (default 22)"),
         ("attivo", "s/n (default s)"),
         ("quantita_max", "Quantita' massima vendibile per contratto (vuoto = illimitata)"),
+        ("quantita_totale", "Numero massimo disponibile in totale (pezzi esistenti, es. 1 "
+         "per uno stand unico). Vuoto = illimitato."),
         ("ordine", "Ordine di visualizzazione (numero, default 0)"),
         ("pricing_mode", "Default 'fixed'. Valori: fixed, quantity, tiered"),
+        ("genera_scadenze", "s/n (default n). Se 's', vendere il servizio crea le scadenze "
+         "materiali (servono i modelli di scadenza sul servizio)."),
+        ("servizi_inclusi", "Opzionale. Codici di altri servizi dello STESSO evento separati "
+         "da virgola: vengono aggiunti a 0 EUR quando questo servizio viene venduto."),
+        ("immagine", "Opzionale. Nome del file foto (es. stand_premium.jpg). Salva i file in una "
+         "cartella e importa con: --immagini <cartella>."),
     ]
 
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -40,16 +48,16 @@ def build_template_servizi_workbook():
 
     esempio1 = ["AITEB2026", "TAVOLO_DEMO", "Tavolo standard", "Standard table",
                 "Tavolo 80x80 cm, bianco", "80x80 cm white table",
-                "arredo", "altro", 100.00, 22, "s", "", 10, "fixed"]
+                "arredo", "altro", 100.00, 22, "s", "", 10, "fixed", "n", "FARETTO_DEMO"]
     esempio2 = ["AITEB2026", "FARETTO_DEMO", "Faretto LED", "LED spotlight",
                 "Faretto LED 30W", "LED spotlight 30W",
-                "tecnico", "altro", 25.00, 22, "s", 50, 20, "fixed"]
+                "tecnico", "altro", 25.00, 22, "s", 50, 20, "fixed", "s", ""]
     for col, v in enumerate(esempio1, start=1):
         ws.cell(row=2, column=col, value=v)
     for col, v in enumerate(esempio2, start=1):
         ws.cell(row=3, column=col, value=v)
 
-    larghezze = [14, 18, 22, 22, 28, 28, 14, 22, 14, 14, 8, 14, 10, 14]
+    larghezze = [14, 18, 22, 22, 28, 28, 14, 22, 14, 14, 8, 14, 10, 14, 16, 30]
     for i, w in enumerate(larghezze, start=1):
         ws.column_dimensions[chr(64 + i)].width = w
 
@@ -67,6 +75,11 @@ def build_template_servizi_workbook():
         "   coffee_break / scheda_tecnica / quota_iscrizione / altro",
         "7. pricing_mode valida (default 'fixed'): fixed / quantity / tiered",
         "8. attivo: s/n (default s). Numeri: usa il punto o la virgola decimale.",
+        "9. genera_scadenze: s/n. Se 's', vendere il servizio crea le scadenze materiali.",
+        "10. servizi_inclusi: codici di altri servizi dello stesso evento (separati da virgola).",
+        "    Vengono aggiunti a 0 EUR quando questo servizio entra in un contratto.",
+        "11. immagine: nome del file foto (es. stand_premium.jpg). Salva tutte le foto in una "
+        "cartella e lancia: python manage.py importa_servizi --file <file.xlsx> --immagini <cartella>",
         "",
         "Lancio:",
         "  python manage.py importa_servizi --file <percorso_file.xlsx> --dry-run",
@@ -169,7 +182,8 @@ def export_servizi_workbook(event):
     ws.title = "servizi"
     headers = ["evento_slug", "code", "nome_it", "nome_en", "descrizione_it",
                "descrizione_en", "categoria", "categoria_contabile", "prezzo_base",
-               "iva_percento", "attivo", "quantita_max", "ordine", "pricing_mode"]
+               "iva_percento", "attivo", "quantita_max", "ordine", "pricing_mode",
+               "genera_scadenze", "servizi_inclusi"]
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
     for i, name in enumerate(headers, start=1):
@@ -195,6 +209,12 @@ def export_servizi_workbook(event):
         ws.cell(row=r, column=12, value=s.max_quantity if s.max_quantity is not None else '')
         ws.cell(row=r, column=13, value=s.display_order or 0)
         ws.cell(row=r, column=14, value=s.pricing_mode or 'fixed')
+        ws.cell(row=r, column=15, value=_norm_bool_out(s.triggers_deadlines))
+        try:
+            incl = ', '.join(sub.code for sub in s.included_services.all())
+        except Exception:
+            incl = ''
+        ws.cell(row=r, column=16, value=incl)
         r += 1
 
     for col in range(1, len(headers) + 1):

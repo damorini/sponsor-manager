@@ -165,6 +165,13 @@ class ContractAdmin(admin.ModelAdmin):
     ordering = ('-created_at',)
     inlines = [ContractLineInline, DeadlineInline, PaymentInline, RegistraIncassoInline]
 
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'event')
+
+    class Media:
+        js = ('admin/js/contract_event_filter.js',)
+
     fieldsets = (
         (None, {
             'fields': ('contract_number_display', 'event', 'sponsor', 'sponsor_signer_contact'),
@@ -224,7 +231,8 @@ class ContractAdmin(admin.ModelAdmin):
         }),
     )
 
-    actions = ['action_send_quote', 'action_convert_to_contract',
+    actions = ['action_rigenera_pdf_contratto',
+               'action_send_quote', 'action_convert_to_contract',
                'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
 
@@ -413,9 +421,25 @@ class ContractAdmin(admin.ModelAdmin):
                 )
                 return HttpResponseRedirect('../')
 
+            # Porta il preventivo a "Inviato": cosi' compare nel portale del cliente
+            # e lo stand viene riservato. Solo se era in Bozza.
+            from .models import ContractStatus as _CS
+            stato_ok = False
+            if contract.status == _CS.DRAFT:
+                try:
+                    contract.mark_as_sent()
+                    stato_ok = True
+                except Exception as e:
+                    self.message_user(
+                        request,
+                        f"Preventivo inviato, ma stato non aggiornato a 'Inviato': {e}",
+                        level=messages.WARNING,
+                    )
+
             self.message_user(
                 request,
-                f"Preventivo inviato a: {', '.join(recipients)} (PDF allegato).",
+                f"Preventivo inviato a: {', '.join(recipients)} (PDF allegato)."
+                + (" Contratto impostato su 'Inviato'." if stato_ok else ""),
                 level=messages.SUCCESS,
             )
             return HttpResponseRedirect('../')
@@ -666,6 +690,35 @@ class ContractAdmin(admin.ModelAdmin):
 
     # Actions
 
+    @admin.action(description='Rigenera PDF CONTRATTO (allega e mostra nel portale)')
+    def action_rigenera_pdf_contratto(self, request, queryset):
+        from .services.pdf_generator import generate_contract_pdf
+        ok = 0
+        for contract in queryset:
+            try:
+                doc = generate_contract_pdf(contract)
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: PDF non generato - {e}",
+                    level=messages.ERROR,
+                )
+                continue
+            if doc is None:
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: e' un contratto ADDON (ecommerce), nessun PDF previsto.",
+                    level=messages.WARNING,
+                )
+            else:
+                ok += 1
+        if ok:
+            self.message_user(
+                request,
+                f"PDF contratto generato per {ok} contratto/i. Ora e' visibile anche nel portale.",
+                level=messages.SUCCESS,
+            )
+
     @admin.action(description='Marca come INVIATO')
     def action_mark_as_sent(self, request, queryset):
         ok = err = 0
@@ -754,6 +807,10 @@ class ContractAdmin(admin.ModelAdmin):
 
 @admin.register(ContractLine)
 class ContractLineAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+
     list_display = (
         'contract_link', 'service_name_snapshot', 'quantity',
         'unit_price', 'discount_display', 'line_total',
@@ -788,6 +845,10 @@ class ContractLineAdmin(admin.ModelAdmin):
 
 @admin.register(Deadline)
 class DeadlineAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+
     list_display = (
         'title', 'contract_link', 'due_date', 'status_badge',
         'days_until_due_display', 'reminder_count',
@@ -874,6 +935,10 @@ class DeadlineAdmin(admin.ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_by_event
+        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+
     list_display = (
         'contract_link', 'method_badge', 'amount_gross',
         'amount_fee', 'amount_net_display', 'status_badge',

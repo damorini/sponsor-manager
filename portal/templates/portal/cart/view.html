@@ -98,10 +98,10 @@
                      onchange="this.form.submit()">
             </form>
           </td>
-          <td class="px-6 py-4 text-right text-sm">
+          <td class="px-6 py-4 text-right whitespace-nowrap text-sm">
             € {{ ld.line.unit_price|floatformat:2 }}
           </td>
-          <td class="px-6 py-4 text-right text-sm font-medium">
+          <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
             € {{ ld.line.line_total|floatformat:2 }}
           </td>
           <td class="px-6 py-4 text-center">
@@ -124,17 +124,17 @@
       <tfoot class="bg-gray-50">
         <tr>
           <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">Subtotale:</td>
-          <td class="px-6 py-2 text-right text-sm">€ {{ item.contract.subtotal|floatformat:2 }}</td>
+          <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ item.contract.subtotal|floatformat:2 }}</td>
           <td></td>
         </tr>
         <tr>
           <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">IVA:</td>
-          <td class="px-6 py-2 text-right text-sm">€ {{ item.contract.vat_amount|floatformat:2 }}</td>
+          <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ item.contract.vat_amount|floatformat:2 }}</td>
           <td></td>
         </tr>
         <tr class="border-t border-gray-200">
           <td colspan="3" class="px-6 py-3 text-right font-semibold">Totale:</td>
-          <td class="px-6 py-3 text-right font-bold text-lg">€ {{ item.contract.total|floatformat:2 }}</td>
+          <td class="px-6 py-3 text-right whitespace-nowrap font-bold text-lg">€ {{ item.contract.total|floatformat:2 }}</td>
           <td></td>
         </tr>
       </tfoot>

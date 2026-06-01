@@ -137,6 +137,13 @@ class Service(TranslatableMixin, TimeStampedModel):
         verbose_name="Genera scadenze",
     )
 
+    included_services = models.ManyToManyField(
+        'self', symmetrical=False, blank=True,
+        related_name='included_in',
+        verbose_name="Servizi inclusi (accessori)",
+        help_text="Servizi aggiunti automaticamente a € 0 quando questo servizio viene venduto. Le loro scadenze materiali si generano alla firma.",
+    )
+
     # Ecommerce
     is_self_purchasable = models.BooleanField(
         default=False,

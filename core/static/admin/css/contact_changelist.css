@@ -1,0 +1,15 @@
+/* Lista Anagrafica di riferimento: stringe e centra le colonne brevi */
+.change-list table th.column-col_principale,
+.change-list table th.column-col_lingua,
+.change-list table th.column-col_portale,
+.change-list table td.field-col_principale,
+.change-list table td.field-col_lingua,
+.change-list table td.field-col_portale {
+    width: 1%;
+    white-space: nowrap;
+    text-align: center;
+}
+.change-list table td.field-cellulare,
+.change-list table th.column-cellulare {
+    white-space: nowrap;
+}

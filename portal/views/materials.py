@@ -56,6 +56,20 @@ DEFAULT_ALLOWED_MIME_TYPES = [
 # Helper: lista materiali per un contratto
 # ============================================================================
 
+def _payment_info(d):
+    """Per scadenze di pagamento: (is_payment, importo, etichetta).
+    L'importo non e' sulla scadenza ma sul contratto (acconto/saldo/totale)."""
+    dtype = (d.deadline_type or '')
+    if not (dtype.startswith('pagamento') or dtype == 'scadenza_opzione'):
+        return (False, None, '')
+    c = d.contract
+    if dtype == 'pagamento_acconto':
+        return (True, c.deposit_amount, 'Acconto')
+    if dtype == 'pagamento_saldo':
+        return (True, c.balance_amount, 'Saldo')
+    return (True, c.total, 'Importo')
+
+
 def _get_materials_for_contract(contract):
     """Restituisce lista di dict con deadline + suoi documents."""
     from contracts.models import Deadline, DeadlineStatus
@@ -98,6 +112,11 @@ def _get_materials_for_contract(contract):
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
         })
+        # importo pagamento (vista contratto)
+        _ip, _ia, _il = _payment_info(d)
+        materials[-1]['is_payment'] = _ip
+        materials[-1]['payment_amount'] = _ia
+        materials[-1]['payment_label'] = _il
 
     return materials
 
@@ -121,6 +140,8 @@ def materials_view(request, contract_id):
         return HttpResponseForbidden("Accesso negato.")
 
     from contracts.models import ContractStatus
+    if contract.status == ContractStatus.DRAFT:
+        return HttpResponseForbidden("Contratto non disponibile.")
     if contract.status == ContractStatus.CANCELLED:
         return HttpResponseForbidden("Questo contratto è stato annullato.")
 
@@ -171,6 +192,13 @@ def material_upload_view(request, deadline_id):
         messages.warning(
             request,
             "Questa scadenza è stata esonerata e non richiede materiali."
+        )
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    if deadline.status == DeadlineStatus.RECEIVED:
+        messages.warning(
+            request,
+            "Questa scadenza è già stata consegnata. Per modifiche contatta la segreteria."
         )
         return redirect('portal:materials_list', contract_id=deadline.contract_id)
 
@@ -326,6 +354,13 @@ def material_delete_view(request, document_id):
     if deadline.contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
 
+    # Modifiche bloccate dal portale: i file inviati si rimuovono solo dalla segreteria (admin).
+    messages.warning(
+        request,
+        "Per rimuovere un file inviato, contatta la segreteria."
+    )
+    return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
     document.deleted_at = timezone.now()
     document.save(update_fields=['deleted_at', 'updated_at'])
 
@@ -363,6 +398,9 @@ def material_content_view(request, deadline_id):
         return HttpResponseForbidden("Accesso negato.")
     if deadline.status == DeadlineStatus.WAIVED:
         messages.warning(request, "Questa richiesta e' stata esonerata.")
+        return redirect('portal:materials_list', contract_id=deadline.contract_id)
+    if deadline.status == DeadlineStatus.RECEIVED:
+        messages.warning(request, "Questi dati sono gia' stati inviati. Per modifiche contatta la segreteria.")
         return redirect('portal:materials_list', contract_id=deadline.contract_id)
     if getattr(deadline, 'submission_kind', 'file') not in ('content', 'both'):
         messages.error(request, "Questa richiesta non prevede dati da compilare.")
@@ -445,13 +483,18 @@ def _materials_from_deadlines(deadlines):
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
         })
+        # importo pagamento (vista evento)
+        _ip, _ia, _il = _payment_info(d)
+        materials[-1]['is_payment'] = _ip
+        materials[-1]['payment_amount'] = _ia
+        materials[-1]['payment_label'] = _il
     return materials
 
 
 @sponsor_required
 def event_materials_view(request, event_id):
     """Scadenze/materiali del cliente per UN evento (tutti i suoi contratti)."""
-    from contracts.models import Contract, Deadline, DeadlineStatus
+    from contracts.models import Contract, Deadline, DeadlineStatus, ContractStatus
     from events.models import Event
 
     sponsor = request.sponsor
@@ -459,7 +502,7 @@ def event_materials_view(request, event_id):
 
     contracts = Contract.objects.filter(
         sponsor=sponsor, event_id=event_id, deleted_at__isnull=True,
-    )
+    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
     if not contracts.exists():
         return HttpResponseForbidden("Accesso negato.")
 

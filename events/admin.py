@@ -78,7 +78,8 @@ class EventAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
+        from core.event_scope import scope_by_event
+        qs = scope_by_event(request, super().get_queryset(request), 'id')
         return qs.annotate(
             _sponsors_count=Count(
                 'contracts__sponsor',

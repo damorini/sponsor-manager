@@ -9,7 +9,8 @@ from django.db import transaction
 COLONNE_RICHIESTE = [
     "evento_slug", "code", "nome_it", "nome_en", "descrizione_it", "descrizione_en",
     "categoria", "categoria_contabile", "prezzo_base", "iva_percento", "attivo",
-    "quantita_max", "ordine", "pricing_mode",
+    "quantita_max", "quantita_totale", "ordine", "pricing_mode", "genera_scadenze", "servizi_inclusi",
+    "immagine",
 ]
 COLONNE_OBBLIGATORIE = ["evento_slug", "code", "nome_it", "prezzo_base"]
 
@@ -55,6 +56,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--file", required=True, help="Percorso del file Excel.")
+        parser.add_argument("--immagini", default="",
+                            help="Cartella con le immagini (colonna 'immagine'). Es: --immagini ./foto")
         parser.add_argument("--dry-run", action="store_true",
                             help="Simula senza scrivere nulla nel DB.")
 
@@ -106,8 +109,10 @@ class Command(BaseCommand):
             return ev
 
         # 3) elaborazione righe
+        cartella_img = (opts.get("immagini") or "").strip()
         n_create = n_update = n_skip = n_err = 0
         errori = []
+        inclusi_pending = []  # (svc, evento, codici_raw, n_riga) da collegare dopo
 
         for n_riga, row in enumerate(rows[1:], start=2):  # riga 2 e oltre (1 = header)
             if all(v is None or v == "" for v in row):
@@ -144,12 +149,16 @@ class Command(BaseCommand):
                 iva = _norm_dec(G("iva_percento"), "iva_percento")
                 attivo = _norm_bool(G("attivo"), default=True)
                 qmax = _norm_int(G("quantita_max"))
+                qtot = _norm_int(G("quantita_totale"))
                 ordine = _norm_int(G("ordine")) or 0
                 pmode = str(G("pricing_mode") or "fixed").strip().lower() or "fixed"
                 if pmode not in PRICING_VALIDI:
                     raise ValueError(
                         f"pricing_mode '{pmode}' non valido. Validi: {sorted(PRICING_VALIDI)}"
                     )
+                genera = _norm_bool(G("genera_scadenze"), default=False)
+                inclusi_raw = str(G("servizi_inclusi") or "").strip()
+                immagine_raw = str(G("immagine") or "").strip()
 
                 # campi name/description sono JSON multilingua
                 name_json = {"it": nome_it}
@@ -184,7 +193,9 @@ class Command(BaseCommand):
                             "vat_rate": iva if iva is not None else Decimal("22.00"),
                             "is_active": attivo,
                             "max_quantity": qmax,
+                            "total_available": qtot,
                             "display_order": ordine,
+                            "triggers_deadlines": genera,
                         },
                     )
                     if creato:
@@ -200,6 +211,7 @@ class Command(BaseCommand):
                         svc.category = cat
                         svc.accounting_category = acc_cat
                         svc.display_order = ordine
+                        svc.triggers_deadlines = genera
                         if gia_venduto:
                             # PROTEZIONE: non tocco prezzo, IVA, disponibilita', stato, pricing
                             svc.save()
@@ -215,15 +227,46 @@ class Command(BaseCommand):
                                 svc.vat_rate = iva
                             svc.is_active = attivo
                             svc.max_quantity = qmax
+                            svc.total_available = qtot
                             svc.save()
                             n_update += 1
                             self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
+
+                if inclusi_raw:
+                    inclusi_pending.append((svc, evento, inclusi_raw, n_riga))
+
+                if immagine_raw and cartella_img:
+                    _img = Path(cartella_img) / immagine_raw
+                    if _img.is_file():
+                        from django.core.files import File as _DjFile
+                        with open(_img, "rb") as _fh:
+                            svc.image.save(immagine_raw, _DjFile(_fh), save=True)
+                        self.stdout.write(f"  {n_riga:>4}:   immagine agganciata: {immagine_raw}")
+                    else:
+                        self.stdout.write(self.style.WARNING(
+                            f"  {n_riga:>4}:   immagine NON trovata: {_img}"))
 
             except Exception as e:
                 n_err += 1
                 msg = f"riga {n_riga}: ERRORE {e}"
                 errori.append(msg)
                 self.stdout.write(self.style.ERROR("  " + msg))
+
+        # 3b) collega i servizi inclusi (ora che tutti i servizi esistono)
+        for svc, evento, raw, n_riga in inclusi_pending:
+            codes = [c.strip() for c in raw.replace(';', ',').split(',') if c.strip()]
+            trovati, non_trovati = [], []
+            for c in codes:
+                sub = Service.objects.filter(event=evento, code=c).first()
+                if sub and sub.id != svc.id:
+                    trovati.append(sub)
+                else:
+                    non_trovati.append(c)
+            svc.included_services.set(trovati)
+            if non_trovati:
+                self.stdout.write(self.style.WARNING(
+                    f"  riga {n_riga}: inclusi non trovati per '{svc.code}': {non_trovati}"
+                ))
 
         # 4) riepilogo
         self.stdout.write("")

@@ -103,6 +103,26 @@ def profile_view(request):
                 messages.error(request, f"Errore nell'aggiunta del contatto: {e}")
             return redirect('portal:profile')
 
+        # --- rimozione di un contatto aziendale (referente che ha lasciato l'azienda) ---
+        if request.POST.get('azione') == 'remove_contact':
+            from sponsors.models import Contact
+            cid = (request.POST.get('contact_id') or '').strip()
+            target = Contact.objects.filter(sponsor=sponsor, id=cid).first() if cid else None
+            if not target:
+                messages.error(request, "Contatto non trovato.")
+            elif target.id == contact.id:
+                messages.error(request, "Non puoi rimuovere il tuo stesso contatto.")
+            else:
+                nome_rim = target.full_name
+                try:
+                    target.delete()  # soft-delete
+                    messages.success(request, "Contatto '%s' rimosso." % nome_rim)
+                    logger.info("Contatto %s rimosso da sponsor %s", target.id, sponsor.id)
+                except Exception as e:
+                    logger.exception("Errore rimozione contatto sponsor %s", sponsor.id)
+                    messages.error(request, "Errore nella rimozione: %s" % e)
+            return redirect('portal:profile')
+
         # aggiorna sponsor
         for field, _label in SPONSOR_FIELDS:
             if hasattr(sponsor, field):
@@ -156,11 +176,19 @@ def profile_view(request):
         from sponsors.models import Contact
         contatti = list(Contact.objects.filter(sponsor=sponsor))
 
+    # Ordine alfabetico per cognome (ultima parola del nome completo)
+    def _cognome(c):
+        parti = (c.full_name or '').strip().split()
+        return (parti[-1].lower() if parti else '', (c.full_name or '').lower())
+    contatti.sort(key=_cognome)
+
     role_labels = dict(CONTACT_ROLE_CHOICES)
     contatti_view = []
     for c in contatti:
         ruoli_txt = ", ".join(role_labels.get(r, r) for r in (c.roles or []))
         contatti_view.append({
+            'id': c.id,
+            'is_self': (c.id == contact.id),
             'full_name': c.full_name,
             'email': c.email,
             'phone': getattr(c, 'phone', '') or '',

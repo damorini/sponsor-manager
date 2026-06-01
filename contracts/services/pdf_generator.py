@@ -216,6 +216,7 @@ def generate_contract_pdf(contract):
         'contact_referente': referente,
         'event': _event_for_template(event),
         'lines_by_category': lines_by_category,
+        'lines': [ln for _cat, items in lines_by_category for ln in items],  # lista piatta righe (tabella Allegato 2 ECM)
         'services_list': services_list,
         'stand_size': _get_stand_size(contract),
         'signature_place': getattr(settings, 'SIGNATURE_PLACE', 'Bologna'),
@@ -589,20 +590,18 @@ def _add_header_footer_to_docx(docx_path, contract):
         for p in list(footer.paragraphs):
             p._element.getparent().remove(p._element)
 
-        # logo (se presente)
+        # logo (rilevo il percorso; lo inserisco nella cella di sinistra)
         logo = getattr(org, 'logo', None)
+        logo_path = None
         if logo:
             try:
-                logo_path = _Path(logo.path)
-                if logo_path.exists():
-                    p_logo = footer.add_paragraph()
-                    p_logo.alignment = WD_ALIGN_PARAGRAPH.LEFT
-                    p_logo.paragraph_format.space_after = Pt(2)
-                    p_logo.add_run().add_picture(str(logo_path), height=Mm(12))
+                _lp = _Path(logo.path)
+                if _lp.exists():
+                    logo_path = _lp
             except Exception:
-                pass
+                logo_path = None
 
-        # costruisco le 4 righe (telefono+email+sito sulla stessa riga)
+        # costruisco le righe di testo (telefono+email+sito sulla stessa riga)
         righe = []
         if org.name:
             righe.append((org.name, True))
@@ -624,10 +623,38 @@ def _add_header_footer_to_docx(docx_path, contract):
         if org.rea:
             fisc.append("REA " + org.rea)
         if fisc:
-            righe.append((" · ".join(fisc), False))
+            righe.append((" \u00b7 ".join(fisc), False))
 
+        # layout affiancato: logo a sinistra, dati a destra (tabella SENZA bordi)
+        from docx.enum.table import WD_TABLE_ALIGNMENT
+        from docx.oxml.ns import qn as _qn
+        logo_w = min(70.0, usable_mm * 0.45)
+        text_w = max(60.0, usable_mm - logo_w)
+        ftbl = footer.add_table(rows=1, cols=2, width=Mm(usable_mm))
+        ftbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+        ftbl.autofit = False
+        cell_logo, cell_txt = ftbl.rows[0].cells
+        cell_logo.width = Mm(logo_w)
+        cell_txt.width = Mm(text_w)
+        # rimuovo i bordi della tabella
+        _tblPr = ftbl._tbl.tblPr
+        _bd = _tblPr.makeelement(_qn('w:tblBorders'), {})
+        for _edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+            _bd.append(_bd.makeelement(_qn('w:' + _edge), {_qn('w:val'): 'none'}))
+        _tblPr.append(_bd)
+        # cella logo (sinistra)
+        p_logo = cell_logo.paragraphs[0]
+        p_logo.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        if logo_path:
+            try:
+                p_logo.add_run().add_picture(str(logo_path), height=Mm(12))
+            except Exception:
+                pass
+        # cella dati (destra, a fianco del logo)
+        _first = True
         for testo, grassetto in righe:
-            pp = footer.add_paragraph()
+            pp = cell_txt.paragraphs[0] if _first else cell_txt.add_paragraph()
+            _first = False
             pp.alignment = WD_ALIGN_PARAGRAPH.LEFT
             pp.paragraph_format.space_after = Pt(0)
             pp.paragraph_format.line_spacing = 1.0
@@ -635,7 +662,6 @@ def _add_header_footer_to_docx(docx_path, contract):
             rr.bold = grassetto
             rr.font.size = Pt(7.5)
             rr.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-
         if righe or logo:
             changed = True
 

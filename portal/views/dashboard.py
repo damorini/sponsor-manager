@@ -73,9 +73,10 @@ def dashboard_view(request):
 
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
-                 .exclude(status=ContractStatus.CANCELLED)
+                 .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
                  .select_related('event'))
     contract_event = {c.id: c.event for c in contracts if c.event_id}
+    contract_by_id = {c.id: c for c in contracts}
     contract_ids = list(contract_event.keys())
 
     done = [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED]
@@ -93,6 +94,8 @@ def dashboard_view(request):
         kw = ('pagament', 'acconto', 'caparra', 'saldo', 'fattura', 'bonifico', 'opzione')
         return any(k in t for k in kw) or any(k in title for k in kw)
 
+    from decimal import Decimal
+    saldo_da_pagare = Decimal('0.00')
     admin_items, tech_items = [], []
     for d in open_dls:
         ev = contract_event.get(d.contract_id)
@@ -106,12 +109,34 @@ def dashboard_view(request):
             'event_id': ev.id,
         }
         (admin_items if _is_admin(d) else tech_items).append(row)
+        _c = contract_by_id.get(d.contract_id)
+        if _c is not None:
+            _dt = (d.deadline_type or '').lower()
+            if _dt == 'pagamento_acconto':
+                saldo_da_pagare += _c.deposit_amount
+            elif _dt == 'pagamento_saldo':
+                saldo_da_pagare += _c.balance_amount
+
+    _eventi = {ev.id: ev for ev in contract_event.values() if ev}
+    _futuri = sorted(
+        [ev for ev in _eventi.values()
+         if getattr(ev, 'start_date', None) and ev.start_date >= today],
+        key=lambda e: e.start_date)
+    _passati = sorted(
+        [ev for ev in _eventi.values()
+         if not (getattr(ev, 'start_date', None) and ev.start_date >= today)],
+        key=lambda e: e.start_date or date.min, reverse=True)
+    prossimi_eventi = _futuri + _passati
+    prossimo_evento = _futuri[0] if _futuri else None
 
     return render(request, 'portal/dashboard/dashboard.html', {
         'admin_items': admin_items[:15],
         'tech_items': tech_items[:15],
         'has_events': bool(contract_ids),
         'n_scadenze': len(open_dls),
+        'saldo_da_pagare': saldo_da_pagare,
+        'prossimo_evento': prossimo_evento,
+        'prossimi_eventi': prossimi_eventi,
         'portal_message': (getattr(sponsor, 'portal_message', '') or '').strip(),
     })
 
@@ -133,7 +158,7 @@ def contracts_list_view(request):
     qs = Contract.objects.filter(
         sponsor=sponsor,
         deleted_at__isnull=True,
-    ).exclude(status=ContractStatus.CANCELLED).select_related('event', 'stand', 'stand_block')
+    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).select_related('event', 'stand', 'stand_block')
 
     # Filtro per evento
     event_id = request.GET.get('event')
@@ -197,7 +222,7 @@ def events_view(request):
 
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
-                 .exclude(status=ContractStatus.CANCELLED)
+                 .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
                  .select_related('event'))
 
     events_map = {}

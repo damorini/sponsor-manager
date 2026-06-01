@@ -94,7 +94,7 @@
       <thead>
         <tr class="text-left text-gray-500 border-b">
           <th class="py-2">Nome</th><th class="py-2">Email</th>
-          <th class="py-2">Telefono</th><th class="py-2">Ruoli</th>
+          <th class="py-2">Telefono</th><th class="py-2">Ruoli</th><th class="py-2 text-right">Azioni</th>
         </tr>
       </thead>
       <tbody>
@@ -104,6 +104,18 @@
           <td class="py-2">{{ c.email }}</td>
           <td class="py-2">{{ c.phone|default:"—" }}</td>
           <td class="py-2">{{ c.ruoli|default:"—" }}</td>
+          <td class="py-2 text-right">
+            {% if c.is_self %}
+              <span class="text-xs text-gray-400">tu</span>
+            {% else %}
+            <form method="post" onsubmit="return confirm('Rimuovere {{ c.full_name|escapejs }} dai contatti?');" class="inline">
+              {% csrf_token %}
+              <input type="hidden" name="azione" value="remove_contact">
+              <input type="hidden" name="contact_id" value="{{ c.id }}">
+              <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">Rimuovi</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

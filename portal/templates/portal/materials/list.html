@@ -67,11 +67,18 @@
     details.card-deadline > summary .chev { display: inline-block; transition: transform .15s ease; }
     details.card-deadline[open] > summary .chev { transform: rotate(90deg); }
   </style>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      if (!window.location.hash) return;
+      var el = document.getElementById(window.location.hash.slice(1));
+      if (el) { if (el.tagName === "DETAILS") { el.open = true; } el.scrollIntoView({ block: "start" }); }
+    });
+  </script>
 
   {% if materials %}
   <div class="space-y-4">
     {% for m in materials %}
-    <details class="card-deadline bg-white rounded-lg shadow-sm overflow-hidden 
+    <details id="m-{{ m.deadline.id }}" class="card-deadline bg-white rounded-lg shadow-sm overflow-hidden 
                 {% if m.deadline.is_overdue and not m.is_completed %}border-l-4 border-red-500{% endif %}
                 {% if m.is_completed %}opacity-75{% endif %}"{% if not m.is_completed %} open{% endif %}>
 
@@ -118,6 +125,14 @@
         </div>
       </summary>
 
+      {% if m.is_payment %}
+      <div class="px-5 py-4 border-b border-gray-100 text-sm text-gray-700 space-y-1">
+        <div><span class="text-gray-500">Contratto:</span> <span class="font-medium">{{ m.deadline.contract.contract_number }}</span></div>
+        <div><span class="text-gray-500">{{ m.payment_label }}:</span> <span class="font-semibold text-gray-900">&euro; {{ m.payment_amount|floatformat:2 }}</span></div>
+        <div class="text-xs text-gray-500">Totale contratto: &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
+      </div>
+      {% endif %}
+
       <!-- Documenti già caricati -->
       {% if m.documents %}
       <div class="px-5 py-3 border-b border-gray-100">
@@ -140,17 +155,17 @@
                 ({{ doc.file_size|filesizeformat }} · {{ doc.created_at|date:"d/m/Y" }})
               </span>
             </div>
-            <form method="post" action="{% url 'portal:material_delete' doc.id %}" class="ml-2">
-              {% csrf_token %}
-              <button type="submit" 
-                      class="text-red-500 hover:text-red-700 text-xs"
-                      onclick="return confirm('Rimuovere {{ doc.file_name|escapejs }}?')">
-                Rimuovi
-              </button>
-            </form>
+            {# Rimozione file disabilitata dal portale: modifiche via segreteria #}
           </li>
           {% endfor %}
         </ul>
+      </div>
+      {% endif %}
+
+      {% if m.is_completed %}
+      <div class="px-5 py-3 border-t border-gray-100 text-sm flex items-center gap-2 {% if m.deadline.status == 'waived' %}text-gray-500{% else %}text-green-700{% endif %}">
+        <i class="ti ti-lock"></i>
+        {% if m.deadline.status == 'waived' %}Esonerata dalla segreteria.{% else %}Inviato. Per modifiche, contatta la segreteria.{% endif %}
       </div>
       {% endif %}
 
@@ -160,8 +175,8 @@
         <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
           Dati da compilare
         </h4>
-        {% if m.content_locked %}
-        <p class="text-xs text-gray-500 mb-3">Scadenza passata: i dati non sono piu' modificabili.</p>
+        {% if m.content_locked or m.is_completed %}
+        {% if m.content_locked %}<p class="text-xs text-gray-500 mb-3">Scadenza passata: i dati non sono piu' modificabili.</p>{% endif %}
         {% for f in m.content_fields %}
         <div class="mb-2">
           <span class="text-sm font-medium text-gray-700">{{ f.label }}:</span>
@@ -192,7 +207,7 @@
       {% endif %}
 
       <!-- Form upload (solo file / entrambi) -->
-      {% if m.deadline.status != 'waived' and m.needs_file %}
+      {% if m.deadline.status != 'waived' and m.needs_file and not m.is_completed %}
       <div class="px-5 pt-4 bg-gray-50">
         <form id="upload-form-{{ m.deadline.id }}" method="post" action="{% url 'portal:material_upload' m.deadline.id %}" 
               enctype="multipart/form-data" class="upload-form">
@@ -221,7 +236,7 @@
       {% endif %}
 
       <!-- Pulsanti azione: Carica file e Salva i dati affiancati -->
-      {% if m.deadline.status != 'waived' %}
+      {% if m.deadline.status != 'waived' and not m.is_completed %}
       {% if m.needs_file or m.needs_content and not m.content_locked %}
       <div class="px-5 py-4 bg-gray-50 flex flex-wrap gap-3">
         {% if m.needs_file %}

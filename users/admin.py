@@ -37,6 +37,7 @@ class UserAdmin(BaseUserAdmin):
     list_filter = ('role', 'is_active', 'is_staff', 'is_superuser')
     search_fields = ('email', 'first_name', 'last_name', 'username')
     ordering = ('email',)
+    filter_horizontal = ('managed_events', 'groups', 'user_permissions')
     change_password_form = ItAdminPasswordChangeForm
     
     fieldsets = (
@@ -45,6 +46,12 @@ class UserAdmin(BaseUserAdmin):
         }),
         ('Informazioni personali', {
             'fields': ('first_name', 'last_name', 'role'),
+        }),
+        ('Eventi gestiti', {
+            'fields': ('managed_events',),
+            'description': "Operatori e Sola lettura vedranno solo contratti, "
+                           "scadenze, pagamenti, eventi e stand di questi eventi. "
+                           "Amministratori e superuser vedono tutto.",
         }),
         ('Permessi', {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),

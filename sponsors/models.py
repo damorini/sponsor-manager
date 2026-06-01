@@ -300,8 +300,8 @@ class Contact(SoftDeleteModel):
     )
 
     class Meta:
-        verbose_name = "Contatto"
-        verbose_name_plural = "Contatti"
+        verbose_name = "Anagrafica di riferimento"
+        verbose_name_plural = "Anagrafica di riferimento"
         ordering = ['sponsor', '-is_primary', 'full_name']
         indexes = [
             models.Index(fields=['email']),
@@ -311,6 +311,23 @@ class Contact(SoftDeleteModel):
 
     def __str__(self):
         return f"{self.full_name} ({self.sponsor.legal_name})"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Login = email: se cambia l'email del contatto, allinea l'utenza collegata.
+        if self.portal_user_id and self.email:
+            u = self.portal_user
+            nuova = self.email.strip()
+            if (u.email or "").strip().lower() != nuova.lower():
+                altri = type(u).objects.filter(
+                    email__iexact=nuova).exclude(pk=u.pk).exists()
+                if not altri:
+                    try:
+                        u.email = nuova
+                        u.username = nuova
+                        u.save(update_fields=["email", "username"])
+                    except Exception:
+                        pass
 
     def has_role(self, role):
         return role in (self.roles or [])

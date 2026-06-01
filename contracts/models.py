@@ -813,6 +813,17 @@ class Contract(SoftDeleteModel):
                         DeadlineStatus.OVERDUE]
         ).update(status=DeadlineStatus.WAIVED)
 
+        # I file inviati dal cliente per un contratto annullato vengono rimossi
+        # (soft-delete: i record restano recuperabili lato admin).
+        from django.contrib.contenttypes.models import ContentType
+        from shared.models import Document
+        _dl_ct = ContentType.objects.get_for_model(Deadline)
+        Document.objects.filter(
+            content_type=_dl_ct,
+            object_id__in=self.deadlines.values_list('id', flat=True),
+            deleted_at__isnull=True,
+        ).update(deleted_at=timezone.now())
+
     # ---------------------------------------------------------------------
     # Helper privati
     # ---------------------------------------------------------------------
@@ -1128,10 +1139,45 @@ class ContractLine(TimeStampedModel):
         # Ricalcola totali contratto
         self.contract.recalculate_totals()
 
+        # Auto-aggiunta dei servizi inclusi (solo riga 'padre' appena creata)
+        if is_new and self.service_id and '[incluso:' not in (self.notes or ''):
+            _aggiungi_servizi_inclusi(self)
+
     def delete(self, *args, **kwargs):
         contract = self.contract
         super().delete(*args, **kwargs)
         contract.recalculate_totals()
+
+
+def _aggiungi_servizi_inclusi(parent_line):
+    """Crea le righe dei 'servizi inclusi' (a EUR 0) del servizio della riga
+    appena creata. Le scadenze si generano poi alla firma dai DeadlineTemplate
+    del servizio incluso. Espansione a un solo livello. Idempotente (marcatore
+    nelle note)."""
+    service = getattr(parent_line, 'service', None)
+    if not service:
+        return
+    try:
+        inclusi = list(service.included_services.all())
+    except Exception:
+        return  # campo non ancora migrato: non bloccare
+    parent_code = service.code or str(service.id)
+    for sub in inclusi:
+        sub_code = sub.code or str(sub.id)
+        marker = "[incluso:%s>%s]" % (parent_code, sub_code)
+        if parent_line.contract.lines.filter(notes__contains=marker).exists():
+            continue
+        sub_line = ContractLine(
+            contract=parent_line.contract,
+            service=sub,
+            service_name_snapshot=sub.translated('name'),
+            quantity=1,
+            notes=marker,
+        )
+        sub_line.save()
+        if sub_line.unit_price and sub_line.unit_price != Decimal('0.00'):
+            sub_line.unit_price = Decimal('0.00')
+            sub_line.save()
 
 
 class DeadlineStatus(models.TextChoices):

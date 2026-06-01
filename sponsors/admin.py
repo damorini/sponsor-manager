@@ -4,6 +4,7 @@ Admin per Sponsor e Contact.
 I Contact sono editati come inline dentro il form dello Sponsor: vedi tutti
 i contatti di un'azienda nella stessa schermata.
 """
+from django import forms
 from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import render, get_object_or_404
@@ -23,8 +24,24 @@ class _Cognome(Func):
     output_field = CharField()
 
 
+class ContactRolesForm(forms.ModelForm):
+    """Ruoli funzionali come caselle da spuntare (invece del campo testo)."""
+    roles = forms.MultipleChoiceField(
+        choices=ContactRole.choices,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Ruoli funzionali",
+        help_text="Determina chi riceve quali comunicazioni",
+    )
+
+    class Meta:
+        model = Contact
+        fields = '__all__'
+
+
 class ContactInline(admin.TabularInline):
     """Contatti editabili dentro la pagina Sponsor."""
+    form = ContactRolesForm
     model = Contact
     extra = 1
     fields = (
@@ -365,9 +382,14 @@ class SponsorAdmin(admin.ModelAdmin):
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
     """Admin separato per cercare contatti tra tutti gli sponsor."""
+    form = ContactRolesForm
+
+    class Media:
+        css = {'all': ('admin/css/contact_changelist.css',)}
+
     list_display = (
-        'full_name', 'sponsor_link', 'email', 'job_title',
-        'roles_display', 'is_primary', 'preferred_language', 'has_portal_access',
+        'full_name', 'sponsor_link', 'email', 'cellulare', 'job_title',
+        'roles_display', 'col_principale', 'col_lingua', 'col_portale',
     )
     list_filter = (
         'is_primary', 'has_portal_access', 'preferred_language',
@@ -419,6 +441,22 @@ class ContactAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Cellulare', ordering='phone')
+    def cellulare(self, obj):
+        return obj.phone or '—'
+
+    @admin.display(description='Princip.', boolean=True, ordering='is_primary')
+    def col_principale(self, obj):
+        return obj.is_primary
+
+    @admin.display(description='Lingua', ordering='preferred_language')
+    def col_lingua(self, obj):
+        return obj.preferred_language
+
+    @admin.display(description='Portale', boolean=True, ordering='has_portal_access')
+    def col_portale(self, obj):
+        return obj.has_portal_access
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):

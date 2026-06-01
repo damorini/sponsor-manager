@@ -47,6 +47,13 @@ def contract_detail_view(request, contract_id):
             "Non hai accesso a questo contratto."
         )
 
+    # Una bozza non e' ancora visibile al cliente nel portale.
+    if contract.status == ContractStatus.DRAFT:
+        return HttpResponseForbidden("Contratto non disponibile.")
+    # Un contratto annullato non e' consultabile dal cliente nel portale.
+    if contract.status == ContractStatus.CANCELLED:
+        return HttpResponseForbidden("Questo contratto è stato annullato.")
+
     # Scadenze operative (is_overdue e days_remaining sono property del modello)
     deadlines = contract.deadlines.select_related('deadline_template').order_by('due_date')
 
