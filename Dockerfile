@@ -35,19 +35,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia Python packages dal builder
-COPY --from=builder /root/.local /root/.local
+# Crea user non-root PRIMA, poi copia i pacchetti nella SUA home.
+# (Erano in /root/.local ma il container gira come appuser -> Python non li trovava.)
+RUN useradd -m -u 1000 appuser
+COPY --from=builder /root/.local /home/appuser/.local
 
 # Copia codice applicazione
 COPY . .
+# Crea le dir montate come volumi (staticfiles/media/logs) GIÀ di proprietà di
+# appuser: così i named volume Docker ereditano i permessi giusti e appuser può
+# scrivere (altrimenti collectstatic -> PermissionError).
+RUN mkdir -p /app/staticfiles /app/media /app/logs \
+    && chown -R appuser:appuser /app /home/appuser/.local
 
-# Imposta PATH
-ENV PATH=/root/.local/bin:$PATH \
+# Imposta PATH (bin dei pacchetti --user di appuser)
+ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     DJANGO_SETTINGS_MODULE=config.settings.production
 
-# Crea user non-root
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Health check

@@ -1,5 +1,3 @@
-version: '3.9'
-
 # Variabili applicative condivise da web / celery_worker / celery_beat.
 # I segreti (SECRET_KEY, DB_PASSWORD, ALLOWED_HOSTS) vanno messi nel file .env
 # accanto a questo compose: senza, l'avvio si ferma con un messaggio chiaro.
@@ -14,6 +12,9 @@ x-app-env: &app-env
   DB_HOST: db
   DB_PORT: "5432"
   REDIS_URL: redis://redis:6379/0
+  # Lascia True in produzione (HTTPS). Metti False solo se il TLS è gestito
+  # da un proxy davanti o per collaudo locale in HTTP.
+  SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
 
 services:
   # PostgreSQL Database
@@ -86,6 +87,9 @@ services:
     command: celery -A config worker -l info
     environment:
       <<: *app-env
+    # L'immagine ha un HEALTHCHECK HTTP (per 'web'); qui non serve (no server HTTP).
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
@@ -103,6 +107,8 @@ services:
     command: celery -A config beat -l info
     environment:
       <<: *app-env
+    healthcheck:
+      disable: true
     depends_on:
       db:
         condition: service_healthy
