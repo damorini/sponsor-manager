@@ -14,6 +14,11 @@ echo "✅ Database is ready"
 echo "📦 Running migrations..."
 python manage.py migrate --noinput
 
+# Compila le traduzioni (.po -> .mo). I .mo sono gitignored: senza questo
+# step l'inglese non viene caricato in produzione.
+echo "🌐 Compiling translations..."
+python manage.py compilemessages -l en --ignore=venv --ignore=.venv
+
 # Raccogli static files
 echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput

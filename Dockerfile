@@ -19,8 +19,20 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Installa dipendenze di runtime
+#  - gettext: per 'manage.py compilemessages' (traduzioni IT/EN)
+#  - libreoffice-writer: per i PDF contratto/domanda (docxtpl -> PDF via soffice)
+#  - libpango/cairo/gdk-pixbuf + shared-mime-info: per WeasyPrint (PDF preventivo)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
+    gettext \
+    libreoffice-writer \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libgdk-pixbuf-2.0-0 \
+    libffi8 \
+    shared-mime-info \
+    fonts-dejavu \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia Python packages dal builder
