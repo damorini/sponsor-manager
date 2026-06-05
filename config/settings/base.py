@@ -13,6 +13,13 @@ from pathlib import Path
 
 from decouple import Csv, config
 
+# MIME type per immagini moderne: alcuni sistemi non hanno .webp/.avif in
+# /etc/mime.types, quindi il dev server li servirebbe col tipo sbagliato e il
+# browser non li mostrerebbe nel tag <img>. Qui li registriamo all'avvio.
+import mimetypes
+mimetypes.add_type('image/webp', '.webp')
+mimetypes.add_type('image/avif', '.avif')
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
@@ -105,9 +112,9 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LOGIN_URL = 'login'
+LOGIN_URL = 'portal:login'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = 'login'
+LOGOUT_REDIRECT_URL = 'portal:login'
 
 LANGUAGE_CODE = 'it'
 USE_THOUSAND_SEPARATOR = True
@@ -192,6 +199,11 @@ ORGANIZER_DISPLAY_NAME = config('ORGANIZER_DISPLAY_NAME', default='VALET S.r.l.'
 ORGANIZER_ADDRESS = config('ORGANIZER_ADDRESS',
                             default='Via Dei Fornaciai 29/B, 40129 Bologna')
 SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='info@valet.it')
+# Dati per il pagamento via bonifico (PLACEHOLDER: sostituire nel .env con quelli reali)
+BANK_TRANSFER_HOLDER = config('BANK_TRANSFER_HOLDER', default='Valet S.r.l. (DA CONFIGURARE)')
+BANK_TRANSFER_BANK = config('BANK_TRANSFER_BANK', default='Banca di Esempio S.p.A. (DA CONFIGURARE)')
+BANK_TRANSFER_IBAN = config('BANK_TRANSFER_IBAN', default='IT00 X000 0000 0000 0000 0000 000')
+BANK_TRANSFER_BIC = config('BANK_TRANSFER_BIC', default='')
 BRAND_LOGO_URL = config('BRAND_LOGO_URL', default='')
 BRAND_PRIMARY_COLOR = config('BRAND_PRIMARY_COLOR', default='#1f4e79')
 

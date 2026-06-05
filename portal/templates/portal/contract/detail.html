@@ -1,4 +1,6 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
+{% load portal_labels %}
 
 {% block title %}{{ contract.contract_number }}{% endblock %}
 
@@ -9,7 +11,7 @@
   <nav class="text-sm text-gray-500 mb-4">
     <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">Dashboard</a>
     <span class="mx-2">/</span>
-    <a href="{% url 'portal:contracts_list' %}" class="hover:text-brand-500">Contratti</a>
+    <a href="{% url 'portal:contracts_list' %}" class="hover:text-brand-500">{% trans "Contratti" %}</a>
     <span class="mx-2">/</span>
     <span class="text-gray-700">{{ contract.contract_number }}</span>
   </nav>
@@ -27,11 +29,11 @@
           {% elif contract.status == 'sent' %}bg-blue-100 text-blue-800
           {% elif contract.status == 'cancelled' %}bg-red-100 text-red-800
           {% else %}bg-gray-100 text-gray-700{% endif %}">
-          {{ contract.get_status_display }}
+          {{ contract.status|status_label }}
         </span>
         {% if contract.contract_kind == 'addon' %}
         <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded font-medium">
-          Addon
+          {% trans "Addon" %}
         </span>
         {% endif %}
       </div>
@@ -47,13 +49,13 @@
     <div class="flex gap-2">
       <a href="{% url 'portal:checkout_card' contract.id %}" 
          class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
-        Paga ora
+        {% trans "Paga ora" %}
       </a>
       {% if debug %}
       <form method="post" action="{% url 'portal:checkout_dev_mark_paid' contract.id %}">
         {% csrf_token %}
         <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
-          [DEV] Segna come pagato
+          {% trans "[DEV] Segna come pagato" %}
         </button>
       </form>
       {% endif %}
@@ -61,6 +63,34 @@
     {% endif %}
   </div>
   
+  <!-- PREVENTIVO_CONFERMA -->
+  {% if contract.status == 'sent' %}
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h2 class="text-lg font-semibold text-gray-900">{% trans "La tua proposta di sponsorizzazione" %}</h2>
+      <p class="mt-1 text-gray-600 text-sm">{% blocktrans with evento=contract.event.get_name %}Grazie per l'interesse verso {{ evento }}. Abbiamo preparato per voi una proposta dedicata: di seguito gli spazi e i servizi selezionati. Confermando il preventivo riservate la vostra presenza e diamo avvio alla pratica di partecipazione.{% endblocktrans %}</p>
+    </div>
+    {% if contract.option_until %}
+    <div class="flex items-start gap-3 px-5 py-3 bg-amber-50 border-b border-amber-100">
+      <i class="ti ti-clock-hour-4 text-amber-600 text-xl shrink-0 mt-0.5"></i>
+      <div class="text-sm">
+        <div class="font-medium text-amber-900">{% blocktrans with d=contract.option_until|date:"d/m/Y" %}Spazi riservati per voi fino al {{ d }}{% endblocktrans %}</div>
+        <div class="text-amber-800">{% trans "Trascorsa questa data gli spazi tornano disponibili per altri sponsor." %}</div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="text-xs text-gray-500 uppercase tracking-wide">{% trans "Totale proposta (IVA inclusa)" %}</div>
+        <div class="text-2xl font-bold text-gray-900">€ {{ contract.total|floatformat:2 }}</div>
+      </div>
+      <a href="{% url 'portal:quote_confirm_page' contract.id %}" class="inline-flex items-center bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
+        <i class="ti ti-check mr-1"></i>{% trans "Conferma il preventivo" %}
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Layout 2 colonne -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     
@@ -70,17 +100,17 @@
       <!-- Servizi inclusi -->
       <div class="bg-white rounded-lg shadow-sm">
         <div class="px-5 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Servizi inclusi</h2>
+          <h2 class="text-lg font-semibold text-gray-900">{% trans "Servizi inclusi" %}</h2>
         </div>
         
         {% if contract.lines.all %}
         <table class="w-full text-sm">
           <thead class="bg-gray-50 text-xs uppercase text-gray-600">
             <tr>
-              <th class="px-5 py-3 text-left">Descrizione</th>
-              <th class="px-5 py-3 text-right">Q.tà</th>
-              <th class="px-5 py-3 text-right">Prezzo</th>
-              <th class="px-5 py-3 text-right">Totale</th>
+              <th class="px-5 py-3 text-left">{% trans "Descrizione" %}</th>
+              <th class="px-5 py-3 text-right">{% trans "Q.tà" %}</th>
+              <th class="px-5 py-3 text-right">{% trans "Prezzo" %}</th>
+              <th class="px-5 py-3 text-right">{% trans "Totale" %}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -88,7 +118,7 @@
             <tr>
               <td class="px-5 py-3">
                 <div class="font-medium text-gray-900">
-                  {{ line.service_name_snapshot }}
+                  {{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="text-gray-500">&ndash; {{ line.variant_label_snapshot }}</span>{% endif %}
                 </div>
                 {% if line.service_description_snapshot %}
                 <div class="text-xs text-gray-500 mt-1">
@@ -98,30 +128,30 @@
               </td>
               <td class="px-5 py-3 text-right">{{ line.quantity }}</td>
               <td class="px-5 py-3 text-right whitespace-nowrap">€ {{ line.unit_price|floatformat:2 }}</td>
-              <td class="px-5 py-3 text-right whitespace-nowrap font-medium">€ {{ line.line_total|floatformat:2 }}</td>
+              <td class="px-5 py-3 text-right whitespace-nowrap font-medium">{% if line.line_total %}€ {{ line.line_total|floatformat:2 }}{% else %}<span class="inline-block text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium">{% trans "Incluso" %}</span>{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
           <tfoot class="bg-gray-50 text-sm">
             <tr>
-              <td colspan="3" class="px-5 py-2 text-right text-gray-600">Subtotale:</td>
+              <td colspan="3" class="px-5 py-2 text-right text-gray-600">{% trans "Subtotale:" %}</td>
               <td class="px-5 py-2 text-right whitespace-nowrap">€ {{ contract.subtotal|floatformat:2 }}</td>
             </tr>
             <tr>
               <td colspan="3" class="px-5 py-2 text-right text-gray-600">
-                IVA:
+                {% trans "IVA:" %}
               </td>
               <td class="px-5 py-2 text-right whitespace-nowrap">€ {{ contract.vat_amount|floatformat:2 }}</td>
             </tr>
             <tr class="border-t border-gray-200">
-              <td colspan="3" class="px-5 py-3 text-right font-semibold text-gray-900">Totale:</td>
+              <td colspan="3" class="px-5 py-3 text-right font-semibold text-gray-900">{% trans "Totale:" %}</td>
               <td class="px-5 py-3 text-right font-bold text-lg whitespace-nowrap">€ {{ contract.total|floatformat:2 }}</td>
             </tr>
           </tfoot>
         </table>
         {% else %}
         <div class="px-5 py-8 text-center text-gray-500">
-          Nessuna riga sul contratto.
+          {% trans "Nessuna riga sul contratto." %}
         </div>
         {% endif %}
       </div>
@@ -130,9 +160,9 @@
       {% if deadlines %}
       <div class="bg-white rounded-lg shadow-sm">
         <div class="px-5 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">Scadenze operative</h2>
+          <h2 class="text-lg font-semibold text-gray-900">{% trans "Scadenze operative" %}</h2>
           <p class="text-xs text-gray-500 mt-1">
-            Materiali e attività richieste per il corretto svolgimento dello sponsorship
+            {% trans "Materiali e attività richieste per il corretto svolgimento dello sponsorship" %}
           </p>
         </div>
         <ul class="divide-y divide-gray-100">
@@ -149,7 +179,7 @@
                   {% else %}
                     <span class="text-gray-400">○</span>
                   {% endif %}
-                  <span class="font-medium text-gray-900">{{ d.portal_title }}</span>
+                  <span class="font-medium text-gray-900">{{ d.portal_title|deadline_label }}</span>
                 </div>
                 {% if d.description %}
                 <p class="mt-1 text-sm text-gray-600 ml-6">
@@ -168,13 +198,13 @@
                   {% elif d.days_remaining <= 3 %}text-yellow-600 font-medium
                   {% else %}text-gray-500{% endif %}">
                   {% if d.status == 'received' %}
-                    Ricevuto
+                    {% trans "Ricevuto" %}
                   {% elif d.status == 'waived' %}
-                    Esonerato
+                    {% trans "Esonerato" %}
                   {% elif d.is_overdue %}
-                    {{ d.days_remaining }} gg in ritardo
+                    {% blocktrans with n=d.days_remaining %}{{ n }} gg in ritardo{% endblocktrans %}
                   {% else %}
-                    tra {{ d.days_remaining }} gg
+                    {% blocktrans with n=d.days_remaining %}tra {{ n }} gg{% endblocktrans %}
                   {% endif %}
                 </div>
               </div>
@@ -184,9 +214,9 @@
           {% endfor %}
         </ul>
         <div class="px-5 py-3 bg-gray-50 text-xs text-gray-600">
-          Per caricare i materiali richiesti, vai alla
+          {% trans "Per caricare i materiali richiesti, vai alla" %}
           <a href="{% url 'portal:materials_list' contract.id %}" class="text-brand-500 hover:underline">
-            sezione Materiali</a>.
+            {% trans "sezione Materiali" %}</a>.
         </div>
       </div>
       {% endif %}
@@ -194,22 +224,20 @@
       <!-- CTA acquista altri servizi -->
       {% if purchasable_services_count > 0 and contract.status != 'cancelled' %}
       <div class="bg-gradient-to-br from-brand-500 to-brand-700 rounded-lg shadow-sm p-6 text-white">
-        <h3 class="text-lg font-semibold mb-2">Aggiungi altri servizi</h3>
+        <h3 class="text-lg font-semibold mb-2">{% trans "Aggiungi altri servizi" %}</h3>
         <p class="text-sm text-brand-50 mb-4">
-          Sono disponibili {{ purchasable_services_count }} servizi acquistabili 
-          per questo evento. Workshop, hostess, spazi promozionali extra
-          e molto altro.
+          {% blocktrans with n=purchasable_services_count %}Sono disponibili {{ n }} servizi acquistabili per questo evento. Workshop, hostess, spazi promozionali extra e molto altro.{% endblocktrans %}
         </p>
         {% if contract.status == 'signed' or contract.status == 'active' %}
         <a href="{% url 'portal:catalog_event' contract.event.id %}"
            class="inline-block bg-white text-brand-700 font-medium px-5 py-2 rounded text-sm hover:bg-brand-50 transition-colors">
-          Esplora il catalogo
+          {% trans "Esplora il catalogo" %}
         </a>
         {% else %}
         <span class="inline-block bg-white/40 text-white/80 font-medium px-5 py-2 rounded text-sm cursor-not-allowed select-none">
-          Esplora il catalogo
+          {% trans "Esplora il catalogo" %}
         </span>
-        <p class="text-sm text-brand-50 mt-3">I servizi potranno essere acquistati a seguito della firma del contratto.</p>
+        <p class="text-sm text-brand-50 mt-3">{% trans "I servizi potranno essere acquistati a seguito della firma del contratto." %}</p>
         {% endif %}
       </div>
       {% endif %}
@@ -222,7 +250,7 @@
       <!-- Info contratto -->
       <div class="bg-white rounded-lg shadow-sm">
         <div class="px-5 py-4 border-b border-gray-200">
-          <h3 class="font-semibold text-gray-900">Dettagli</h3>
+          <h3 class="font-semibold text-gray-900">{% trans "Dettagli" %}</h3>
         </div>
         <dl class="px-5 py-3 text-sm space-y-3">
           
@@ -232,13 +260,13 @@
           </div>
           
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">Tipo contratto</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Tipo contratto" %}</dt>
             <dd class="text-gray-900">
-              {{ contract.get_contract_kind_display }}
+              {{ contract.contract_kind|kind_label }}
               {% if contract.parent_contract %}
               <a href="{% url 'portal:contract_detail' contract.parent_contract.id %}" 
                  class="text-brand-500 hover:underline text-xs block">
-                Da {{ contract.parent_contract.contract_number }}
+                {% blocktrans with num=contract.parent_contract.contract_number %}Da {{ num }}{% endblocktrans %}
               </a>
               {% endif %}
             </dd>
@@ -246,7 +274,7 @@
           
           {% if contract.stand %}
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">Stand assegnato</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Stand assegnato" %}</dt>
             <dd class="text-gray-900">
               <strong>{{ contract.stand.code }}</strong>
               ({{ contract.stand.area_sqm }} m²)
@@ -254,7 +282,7 @@
           </div>
           {% elif contract.stand_block %}
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">Blocco stand</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Blocco stand" %}</dt>
             <dd class="text-gray-900">
               <strong>{{ contract.stand_block.code }}</strong>
             </dd>
@@ -262,13 +290,13 @@
           {% endif %}
           
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">Creato</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Creato" %}</dt>
             <dd class="text-gray-700">{{ contract.created_at|date:"d/m/Y" }}</dd>
           </div>
           
           {% if contract.signed_at %}
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">Firmato</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Firmato" %}</dt>
             <dd class="text-gray-700">{{ contract.signed_at|date:"d/m/Y" }}</dd>
           </div>
           {% endif %}
@@ -280,7 +308,7 @@
       {% if payments %}
       <div class="bg-white rounded-lg shadow-sm">
         <div class="px-5 py-4 border-b border-gray-200">
-          <h3 class="font-semibold text-gray-900">Pagamenti</h3>
+          <h3 class="font-semibold text-gray-900">{% trans "Pagamenti" %}</h3>
         </div>
         <ul class="divide-y divide-gray-100">
           {% for p in payments %}
@@ -295,7 +323,7 @@
                   € {{ p.amount_gross|floatformat:2 }}
                 </div>
                 <div class="text-xs text-gray-500">
-                  {{ p.get_payment_method_display }} · {{ p.get_status_display }}
+                  {{ p.payment_method|paymethod_label }} · {{ p.status|paystatus_label }}
                 </div>
               </div>
               <div class="text-xs text-gray-500 text-right">
@@ -316,7 +344,7 @@
       {% if documents %}
       <div class="bg-white rounded-lg shadow-sm">
         <div class="px-5 py-4 border-b border-gray-200">
-          <h3 class="font-semibold text-gray-900">Documenti</h3>
+          <h3 class="font-semibold text-gray-900">{% trans "Documenti" %}</h3>
         </div>
         <ul class="divide-y divide-gray-100">
           {% for doc in documents %}

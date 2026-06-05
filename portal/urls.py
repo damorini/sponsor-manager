@@ -39,6 +39,10 @@ urlpatterns = [
     path('acquisti/', dashboard.purchases_view, name='purchases'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),
+    path('contracts/<uuid:contract_id>/conferma/anteprima/', contract.quote_confirm_page_view,
+         name='quote_confirm_page'),
+    path('contracts/<uuid:contract_id>/conferma/', contract.quote_confirm_view,
+         name='quote_confirm'),
     
     # Catalogo
     path('catalog/', catalog.catalog_view, name='catalog'),
@@ -91,4 +95,6 @@ urlpatterns = [
          checkout.paypal_return, name='checkout_success'),
     path('checkout/dev-mark-paid/<uuid:contract_id>/',
          checkout.dev_mark_paid, name='checkout_dev_mark_paid'),
+    path('checkout/bank-transfer/<uuid:contract_id>/',
+         checkout.bank_transfer_order, name='checkout_bank_transfer'),
 ]

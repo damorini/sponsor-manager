@@ -396,6 +396,14 @@ class ContactAdmin(admin.ModelAdmin):
         'marketing_consent',
     )
     search_fields = ('full_name', 'email', 'phone', 'sponsor__legal_name')
+
+    def get_search_results(self, request, queryset, search_term):
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            _sp = request.GET.get("sponsor")
+            if _sp:
+                queryset = queryset.filter(sponsor_id=_sp)
+        return queryset, may_dup
     list_select_related = ('sponsor',)
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at')

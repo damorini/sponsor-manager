@@ -20,6 +20,7 @@ urlpatterns = [
     
     # Portale sponsor self-service
     path('portal/', include('portal.urls')),
+    path('i18n/', include('django.conf.urls.i18n')),  # cambio lingua (set_language)
     
     # Webhook PayPal (URL pubblica, no autenticazione utente)
     path('webhooks/', include('contracts.urls.webhooks')),

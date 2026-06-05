@@ -1,20 +1,20 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}I miei dati{% endblock %}
+{% block title %}{% trans "I miei dati" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8">
-  <h1 class="text-2xl font-semibold text-gray-900 mb-2">I miei dati</h1>
+  <h1 class="text-2xl font-semibold text-gray-900 mb-2">{% trans "I miei dati" %}</h1>
 
   {% if manca_operativo %}
   <div class="bg-red-50 border-l-4 border-red-500 text-red-800 rounded-lg p-4 mb-5 shadow-sm">
-    <p class="font-semibold mb-1">⚠️ Manca un soggetto operativo</p>
-    <p class="text-sm leading-relaxed">Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale.</p>
+    <p class="font-semibold mb-1">{% trans "⚠️ Manca un soggetto operativo" %}</p>
+    <p class="text-sm leading-relaxed">{% blocktrans %}Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale.{% endblocktrans %}</p>
   </div>
   {% endif %}
-  <a href="{% url 'portal:password_change' %}" class="inline-block mb-4 text-sm text-brand-500 hover:underline">&#128273; Cambia password</a>
-  <p class="text-gray-600 mb-6">Controlla e aggiorna i dati della tua azienda e del contatto.
-    Le modifiche vengono salvate subito.</p>
+  <a href="{% url 'portal:password_change' %}" class="inline-block mb-4 text-sm text-brand-500 hover:underline">&#128273; {% trans "Cambia password" %}</a>
+  <p class="text-gray-600 mb-6">{% trans "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche vengono salvate subito." %}</p>
 
   {% if messages %}
     {% for message in messages %}
@@ -28,7 +28,7 @@
     {% csrf_token %}
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Logo aziendale</h2>
+      <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Logo aziendale" %}</h2>
       <div class="flex items-center gap-4 mb-2">
         {% if sponsor.logo_file %}
           <img src="{{ sponsor.logo_file.url }}" alt="logo"
@@ -37,20 +37,19 @@
           <img src="{{ sponsor.logo_url }}" alt="logo"
                class="h-16 w-auto max-w-[160px] object-contain border border-gray-200 rounded">
         {% else %}
-          <span class="text-gray-400 text-sm">Nessun logo caricato</span>
+          <span class="text-gray-400 text-sm">{% trans "Nessun logo caricato" %}</span>
         {% endif %}
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Carica un nuovo logo</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Carica un nuovo logo" %}</label>
           <input type="file" name="sponsor_logo_file" accept="image/*"
                  class="text-sm">
-          <p class="text-xs text-gray-500 mt-1">L'immagine viene ridimensionata e compressa
-            automaticamente. In alternativa puoi indicare un URL qui sotto.</p>
+          <p class="text-xs text-gray-500 mt-1">{% trans "L'immagine viene ridimensionata e compressa automaticamente. In alternativa puoi indicare un URL qui sotto." %}</p>
         </div>
       </div>
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Dati azienda</h2>
+      <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Dati azienda" %}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {% for f in sponsor_fields %}
         <div class="{% if f.name == 'sponsor_business_description' or f.name == 'sponsor_address_street' %}sm:col-span-2{% endif %}">
@@ -63,7 +62,7 @@
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
-      <h2 class="text-lg font-medium text-gray-900 mb-4">Contatto di riferimento</h2>
+      <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Contatto di riferimento" %}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {% for f in contact_fields %}
         <div>
@@ -77,24 +76,24 @@
 
     <div class="flex justify-end gap-3">
       <a href="{% url 'portal:dashboard' %}"
-         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Annulla</a>
+         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">{% trans "Annulla" %}</a>
       <button type="submit"
               class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">
-        Salva modifiche
+        {% trans "Salva modifiche" %}
       </button>
     </div>
   </form>
 
   <!-- Altri contatti aziendali -->
   <div class="bg-white border border-gray-200 rounded-lg p-6 mt-8">
-    <h2 class="text-lg font-medium text-gray-900 mb-4">Altri contatti aziendali</h2>
+    <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Altri contatti aziendali" %}</h2>
 
     {% if contatti %}
     <table class="w-full text-sm mb-6">
       <thead>
         <tr class="text-left text-gray-500 border-b">
-          <th class="py-2">Nome</th><th class="py-2">Email</th>
-          <th class="py-2">Telefono</th><th class="py-2">Ruoli</th><th class="py-2 text-right">Azioni</th>
+          <th class="py-2">{% trans "Nome" %}</th><th class="py-2">Email</th>
+          <th class="py-2">{% trans "Telefono" %}</th><th class="py-2">{% trans "Ruoli" %}</th><th class="py-2 text-right">{% trans "Azioni" %}</th>
         </tr>
       </thead>
       <tbody>
@@ -106,13 +105,13 @@
           <td class="py-2">{{ c.ruoli|default:"—" }}</td>
           <td class="py-2 text-right">
             {% if c.is_self %}
-              <span class="text-xs text-gray-400">tu</span>
+              <span class="text-xs text-gray-400">{% trans "tu" %}</span>
             {% else %}
             <form method="post" onsubmit="return confirm('Rimuovere {{ c.full_name|escapejs }} dai contatti?');" class="inline">
               {% csrf_token %}
               <input type="hidden" name="azione" value="remove_contact">
               <input type="hidden" name="contact_id" value="{{ c.id }}">
-              <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">Rimuovi</button>
+              <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">{% trans "Rimuovi" %}</button>
             </form>
             {% endif %}
           </td>
@@ -121,16 +120,16 @@
       </tbody>
     </table>
     {% else %}
-    <p class="text-gray-500 mb-6">Nessun altro contatto registrato.</p>
+    <p class="text-gray-500 mb-6">{% trans "Nessun altro contatto registrato." %}</p>
     {% endif %}
 
-    <h3 class="text-md font-medium text-gray-800 mb-3">Aggiungi un contatto</h3>
+    <h3 class="text-md font-medium text-gray-800 mb-3">{% trans "Aggiungi un contatto" %}</h3>
     <form method="post" class="space-y-4">
       {% csrf_token %}
       <input type="hidden" name="azione" value="add_contact">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Nome e cognome *</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Nome e cognome *" %}</label>
           <input type="text" name="nuovo_full_name" required
                  class="w-full border border-gray-300 rounded-md px-3 py-2">
         </div>
@@ -140,18 +139,18 @@
                  class="w-full border border-gray-300 rounded-md px-3 py-2">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Telefono" %}</label>
           <input type="text" name="nuovo_phone"
                  class="w-full border border-gray-300 rounded-md px-3 py-2">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Ruolo aziendale</label>
-          <input type="text" name="nuovo_job_title" placeholder="es. Responsabile marketing"
+          <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Ruolo aziendale" %}</label>
+          <input type="text" name="nuovo_job_title" placeholder="{% trans 'es. Responsabile marketing' %}"
                  class="w-full border border-gray-300 rounded-md px-3 py-2">
         </div>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Ruoli funzionali (chi riceve quali comunicazioni)</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">{% trans "Ruoli funzionali (chi riceve quali comunicazioni)" %}</label>
         <div class="flex flex-wrap gap-4">
           {% for value, label in role_choices %}
           <label class="inline-flex items-center gap-2">
@@ -165,7 +164,7 @@
       <div class="flex justify-end">
         <button type="submit"
                 class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">
-          Aggiungi contatto
+          {% trans "Aggiungi contatto" %}
         </button>
       </div>
     </form>

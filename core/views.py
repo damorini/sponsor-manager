@@ -7,14 +7,15 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from events.models import Event, EventStatus
+from core.event_scope import scope_by_event, scope_generic_by_event
 
 
 @staff_member_required
 def cruscotto_home(request):
     """Home cruscotto: card degli eventi attivi (SELLING + LIVE)."""
-    eventi = (Event.objects
+    eventi = scope_by_event(request, (Event.objects
               .filter(status__in=[EventStatus.SELLING, EventStatus.LIVE])
-              .order_by('start_date', 'id'))
+              .order_by('start_date', 'id')), 'id')
 
     cards = []
     for ev in eventi:
@@ -53,7 +54,7 @@ def evento_dettaglio(request, pk):
     from venues.models import Stand, StandBlock
 
     try:
-        ev = Event.objects.get(pk=pk)
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
     except Event.DoesNotExist:
         raise Http404("Evento non trovato")
 
@@ -220,7 +221,7 @@ def servizio_dettaglio(request, pk, service_pk):
     from contracts.models import Contract, ContractStatus, ContractLine
 
     try:
-        ev = Event.objects.get(pk=pk)
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
         servizio = Service.objects.get(pk=service_pk, event=ev)
     except (Event.DoesNotExist, Service.DoesNotExist):
         raise Http404("Evento o servizio non trovato")
@@ -268,6 +269,7 @@ def servizio_dettaglio(request, pk, service_pk):
             'sponsor_id': c.sponsor_id,
             'status_label': c.get_status_display(),
             'categoria': categoria,
+            'variante': r.variant_label_snapshot,
             'quantity': r.quantity,
             'importo': r.line_total or 0,
             'consegne': consegne,
@@ -305,7 +307,7 @@ def utility_home(request):
     """Pagina Utility: bottoni per scaricare template e altri strumenti."""
     risultato = request.session.pop('import_risultato', None)
     from events.models import Event
-    eventi = Event.objects.all().order_by('-start_date')
+    eventi = scope_by_event(request, Event.objects.all().order_by('-start_date'), 'id')
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto · Utility',
@@ -363,7 +365,7 @@ def da_incassare_evento(request, pk):
     from contracts.payments import PaymentStatus
 
     try:
-        ev = Event.objects.get(pk=pk)
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
     except Event.DoesNotExist:
         raise Http404("Evento non trovato")
 
@@ -495,7 +497,7 @@ def export_servizi(request):
         messages.error(request, "Scegli un evento prima di esportare.")
         return redirect('core:cruscotto_utility')
     try:
-        ev = Event.objects.get(slug=slug)
+        ev = scope_by_event(request, Event.objects.filter(slug=slug), 'id').get()
     except Event.DoesNotExist:
         raise Http404("Evento non trovato")
 
@@ -521,7 +523,7 @@ def export_stand(request):
         messages.error(request, "Scegli un evento prima di esportare.")
         return redirect('core:cruscotto_utility')
     try:
-        ev = Event.objects.get(slug=slug)
+        ev = scope_by_event(request, Event.objects.filter(slug=slug), 'id').get()
     except Event.DoesNotExist:
         raise Http404("Evento non trovato")
 
@@ -573,6 +575,7 @@ def cruscotto_scadenze_cliente(request):
           .select_related('contract', 'contract__sponsor', 'contract__event',
                           'completed_by_contact')
           .order_by('contract__event__start_date', 'due_date'))
+    qs = scope_by_event(request, qs, 'contract__event')
 
     event_id = request.GET.get('event') or ''
     if event_id:
@@ -651,9 +654,9 @@ def cruscotto_scadenza_dettaglio(request, deadline_id):
     from shared.models import Document
 
     d = get_object_or_404(
-        Deadline.objects.select_related(
+        scope_by_event(request, Deadline.objects.select_related(
             'contract', 'contract__sponsor', 'contract__event',
-            'completed_by_contact'),
+            'completed_by_contact'), 'contract__event'),
         id=deadline_id)
 
     schema = d.content_schema or []
@@ -712,7 +715,7 @@ def cruscotto_scadenza_file(request, document_id):
     from shared.models import Document
 
     document = get_object_or_404(
-        Document.objects.filter(deleted_at__isnull=True), id=document_id)
+        scope_generic_by_event(request, Document.objects.filter(deleted_at__isnull=True)), id=document_id)
     relative_path = (document.storage_url or '').replace(settings.MEDIA_URL, '')
     if not relative_path or not default_storage.exists(relative_path):
         raise Http404("File non trovato sul server.")

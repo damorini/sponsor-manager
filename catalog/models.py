@@ -139,9 +139,11 @@ class Service(TranslatableMixin, TimeStampedModel):
 
     included_services = models.ManyToManyField(
         'self', symmetrical=False, blank=True,
+        through='ServiceInclusion',
+        through_fields=('parent', 'child'),
         related_name='included_in',
         verbose_name="Servizi inclusi (accessori)",
-        help_text="Servizi aggiunti automaticamente a € 0 quando questo servizio viene venduto. Le loro scadenze materiali si generano alla firma.",
+        help_text="Servizi aggiunti automaticamente a € 0 quando questo servizio viene venduto. Le loro scadenze materiali si generano alla firma. La quantita' inclusa si imposta nella sezione 'Servizi inclusi' in fondo a questa pagina.",
     )
 
     # Ecommerce
@@ -177,6 +179,14 @@ class Service(TranslatableMixin, TimeStampedModel):
         default=0,
         verbose_name="Ordine visualizzazione",
     )
+    catalog_source = models.ForeignKey(
+        'catalog.CatalogService',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='instances',
+        verbose_name="Origine (catalogo)",
+        help_text="Se valorizzato, il servizio nasce da una voce del catalogo.",
+    )
 
     class Meta:
         verbose_name = "Servizio"
@@ -201,6 +211,75 @@ class Service(TranslatableMixin, TimeStampedModel):
 
     def get_description(self, language=None):
         return self.translated('description', language)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self._neutralizza_nome_immagine()
+        self._ottimizza_immagine()
+
+    def _neutralizza_nome_immagine(self):
+        """Rinomina l'immagine con un nome neutro (img_<uuid>.<ext>).
+        Evita che ad-blocker/estensioni blocchino i file con parole come 'banner'
+        o 'ad' (net::ERR_BLOCKED_BY_CLIENT) e rimuove i suffissi anti-collisione."""
+        if not self.image:
+            return
+        try:
+            import os as _os, re as _re, uuid as _uuid
+            from django.core.files.storage import default_storage
+            from django.core.files.base import ContentFile
+            name = self.image.name
+            base = _os.path.basename(name)
+            if _re.match(r'^img_[0-9a-f]{32}\.', base):
+                return  # gia' neutro
+            ext = _os.path.splitext(base)[1].lower() or '.img'
+            new_rel = f"services/images/img_{_uuid.uuid4().hex}{ext}"
+            with default_storage.open(name, 'rb') as _f:
+                data = _f.read()
+            saved = default_storage.save(new_rel, ContentFile(data))
+            if saved != name and default_storage.exists(name):
+                default_storage.delete(name)
+            type(self).objects.filter(pk=self.pk).update(image=saved)
+            self.image.name = saved
+        except Exception:
+            pass
+
+    def _ottimizza_immagine(self, max_lato=1000, quality=82):
+        """Riduce l'immagine se il lato piu' lungo supera max_lato.
+        Idempotente: se e' gia' piccola non fa nulla. Non blocca mai il salvataggio."""
+        if not self.image:
+            return
+        try:
+            import io, os as _os
+            from PIL import Image
+            from django.core.files.base import ContentFile
+            from django.core.files.storage import default_storage
+            self.image.open()
+            img = Image.open(self.image)
+            fmt = (img.format or 'JPEG').upper()
+            if max(img.size) <= max_lato:
+                self.image.close()
+                return
+            img.thumbnail((max_lato, max_lato), Image.LANCZOS)
+            opts = {'optimize': True}
+            if fmt in ('JPEG', 'JPG'):
+                img = img.convert('RGB'); opts['quality'] = quality; out = 'JPEG'
+            elif fmt == 'WEBP':
+                opts['quality'] = quality; out = 'WEBP'
+            elif fmt == 'PNG':
+                out = 'PNG'
+            else:
+                out = fmt
+            buf = io.BytesIO()
+            img.save(buf, format=out, **opts)
+            name = self.image.name
+            base = _os.path.basename(name)
+            self.image.close()
+            if default_storage.exists(name):
+                default_storage.delete(name)
+            self.image.save(base, ContentFile(buf.getvalue()), save=False)
+            type(self).objects.filter(pk=self.pk).update(image=self.image.name)
+        except Exception:
+            pass
 
     @property
     def DEFAULT_LANGUAGE(self):
@@ -272,6 +351,43 @@ class Service(TranslatableMixin, TimeStampedModel):
         return days_until_event >= self.self_purchase_cutoff_days
 
 
+class ServiceInclusion(models.Model):
+    """Legame 'servizio principale -> servizio incluso' con quantita'.
+    Modello intermedio del M2M Service.included_services: permette di dire
+    quante unita' di un accessorio sono incluse in un servizio padre."""
+    parent = models.ForeignKey(
+        'catalog.Service',
+        on_delete=models.CASCADE,
+        related_name='inclusions',
+        verbose_name="Servizio principale",
+    )
+    child = models.ForeignKey(
+        'catalog.Service',
+        on_delete=models.CASCADE,
+        related_name='inclusion_links',
+        verbose_name="Servizio incluso",
+    )
+    quantity = models.PositiveIntegerField(
+        default=1,
+        validators=[MinValueValidator(1)],
+        verbose_name="Quantita' inclusa",
+        help_text="Quante unita' di questo accessorio vengono incluse.",
+    )
+
+    class Meta:
+        verbose_name = "Servizio incluso"
+        verbose_name_plural = "Servizi inclusi"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['parent', 'child'],
+                name='serviceinclusion_unique_parent_child',
+            ),
+        ]
+
+    def __str__(self):
+        return "%s x%s" % (self.child_id, self.quantity)
+
+
 class ServiceVariant(TimeStampedModel):
     """Variante di un Service (es. colore/misura) con prezzo e scorte proprie."""
     service = models.ForeignKey(
@@ -283,6 +399,10 @@ class ServiceVariant(TimeStampedModel):
     label = models.CharField(
         max_length=120, verbose_name="Variante",
         help_text="Es. Rosso, Taglia L, ...",
+    )
+    label_en = models.CharField(
+        max_length=120, blank=True, verbose_name="Etichetta (EN)",
+        help_text="Traduzione inglese. Vuoto = usa l'italiano.",
     )
     code = models.CharField(max_length=50, blank=True, verbose_name="Codice")
     base_price = models.DecimalField(
@@ -305,16 +425,17 @@ class ServiceVariant(TimeStampedModel):
     def __str__(self):
         return self.label
 
+    def label_display(self):
+        """Etichetta nella lingua attiva del portale (fallback: italiano)."""
+        from django.utils.translation import get_language
+        if (get_language() or '').startswith('en') and self.label_en:
+            return self.label_en
+        return self.label
+
     def quantity_committed(self, exclude_contract_id=None):
         from django.db.models import Sum
-        from contracts.models import ContractStatus
-        qs = self.variant_lines.filter(
-            contract__status__in=[
-                ContractStatus.SENT, ContractStatus.SIGNED,
-                ContractStatus.ACTIVE, ContractStatus.COMPLETED,
-            ]
-        )
-        if exclude_contract_id:
+        qs = self.variant_lines.exclude(contract__status='cancelled')
+        if exclude_contract_id is not None:
             qs = qs.exclude(contract_id=exclude_contract_id)
         return qs.aggregate(tot=Sum('quantity'))['tot'] or 0
 
@@ -436,3 +557,85 @@ class DeadlineFieldTemplate(TimeStampedModel):
 
     def __str__(self):
         return f"{self.label} ({self.get_field_type_display()})"
+
+
+# ============================================================
+# CATALOGO SERVIZI (indipendente dall'evento)
+# ============================================================
+class ServiceCategory(TimeStampedModel):
+    # Lista gestita di categorie, condivisa dal catalogo
+    code = models.SlugField(max_length=50, unique=True, verbose_name="Codice")
+    name = models.CharField(max_length=80, verbose_name="Nome categoria")
+    display_order = models.IntegerField(default=0, verbose_name="Ordine")
+    is_active = models.BooleanField(default=True, verbose_name="Attiva")
+
+    class Meta:
+        verbose_name = "Categoria servizio"
+        verbose_name_plural = "Categorie servizio (catalogo)"
+        ordering = ['display_order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class CatalogService(TranslatableMixin, TimeStampedModel):
+    # Servizio "madre": definito una volta, istanziato sugli eventi
+    TRANSLATABLE_FIELDS = ['name', 'description']
+
+    code = models.CharField(max_length=50, unique=True, verbose_name="Codice")
+    name = models.JSONField(verbose_name="Nome (multilingua)", help_text='Formato: {"it": "...", "en": "..."}')
+    description = models.JSONField(null=True, blank=True, verbose_name="Descrizione (multilingua)")
+    image = models.FileField(upload_to='catalog/images/', null=True, blank=True, verbose_name="Immagine")
+    category = models.ForeignKey(ServiceCategory, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='catalog_services', verbose_name="Categoria")
+    accounting_category = models.CharField(max_length=30, choices=Service.ACCOUNTING_CATEGORIES,
+                                           default='altro', verbose_name="Categoria contabile")
+    pricing_mode = models.CharField(max_length=20, choices=PricingMode.choices,
+                                    default=PricingMode.FIXED, verbose_name="Modalità pricing")
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'),
+                                     verbose_name="Prezzo base (default)")
+    pricing_tiers = models.JSONField(null=True, blank=True, verbose_name="Scaglioni")
+    max_quantity = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(1)],
+                                       verbose_name="Quantità massima")
+    triggers_deadlines = models.BooleanField(default=False, verbose_name="Genera scadenze")
+    is_self_purchasable = models.BooleanField(default=False, verbose_name="Acquistabile self-service")
+    self_purchase_cutoff_days = models.IntegerField(null=True, blank=True,
+                                                    verbose_name="Cutoff acquisto (gg prima evento)")
+    vat_rate = models.DecimalField(max_digits=4, decimal_places=2, default=Decimal('22.00'),
+                                   verbose_name="Aliquota IVA (%)")
+    vat_exemption_article = models.CharField(max_length=100, blank=True, verbose_name="Articolo esenzione IVA")
+    display_order = models.IntegerField(default=0, verbose_name="Ordine visualizzazione")
+    is_active = models.BooleanField(default=True, verbose_name="Attivo")
+
+    class Meta:
+        verbose_name = "Servizio a catalogo"
+        verbose_name_plural = "Catalogo servizi"
+        ordering = ['display_order', 'code']
+
+    def get_name(self, language=None):
+        return self.translated('name', language)
+
+    def __str__(self):
+        try:
+            return f"{self.translated('name')} [{self.code}]"
+        except Exception:
+            return self.code
+
+
+class CatalogServiceVariant(TimeStampedModel):
+    catalog_service = models.ForeignKey(CatalogService, on_delete=models.CASCADE,
+                                        related_name='variants', verbose_name="Servizio a catalogo")
+    label = models.CharField(max_length=120, verbose_name="Variante")
+    label_en = models.CharField(max_length=120, blank=True, verbose_name="Etichetta (EN)")
+    code = models.CharField(max_length=50, blank=True, verbose_name="Codice")
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prezzo variante")
+    is_active = models.BooleanField(default=True, verbose_name="Attiva")
+    display_order = models.IntegerField(default=0, verbose_name="Ordine")
+
+    class Meta:
+        verbose_name = "Variante (catalogo)"
+        verbose_name_plural = "Varianti (catalogo)"
+        ordering = ['display_order', 'label']
+
+    def __str__(self):
+        return self.label

@@ -158,7 +158,19 @@ def service_detail_view(request, service_id):
         service.cutoff_days_remaining = days_to_event - service.self_purchase_cutoff_days
         service.is_within_cutoff = service.cutoff_days_remaining >= 0
 
+    variants = list(
+        service.variants.filter(is_active=True).order_by('display_order', 'label')
+    )
+    service_sold_out = service.is_sold_out
+    service.remaining = service.quantity_available()
+    for _v in variants:
+        _v.sold_out = service_sold_out or _v.is_sold_out()
+        _v.remaining = _v.quantity_available()
+    all_variants_sold_out = bool(variants) and all(_v.sold_out for _v in variants)
+
     return render(request, 'portal/catalog/service_detail.html', {
         'service': service,
         'event': service.event,
+        'variants': variants,
+        'all_variants_sold_out': all_variants_sold_out,
     })

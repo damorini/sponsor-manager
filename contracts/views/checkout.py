@@ -463,9 +463,48 @@ def dev_mark_paid(request, contract_id):
     if contract.status == ContractStatus.DRAFT:
         contract.mark_as_pending_payment()
     if contract.status == ContractStatus.PENDING_PAYMENT:
-        contract.mark_payment_succeeded()
-        messages.success(request, "[DEV] Pagamento simulato: contratto pagato/firmato.")
+        from contracts.payments import Payment, PaymentMethodChoice, PaymentStatus
+        payment = contract.payments.filter(status=PaymentStatus.SUCCEEDED).first()
+        if payment is None:
+            payment, _ = Payment.objects.get_or_create(
+                contract=contract,
+                status=PaymentStatus.PENDING,
+                payment_method=PaymentMethodChoice.PAYPAL,
+                defaults={'amount_gross': contract.total, 'currency': 'EUR'},
+            )
+            payment.mark_succeeded()
+        messages.success(request, "[DEV] Pagamento simulato: pagamento registrato e contratto firmato.")
     else:
         messages.info(request, f"[DEV] Nessuna azione: stato '{contract.get_status_display()}'.")
 
+    return redirect('portal:contract_detail', contract_id=contract.id)
+
+
+
+@login_required
+@require_POST
+def bank_transfer_order(request, contract_id):
+    """Il cliente sceglie il bonifico: l'ordine passa in 'In attesa pagamento'.
+    L'incasso viene poi registrato dall'admin (azione 'Registra pagamento bonifico ricevuto')."""
+    from contracts.models import Contract, ContractStatus
+
+    contract = get_object_or_404(
+        Contract.objects.select_related('sponsor', 'event'),
+        id=contract_id,
+    )
+    if not _user_owns_contract(request.user, contract):
+        return HttpResponse('Forbidden', status=403)
+
+    if not contract.lines.exists():
+        messages.warning(request, "Il carrello \u00e8 vuoto.")
+        return redirect('portal:cart_view')
+
+    if contract.status == ContractStatus.DRAFT:
+        contract.mark_as_pending_payment()
+
+    messages.success(
+        request,
+        "Ordine registrato. Effettua il bonifico con i dati indicati: "
+        "alla ricezione del bonifico confermeremo il tuo acquisto."
+    )
     return redirect('portal:contract_detail', contract_id=contract.id)

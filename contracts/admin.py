@@ -170,7 +170,7 @@ class ContractAdmin(admin.ModelAdmin):
         return scope_by_event(request, super().get_queryset(request), 'event')
 
     class Media:
-        js = ('admin/js/contract_event_filter.js',)
+        js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',)
 
     fieldsets = (
         (None, {
@@ -231,10 +231,11 @@ class ContractAdmin(admin.ModelAdmin):
         }),
     )
 
-    actions = ['action_rigenera_pdf_contratto',
-               'action_send_quote', 'action_convert_to_contract',
+    actions = ['action_send_quote',
                'action_generate_client_summary', 'action_genera_scadenze',
-               'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel']
+               'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
+               'action_registra_bonifico',
+               'action_genera_domanda_ammissione']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):
@@ -345,7 +346,7 @@ class ContractAdmin(admin.ModelAdmin):
     def send_quote_view(self, request, object_id):
         """Pagina di conferma: scelta destinatari, poi genera PDF e invia."""
         from .models import Contract
-        from .services.pdf_generator import generate_quote_pdf
+        from .services.pdf_generator import generate_quote_pdf_html as generate_quote_pdf
         from .services.email_sender import send_email
         from django.core.files.storage import default_storage
 
@@ -353,13 +354,6 @@ class ContractAdmin(admin.ModelAdmin):
         contacts = self._contact_rows(contract)
 
         if request.method == 'POST':
-            if not contract.letter_template:
-                self.message_user(
-                    request,
-                    "Nessun template lettera selezionato sul contratto.",
-                    level=messages.ERROR,
-                )
-                return HttpResponseRedirect('../')
 
             # raccogli destinatari: checkbox + email extra
             recipients = list(request.POST.getlist('recipients'))
@@ -690,6 +684,29 @@ class ContractAdmin(admin.ModelAdmin):
 
     # Actions
 
+    @admin.action(description='Genera DOMANDA DI AMMISSIONE (allega e mostra nel portale)')
+    def action_genera_domanda_ammissione(self, request, queryset):
+        from .services.pdf_generator import generate_admission_request_pdf
+        ok = 0
+        for contract in queryset:
+            try:
+                doc = generate_admission_request_pdf(contract)
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: domanda non generata - {e}",
+                    level=messages.ERROR,
+                )
+                continue
+            if doc:
+                ok += 1
+        if ok:
+            self.message_user(
+                request,
+                f"Domanda di ammissione generata per {ok} contratto/i. Ora e' visibile anche nel portale.",
+                level=messages.SUCCESS,
+            )
+
     @admin.action(description='Rigenera PDF CONTRATTO (allega e mostra nel portale)')
     def action_rigenera_pdf_contratto(self, request, queryset):
         from .services.pdf_generator import generate_contract_pdf
@@ -719,6 +736,36 @@ class ContractAdmin(admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
 
+    @admin.action(description='Registra pagamento bonifico ricevuto')
+    def action_registra_bonifico(self, request, queryset):
+        from contracts.payments import Payment, PaymentMethodChoice, PaymentStatus
+        from contracts.models import ContractStatus
+        ok = skip = 0
+        for contract in queryset:
+            if contract.status in (ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED):
+                skip += 1
+                continue
+            if contract.status == ContractStatus.DRAFT:
+                contract.mark_as_pending_payment()
+            if contract.status == ContractStatus.PENDING_PAYMENT:
+                payment = contract.payments.filter(status=PaymentStatus.SUCCEEDED).first()
+                if payment is None:
+                    payment, _ = Payment.objects.get_or_create(
+                        contract=contract,
+                        status=PaymentStatus.PENDING,
+                        payment_method=PaymentMethodChoice.BANK_TRANSFER,
+                        defaults={'amount_gross': contract.total, 'currency': 'EUR'},
+                    )
+                    payment.mark_succeeded()
+                ok += 1
+            else:
+                skip += 1
+        self.message_user(
+            request,
+            f"Bonifici registrati: {ok}. Ignorati (gia' pagati o stato non valido): {skip}.",
+            level=messages.SUCCESS,
+        )
+
     @admin.action(description='Marca come INVIATO')
     def action_mark_as_sent(self, request, queryset):
         ok = err = 0
@@ -740,7 +787,7 @@ class ContractAdmin(admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
 
-    @admin.action(description="Genera scadenze dai template (per contratti gia' firmati/attivi)")
+    @admin.action(description="Genera scadenze dai template (per domande gia' firmate/attive)")
     def action_genera_scadenze(self, request, queryset):
         tot = 0
         for contract in queryset:
@@ -784,7 +831,7 @@ class ContractAdmin(admin.ModelAdmin):
                 level=messages.SUCCESS,
             )
 
-    @admin.action(description='Annulla contratti selezionati')
+    @admin.action(description='Annulla domande selezionate')
     def action_cancel(self, request, queryset):
         # ATTENZIONE: in produzione, mostra una conferma esplicita.
         # Qui per semplicità annulla diretto.
@@ -850,8 +897,8 @@ class DeadlineAdmin(admin.ModelAdmin):
         return scope_by_event(request, super().get_queryset(request), 'contract__event')
 
     list_display = (
-        'title', 'contract_link', 'due_date', 'status_badge',
-        'days_until_due_display', 'reminder_count',
+        'title', 'contract_link', 'cliente', 'due_date', 'status_badge',
+        'completata_da', 'days_until_due_display', 'reminder_count',
     )
     list_filter = (evento_filter('contract__event'), 'status', 'deadline_type')
     search_fields = (
@@ -866,6 +913,16 @@ class DeadlineAdmin(admin.ModelAdmin):
     ordering = ('due_date',)
 
     actions = ['action_mark_as_received']
+
+    @admin.display(description='Cliente', ordering='contract__sponsor__legal_name')
+    def cliente(self, obj):
+        sp = obj.contract.sponsor if obj.contract_id else None
+        return sp.legal_name if sp else '—'
+
+    @admin.display(description='Completata da')
+    def completata_da(self, obj):
+        c = obj.completed_by_contact
+        return c.full_name if c else '—'
 
     @admin.display(description='Dati inviati dal cliente')
     def submitted_content(self, obj):

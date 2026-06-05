@@ -48,7 +48,8 @@ class TranslatableMixin:
         if not isinstance(value, dict) or not value:
             return ''
 
-        for lang in [language, self.DEFAULT_LANGUAGE, 'it']:
+        from django.utils.translation import get_language
+        for lang in [language, get_language(), self.DEFAULT_LANGUAGE, 'it']:
             if lang and lang in value and value[lang]:
                 return value[lang]
 

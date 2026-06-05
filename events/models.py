@@ -94,6 +94,12 @@ class Event(TimeStampedModel):
         blank=True,
         verbose_name="Sede",
     )
+    venue_name = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Nome sede",
+        help_text="Es. 'Palazzo dei Congressi di Bologna' (usato nei documenti).",
+    )
     venue_address = models.CharField(
         max_length=500,
         blank=True,
@@ -243,8 +249,9 @@ class Event(TimeStampedModel):
         if not isinstance(value, dict) or not value:
             return ''
 
-        # Tentativi in ordine: lingua richiesta, default, italiano, prima
-        for lang in [language, self.default_language, 'it']:
+        # Tentativi: lingua richiesta, lingua attiva del portale, default, italiano
+        from django.utils.translation import get_language
+        for lang in [language, get_language(), self.default_language, 'it']:
             if lang and lang in value and value[lang]:
                 return value[lang]
 

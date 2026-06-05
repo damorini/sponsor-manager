@@ -6,13 +6,14 @@ DeadlineTemplate inline dentro Service.
 """
 from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import AutocompleteSelect
 from core.admin_filters import evento_filter
 from django.urls import reverse
 from django.utils.html import format_html
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service, ServiceVariant
+from .models import (CatalogService, CatalogServiceVariant, DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service, ServiceCategory, ServiceInclusion, ServiceVariant)
 
 
 class ServiceAdminForm(forms.ModelForm):
@@ -45,10 +46,60 @@ class DeadlineTemplateInline(admin.TabularInline):
     )
 
 
+class _AutocompleteServiceByEvento(AutocompleteSelect):
+    """AutocompleteSelect che aggiunge ?event=<id> all'URL della
+    chiamata AJAX dell'autocomplete, cosi' ServiceAdmin.get_search_results
+    filtra i risultati per evento del servizio padre."""
+    def __init__(self, field, admin_site, parent_event_id=None, **kwargs):
+        self._parent_event_id = parent_event_id
+        super().__init__(field, admin_site, **kwargs)
+
+    def get_url(self):
+        url = super().get_url()
+        if self._parent_event_id:
+            sep = '&' if '?' in url else '?'
+            url = "%s%sevent=%s" % (url, sep, self._parent_event_id)
+        return url
+
+
+class ServiceInclusionInline(admin.TabularInline):
+    """Servizi inclusi (accessori) di un servizio, con la quantita' inclusa.
+    La tendina 'child' e' filtrata sull'evento del servizio padre."""
+    model = ServiceInclusion
+    fk_name = 'parent'
+    extra = 0
+    autocomplete_fields = ['child']
+    fields = ('child', 'quantity')
+    verbose_name = 'Servizio incluso'
+    verbose_name_plural = 'Servizi inclusi (accessori)'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'child':
+            parent_id = None
+            try:
+                parent_id = request.resolver_match.kwargs.get('object_id')
+            except Exception:
+                pass
+            if parent_id:
+                try:
+                    parent = Service.objects.get(pk=parent_id)
+                except Service.DoesNotExist:
+                    parent = None
+                if parent is not None:
+                    kwargs['widget'] = _AutocompleteServiceByEvento(
+                        db_field, self.admin_site,
+                        parent_event_id=parent.event_id,
+                    )
+                    kwargs['queryset'] = Service.objects.filter(
+                        event_id=parent.event_id,
+                    ).exclude(pk=parent.pk)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
 class ServiceVariantInline(admin.TabularInline):
     model = ServiceVariant
     extra = 0
-    fields = ('label', 'code', 'base_price', 'total_available', 'is_active', 'display_order')
+    fields = ('label', 'label_en', 'code', 'base_price', 'total_available', 'is_active', 'display_order')
 
 
 @admin.register(Service)
@@ -80,10 +131,15 @@ class ServiceAdmin(admin.ModelAdmin):
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
+            # Nasconde dall'autocomplete i servizi ESAURITI con la STESSA logica del
+            # portale (proprieta' is_sold_out): se il portale lo grigia, qui sparisce.
+            _sold = [s.pk for s in queryset if getattr(s, 'is_sold_out', False)]
+            if _sold:
+                queryset = queryset.exclude(pk__in=_sold)
         return queryset, may_dup
 
     list_select_related = ('event',)
-    autocomplete_fields = ['event', 'included_services']
+    autocomplete_fields = ['event']
     readonly_fields = ('created_at', 'updated_at', 'image_preview')
     @admin.display(description='Anteprima immagine')
     def image_preview(self, obj):
@@ -99,7 +155,7 @@ class ServiceAdmin(admin.ModelAdmin):
         return "(nessuna immagine)"
 
     ordering = ('event', 'display_order')
-    inlines = [DeadlineTemplateInline, ServiceVariantInline]
+    inlines = [DeadlineTemplateInline, ServiceVariantInline, ServiceInclusionInline]
 
     fieldsets = (
         (None, {
@@ -124,12 +180,6 @@ class ServiceAdmin(admin.ModelAdmin):
             'fields': ('triggers_deadlines',),
             'description': "Se attivato, vendere questo servizio crea le "
                            "scadenze definite nei DeadlineTemplate sotto.",
-        }),
-        ('Servizi inclusi (accessori)', {
-            'fields': ('included_services',),
-            'description': "Servizi aggiunti automaticamente a € 0 quando questo "
-                           "servizio viene venduto. Se hanno scadenze materiali, "
-                           "vengono generate alla firma.",
         }),
         ('Sistema', {
             'fields': ('created_at', 'updated_at'),
@@ -209,3 +259,44 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
         return format_html('<a href="{}">{}</a>', url,
                            obj.service.translated('name') if hasattr(obj.service, 'translated')
                            else obj.service.name)
+
+
+# ---- Catalogo servizi ----
+class CatalogServiceVariantInline(admin.TabularInline):
+    model = CatalogServiceVariant
+    extra = 0
+    fields = ('label', 'label_en', 'code', 'base_price', 'is_active', 'display_order')
+
+
+class CatalogServiceAdminForm(forms.ModelForm):
+    name = TranslatableJSONField(languages=['it', 'en'], required_languages=['it'], label='Nome servizio')
+    description = TranslatableJSONField(languages=['it', 'en'], required_languages=[],
+                                        use_textarea=True, required=False, label='Descrizione')
+
+    class Meta:
+        model = CatalogService
+        fields = '__all__'
+
+
+@admin.register(CatalogService)
+class CatalogServiceAdmin(admin.ModelAdmin):
+    form = CatalogServiceAdminForm
+    list_display = ('code', 'nome_display', 'category', 'pricing_mode', 'base_price', 'is_active')
+    list_filter = ('is_active', 'category', 'pricing_mode')
+    search_fields = ('code', 'name')
+    inlines = [CatalogServiceVariantInline]
+
+    @admin.display(description='Nome')
+    def nome_display(self, obj):
+        try:
+            return obj.get_name()
+        except Exception:
+            return obj.code
+
+
+@admin.register(ServiceCategory)
+class ServiceCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'display_order', 'is_active')
+    list_editable = ('display_order', 'is_active')
+    search_fields = ('name', 'code')
+    prepopulated_fields = {'code': ('name',)}

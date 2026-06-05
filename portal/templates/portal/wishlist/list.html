@@ -1,19 +1,20 @@
 {% extends "portal/base.html" %}
-{% block title %}La mia Wishlist{% endblock %}
+{% load i18n %}
+{% block title %}{% trans "La mia Wishlist" %}{% endblock %}
 
 {% block content %}
 <form style="display:none">{% csrf_token %}</form>
 <div class="max-w-6xl mx-auto px-4 py-8">
   <div class="mb-8">
-    <h1 class="text-4xl font-bold text-gray-900 mb-2">♥ La mia Wishlist</h1>
-    <p class="text-gray-600">{{ service_count }} servizio{% if service_count != 1 %}i{% endif %} salvato{% if service_count != 1 %}i{% endif %}</p>
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">{% trans "♥ La mia Wishlist" %}</h1>
+    <p class="text-gray-600">{% blocktrans count counter=service_count %}{{ counter }} servizio salvato{% plural %}{{ counter }} servizi salvati{% endblocktrans %}</p>
   </div>
 
   {% if not services %}
   <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center mb-8">
-    <p class="text-gray-700 mb-4">Non hai ancora salvato nessun servizio nella tua wishlist.</p>
+    <p class="text-gray-700 mb-4">{% trans "Non hai ancora salvato nessun servizio nella tua wishlist." %}</p>
     <a href="{% url 'portal:catalog' %}" class="inline-block bg-brand-500 hover:bg-brand-700 text-white px-6 py-2 rounded transition-colors">
-      Sfoglia il catalogo
+      {% trans "Sfoglia il catalogo" %}
     </a>
   </div>
   {% else %}
@@ -43,7 +44,7 @@
       <div class="p-6 bg-gray-50">
         <div class="text-2xl font-bold text-gray-900 mb-4">
           € {{ service.base_price|floatformat:2 }}
-          <span class="text-sm font-normal text-gray-500">+ IVA</span>
+          <span class="text-sm font-normal text-gray-500">+ {% trans "IVA" %}</span>
         </div>
         
         <div class="flex gap-2">
@@ -51,13 +52,13 @@
             href="{% url 'portal:service_detail' service.id %}"
             class="flex-1 text-center bg-brand-500 hover:bg-brand-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
           >
-            Dettagli
+            {% trans "Dettagli" %}
           </a>
           <button 
             class="flex-1 add-to-cart-btn bg-green-500 hover:bg-green-700 text-white px-3 py-2 rounded text-sm font-medium transition-colors"
             data-service-id="{{ service.id }}"
           >
-            Carrello
+            {% trans "Carrello" %}
           </button>
         </div>
       </div>

@@ -167,13 +167,15 @@ def cart_view(request):
 @require_POST
 @transaction.atomic
 def cart_add_view(request):
-    """Aggiunge un servizio al carrello."""
-    from catalog.models import Service
+    # Aggiunge un servizio (o una sua variante) al carrello.
+    from django.db.models import Sum
+    from catalog.models import Service, ServiceVariant
     from contracts.models import Contract, ContractLine, ContractStatus
     from events.models import Event
 
     service_id = request.POST.get('service_id')
     event_id = request.POST.get('event_id')
+    variant_id = request.POST.get('variant_id') or None
     try:
         quantity = int(request.POST.get('quantity', 1))
     except (TypeError, ValueError):
@@ -185,24 +187,28 @@ def cart_add_view(request):
         return redirect('portal:catalog')
 
     service = get_object_or_404(
-        Service,
-        id=service_id,
-        is_active=True,
-        is_self_purchasable=True,
+        Service, id=service_id, is_active=True, is_self_purchasable=True,
     )
-
     event = service.event
+
+    # Se il servizio ha varianti attive, una va scelta
+    variant = None
+    if service.variants.filter(is_active=True).exists():
+        if not variant_id:
+            messages.error(request, f"Scegli un'opzione per '{service.translated('name')}'.")
+            return redirect('portal:service_detail', service_id=service.id)
+        variant = get_object_or_404(
+            ServiceVariant, id=variant_id, service=service, is_active=True,
+        )
+
+    etichetta = service.translated('name') + (f" - {variant.label}" if variant else "")
 
     # Verifica cutoff
     today = date.today()
     days_to_event = (event.start_date - today).days
-    if service.self_purchase_cutoff_days is not None:
-        if days_to_event < service.self_purchase_cutoff_days:
-            messages.error(
-                request,
-                f"Il termine per acquistare '{service.translated('name')}' è scaduto."
-            )
-            return redirect('portal:service_detail', service_id=service.id)
+    if service.self_purchase_cutoff_days is not None and days_to_event < service.self_purchase_cutoff_days:
+        messages.error(request, f"Il termine per acquistare '{etichetta}' è scaduto.")
+        return redirect('portal:service_detail', service_id=service.id)
 
     # Trova/crea contratto carrello
     try:
@@ -213,39 +219,55 @@ def cart_add_view(request):
         messages.error(request, str(e))
         return redirect('portal:catalog')
 
-    # Verifica se la riga esiste già (stesso service nel cart)
-    existing_line = contract.lines.filter(service=service).first()
+    existing_line = contract.lines.filter(service=service, service_variant=variant).first()
+
+    # Disponibilita': applica SIA il limite del servizio SIA quello della variante
+    limiti = []
+    if service.total_available is not None:
+        avail_srv = service.quantity_available(exclude_contract_id=contract.id)
+        in_cart_srv = contract.lines.filter(service=service).aggregate(s=Sum('quantity'))['s'] or 0
+        limiti.append(avail_srv - in_cart_srv)
+    if variant is not None and variant.total_available is not None:
+        avail_var = variant.quantity_available(exclude_contract_id=contract.id)
+        in_cart_var = existing_line.quantity if existing_line else 0
+        limiti.append(avail_var - in_cart_var)
+    if limiti:
+        max_addable = max(0, min(limiti))
+        if max_addable <= 0:
+            messages.error(
+                request,
+                f"'{etichetta}' non e' piu' disponibile nella quantita' richiesta."
+            )
+            return redirect('portal:service_detail', service_id=service.id)
+        if quantity > max_addable:
+            quantity = max_addable
+            messages.warning(
+                request,
+                f"Disponibili solo {max_addable}; ho adeguato la quantita'."
+            )
+
+    prezzo = variant.base_price if variant is not None else service.base_price
 
     if existing_line:
-        # Aumenta quantità
         existing_line.quantity = (existing_line.quantity or 0) + quantity
-        existing_line.save()  # save() ricalcola da solo i totali
-        messages.success(
-            request,
-            f"Quantità di '{service.translated('name')}' aggiornata."
-        )
+        existing_line.save()
+        messages.success(request, f"Quantità di '{etichetta}' aggiornata.")
     else:
-        # Crea nuova riga
         line = ContractLine.objects.create(
             contract=contract,
             service=service,
+            service_variant=variant,
+            variant_label_snapshot=(variant.label if variant else ''),
             service_name_snapshot=service.translated('name'),
             service_description_snapshot=service.translated('description'),
             quantity=quantity,
-            unit_price=service.base_price,
+            unit_price=prezzo,
             vat_rate=service.vat_rate,
         )
-        # NB: ContractLine.save() chiama gia' calculate_totals() e
-        # contract.recalculate_totals(), quindi qui basta il save().
         line.save()
-        messages.success(
-            request,
-            f"'{service.translated('name')}' aggiunto al carrello."
-        )
+        messages.success(request, f"'{etichetta}' aggiunto al carrello.")
 
-    # Ricalcola totali contratto
-    contract.recalculate_totals()  # save=True di default
-
+    contract.recalculate_totals()
     return redirect('portal:cart_view')
 
 
@@ -272,8 +294,22 @@ def cart_remove_view(request, line_id):
         messages.error(request, "Non puoi modificare un carrello già confermato.")
         return redirect('portal:cart_view')
 
+    # Le righe 'incluse' (accessori) non si rimuovono singolarmente:
+    # vanno via solo insieme al loro servizio padre.
+    if line.is_included:
+        messages.error(request, "Non puoi rimuovere un servizio incluso. "
+                                "Rimuovi il servizio principale per eliminarlo.")
+        return redirect('portal:cart_view')
+
     contract = line.contract
     service_name = line.service_name_snapshot
+
+    # Cascade: se questa riga e' 'padre' di righe incluse, eliminale insieme.
+    # Il marker dei figli e' '[incluso:<parent_code>>...'.
+    if line.service_id:
+        parent_code = line.service.code or str(line.service_id)
+        marker_prefix = "[incluso:%s>" % parent_code
+        contract.lines.filter(notes__startswith=marker_prefix).delete()
 
     line.delete()  # ContractLine.delete() richiama gia' recalculate_totals
 
@@ -312,6 +348,16 @@ def cart_update_quantity_view(request, line_id):
         return HttpResponseForbidden("Accesso negato.")
     if line.contract.status != ContractStatus.DRAFT:
         return JsonResponse({'success': False, 'error': 'Carrello già confermato'}, status=400)
+
+    # La quantita' delle righe 'incluse' (accessori) e' fissata dall'admin
+    # e non puo' essere cambiata dal cliente.
+    if line.is_included:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False,
+                                 'error': 'Quantita\' bloccata: servizio incluso.'},
+                                status=400)
+        messages.error(request, "Non puoi modificare la quantita' di un servizio incluso.")
+        return redirect('portal:cart_view')
 
     try:
         new_quantity = int(request.POST.get('quantity', 1))
@@ -380,6 +426,52 @@ def cart_checkout_view(request, contract_id):
     if not contract.lines.exists():
         messages.warning(request, "Il carrello è vuoto.")
         return redirect('portal:cart_view')
+
+    # Controllo finale disponibilità: nessuna riga puo' superare il disponibile
+    from django.db.models import Sum
+    esauriti = []
+    adeguate = []
+    cambi = False
+    for line in contract.lines.all():
+        srv = line.service
+        var = line.service_variant
+        limiti = []
+        if srv is not None and srv.total_available is not None:
+            av = srv.quantity_available(exclude_contract_id=contract.id)
+            altri = (contract.lines.filter(service=srv).exclude(id=line.id)
+                     .aggregate(s=Sum('quantity'))['s'] or 0)
+            limiti.append(av - altri)
+        if var is not None and var.total_available is not None:
+            avv = var.quantity_available(exclude_contract_id=contract.id)
+            altriv = (contract.lines.filter(service=srv, service_variant=var).exclude(id=line.id)
+                      .aggregate(s=Sum('quantity'))['s'] or 0)
+            limiti.append(avv - altriv)
+        if not limiti:
+            continue
+        massimo = min(limiti)
+        nome = line.service_name_snapshot + (
+            f" \u2013 {line.variant_label_snapshot}" if line.variant_label_snapshot else "")
+        if massimo < 1:
+            esauriti.append(nome)
+        elif line.quantity > massimo:
+            line.quantity = massimo
+            line.save()
+            cambi = True
+            adeguate.append(f"{nome}: max {massimo}")
+    if cambi:
+        contract.recalculate_totals()
+    if esauriti:
+        messages.error(
+            request,
+            "Non più disponibili: " + ", ".join(esauriti) +
+            ". Rimuovili dal carrello per procedere."
+        )
+        return redirect('portal:cart_view')
+    if adeguate:
+        messages.warning(
+            request,
+            "Disponibilità aggiornata, quantità adeguata al massimo \u2014 " + "; ".join(adeguate)
+        )
 
     return render(request, 'portal/cart/checkout.html', {
         'contract': contract,

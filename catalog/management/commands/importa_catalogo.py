@@ -1,18 +1,19 @@
-"""Importa servizi da un file Excel."""
+"""Importa servizi nel CATALOGO (indipendente dall'evento) da un file Excel."""
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils.text import slugify
 
 
 COLONNE_RICHIESTE = [
-    "evento_slug", "code", "nome_it", "nome_en", "descrizione_it", "descrizione_en",
+    "code", "nome_it", "nome_en", "descrizione_it", "descrizione_en",
     "categoria", "categoria_contabile", "prezzo_base", "iva_percento", "attivo",
-    "quantita_max", "quantita_totale", "ordine", "pricing_mode", "genera_scadenze", "servizi_inclusi",
-    "immagine",
+    "quantita_max", "ordine", "pricing_mode", "genera_scadenze",
+    "self_service", "cutoff_giorni", "immagine",
 ]
-COLONNE_OBBLIGATORIE = ["evento_slug", "code", "nome_it", "prezzo_base"]
+COLONNE_OBBLIGATORIE = ["code", "nome_it", "prezzo_base"]
 
 ACCOUNTING_VALIDI = {
     "viaggio_partecipanti", "viaggio_relatori", "affitto_sala", "stand",
@@ -22,11 +23,10 @@ PRICING_VALIDI = {"fixed", "quantity", "tiered"}
 
 
 def _norm_bool(v, default=True):
-    """s/si/sì/yes/y/1/True/x -> True; n/no/0/False/'' -> False."""
     if v is None or v == "":
         return default
     s = str(v).strip().lower()
-    if s in {"s", "si", "sì", "yes", "y", "1", "true", "x", "✓"}:
+    if s in {"s", "si", "si'", "yes", "y", "1", "true", "x"}:
         return True
     if s in {"n", "no", "0", "false", "-"}:
         return False
@@ -52,12 +52,12 @@ def _norm_int(v):
 
 
 class Command(BaseCommand):
-    help = "Importa o aggiorna Service da un file Excel (vedi template_servizi.xlsx)."
+    help = "Importa/aggiorna il CATALOGO servizi da Excel (vedi template_catalogo.xlsx)."
 
     def add_arguments(self, parser):
         parser.add_argument("--file", required=True, help="Percorso del file Excel.")
         parser.add_argument("--immagini", default="",
-                            help="Cartella con le immagini (colonna 'immagine'). Es: --immagini ./foto")
+                            help="Cartella con le immagini (colonna 'immagine').")
         parser.add_argument("--dry-run", action="store_true",
                             help="Simula senza scrivere nulla nel DB.")
 
@@ -65,11 +65,8 @@ class Command(BaseCommand):
         try:
             from openpyxl import load_workbook
         except ImportError:
-            raise CommandError(
-                "openpyxl non installato. Installa con: pip install openpyxl"
-            )
-        from catalog.models import Service
-        from events.models import Event
+            raise CommandError("openpyxl non installato. Installa con: pip install openpyxl")
+        from catalog.models import CatalogService, ServiceCategory
 
         path = Path(opts["file"]).expanduser()
         if not path.exists():
@@ -88,79 +85,69 @@ class Command(BaseCommand):
         if not rows:
             raise CommandError("Il foglio e' vuoto.")
 
-        # 1) intestazione
         header = [str(c).strip() if c is not None else "" for c in rows[0]]
         mancanti = [c for c in COLONNE_OBBLIGATORIE if c not in header]
         if mancanti:
             raise CommandError(
-                f"Colonne obbligatorie mancanti nell'intestazione: {mancanti}. "
-                f"Atteso: {COLONNE_RICHIESTE}"
+                f"Colonne obbligatorie mancanti: {mancanti}. Attese: {COLONNE_RICHIESTE}"
             )
         col_idx = {h: i for i, h in enumerate(header)}
 
-        # 2) cache eventi per slug (1 query per slug)
-        eventi_cache = {}
+        cat_cache = {}
 
-        def trova_evento(slug):
-            if slug in eventi_cache:
-                return eventi_cache[slug]
-            ev = Event.objects.filter(slug=slug).first()
-            eventi_cache[slug] = ev
-            return ev
+        def trova_o_crea_categoria(nome):
+            nome = (nome or "").strip()
+            if not nome:
+                return None
+            key = nome.lower()
+            if key in cat_cache:
+                return cat_cache[key]
+            code = slugify(nome)[:50] or "categoria"
+            obj, _ = ServiceCategory.objects.get_or_create(
+                code=code, defaults={"name": nome, "is_active": True}
+            )
+            cat_cache[key] = obj
+            return obj
 
-        # 3) elaborazione righe
         cartella_img = (opts.get("immagini") or "").strip()
-        n_create = n_update = n_skip = n_err = 0
-        errori = []
-        inclusi_pending = []  # (svc, evento, codici_raw, n_riga) da collegare dopo
+        n_create = n_update = n_err = 0
 
-        for n_riga, row in enumerate(rows[1:], start=2):  # riga 2 e oltre (1 = header)
+        for n_riga, row in enumerate(rows[1:], start=2):
             if all(v is None or v == "" for v in row):
-                continue  # riga totalmente vuota: salta
+                continue
 
             def G(nome):
                 i = col_idx.get(nome)
                 return row[i] if i is not None and i < len(row) else None
 
             try:
-                evento_slug = str(G("evento_slug") or "").strip()
                 code = str(G("code") or "").strip()
                 nome_it = str(G("nome_it") or "").strip()
                 prezzo = _norm_dec(G("prezzo_base"), "prezzo_base")
-                if not evento_slug or not code or not nome_it or prezzo is None:
-                    raise ValueError(
-                        "campi obbligatori mancanti (evento_slug, code, nome_it, prezzo_base)"
-                    )
-
-                evento = trova_evento(evento_slug)
-                if not evento:
-                    raise ValueError(f"evento '{evento_slug}' non trovato")
+                if not code or not nome_it or prezzo is None:
+                    raise ValueError("campi obbligatori mancanti (code, nome_it, prezzo_base)")
 
                 nome_en = str(G("nome_en") or "").strip()
                 desc_it = str(G("descrizione_it") or "").strip()
                 desc_en = str(G("descrizione_en") or "").strip()
-                cat = str(G("categoria") or "").strip()
+                cat_nome = str(G("categoria") or "").strip()
                 acc_cat = str(G("categoria_contabile") or "").strip() or "altro"
                 if acc_cat not in ACCOUNTING_VALIDI:
                     raise ValueError(
-                        f"categoria_contabile '{acc_cat}' non valida. "
-                        f"Valide: {sorted(ACCOUNTING_VALIDI)}"
+                        f"categoria_contabile '{acc_cat}' non valida. Valide: {sorted(ACCOUNTING_VALIDI)}"
                     )
                 iva = _norm_dec(G("iva_percento"), "iva_percento")
                 attivo = _norm_bool(G("attivo"), default=True)
                 qmax = _norm_int(G("quantita_max"))
-                qtot = _norm_int(G("quantita_totale"))
                 ordine = _norm_int(G("ordine")) or 0
                 pmode = str(G("pricing_mode") or "fixed").strip().lower() or "fixed"
                 if pmode not in PRICING_VALIDI:
-                    raise ValueError(
-                        f"pricing_mode '{pmode}' non valido. Validi: {sorted(PRICING_VALIDI)}"
-                    )
+                    raise ValueError(f"pricing_mode '{pmode}' non valido. Validi: {sorted(PRICING_VALIDI)}")
                 genera = _norm_bool(G("genera_scadenze"), default=False)
-                inclusi_raw = str(G("servizi_inclusi") or "").strip()
+                self_serv = _norm_bool(G("self_service"), default=False)
+                cutoff = _norm_int(G("cutoff_giorni"))
                 immagine_raw = str(G("immagine") or "").strip()
 
-                # campi name/description sono JSON multilingua
                 name_json = {"it": nome_it}
                 if nome_en:
                     name_json["en"] = nome_en
@@ -171,76 +158,65 @@ class Command(BaseCommand):
                     desc_json["en"] = desc_en
 
                 if dry:
-                    esiste = Service.objects.filter(event=evento, code=code).exists()
+                    esiste = CatalogService.objects.filter(code=code).exists()
                     azione = "AGGIORNEREBBE" if esiste else "CREEREBBE"
-                    self.stdout.write(f"  {n_riga:>4}: {azione} '{code}' su {evento_slug}")
+                    self.stdout.write(f"  {n_riga:>4}: {azione} '{code}'")
                     if esiste:
                         n_update += 1
                     else:
                         n_create += 1
                     continue
 
+                categoria = trova_o_crea_categoria(cat_nome)
+
                 with transaction.atomic():
-                    svc, creato = Service.objects.get_or_create(
-                        event=evento, code=code,
+                    svc, creato = CatalogService.objects.get_or_create(
+                        code=code,
                         defaults={
                             "name": name_json,
                             "description": desc_json,
-                            "category": cat,
+                            "category": categoria,
                             "accounting_category": acc_cat,
                             "pricing_mode": pmode,
                             "base_price": prezzo,
                             "vat_rate": iva if iva is not None else Decimal("22.00"),
                             "is_active": attivo,
                             "max_quantity": qmax,
-                            "total_available": qtot,
                             "display_order": ordine,
                             "triggers_deadlines": genera,
+                            "is_self_purchasable": self_serv,
+                            "self_purchase_cutoff_days": cutoff,
                         },
                     )
                     if creato:
                         n_create += 1
-                        self.stdout.write(f"  {n_riga:>4}: + CREATO '{code}' su {evento_slug}")
+                        self.stdout.write(f"  {n_riga:>4}: + CREATO '{code}'")
                     else:
-                        # Il servizio e' gia' usato in qualche contratto?
-                        gia_venduto = svc.contract_lines.exists()
-                        # Campi sempre sicuri da aggiornare
                         svc.name = name_json
                         if desc_json:
                             svc.description = desc_json
-                        svc.category = cat
+                        svc.category = categoria
                         svc.accounting_category = acc_cat
+                        svc.pricing_mode = pmode
+                        svc.base_price = prezzo
+                        if iva is not None:
+                            svc.vat_rate = iva
+                        svc.is_active = attivo
+                        svc.max_quantity = qmax
                         svc.display_order = ordine
                         svc.triggers_deadlines = genera
-                        if gia_venduto:
-                            # PROTEZIONE: non tocco prezzo, IVA, disponibilita', stato, pricing
-                            svc.save()
-                            n_update += 1
-                            self.stdout.write(self.style.WARNING(
-                                f"  {n_riga:>4}: ~ AGGIORNATO (PROTETTO: ha contratti) '{code}' "
-                                f"su {evento_slug} - prezzo/disponibilita'/stato NON modificati"))
-                        else:
-                            # aggiornamento completo
-                            svc.pricing_mode = pmode
-                            svc.base_price = prezzo
-                            if iva is not None:
-                                svc.vat_rate = iva
-                            svc.is_active = attivo
-                            svc.max_quantity = qmax
-                            svc.total_available = qtot
-                            svc.save()
-                            n_update += 1
-                            self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}' su {evento_slug}")
+                        svc.is_self_purchasable = self_serv
+                        svc.self_purchase_cutoff_days = cutoff
+                        svc.save()
+                        n_update += 1
+                        self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}'")
 
-                if inclusi_raw:
-                    inclusi_pending.append((svc, evento, inclusi_raw, n_riga))
-
-                if immagine_raw:
+                if immagine_raw and not dry:
                     _cand = Path(immagine_raw)
                     if _cand.is_file():
-                        _img = _cand            # percorso completo nella cella
+                        _img = _cand
                     elif cartella_img and (Path(cartella_img) / immagine_raw).is_file():
-                        _img = Path(cartella_img) / immagine_raw   # nome file + cartella
+                        _img = Path(cartella_img) / immagine_raw
                     else:
                         _img = None
                     if _img is not None:
@@ -254,31 +230,10 @@ class Command(BaseCommand):
 
             except Exception as e:
                 n_err += 1
-                msg = f"riga {n_riga}: ERRORE {e}"
-                errori.append(msg)
-                self.stdout.write(self.style.ERROR("  " + msg))
+                self.stdout.write(self.style.ERROR(f"  riga {n_riga}: ERRORE {e}"))
 
-        # 3b) collega i servizi inclusi (ora che tutti i servizi esistono)
-        for svc, evento, raw, n_riga in inclusi_pending:
-            codes = [c.strip() for c in raw.replace(';', ',').split(',') if c.strip()]
-            trovati, non_trovati = [], []
-            for c in codes:
-                sub = Service.objects.filter(event=evento, code=c).first()
-                if sub and sub.id != svc.id:
-                    trovati.append(sub)
-                else:
-                    non_trovati.append(c)
-            svc.included_services.set(trovati)
-            if non_trovati:
-                self.stdout.write(self.style.WARNING(
-                    f"  riga {n_riga}: inclusi non trovati per '{svc.code}': {non_trovati}"
-                ))
-
-        # 4) riepilogo
         self.stdout.write("")
-        riepilogo = (
-            f"Fatto: {n_create} create, {n_update} aggiornate, {n_err} errori."
-        )
+        riepilogo = f"Fatto: {n_create} create, {n_update} aggiornate, {n_err} errori."
         if dry:
             riepilogo = "[DRY-RUN] " + riepilogo + " (nessun salvataggio)"
         if n_err:
@@ -287,5 +242,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(riepilogo))
         if not dry and n_create:
             self.stdout.write(self.style.WARNING(
-                "Ricorda: i prezzi sono per-evento. Verifica i base_price nei nuovi servizi."
+                "Catalogo aggiornato. Ricorda: per offrirli in un evento, "
+                "spunta i servizi nella scheda dell'evento."
             ))

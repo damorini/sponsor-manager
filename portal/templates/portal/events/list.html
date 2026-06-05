@@ -1,14 +1,14 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}I miei eventi{% endblock %}
+{% block title %}{% trans "I miei eventi" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">I miei eventi</h1>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% trans "I miei eventi" %}</h1>
   <p class="text-gray-600 mb-6">
-    Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i
-    materiali richiesti per quell'evento.
+    {% trans "Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i materiali richiesti per quell'evento." %}
   </p>
 
   {% if events_items %}
@@ -23,19 +23,19 @@
         {% if it.event.location %} · {{ it.event.location }}{% endif %}
       </p>
       <div class="flex flex-wrap gap-4 mt-4 text-sm">
-        <span class="text-gray-700"><span class="font-semibold">{{ it.pending }}</span> da fare</span>
+        <span class="text-gray-700"><span class="font-semibold">{{ it.pending }}</span> {% trans "da fare" %}</span>
         {% if it.overdue > 0 %}
-        <span class="text-red-600 font-medium"><span class="font-semibold">{{ it.overdue }}</span> in ritardo</span>
+        <span class="text-red-600 font-medium"><span class="font-semibold">{{ it.overdue }}</span> {% trans "in ritardo" %}</span>
         {% endif %}
-        <span class="text-green-600"><span class="font-semibold">{{ it.completed }}</span> completate</span>
+        <span class="text-green-600"><span class="font-semibold">{{ it.completed }}</span> {% trans "completate" %}</span>
       </div>
-      <div class="mt-4 text-brand-500 text-sm font-medium">Apri evento →</div>
+      <div class="mt-4 text-brand-500 text-sm font-medium">{% trans "Apri evento →" %}</div>
     </a>
     {% endfor %}
   </div>
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
-    Non risultano eventi associati al tuo profilo.
+    {% trans "Non risultano eventi associati al tuo profilo." %}
   </div>
   {% endif %}
 

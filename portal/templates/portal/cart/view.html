@@ -1,11 +1,12 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}Carrello{% endblock %}
+{% block title %}{% trans "Carrello" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   
-  <h1 class="text-3xl font-bold text-gray-900 mb-6">Carrello</h1>
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">{% trans "Carrello" %}</h1>
   
   {% if is_empty %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center">
@@ -13,20 +14,20 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
     </svg>
-    <h2 class="text-xl font-semibold text-gray-900 mb-2">Il carrello è vuoto</h2>
+    <h2 class="text-xl font-semibold text-gray-900 mb-2">{% trans "Il carrello è vuoto" %}</h2>
     <p class="text-gray-600 mb-6">
-      Esplora il catalogo per aggiungere servizi ai tuoi eventi.
+      {% trans "Esplora il catalogo per aggiungere servizi ai tuoi eventi." %}
     </p>
     <a href="{% url 'portal:catalog' %}" 
        class="inline-block bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md">
-      Vai al catalogo
+      {% trans "Vai al catalogo" %}
     </a>
   </div>
   
   {% else %}
   
   <p class="text-gray-600 mb-6">
-    Hai un carrello per ciascun evento. Conferma e paga separatamente.
+    {% trans "Hai un carrello per ciascun evento. Conferma e paga separatamente." %}
   </p>
   
   {% for item in cart_data %}
@@ -44,7 +45,7 @@
           </p>
         </div>
         <div class="text-xs text-gray-500">
-          Carrello #{{ item.contract.contract_number }}
+          {% blocktrans with num=item.contract.contract_number %}Carrello #{{ num }}{% endblocktrans %}
         </div>
       </div>
     </div>
@@ -52,8 +53,7 @@
     <!-- Avviso se ci sono linee scadute -->
     {% if item.has_invalid_lines %}
     <div class="px-6 py-3 bg-red-50 border-b border-red-200 text-sm text-red-800">
-      ⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto).
-      Rimuovili prima di procedere al pagamento.
+      {% trans "⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili prima di procedere al pagamento." %}
     </div>
     {% endif %}
     
@@ -61,10 +61,10 @@
     <table class="w-full">
       <thead class="text-xs uppercase text-gray-600 bg-gray-50">
         <tr>
-          <th class="px-6 py-3 text-left">Servizio</th>
-          <th class="px-6 py-3 text-center w-32">Quantità</th>
-          <th class="px-6 py-3 text-right w-32">Prezzo</th>
-          <th class="px-6 py-3 text-right w-32">Totale</th>
+          <th class="px-6 py-3 text-left">{% trans "Servizio" %}</th>
+          <th class="px-6 py-3 text-center w-32">{% trans "Quantità" %}</th>
+          <th class="px-6 py-3 text-right w-32">{% trans "Prezzo" %}</th>
+          <th class="px-6 py-3 text-right w-32">{% trans "Totale" %}</th>
           <th class="px-6 py-3 w-12"></th>
         </tr>
       </thead>
@@ -76,19 +76,23 @@
               {% if ld.line.service.image %}
               <img src="{{ ld.line.service.image.url }}" alt="" class="w-12 h-12 rounded object-cover flex-shrink-0">
               {% endif %}
-              <div class="font-medium text-gray-900">{{ ld.line.service_name_snapshot }}</div>
+              <div class="font-medium text-gray-900">{{ ld.line.service_name_display }}{% if ld.line.variant_label_snapshot %} <span class="text-gray-500">&ndash; {{ ld.line.variant_label_display }}</span>{% endif %}</div>
             </div>
             {% if not ld.is_valid %}
             <div class="text-xs text-red-600 mt-1">
-              Scaduto: termine acquisto superato
+              {% trans "Scaduto: termine acquisto superato" %}
             </div>
             {% elif ld.cutoff_remaining is not None and ld.cutoff_remaining <= 7 %}
             <div class="text-xs text-yellow-600 mt-1">
-              Ancora {{ ld.cutoff_remaining }} giorni per acquistare
+              {% blocktrans with n=ld.cutoff_remaining %}Ancora {{ n }} giorni per acquistare{% endblocktrans %}
             </div>
             {% endif %}
           </td>
           <td class="px-6 py-4 text-center">
+            {% if ld.line.is_included %}
+            <div class="text-sm text-gray-700">{{ ld.line.quantity }}</div>
+            <div class="text-xs text-gray-400">{% trans "incluso" %}</div>
+            {% else %}
             <form method="post" action="{% url 'portal:cart_update_quantity' ld.line.id %}" 
                   class="inline-flex items-center gap-1">
               {% csrf_token %}
@@ -97,19 +101,21 @@
                      class="w-16 px-2 py-1 border border-gray-300 rounded text-center text-sm"
                      onchange="this.form.submit()">
             </form>
+            {% endif %}
           </td>
           <td class="px-6 py-4 text-right whitespace-nowrap text-sm">
             € {{ ld.line.unit_price|floatformat:2 }}
           </td>
           <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-medium">
-            € {{ ld.line.line_total|floatformat:2 }}
+            € {{ ld.line.line_subtotal|floatformat:2 }}
           </td>
           <td class="px-6 py-4 text-center">
+            {% if not ld.line.is_included %}
             <form method="post" action="{% url 'portal:cart_remove' ld.line.id %}" class="inline">
               {% csrf_token %}
               <button type="submit" 
                       class="text-red-500 hover:text-red-700 p-1"
-                      title="Rimuovi"
+                      title="{% trans 'Rimuovi' %}"
                       onclick="return confirm('Rimuovere questo servizio?')">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -117,23 +123,24 @@
                 </svg>
               </button>
             </form>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
       <tfoot class="bg-gray-50">
         <tr>
-          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">Subtotale:</td>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">{% trans "Subtotale:" %}</td>
           <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ item.contract.subtotal|floatformat:2 }}</td>
           <td></td>
         </tr>
         <tr>
-          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">IVA:</td>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">{% trans "IVA:" %}</td>
           <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ item.contract.vat_amount|floatformat:2 }}</td>
           <td></td>
         </tr>
         <tr class="border-t border-gray-200">
-          <td colspan="3" class="px-6 py-3 text-right font-semibold">Totale:</td>
+          <td colspan="3" class="px-6 py-3 text-right font-semibold">{% trans "Totale:" %}</td>
           <td class="px-6 py-3 text-right whitespace-nowrap font-bold text-lg">€ {{ item.contract.total|floatformat:2 }}</td>
           <td></td>
         </tr>
@@ -144,18 +151,18 @@
     <div class="px-6 py-4 border-t border-gray-200 bg-white flex justify-between items-center">
       <a href="{% url 'portal:catalog_event' item.event.id %}" 
          class="text-sm text-gray-600 hover:text-brand-500">
-        ← Continua acquisti per questo evento
+        {% trans "← Continua acquisti per questo evento" %}
       </a>
       
       {% if item.has_invalid_lines %}
       <button disabled 
               class="bg-gray-300 text-gray-500 font-medium px-6 py-2.5 rounded-md cursor-not-allowed">
-        Rimuovi prima i servizi scaduti
+        {% trans "Rimuovi prima i servizi scaduti" %}
       </button>
       {% else %}
       <a href="{% url 'portal:cart_checkout' item.contract.id %}" 
          class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md transition-colors">
-        Procedi al pagamento →
+        {% trans "Procedi al pagamento →" %}
       </a>
       {% endif %}
     </div>

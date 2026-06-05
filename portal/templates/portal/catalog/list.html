@@ -1,13 +1,14 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}Catalogo servizi{% endblock %}
+{% block title %}{% trans "Catalogo servizi" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Servizi disponibili</h1>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% trans "Servizi disponibili" %}</h1>
   <p class="text-gray-600 mb-8">
-    Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali e altro.
+    {% trans "Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali e altro." %}
   </p>
   
   {% if events_with_services %}
@@ -27,7 +28,7 @@
         </div>
         <a href="{% url 'portal:catalog_event' item.event.id %}" 
            class="text-sm text-brand-500 hover:underline">
-          Vedi tutti →
+          {% trans "Vedi tutti →" %}
         </a>
       </div>
       
@@ -37,16 +38,21 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col
                     {% if not service.is_within_cutoff %}opacity-60{% endif %}">
           
+          {% if service.image %}
+          <img src="{{ service.image.url }}" alt="{{ service.get_name }}"
+               class="w-full bg-gray-50" style="height:130px;object-fit:contain;display:block;">
+          {% endif %}
+
           <div class="p-5 flex-1">
             <div class="flex items-start justify-between gap-2 mb-2">
               <h3 class="font-semibold text-gray-900">{{ service.get_name }}</h3>
               {% if not service.is_within_cutoff %}
               <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded font-medium whitespace-nowrap">
-                Scaduto
+                {% trans "Scaduto" %}
               </span>
               {% elif service.cutoff_days_remaining is not None and service.cutoff_days_remaining <= 7 %}
               <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-medium whitespace-nowrap">
-                Ancora {{ service.cutoff_days_remaining }}gg
+                {% blocktrans with n=service.cutoff_days_remaining %}Ancora {{ n }}gg{% endblocktrans %}
               </span>
               {% endif %}
             </div>
@@ -59,20 +65,30 @@
             
             <div class="text-2xl font-bold text-gray-900">
               € {{ service.base_price|floatformat:2 }}
-              <span class="text-sm font-normal text-gray-500">+ IVA</span>
+              <span class="text-sm font-normal text-gray-500">+ {% trans "IVA" %}</span>
             </div>
+            {% if service.is_sold_out %}
+            <div class="mt-2 inline-block text-xs px-2 py-1 bg-red-100 text-red-800 rounded font-medium">{% trans "Esaurito" %}</div>
+            {% elif service.total_available is not None %}
+            <div class="mt-2 inline-block text-xs px-2 py-1 bg-amber-100 text-amber-800 rounded font-medium">{% blocktrans with n=service.quantity_available %}Ne rimangono solo {{ n }}{% endblocktrans %}</div>
+            {% endif %}
           </div>
           
           <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
-            {% if service.is_within_cutoff %}
+            {% if service.is_sold_out %}
+            <button disabled
+                    class="block w-full text-center bg-gray-300 text-gray-500 text-sm font-medium py-2 rounded cursor-not-allowed">
+              {% trans "Esaurito" %}
+            </button>
+            {% elif service.is_within_cutoff %}
             <a href="{% url 'portal:service_detail' service.id %}" 
                class="block text-center bg-brand-500 hover:bg-brand-700 text-white text-sm font-medium py-2 rounded transition-colors">
-              Vedi dettaglio
+              {% trans "Vedi dettaglio" %}
             </a>
             {% else %}
             <button disabled 
                     class="block w-full text-center bg-gray-300 text-gray-500 text-sm font-medium py-2 rounded cursor-not-allowed">
-              Non più acquistabile
+              {% trans "Non più acquistabile" %}
             </button>
             {% endif %}
           </div>
@@ -84,7 +100,7 @@
       <div class="text-center mt-4">
         <a href="{% url 'portal:catalog_event' item.event.id %}" 
            class="text-sm text-brand-500 hover:underline">
-          Vedi tutti gli altri {{ item.services|length|add:"-6" }} servizi →
+          {% blocktrans with n=item.services|length|add:"-6" %}Vedi tutti gli altri {{ n }} servizi →{% endblocktrans %}
         </a>
       </div>
       {% endif %}
@@ -94,14 +110,14 @@
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center">
     <p class="text-gray-500">
-      Al momento non ci sono servizi acquistabili per i tuoi eventi.
+      {% trans "Al momento non ci sono servizi acquistabili per i tuoi eventi." %}
     </p>
     <p class="text-sm text-gray-400 mt-2">
-      Per acquistare servizi devi avere almeno un contratto attivo per un evento futuro.
+      {% trans "Per acquistare servizi devi avere almeno un contratto attivo per un evento futuro." %}
     </p>
     <a href="{% url 'portal:contracts_list' %}" 
        class="inline-block mt-4 text-brand-500 hover:underline text-sm">
-      Vedi i tuoi contratti →
+      {% trans "Vedi i tuoi contratti →" %}
     </a>
   </div>
   {% endif %}

@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+{% block title %}{% trans "Conferma preventivo" %}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 py-10">
+  <nav class="text-sm text-gray-500 mb-6">
+    <a href="{% url 'portal:contract_detail' contract.id %}" class="hover:text-brand-500"><i class="ti ti-arrow-left mr-1"></i>{% trans "Torna al preventivo" %}</a>
+  </nav>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div class="px-6 py-5 border-b border-gray-100">
+      <h1 class="text-2xl font-bold text-gray-900">{% trans "Conferma del preventivo" %}</h1>
+      <p class="mt-1 text-gray-600">{{ contract.event.get_name }}{% if contract.option_until %} · {% blocktrans with d=contract.option_until|date:"d/m/Y" %}opzione valida fino al {{ d }}{% endblocktrans %}{% endif %}</p>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <div class="flex items-baseline justify-between">
+        <span class="text-gray-600">{% trans "Totale proposta (IVA inclusa)" %}</span>
+        <span class="text-2xl font-bold text-gray-900">€ {{ contract.total|floatformat:2 }}</span>
+      </div>
+      <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-900 p-4 rounded">
+        <p>{% trans "Con il click su «Accetta preventivo», il fornitore ricevera' la conferma dell'ordine e saranno automaticamente generate le scadenze tecnico-amministrative." %}</p>
+        <p class="mt-2 text-sm">{% trans "Per qualsiasi ulteriore informazione potete contattare la segreteria organizzativa" %}{% if support_email %} (<a href="mailto:{{ support_email }}" class="underline">{{ support_email }}</a>){% endif %}.</p>
+      </div>
+    </div>
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-3 justify-end">
+      <a href="{% url 'portal:contract_detail' contract.id %}" class="px-5 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">{% trans "Annulla" %}</a>
+      <form method="post" action="{% url 'portal:quote_confirm' contract.id %}">
+        {% csrf_token %}
+        <button type="submit" class="inline-flex items-center bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md transition-colors"><i class="ti ti-check mr-1"></i>{% trans "Accetta preventivo" %}</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

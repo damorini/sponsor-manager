@@ -1,11 +1,12 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
 {% block title %}{{ event.get_name }}{% endblock %}
 
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-  <a href="{% url 'portal:events' %}" class="text-brand-500 text-sm font-medium">← I miei eventi</a>
+  <a href="{% url 'portal:events' %}" class="text-brand-500 text-sm font-medium">{% trans "← I miei eventi" %}</a>
 
   <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ event.get_name }}</h1>
   <p class="text-gray-500 mb-4">
@@ -21,8 +22,8 @@
 
   <div class="bg-white rounded-xl shadow-sm p-6">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Servizi disponibili</h2>
-      <a href="{% url 'portal:event_materials' event.id %}" class="text-brand-500 text-sm font-medium">Scadenze di questo evento →</a>
+      <h2 class="text-lg font-semibold text-gray-900">{% trans "Servizi disponibili" %}</h2>
+      <a href="{% url 'portal:event_materials' event.id %}" class="text-brand-500 text-sm font-medium">{% trans "Scadenze di questo evento →" %}</a>
     </div>
     {% if services %}
     <ul class="divide-y divide-gray-100 mb-5">
@@ -31,15 +32,15 @@
       {% endfor %}
     </ul>
     {% if has_active_contract %}
-    <a href="{% url 'portal:catalog_event' event.id %}" class="inline-block bg-brand-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90">Acquista servizi per questo evento</a>
+    <a href="{% url 'portal:catalog_event' event.id %}" class="inline-block bg-brand-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90">{% trans "Acquista servizi per questo evento" %}</a>
     {% else %}
-    <span class="inline-block bg-gray-300 text-gray-500 text-sm font-medium px-5 py-2.5 rounded-lg cursor-not-allowed select-none">Acquista servizi per questo evento</span>
-    <p class="text-gray-500 text-sm mt-3">I servizi potranno essere acquistati a seguito della firma del contratto.</p>
+    <span class="inline-block bg-gray-300 text-gray-500 text-sm font-medium px-5 py-2.5 rounded-lg cursor-not-allowed select-none">{% trans "Acquista servizi per questo evento" %}</span>
+    <p class="text-gray-500 text-sm mt-3">{% trans "I servizi potranno essere acquistati a seguito della firma del contratto." %}</p>
     {% endif %}
     {% elif not has_active_contract %}
-    <p class="text-gray-500 text-sm">Per acquistare servizi serve un contratto attivo per questo evento.</p>
+    <p class="text-gray-500 text-sm">{% trans "Per acquistare servizi serve un contratto attivo per questo evento." %}</p>
     {% else %}
-    <p class="text-gray-500 text-sm">Al momento non ci sono servizi acquistabili per questo evento.</p>
+    <p class="text-gray-500 text-sm">{% trans "Al momento non ci sono servizi acquistabili per questo evento." %}</p>
     {% endif %}
   </div>
 

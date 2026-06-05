@@ -1,10 +1,22 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}Accesso{% endblock %}
+{% block title %}{% trans "Accesso" %}{% endblock %}
 
 {% block content %}
 <div class="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
   <div class="max-w-md w-full">
+
+    <div class="flex justify-center mb-6">
+      <form action="{% url 'set_language' %}" method="post" class="inline-flex gap-1 bg-gray-100 rounded-lg p-1">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button type="submit" name="language" value="it"
+                class="text-xs font-semibold rounded-md px-3 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">🇮🇹 IT</button>
+        <button type="submit" name="language" value="en"
+                class="text-xs font-semibold rounded-md px-3 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">🇬🇧 EN</button>
+      </form>
+    </div>
     
     <!-- Header -->
     <div class="text-center mb-8">
@@ -13,7 +25,7 @@
            class="mx-auto h-16 w-auto mb-4">
       {% endif %}
       <h1 class="text-3xl font-bold text-gray-900">
-        Accesso portale sponsor
+        {% trans "Accesso portale sponsor" %}
       </h1>
       <p class="mt-2 text-sm text-gray-600">
         {{ organizer_name|default:"Sponsor Manager" }}
@@ -28,11 +40,11 @@
         
         {% if form.errors %}
         <div class="alert-error rounded mb-4">
-          <p class="font-medium">Credenziali non valide</p>
+          <p class="font-medium">{% trans "Credenziali non valide" %}</p>
           <p class="text-sm mt-1">
-            Verifica email e password. Se hai dimenticato la password,
+            {% trans "Verifica email e password. Se hai dimenticato la password," %}
             <a href="{% url 'portal:password_reset' %}" class="underline">
-              richiedi un nuovo accesso
+              {% trans "richiedi un nuovo accesso" %}
             </a>.
           </p>
         </div>
@@ -60,13 +72,13 @@
         
         <button type="submit" 
                 class="w-full mt-6 bg-brand-500 hover:bg-brand-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors">
-          Accedi
+          {% trans "Accedi" %}
         </button>
         
         <div class="mt-4 text-center">
           <a href="{% url 'portal:password_reset' %}" 
              class="text-sm text-brand-500 hover:underline">
-            Hai dimenticato la password?
+            {% trans "Hai dimenticato la password?" %}
           </a>
         </div>
       </form>
@@ -75,12 +87,11 @@
     <!-- Info per chi non ha account -->
     <div class="mt-6 text-center text-sm text-gray-600">
       <p>
-        Non hai ancora un account? L'accesso al portale è riservato agli sponsor
-        invitati. Contatta
+        {% trans "Non hai ancora un account? L'accesso al portale è riservato agli sponsor invitati. Contatta" %}
         <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">
           {{ support_email }}
         </a>
-        per richiedere l'invito.
+        {% trans "per richiedere l'invito." %}
       </p>
     </div>
     

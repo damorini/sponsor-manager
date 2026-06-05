@@ -1,9 +1,9 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}{% load i18n %}<!DOCTYPE html>
 <html lang="{{ request.LANGUAGE_CODE|default:'it' }}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{% block title %}Portale Sponsor{% endblock %} · {{ organizer_name|default:"Sponsor Manager" }}</title>
+<title>{% block title %}{% trans "Portale Sponsor" %}{% endblock %} · {{ organizer_name|default:"Sponsor Manager" }}</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
@@ -72,26 +72,37 @@
     </div>
   </div>
 
+  <div class="mx-4 mb-3">
+    <form action="{% url 'set_language' %}" method="post" class="flex gap-1">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit" name="language" value="it"
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇮🇹 IT</button>
+      <button type="submit" name="language" value="en"
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇬🇧 EN</button>
+    </form>
+  </div>
+
   <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
     <a href="{% url 'portal:dashboard' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>In evidenza</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>{% trans "In evidenza" %}</a>
     <a href="{% url 'portal:events' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>I miei eventi</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>{% trans "I miei eventi" %}</a>
     <a href="{% url 'portal:contracts_list' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>Contratti</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "Contratti" %}</a>
     <a href="{% url 'portal:purchases' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>I miei acquisti</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>{% trans "I miei acquisti" %}</a>
     <a href="{% url 'portal:profile' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-user text-lg shrink-0"></i>I miei dati</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-user text-lg shrink-0"></i>{% trans "I miei dati" %}</a>
     <a href="{% url 'portal:wishlist_page' %}"
        class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'wishlist_page' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-heart text-lg shrink-0"></i>Wishlist</a>
     {% if has_purchasable_services %}
     <a href="{% url 'portal:catalog' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-building-store text-lg shrink-0"></i>Acquista servizi</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-building-store text-lg shrink-0"></i>{% trans "Acquista servizi" %}</a>
     {% endif %}
     <a href="{% url 'portal:cart_view' %}"
        class="flex items-center justify-between px-3.5 py-2.5 rounded-lg font-medium {% if un == 'cart_view' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}">
-      <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-lg shrink-0"></i>Carrello</span>
+      <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-lg shrink-0"></i>{% trans "Carrello" %}</span>
       {% if cart_count and cart_count > 0 %}
       <span class="bg-white text-brand-700 text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
       {% endif %}
@@ -107,18 +118,18 @@
     </div>
     <form action="{% url 'portal:logout' %}" method="post">
       {% csrf_token %}
-      <button type="submit" class="flex items-center gap-2 text-sm text-blue-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>Esci</button>
+      <button type="submit" class="flex items-center gap-2 text-sm text-blue-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
     </form>
   </div>
 </aside>
 {% endwith %}
 
 <header class="md:hidden fixed top-0 inset-x-0 h-14 bg-white border-b border-gray-200 z-20 flex items-center px-4">
-  <button onclick="toggleSidebar()" class="text-gray-700 mr-3" aria-label="Apri menu">
+  <button onclick="toggleSidebar()" class="text-gray-700 mr-3" aria-label="{% trans 'Apri menu' %}">
     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
   </button>
   <span class="font-semibold text-brand-500">{{ user.contact_profile.sponsor.legal_name|default:"Portale" }}</span>
-  <a href="{% url 'portal:cart_view' %}" class="relative ml-auto" aria-label="Carrello">
+  <a href="{% url 'portal:cart_view' %}" class="relative ml-auto" aria-label="{% trans 'Carrello' %}">
     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
     {% if cart_count and cart_count > 0 %}
     <span class="absolute -top-2 -right-2 bg-brand-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
@@ -140,8 +151,8 @@
   <main class="flex-1">
     {% if request.session.impersonator_id %}
     <div style="background:#b45309;color:#fff;padding:10px 16px;text-align:center;font-size:14px;">
-      &#128065;&#65039; Stai navigando come cliente: <strong>{{ request.user.get_full_name|default:request.user.email }}</strong>.
-      <a href="{% url 'portal:impersonate_stop' %}" style="color:#fff;text-decoration:underline;font-weight:700;margin-left:8px;">Torna all'amministrazione</a>
+      &#128065;&#65039; {% trans "Stai navigando come cliente:" %} <strong>{{ request.user.get_full_name|default:request.user.email }}</strong>.
+      <a href="{% url 'portal:impersonate_stop' %}" style="color:#fff;text-decoration:underline;font-weight:700;margin-left:8px;">{% trans "Torna all'amministrazione" %}</a>
     </div>
     {% endif %}
     {% block content %}{% endblock %}
@@ -150,7 +161,7 @@
   <footer class="bg-white border-t border-gray-200 mt-12">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div class="text-center text-sm text-gray-500">
-        <p>&copy; {% now "Y" %} {{ organizer_name|default:"Sponsor Manager" }}. Per assistenza:
+        <p>&copy; {% now "Y" %} {{ organizer_name|default:"Sponsor Manager" }}. {% trans "Per assistenza:" %}
           <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">{{ support_email|default:"info@example.com" }}</a>
         </p>
       </div>

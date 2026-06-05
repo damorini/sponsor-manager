@@ -13,7 +13,7 @@
     <table>
       <caption><a class="section" href="#">🎯 Eventi e catalogo</a></caption>
       {% for app in app_list %}{% for model in app.models %}
-        {% if model.object_name == 'Event' or model.object_name == 'Service' or model.object_name == 'Stand' or model.object_name == 'StandBlock' or model.object_name == 'DeadlineTemplate' %}
+        {% if model.object_name == 'Event' or model.object_name == 'Service' or model.object_name == 'CatalogService' or model.object_name == 'ServiceCategory' or model.object_name == 'Stand' or model.object_name == 'StandBlock' or model.object_name == 'DeadlineTemplate' %}
           <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
             <th scope="row">
               {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}

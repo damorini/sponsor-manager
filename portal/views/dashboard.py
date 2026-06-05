@@ -158,7 +158,7 @@ def contracts_list_view(request):
     qs = Contract.objects.filter(
         sponsor=sponsor,
         deleted_at__isnull=True,
-    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).select_related('event', 'stand', 'stand_block')
+    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).exclude(contract_kind='addon').select_related('event', 'stand', 'stand_block')
 
     # Filtro per evento
     event_id = request.GET.get('event')
@@ -300,5 +300,14 @@ def purchases_view(request):
         .prefetch_related('lines')
         .order_by('-signed_date', '-created_at')
     )
-    return render(request, 'portal/purchases/list.html', {'orders': orders})
+    pending_orders = list(
+        Contract.objects
+        .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
+                status=ContractStatus.PENDING_PAYMENT, deleted_at__isnull=True)
+        .select_related('event')
+        .prefetch_related('lines')
+        .order_by('-created_at')
+    )
+    return render(request, 'portal/purchases/list.html',
+                  {'orders': orders, 'pending_orders': pending_orders})
 

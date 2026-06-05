@@ -25,6 +25,11 @@ from .models import (
 
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_generic_by_event
+        return scope_generic_by_event(request, super().get_queryset(request))
+
+
     list_display = (
         'title', 'type_badge', 'entity_display',
         'file_name', 'file_size_display', 'uploaded_by_display',
@@ -167,6 +172,11 @@ class EmailTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(Communication)
 class CommunicationAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_generic_by_event
+        return scope_generic_by_event(request, super().get_queryset(request))
+
+
     list_display = (
         'subject_short', 'communication_type', 'channel',
         'recipients_short', 'status_badge', 'is_automated_icon',

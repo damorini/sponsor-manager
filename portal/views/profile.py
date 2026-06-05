@@ -33,39 +33,40 @@ def _comprimi_logo(uploaded_file, max_side=400):
     buf.seek(0)
     return ContentFile(buf.read())
 
+from django.utils.translation import gettext_lazy as _
 logger = logging.getLogger(__name__)
 
 # Ruoli funzionali disponibili (value, label)
 CONTACT_ROLE_CHOICES = [
-    ('signer', 'Firmatario'),
-    ('marketing', 'Marketing'),
-    ('finance', 'Amministrazione'),
-    ('operational', 'Operativo'),
-    ('cc', 'CC'),
-    ('educational', 'Educational manager'),
+    ('signer', _('Firmatario')),
+    ('marketing', _('Marketing')),
+    ('finance', _('Amministrazione')),
+    ('operational', _('Operativo')),
+    ('cc', _('CC')),
+    ('educational', _('Educational manager')),
 ]
 
 # Campi modificabili (nome_campo_modello -> etichetta)
 SPONSOR_FIELDS = [
-    ('legal_name', 'Ragione sociale'),
-    ('vat_number', 'Partita IVA'),
-    ('tax_code', 'Codice fiscale'),
-    ('sdi_code', 'Codice destinatario SDI'),
-    ('pec_email', 'PEC'),
-    ('address_street', 'Indirizzo'),
-    ('address_city', 'Città'),
-    ('address_zip', 'CAP'),
-    ('address_province', 'Provincia'),
-    ('address_country', 'Paese'),
-    ('website', 'Sito web'),
-    ('logo_url', 'URL logo'),
-    ('business_description', 'Descrizione attività'),
+    ('legal_name', _('Ragione sociale')),
+    ('vat_number', _('Partita IVA')),
+    ('tax_code', _('Codice fiscale')),
+    ('sdi_code', _('Codice destinatario SDI')),
+    ('pec_email', _('PEC')),
+    ('address_street', _('Indirizzo')),
+    ('address_city', _('Città')),
+    ('address_zip', _('CAP')),
+    ('address_province', _('Provincia')),
+    ('address_country', _('Paese')),
+    ('website', _('Sito web')),
+    ('logo_url', _('URL logo')),
+    ('business_description', _('Descrizione attività')),
 ]
 CONTACT_FIELDS = [
-    ('full_name', 'Nome e cognome'),
-    ('email', 'Email'),
-    ('phone', 'Telefono'),
-    ('job_title', 'Ruolo'),
+    ('full_name', _('Nome e cognome')),
+    ('email', _('Email')),
+    ('phone', _('Telefono')),
+    ('job_title', _('Ruolo')),
 ]
 
 
@@ -185,7 +186,7 @@ def profile_view(request):
     role_labels = dict(CONTACT_ROLE_CHOICES)
     contatti_view = []
     for c in contatti:
-        ruoli_txt = ", ".join(role_labels.get(r, r) for r in (c.roles or []))
+        ruoli_txt = ", ".join(str(role_labels.get(r, r)) for r in (c.roles or []))
         contatti_view.append({
             'id': c.id,
             'is_self': (c.id == contact.id),

@@ -18,6 +18,10 @@ def branding(request):
         'support_email': getattr(settings, 'SUPPORT_EMAIL', ''),
         'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
         'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
+        'bank_holder': getattr(settings, 'BANK_TRANSFER_HOLDER', ''),
+        'bank_name': getattr(settings, 'BANK_TRANSFER_BANK', ''),
+        'bank_iban': getattr(settings, 'BANK_TRANSFER_IBAN', ''),
+        'bank_bic': getattr(settings, 'BANK_TRANSFER_BIC', ''),
     }
 
 

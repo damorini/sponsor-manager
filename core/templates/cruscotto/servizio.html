@@ -61,6 +61,7 @@
         <thead><tr>
           <th>Sponsor</th>
           <th>Contratto</th>
+          <th>Opzione</th>
           <th>Stato</th>
           <th class="num">Quantità</th>
           <th class="num">Importo</th>
@@ -71,6 +72,7 @@
           <tr>
             <td class="strong">{{ r.sponsor }}</td>
             <td><a href="{% url 'admin:contracts_contract_change' r.contract_id %}">{{ r.contract_number }}</a></td>
+            <td>{% if r.variante %}{{ r.variante }}{% else %}<span style="color:#bbb;">—</span>{% endif %}</td>
             <td>{{ r.status_label }}</td>
             <td class="num">{{ r.quantity }}</td>
             <td class="num strong">€ {{ r.importo|floatformat:2|intcomma }}</td>

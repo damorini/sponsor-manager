@@ -1,0 +1,715 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: sponsor_manager\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-02 12:00+0000\n"
+"PO-Revision-Date: 2026-06-02 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: English\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Portale Sponsor"
+msgstr "Sponsor Portal"
+
+msgid "In evidenza"
+msgstr "Overview"
+
+msgid "I miei eventi"
+msgstr "My events"
+
+msgid "Contratti"
+msgstr "Contracts"
+
+msgid "I miei acquisti"
+msgstr "My purchases"
+
+msgid "I miei dati"
+msgstr "My details"
+
+msgid "Acquista servizi"
+msgstr "Buy services"
+
+msgid "Carrello"
+msgstr "Cart"
+
+msgid "Esci"
+msgstr "Log out"
+
+msgid "Stai navigando come cliente:"
+msgstr "You are browsing as client:"
+
+msgid "Torna all'amministrazione"
+msgstr "Back to administration"
+
+msgid "Per assistenza:"
+msgstr "For support:"
+
+msgid "Apri menu"
+msgstr "Open menu"
+
+msgid "in ritardo"
+msgstr "overdue"
+
+msgid "Bentornato/a,"
+msgstr "Welcome back,"
+
+msgid "Non risultano eventi associati al tuo profilo."
+msgstr "No events are linked to your profile."
+
+msgid "Prossimi eventi"
+msgstr "Upcoming events"
+
+msgid "Nessun evento in programma."
+msgstr "No upcoming events."
+
+msgid "Scadenze aperte"
+msgstr "Open deadlines"
+
+msgid "da completare"
+msgstr "to complete"
+
+msgid "tutto in regola"
+msgstr "all clear"
+
+msgid "Saldo da pagare"
+msgstr "Balance due"
+
+msgid "importo residuo"
+msgstr "remaining amount"
+
+msgid "nessun importo dovuto"
+msgstr "no amount due"
+
+msgid "Amministrative"
+msgstr "Administrative"
+
+msgid "Nessuna scadenza amministrativa in sospeso."
+msgstr "No pending administrative deadlines."
+
+msgid "Tecniche"
+msgstr "Technical"
+
+msgid "Nessuna scadenza tecnica in sospeso."
+msgstr "No pending technical deadlines."
+
+msgid "Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i materiali richiesti per quell'evento."
+msgstr "The events you take part in. Open an event to see its deadlines and required materials."
+
+msgid "da fare"
+msgstr "to do"
+
+msgid "completate"
+msgstr "completed"
+
+msgid "Apri evento →"
+msgstr "Open event →"
+
+msgid "← I miei eventi"
+msgstr "← My events"
+
+msgid "Servizi disponibili"
+msgstr "Available services"
+
+msgid "Scadenze di questo evento →"
+msgstr "Deadlines for this event →"
+
+msgid "Acquista servizi per questo evento"
+msgstr "Buy services for this event"
+
+msgid "I servizi potranno essere acquistati a seguito della firma del contratto."
+msgstr "Services can be purchased once the contract is signed."
+
+msgid "Per acquistare servizi serve un contratto attivo per questo evento."
+msgstr "An active contract for this event is required to purchase services."
+
+msgid "Al momento non ci sono servizi acquistabili per questo evento."
+msgstr "There are currently no services to purchase for this event."
+
+msgid "I tuoi contratti"
+msgstr "Your contracts"
+
+msgid "Evento"
+msgstr "Event"
+
+msgid "Tutti gli eventi"
+msgstr "All events"
+
+msgid "Stato"
+msgstr "Status"
+
+msgid "Tutti gli stati"
+msgstr "All statuses"
+
+msgid "Attivi"
+msgstr "Active"
+
+msgid "In attesa"
+msgstr "Pending"
+
+msgid "Completati"
+msgstr "Completed"
+
+msgid "Filtra"
+msgstr "Filter"
+
+msgid "Reset filtri"
+msgstr "Reset filters"
+
+msgid "Addon"
+msgstr "Add-on"
+
+msgid "Blocco"
+msgstr "Block"
+
+msgid "← Precedente"
+msgstr "← Previous"
+
+msgid "Pagina %(num)s di %(tot)s"
+msgstr "Page %(num)s of %(tot)s"
+
+msgid "Successiva →"
+msgstr "Next →"
+
+msgid "Nessun contratto corrisponde ai filtri selezionati."
+msgstr "No contract matches the selected filters."
+
+msgid "Paga ora"
+msgstr "Pay now"
+
+msgid "[DEV] Segna come pagato"
+msgstr "[DEV] Mark as paid"
+
+msgid "Servizi inclusi"
+msgstr "Included services"
+
+msgid "Descrizione"
+msgstr "Description"
+
+msgid "Q.tà"
+msgstr "Qty"
+
+msgid "Prezzo"
+msgstr "Price"
+
+msgid "Totale"
+msgstr "Total"
+
+msgid "Subtotale:"
+msgstr "Subtotal:"
+
+msgid "IVA:"
+msgstr "VAT:"
+
+msgid "Totale:"
+msgstr "Total:"
+
+msgid "Nessuna riga sul contratto."
+msgstr "No lines on this contract."
+
+msgid "Scadenze operative"
+msgstr "Operational deadlines"
+
+msgid "Materiali e attività richieste per il corretto svolgimento dello sponsorship"
+msgstr "Materials and activities required for the proper running of the sponsorship"
+
+msgid "Ricevuto"
+msgstr "Received"
+
+msgid "Esonerato"
+msgstr "Waived"
+
+msgid "%(n)s gg in ritardo"
+msgstr "%(n)s days overdue"
+
+msgid "tra %(n)s gg"
+msgstr "in %(n)s days"
+
+msgid "Per caricare i materiali richiesti, vai alla"
+msgstr "To upload the required materials, go to the"
+
+msgid "sezione Materiali"
+msgstr "Materials section"
+
+msgid "Aggiungi altri servizi"
+msgstr "Add more services"
+
+msgid "Sono disponibili %(n)s servizi acquistabili per questo evento. Workshop, hostess, spazi promozionali extra e molto altro."
+msgstr "There are %(n)s services available to purchase for this event. Workshops, hostesses, extra promotional spaces and much more."
+
+msgid "Esplora il catalogo"
+msgstr "Explore the catalog"
+
+msgid "Dettagli"
+msgstr "Details"
+
+msgid "Tipo contratto"
+msgstr "Contract type"
+
+msgid "Da %(num)s"
+msgstr "From %(num)s"
+
+msgid "Stand assegnato"
+msgstr "Assigned stand"
+
+msgid "Blocco stand"
+msgstr "Stand block"
+
+msgid "Creato"
+msgstr "Created"
+
+msgid "Firmato"
+msgstr "Signed"
+
+msgid "Pagamenti"
+msgstr "Payments"
+
+msgid "Documenti"
+msgstr "Documents"
+
+msgid "%(counter)s contratto"
+msgid_plural "%(counter)s contratti"
+msgstr[0] "%(counter)s contract"
+msgstr[1] "%(counter)s contracts"
+
+msgid "%(counter)s scadenza aperta"
+msgid_plural "%(counter)s scadenze aperte"
+msgstr[0] "%(counter)s open deadline"
+msgstr[1] "%(counter)s open deadlines"
+
+msgid "Catalogo servizi"
+msgstr "Service catalog"
+
+msgid "Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali e altro."
+msgstr "Add extra services to your events: workshops, hostesses, promotional spaces and more."
+
+msgid "Vedi tutti →"
+msgstr "See all →"
+
+msgid "Scaduto"
+msgstr "Expired"
+
+msgid "Ancora %(n)sgg"
+msgstr "%(n)s days left"
+
+msgid "IVA"
+msgstr "VAT"
+
+msgid "Vedi dettaglio"
+msgstr "View details"
+
+msgid "Non più acquistabile"
+msgstr "No longer available"
+
+msgid "Vedi tutti gli altri %(n)s servizi →"
+msgstr "See the other %(n)s services →"
+
+msgid "Al momento non ci sono servizi acquistabili per i tuoi eventi."
+msgstr "There are currently no services available to purchase for your events."
+
+msgid "Per acquistare servizi devi avere almeno un contratto attivo per un evento futuro."
+msgstr "To purchase services you need at least one active contract for an upcoming event."
+
+msgid "Vedi i tuoi contratti →"
+msgstr "View your contracts →"
+
+msgid "Servizi · %(name)s"
+msgstr "Services · %(name)s"
+
+msgid "Catalogo"
+msgstr "Catalog"
+
+msgid "Nessun servizio disponibile per questo evento al momento."
+msgstr "No services available for this event at the moment."
+
+msgid "Per:"
+msgstr "For:"
+
+msgid "Termine acquisto:"
+msgstr "Purchase deadline:"
+
+msgid "Ancora %(n)s giorni (entro %(d)s giorni dall'evento)."
+msgstr "%(n)s days left (up to %(d)s days before the event)."
+
+msgid "Scaduto (%(d)s giorni prima dell'evento)."
+msgstr "Expired (%(d)s days before the event)."
+
+msgid "Quantità"
+msgstr "Quantity"
+
+msgid "Aggiungi al carrello"
+msgstr "Add to cart"
+
+msgid "Il termine per acquistare questo servizio è scaduto."
+msgstr "The deadline to purchase this service has passed."
+
+msgid "Il carrello è vuoto"
+msgstr "Your cart is empty"
+
+msgid "Esplora il catalogo per aggiungere servizi ai tuoi eventi."
+msgstr "Browse the catalog to add services to your events."
+
+msgid "Vai al catalogo"
+msgstr "Go to catalog"
+
+msgid "Hai un carrello per ciascun evento. Conferma e paga separatamente."
+msgstr "You have a separate cart for each event. Confirm and pay separately."
+
+msgid "Carrello #%(num)s"
+msgstr "Cart #%(num)s"
+
+msgid "⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili prima di procedere al pagamento."
+msgstr "⚠ Some services have expired (past the purchase deadline). Remove them before proceeding to payment."
+
+msgid "Servizio"
+msgstr "Service"
+
+msgid "Scaduto: termine acquisto superato"
+msgstr "Expired: purchase deadline passed"
+
+msgid "Ancora %(n)s giorni per acquistare"
+msgstr "%(n)s days left to purchase"
+
+msgid "Rimuovi"
+msgstr "Remove"
+
+msgid "← Continua acquisti per questo evento"
+msgstr "← Continue shopping for this event"
+
+msgid "Rimuovi prima i servizi scaduti"
+msgstr "Remove expired services first"
+
+msgid "Procedi al pagamento →"
+msgstr "Proceed to payment →"
+
+msgid "Conferma e paga"
+msgstr "Confirm and pay"
+
+msgid "Conferma"
+msgstr "Confirmation"
+
+msgid "Verifica i dettagli prima di procedere al pagamento."
+msgstr "Check the details before proceeding to payment."
+
+msgid "Servizi acquistati"
+msgstr "Purchased services"
+
+msgid "Totale da pagare:"
+msgstr "Total to pay:"
+
+msgid "Dati fatturazione"
+msgstr "Billing details"
+
+msgid "P.IVA:"
+msgstr "VAT no.:"
+
+msgid "C.F.:"
+msgstr "Tax code:"
+
+msgid "I dati sono ereditati dal contratto principale. Per modifiche, contatta"
+msgstr "The data is inherited from the main contract. For changes, contact"
+
+msgid "Scegli come pagare"
+msgstr "Choose how to pay"
+
+msgid "Carta o PayPal"
+msgstr "Card or PayPal"
+
+msgid "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
+msgstr "Visa, Mastercard, American Express or PayPal login. Instant payment."
+
+msgid "Login PayPal o pagamento come ospite. Redirect su paypal.com."
+msgstr "PayPal login or guest checkout. Redirect to paypal.com."
+
+msgid "Bonifico bancario?"
+msgstr "Bank transfer?"
+
+msgid "Per importi superiori a € 1.000 puoi richiedere il pagamento tramite bonifico:"
+msgstr "For amounts over € 1,000 you can request payment by bank transfer:"
+
+msgid "contatta l'amministrazione"
+msgstr "contact administration"
+
+msgid "← Torna al carrello"
+msgstr "← Back to cart"
+
+msgid "Non hai ancora effettuato acquisti."
+msgstr "You haven't made any purchases yet."
+
+msgid "Acquistato il %(d)s"
+msgstr "Purchased on %(d)s"
+
+msgid "IVA inclusa"
+msgstr "VAT included"
+
+msgid "Nella wishlist"
+msgstr "In wishlist"
+
+msgid "La mia Wishlist"
+msgstr "My Wishlist"
+
+msgid "♥ La mia Wishlist"
+msgstr "♥ My Wishlist"
+
+msgid "Non hai ancora salvato nessun servizio nella tua wishlist."
+msgstr "You haven't saved any service to your wishlist yet."
+
+msgid "Sfoglia il catalogo"
+msgstr "Browse the catalog"
+
+msgid "⚠️ Manca un soggetto operativo"
+msgstr "⚠️ An operational contact is missing"
+
+msgid "Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale."
+msgstr "You must specify <strong>at least one contact classified as OPERATIONAL</strong>, to whom the platform will send the operational information for the congress and the deadlines. Add it below (contacts section) by ticking the <strong>Operational</strong> role: without it, you cannot proceed to the other sections of the portal."
+
+msgid "Cambia password"
+msgstr "Change password"
+
+msgid "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche vengono salvate subito."
+msgstr "Check and update your company and contact details. Changes are saved immediately."
+
+msgid "Logo aziendale"
+msgstr "Company logo"
+
+msgid "Nessun logo caricato"
+msgstr "No logo uploaded"
+
+msgid "Carica un nuovo logo"
+msgstr "Upload a new logo"
+
+msgid "L'immagine viene ridimensionata e compressa automaticamente. In alternativa puoi indicare un URL qui sotto."
+msgstr "The image is automatically resized and compressed. Alternatively, you can provide a URL below."
+
+msgid "Dati azienda"
+msgstr "Company details"
+
+msgid "Contatto di riferimento"
+msgstr "Main contact"
+
+msgid "Annulla"
+msgstr "Cancel"
+
+msgid "Salva modifiche"
+msgstr "Save changes"
+
+msgid "Altri contatti aziendali"
+msgstr "Other company contacts"
+
+msgid "Nome"
+msgstr "Name"
+
+msgid "Telefono"
+msgstr "Phone"
+
+msgid "Ruoli"
+msgstr "Roles"
+
+msgid "Azioni"
+msgstr "Actions"
+
+msgid "tu"
+msgstr "you"
+
+msgid "Nessun altro contatto registrato."
+msgstr "No other contacts registered."
+
+msgid "Aggiungi un contatto"
+msgstr "Add a contact"
+
+msgid "Nome e cognome *"
+msgstr "Full name *"
+
+msgid "Ruolo aziendale"
+msgstr "Company role"
+
+msgid "es. Responsabile marketing"
+msgstr "e.g. Marketing manager"
+
+msgid "Ruoli funzionali (chi riceve quali comunicazioni)"
+msgstr "Functional roles (who receives which communications)"
+
+msgid "Aggiungi contatto"
+msgstr "Add contact"
+
+msgid "Accesso"
+msgstr "Login"
+
+msgid "Accesso portale sponsor"
+msgstr "Sponsor portal login"
+
+msgid "Credenziali non valide"
+msgstr "Invalid credentials"
+
+msgid "Verifica email e password. Se hai dimenticato la password,"
+msgstr "Check your email and password. If you forgot your password,"
+
+msgid "richiedi un nuovo accesso"
+msgstr "request new access"
+
+msgid "Accedi"
+msgstr "Log in"
+
+msgid "Hai dimenticato la password?"
+msgstr "Forgot your password?"
+
+msgid "Non hai ancora un account? L'accesso al portale è riservato agli sponsor invitati. Contatta"
+msgstr "Don't have an account yet? Portal access is reserved for invited sponsors. Contact"
+
+msgid "per richiedere l'invito."
+msgstr "to request an invitation."
+
+msgid "%(counter)s servizio salvato"
+msgid_plural "%(counter)s servizi salvati"
+msgstr[0] "%(counter)s saved service"
+msgstr[1] "%(counter)s saved services"
+
+msgid "Bozza"
+msgstr "Draft"
+
+msgid "Inviato"
+msgstr "Sent"
+
+msgid "In attesa pagamento"
+msgstr "Pending payment"
+
+msgid "Attivo"
+msgstr "Active"
+
+msgid "Completato"
+msgstr "Completed"
+
+msgid "Annullato"
+msgstr "Cancelled"
+
+msgid "Principale"
+msgstr "Main"
+
+msgid "Addon ecommerce"
+msgstr "Add-on (e-commerce)"
+
+msgid "Bonifico"
+msgstr "Bank transfer"
+
+msgid "Rateale"
+msgstr "Installments"
+
+msgid "Altro"
+msgstr "Other"
+
+msgid "In elaborazione"
+msgstr "Processing"
+
+msgid "Fallito"
+msgstr "Failed"
+
+msgid "Rimborsato"
+msgstr "Refunded"
+
+msgid "Rimborso parziale"
+msgstr "Partial refund"
+
+msgid "Firmatario"
+msgstr "Signatory"
+
+msgid "Amministrazione"
+msgstr "Administration"
+
+msgid "Operativo"
+msgstr "Operational"
+
+msgid "Ragione sociale"
+msgstr "Legal name"
+
+msgid "Partita IVA"
+msgstr "VAT number"
+
+msgid "Codice fiscale"
+msgstr "Tax code"
+
+msgid "Codice destinatario SDI"
+msgstr "SDI recipient code"
+
+msgid "PEC"
+msgstr "Certified email (PEC)"
+
+msgid "Indirizzo"
+msgstr "Address"
+
+msgid "Città"
+msgstr "City"
+
+msgid "CAP"
+msgstr "ZIP code"
+
+msgid "Provincia"
+msgstr "Province"
+
+msgid "Paese"
+msgstr "Country"
+
+msgid "Sito web"
+msgstr "Website"
+
+msgid "URL logo"
+msgstr "Logo URL"
+
+msgid "Descrizione attività"
+msgstr "Business description"
+
+msgid "Nome e cognome"
+msgstr "Full name"
+
+msgid "Ruolo"
+msgstr "Role"
+
+msgid "Acconto da pagare"
+msgstr "Deposit due"
+
+msgid "Scadenza acconto"
+msgstr "Deposit deadline"
+
+msgid "Scadenza saldo"
+msgstr "Balance deadline"
+
+msgid "Bonifico bancario"
+msgstr "Bank transfer"
+
+msgid "Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui sotto. Alla ricezione del bonifico registreremo il tuo acquisto."
+msgstr "Would you like to pay by bank transfer? Make the transfer using the details below. We will register your purchase once the transfer is received."
+
+msgid "Intestatario:"
+msgstr "Account holder:"
+
+msgid "Banca:"
+msgstr "Bank:"
+
+msgid "Causale:"
+msgstr "Reference:"
+
+msgid "Ordine %(num)s"
+msgstr "Order %(num)s"
+
+msgid "Conferma ordine con bonifico"
+msgstr "Confirm order with bank transfer"
+
+msgid "In attesa di pagamento"
+msgstr "Awaiting payment"
+
+msgid "Da pagare · Bonifico"
+msgstr "To pay · Bank transfer"
+
+msgid "Effettua il bonifico con questi dati:"
+msgstr "Make the bank transfer using these details:"
+
+msgid "Alla ricezione del bonifico registreremo il tuo acquisto."
+msgstr "We will register your purchase once the transfer is received."
+
+msgid "Esaurito"
+msgstr "Sold out"
+
+msgid "Ne rimangono solo %(n)s"
+msgstr "Only %(n)s left"

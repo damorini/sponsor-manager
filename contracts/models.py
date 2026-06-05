@@ -688,16 +688,8 @@ class Contract(SoftDeleteModel):
         # Stand/blocco passa a 'reserved'
         self._update_venue_status()
 
-        # Auto-genera PDF contratto (skip automatico per ADDON ecommerce)
-        try:
-            from contracts.services.pdf_generator import auto_generate_on_send
-            auto_generate_on_send(self)
-        except Exception:
-            # Non bloccare la transizione se la generazione PDF fallisce
-            import logging
-            logging.getLogger(__name__).exception(
-                "Errore auto-generazione PDF per contract %s", self.contract_number
-            )
+        # Nuovo flusso preventivo -> domanda di ammissione:
+        # all'invio del preventivo NON si genera piu' alcun PDF "contratto".
 
     @transaction.atomic
     def mark_as_signed(self, signed_date=None):
@@ -910,6 +902,9 @@ class Contract(SoftDeleteModel):
         Si collega al DeadlineTemplate deadline_type='pagamento' se esiste
         (porta reminder_days_before e notify_roles).
         """
+        # Gli addon ecommerce sono pagati subito al checkout: nessuna scadenza "da pagare".
+        if self.contract_kind == ContractKind.ADDON:
+            return
         from contracts.models import Deadline
 
         # template pagamento (opzionale): se c'e', le sue regole (7/3 gg, ruoli) valgono
@@ -1068,6 +1063,38 @@ class ContractLine(TimeStampedModel):
     def __str__(self):
         return f"{self.service_name_snapshot} × {self.quantity}"
 
+    @property
+    def variant_label_display(self):
+        """Etichetta variante nella lingua attiva (fallback: snapshot)."""
+        if self.service_variant_id:
+            try:
+                lbl = self.service_variant.label_display()
+                if lbl:
+                    return lbl
+            except Exception:
+                pass
+        return self.variant_label_snapshot
+
+    @property
+    def service_name_display(self):
+        """Nome servizio nella lingua attiva del portale (fallback: snapshot)."""
+        if self.service_id:
+            try:
+                nome = self.service.translated('name')
+                if nome:
+                    return nome
+            except Exception:
+                pass
+        return self.service_name_snapshot
+
+    @property
+    def is_included(self):
+        """True se la riga e' un servizio incluso/accessorio aggiunto
+        automaticamente da un servizio padre. Riconosciuta dal marker
+        '[incluso:<parent_code>><sub_code>]' messo in notes da
+        _aggiungi_servizi_inclusi."""
+        return '[incluso:' in (self.notes or '')
+
     def clean(self):
         super().clean()
         if self.quantity < 1:
@@ -1158,11 +1185,13 @@ def _aggiungi_servizi_inclusi(parent_line):
     if not service:
         return
     try:
-        inclusi = list(service.included_services.all())
+        inclusioni = list(service.inclusions.select_related('child').all())
     except Exception:
         return  # campo non ancora migrato: non bloccare
     parent_code = service.code or str(service.id)
-    for sub in inclusi:
+    for inc in inclusioni:
+        sub = inc.child
+        sub_qta = inc.quantity or 1
         sub_code = sub.code or str(sub.id)
         marker = "[incluso:%s>%s]" % (parent_code, sub_code)
         if parent_line.contract.lines.filter(notes__contains=marker).exists():
@@ -1171,7 +1200,7 @@ def _aggiungi_servizi_inclusi(parent_line):
             contract=parent_line.contract,
             service=sub,
             service_name_snapshot=sub.translated('name'),
-            quantity=1,
+            quantity=sub_qta,
             notes=marker,
         )
         sub_line.save()

@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 16mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color:#1f2937; font-size:12px; margin:0; }
+  .brandbar { height:6px; background:{{ brand_color }}; border-radius:3px; margin:0 0 14px; }
+  .eyebrow { color:{{ brand_color }}; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin:0 0 4px; }
+  h1 { font-size:22px; margin:0 0 4px; color:#111827; }
+  .meta { color:#6b7280; font-size:12px; margin:0 0 16px; }
+  .intro { margin:0 0 16px; line-height:1.5; }
+  table { width:100%; border-collapse:collapse; }
+  .svc td { padding:9px 0; border-bottom:1px solid #eef0f2; vertical-align:top; }
+  .svc .name { font-weight:700; color:#111827; }
+  .svc .desc { color:#6b7280; font-size:11px; font-weight:400; }
+  .svc .price { text-align:right; white-space:nowrap; font-weight:700; padding-left:12px; }
+  .incl { color:#065f46; background:#d1fae5; border-radius:4px; padding:2px 8px; font-size:10px; font-weight:700; }
+  .tot td { padding:3px 0; }
+  .tot .lbl { color:#6b7280; } .tot .val { text-align:right; color:#6b7280; }
+  .tot .grand td { border-top:2px solid #e5e7eb; padding-top:9px; font-weight:800; color:#111827; }
+  .tot .grand .g { color:{{ brand_color }}; font-size:17px; text-align:right; }
+  .opt { background:#fef3c7; border-left:4px solid #f59e0b; padding:11px 14px; margin:18px 0; color:#78350f; border-radius:4px; }
+  .cta { text-align:center; margin:22px 0 8px; }
+  .btn { background:{{ brand_color }}; color:#ffffff !important; text-decoration:none; padding:12px 26px; border-radius:6px; font-weight:700; font-size:13px; }
+  .small { color:#9ca3af; font-size:10px; text-align:center; margin-top:10px; }
+  .hdr { width:100%; max-height:90px; object-fit:contain; margin:0 0 12px; }
+</style></head><body>
+  {% if header_url %}<img class="hdr" src="{{ header_url }}">{% endif %}
+  <div class="brandbar"></div>
+  <p class="eyebrow">Proposta di sponsorizzazione</p>
+  <h1>{{ event.name }}</h1>
+  <p class="meta">{% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.venue_name %} &middot; {{ event.venue_name }}{% elif event.location %} &middot; {{ event.location }}{% endif %}</p>
+  <p class="intro">Gentile <strong>{{ sponsor.legal_name }}</strong>, grazie per l'interesse verso l'evento. Abbiamo preparato per voi una proposta dedicata: di seguito gli spazi e i servizi selezionati per la vostra partecipazione.</p>
+  <table class="svc">
+    {% for line in lines %}
+    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_total %}&euro; {{ line.line_total|floatformat:2 }}{% else %}<span class="incl">Incluso</span>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  <table class="tot">
+    <tr><td class="lbl">Imponibile</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">IVA</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
+    <tr class="grand"><td>Totale (IVA inclusa)</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
+  </table>
+  {% if contract.option_until %}<div class="opt"><strong>Spazi riservati per voi fino al {{ contract.option_until|date:"d/m/Y" }}.</strong><br>Trascorsa questa data gli spazi tornano disponibili per altri sponsor.</div>{% endif %}
+  <div class="cta"><a class="btn" href="{{ confirm_url }}">Vedi e conferma il preventivo</a></div>
+  <p class="small">Preventivo {{ contract.contract_number }} &middot; VALET S.r.l.</p>
+</body></html>

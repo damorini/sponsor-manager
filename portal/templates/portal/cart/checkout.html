@@ -1,24 +1,25 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}Conferma e paga{% endblock %}
+{% block title %}{% trans "Conferma e paga" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   
   <nav class="text-sm text-gray-500 mb-4">
-    <a href="{% url 'portal:cart_view' %}" class="hover:text-brand-500">Carrello</a>
+    <a href="{% url 'portal:cart_view' %}" class="hover:text-brand-500">{% trans "Carrello" %}</a>
     <span class="mx-2">/</span>
-    <span class="text-gray-700">Conferma</span>
+    <span class="text-gray-700">{% trans "Conferma" %}</span>
   </nav>
   
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Conferma e paga</h1>
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% trans "Conferma e paga" %}</h1>
   <p class="text-gray-600 mb-8">
-    Verifica i dettagli prima di procedere al pagamento.
+    {% trans "Verifica i dettagli prima di procedere al pagamento." %}
   </p>
   
   <!-- Riepilogo evento -->
   <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Evento</h2>
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">{% trans "Evento" %}</h2>
     <div class="text-sm">
       <div class="font-medium text-gray-900">{{ event.get_name }}</div>
       <div class="text-gray-600 mt-1">
@@ -31,40 +32,40 @@
   <!-- Servizi -->
   <div class="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
     <div class="px-6 py-4 border-b border-gray-200">
-      <h2 class="text-lg font-semibold text-gray-900">Servizi acquistati</h2>
+      <h2 class="text-lg font-semibold text-gray-900">{% trans "Servizi acquistati" %}</h2>
     </div>
     <table class="w-full">
       <thead class="text-xs uppercase text-gray-600 bg-gray-50">
         <tr>
-          <th class="px-6 py-3 text-left">Servizio</th>
-          <th class="px-6 py-3 text-right">Q.tà</th>
-          <th class="px-6 py-3 text-right">Prezzo</th>
-          <th class="px-6 py-3 text-right">Totale</th>
+          <th class="px-6 py-3 text-left">{% trans "Servizio" %}</th>
+          <th class="px-6 py-3 text-right">{% trans "Q.tà" %}</th>
+          <th class="px-6 py-3 text-right">{% trans "Prezzo" %}</th>
+          <th class="px-6 py-3 text-right">{% trans "Totale" %}</th>
         </tr>
       </thead>
       <tbody class="divide-y divide-gray-100">
         {% for line in contract.lines.all %}
         <tr>
           <td class="px-6 py-3">
-            <div class="font-medium text-gray-900 text-sm">{{ line.service_name_snapshot }}</div>
+            <div class="font-medium text-gray-900 text-sm">{{ line.service_name_display }}{% if line.variant_label_snapshot %} <span class="text-gray-500">&ndash; {{ line.variant_label_display }}</span>{% endif %}</div>
           </td>
           <td class="px-6 py-3 text-right text-sm">{{ line.quantity }}</td>
           <td class="px-6 py-3 text-right whitespace-nowrap text-sm">€ {{ line.unit_price|floatformat:2 }}</td>
-          <td class="px-6 py-3 text-right whitespace-nowrap text-sm font-medium">€ {{ line.line_total|floatformat:2 }}</td>
+          <td class="px-6 py-3 text-right whitespace-nowrap text-sm font-medium">€ {{ line.line_subtotal|floatformat:2 }}</td>
         </tr>
         {% endfor %}
       </tbody>
       <tfoot class="bg-gray-50">
         <tr>
-          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">Subtotale:</td>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">{% trans "Subtotale:" %}</td>
           <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ contract.subtotal|floatformat:2 }}</td>
         </tr>
         <tr>
-          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">IVA:</td>
+          <td colspan="3" class="px-6 py-2 text-right text-sm text-gray-600">{% trans "IVA:" %}</td>
           <td class="px-6 py-2 text-right whitespace-nowrap text-sm">€ {{ contract.vat_amount|floatformat:2 }}</td>
         </tr>
         <tr class="border-t border-gray-200">
-          <td colspan="3" class="px-6 py-3 text-right font-bold">Totale da pagare:</td>
+          <td colspan="3" class="px-6 py-3 text-right font-bold">{% trans "Totale da pagare:" %}</td>
           <td class="px-6 py-3 text-right whitespace-nowrap font-bold text-2xl">€ {{ contract.total|floatformat:2 }}</td>
         </tr>
       </tfoot>
@@ -73,15 +74,15 @@
   
   <!-- Dati fatturazione -->
   <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-3">Dati fatturazione</h2>
+    <h2 class="text-lg font-semibold text-gray-900 mb-3">{% trans "Dati fatturazione" %}</h2>
     <div class="text-sm text-gray-700 space-y-1">
       <div><strong>{{ contract.billing_legal_name }}</strong></div>
       <div>{{ contract.billing_address|linebreaksbr }}</div>
       {% if contract.billing_vat_number %}
-      <div>P.IVA: {{ contract.billing_vat_number }}</div>
+      <div>{% trans "P.IVA:" %} {{ contract.billing_vat_number }}</div>
       {% endif %}
       {% if contract.billing_tax_code %}
-      <div>C.F.: {{ contract.billing_tax_code }}</div>
+      <div>{% trans "C.F.:" %} {{ contract.billing_tax_code }}</div>
       {% endif %}
       {% if contract.billing_pec %}
       <div>PEC: {{ contract.billing_pec }}</div>
@@ -91,14 +92,14 @@
       {% endif %}
     </div>
     <p class="text-xs text-gray-500 mt-3">
-      I dati sono ereditati dal contratto principale. Per modifiche, contatta
+      {% trans "I dati sono ereditati dal contratto principale. Per modifiche, contatta" %}
       <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">{{ support_email }}</a>.
     </p>
   </div>
   
   <!-- Scelta metodo pagamento -->
   <div class="bg-white rounded-lg shadow-sm p-6">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Scegli come pagare</h2>
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">{% trans "Scegli come pagare" %}</h2>
     
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <a href="{% url 'portal:checkout_card' contract.id %}" 
@@ -108,11 +109,10 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
           </svg>
-          <span class="font-semibold text-gray-900">Carta o PayPal</span>
+          <span class="font-semibold text-gray-900">{% trans "Carta di credito/debito" %}</span>
         </div>
         <p class="text-sm text-gray-600">
-          Visa, Mastercard, American Express o accesso PayPal.
-          Pagamento immediato.
+          {% trans "Visa, Mastercard, American Express. Pagamento immediato." %}
         </p>
       </a>
       
@@ -127,8 +127,7 @@
             <span class="font-semibold text-gray-900">PayPal</span>
           </div>
           <p class="text-sm text-gray-600">
-            Login PayPal o pagamento come ospite.
-            Redirect su paypal.com.
+            {% trans "Login PayPal o pagamento come ospite. Redirect su paypal.com." %}
           </p>
         </button>
       </form>
@@ -148,19 +147,36 @@
     </div>
     {% endif %}
 
-    <div class="mt-6 alert-info rounded text-sm">
-      <strong>Bonifico bancario?</strong>
-      Per importi superiori a € 1.000 puoi richiedere il pagamento tramite bonifico:
-      <a href="mailto:{{ support_email }}?subject=Pagamento bonifico {{ contract.contract_number }}" 
-         class="underline font-medium">
-        contatta l'amministrazione
-      </a>.
+    <!-- Bonifico bancario -->
+    <div class="mt-6 border border-gray-200 rounded-lg p-5">
+      <div class="flex items-center mb-2">
+        <svg class="w-8 h-8 text-brand-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21h18M4 18h16M5 18V10m4 8V10m6 8V10m4 8V10M12 3l9 6H3l9-6z"></path>
+        </svg>
+        <span class="font-semibold text-gray-900">{% trans "Bonifico bancario" %}</span>
+      </div>
+      <p class="text-sm text-gray-600 mb-3">
+        {% trans "Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui sotto. Alla ricezione del bonifico registreremo il tuo acquisto." %}
+      </p>
+      <div class="bg-gray-50 rounded p-3 text-sm text-gray-800 mb-4 space-y-1">
+        <div><span class="text-gray-500">{% trans "Intestatario:" %}</span> {{ bank_holder }}</div>
+        <div><span class="text-gray-500">{% trans "Banca:" %}</span> {{ bank_name }}</div>
+        <div><span class="text-gray-500">IBAN:</span> <span class="font-mono">{{ bank_iban }}</span></div>
+        {% if bank_bic %}<div><span class="text-gray-500">BIC:</span> <span class="font-mono">{{ bank_bic }}</span></div>{% endif %}
+        <div><span class="text-gray-500">{% trans "Causale:" %}</span> {% blocktrans with num=contract.contract_number %}Ordine {{ num }}{% endblocktrans %}</div>
+      </div>
+      <form method="post" action="{% url 'portal:checkout_bank_transfer' contract.id %}">
+        {% csrf_token %}
+        <button type="submit" class="px-5 py-2 bg-brand-600 text-white rounded hover:bg-brand-700 font-medium">
+          {% trans "Conferma ordine con bonifico" %}
+        </button>
+      </form>
     </div>
     
     <div class="mt-6 text-center">
       <a href="{% url 'portal:cart_view' %}" 
          class="text-sm text-gray-600 hover:text-brand-500">
-        ← Torna al carrello
+        {% trans "← Torna al carrello" %}
       </a>
     </div>
   </div>

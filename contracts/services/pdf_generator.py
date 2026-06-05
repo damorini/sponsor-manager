@@ -1070,3 +1070,143 @@ def generate_client_summary_pdf(sponsor, event):
     logger.info("Scheda cliente generata per %s (Document id=%s)",
                 sponsor.legal_name, document.id)
     return document
+
+
+# ============================================================================
+# DOMANDA DI AMMISSIONE
+# ============================================================================
+
+ADMISSION_TEMPLATE = 'template_domanda_ammissione_it.docx'
+
+
+def generate_admission_request_pdf(contract):
+    """
+    Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
+    riusando lo stesso contesto e lo stesso header/footer del contratto.
+
+    Returns:
+        Document creato (instance).
+    Raises:
+        FileNotFoundError se manca il template; ValueError se manca il firmatario.
+    """
+    template_path = TEMPLATES_DIR / ADMISSION_TEMPLATE
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template domanda non trovato: {template_path}")
+
+    sponsor = contract.sponsor
+    event = contract.event
+    signer = _get_signer_contact(contract)
+    if not signer:
+        raise ValueError(
+            f"Contract {contract.contract_number}: nessun Contact con is_signer=True. "
+            "Imposta un firmatario sullo Sponsor prima di generare la domanda."
+        )
+
+    event_type = _get_event_type(event)
+    lines_by_category = _group_lines_by_category(contract, event_type)
+    lines = [ln for _cat, items in lines_by_category for ln in items]
+
+    context = {
+        'contract': contract,
+        'sponsor': sponsor,
+        'signer': signer,
+        'event': _event_for_template(event),
+        'lines': lines,
+        'imponibile': format_currency_filter(contract.subtotal),
+        'iva': format_currency_filter(contract.vat_amount),
+        'totale': format_currency_filter(contract.total),
+    }
+
+    doc = DocxTemplate(str(template_path))
+    doc.render(context, jinja_env=get_jinja_env())
+
+    docx_filename = f"domanda_ammissione_{contract.contract_number}_{event.id}.docx"
+    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(full_docx_path))
+
+    try:
+        _add_header_footer_to_docx(full_docx_path, contract)
+    except Exception as e:
+        logger.warning("Header/footer domanda non applicati per %s: %s",
+                       contract.contract_number, e)
+
+    pdf_path = _convert_docx_to_pdf(full_docx_path)
+    if not pdf_path:
+        return _create_document_record(
+            contract, full_docx_path, relative_docx_path,
+            file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='admission_request',
+        )
+
+    pdf_filename = pdf_path.name
+    relative_pdf_path = relative_docx_path.replace('.docx', '.pdf')
+    document = _create_document_record(
+        contract, pdf_path, relative_pdf_path,
+        file_name=pdf_filename, mime='application/pdf',
+        document_type='admission_request',
+    )
+    logger.info("Contract %s: domanda di ammissione generata (Document id=%s)",
+                contract.contract_number, document.id)
+    return document
+
+
+# ============================================================================
+# PREVENTIVO: PDF dalla grafica HTML (stessa della mail) con link cliccabile
+# ============================================================================
+
+def generate_quote_pdf_html(contract):
+    """Genera il PDF del preventivo dalla grafica HTML (come la mail), con
+    pulsante cliccabile verso la pagina del portale. Richiede WeasyPrint."""
+    from django.template.loader import render_to_string
+    from django.urls import reverse
+    try:
+        from weasyprint import HTML as _WeasyHTML
+    except Exception as e:
+        raise RuntimeError(
+            "WeasyPrint non installato: esegui 'pip install weasyprint' "
+            "(e le librerie di sistema pango/cairo). Dettaglio: %s" % e
+        )
+
+    sponsor = contract.sponsor
+    event = contract.event
+    lines = list(contract.lines.all())
+    site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+    try:
+        portal_path = reverse('portal:contract_detail', args=[contract.id])
+    except Exception:
+        portal_path = f"/contracts/{contract.id}/"
+    header_url = ''
+    try:
+        _img = getattr(event, 'email_header_image', None)
+        if _img:
+            header_url = (site_url + _img.url) if site_url else _img.url
+    except Exception:
+        header_url = ''
+    ctx = {
+        'contract': contract,
+        'sponsor': sponsor,
+        'event': _event_for_template(event),
+        'lines': lines,
+        'confirm_url': (site_url + portal_path) if site_url else portal_path,
+        'header_url': header_url,
+        'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
+    }
+    html = render_to_string('quote_pdf.html', ctx)
+    pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()
+
+    pdf_filename = f"preventivo_{contract.contract_number}_{event.id}.pdf"
+    relative_pdf_path = f"documents/contracts/{contract.id}/{pdf_filename}"
+    full_pdf_path = Path(settings.MEDIA_ROOT) / relative_pdf_path
+    full_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    full_pdf_path.write_bytes(pdf_bytes)
+
+    document = _create_document_record(
+        contract, full_pdf_path, relative_pdf_path,
+        file_name=pdf_filename, mime='application/pdf', document_type='quote',
+    )
+    logger.info("Preventivo (HTML->PDF) generato per %s (Document id=%s)",
+                contract.contract_number, document.id)
+    return document

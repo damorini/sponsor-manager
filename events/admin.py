@@ -4,6 +4,7 @@ Admin per Events.
 Usa il widget multilingua custom per name e description.
 """
 from django import forms
+from catalog.models import CatalogService, Service
 from django.contrib import admin
 from django.db.models import Count, Sum, Q
 from django.utils.html import format_html
@@ -28,9 +29,28 @@ class EventAdminForm(forms.ModelForm):
         label='Descrizione',
     )
 
+    catalog_services = forms.ModelMultipleChoiceField(
+        queryset=CatalogService.objects.filter(is_active=True).order_by('display_order', 'code'),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Servizi disponibili (dal catalogo)",
+        help_text="Spunta i servizi del catalogo da offrire in questo evento.",
+    )
+
     class Meta:
         model = Event
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        inst = getattr(self, 'instance', None)
+        if inst and inst.pk:
+            ids = list(
+                Service.objects.filter(
+                    event=inst, catalog_source__isnull=False, is_active=True
+                ).values_list('catalog_source_id', flat=True)
+            )
+            self.fields['catalog_services'].initial = ids
 
 
 @admin.register(Event)
@@ -52,7 +72,7 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('slug', 'code', 'email_header_image', 'name', 'description', 'event_type', 'status'),
         }),
         ('Date e luogo', {
-            'fields': ('start_date', 'end_date', 'location', 'venue_address'),
+            'fields': ('start_date', 'end_date', 'location', 'venue_name', 'venue_address'),
         }),
         ('Lingue supportate', {
             'fields': ('supported_languages', 'default_language'),
@@ -62,6 +82,12 @@ class EventAdmin(admin.ModelAdmin):
         ('Dati per contratti', {
             'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location'),
             'classes': ('collapse',),
+        }),
+        ("Servizi dell'evento (dal catalogo)", {
+            'fields': ('catalog_services',),
+            'description': "Spunta i servizi del catalogo da rendere disponibili. "
+                           "Al salvataggio i servizi spuntati vengono creati/riattivati e "
+                           "quelli tolti disattivati. Quantita' e prezzi si regolano nella sezione Servizi.",
         }),
         ('Note interne', {
             'fields': ('notes',),
@@ -159,3 +185,101 @@ class EventAdmin(admin.ModelAdmin):
             '</div>',
             contracts_url, services_url, stands_url,
         )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        try:
+            _sincronizza_servizi_catalogo(request, form.instance, form.cleaned_data.get('catalog_services'))
+        except Exception as exc:
+            from django.contrib import messages
+            messages.warning(request, f"Servizi dal catalogo non sincronizzati: {exc}")
+
+
+def _sincronizza_servizi_catalogo(request, event, selezionati):
+    from django.contrib import messages
+    from catalog.models import Service
+    if selezionati is None:
+        return
+    selezionati = list(selezionati)
+    sel_ids = {c.pk for c in selezionati}
+    esistenti = {
+        s.catalog_source_id: s
+        for s in Service.objects.filter(event=event, catalog_source__isnull=False)
+    }
+    creati = riattivati = disattivati = 0
+    for cat in selezionati:
+        svc = esistenti.get(cat.pk)
+        if svc is None:
+            _crea_servizio_da_catalogo(cat, event)
+            creati += 1
+        elif not svc.is_active:
+            svc.is_active = True
+            svc.save(update_fields=['is_active'])
+            riattivati += 1
+    for cat_id, svc in esistenti.items():
+        if cat_id not in sel_ids and svc.is_active:
+            svc.is_active = False
+            svc.save(update_fields=['is_active'])
+            disattivati += 1
+    if creati or riattivati or disattivati:
+        messages.info(
+            request,
+            f"Catalogo -> evento: {creati} creati, {riattivati} riattivati, {disattivati} disattivati."
+        )
+
+
+def _crea_servizio_da_catalogo(cat, event):
+    from catalog.models import Service, ServiceVariant
+    code = cat.code
+    base = code
+    i = 2
+    while Service.objects.filter(event=event, code=code).exists():
+        code = f"{base}_{i}"
+        i += 1
+    svc = Service.objects.create(
+        event=event,
+        code=code,
+        name=cat.name,
+        description=cat.description,
+        category=(cat.category.name if cat.category_id else ''),
+        accounting_category=cat.accounting_category,
+        pricing_mode=cat.pricing_mode,
+        base_price=cat.base_price,
+        pricing_tiers=cat.pricing_tiers,
+        is_active=True,
+        max_quantity=cat.max_quantity,
+        total_available=None,
+        triggers_deadlines=cat.triggers_deadlines,
+        is_self_purchasable=cat.is_self_purchasable,
+        self_purchase_cutoff_days=cat.self_purchase_cutoff_days,
+        vat_rate=cat.vat_rate,
+        vat_exemption_article=cat.vat_exemption_article,
+        display_order=cat.display_order,
+        catalog_source=cat,
+    )
+    if getattr(cat, 'image', None):
+        try:
+            from django.core.files.base import ContentFile
+            import os as _os
+            # Legge i byte dell'immagine del catalogo (senza modificarla)
+            cat.image.open('rb')
+            try:
+                _data = cat.image.read()
+            finally:
+                cat.image.close()
+            _base = _os.path.basename(cat.image.name) or 'img'
+            # Salva una COPIA indipendente del file sul servizio
+            # (services/images/). save=True fa scattare la
+            # neutralizzazione/ottimizzazione lato Service. L'originale
+            # del catalogo NON viene mai toccato.
+            svc.image.save(_base, ContentFile(_data), save=True)
+        except Exception:
+            pass
+    for cv in cat.variants.all():
+        ServiceVariant.objects.create(
+            service=svc, label=cv.label, label_en=cv.label_en, code=cv.code,
+            base_price=cv.base_price, total_available=None,
+            is_active=cv.is_active, display_order=cv.display_order,
+        )
+    return svc
+

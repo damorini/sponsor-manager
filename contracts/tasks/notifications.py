@@ -40,7 +40,7 @@ def send_contract_signed_notification(self, contract_id):
     """
     from contracts.models import Contract
     from contracts.services.email_sender import send_email, get_recipients_for_contract
-    from contracts.services.pdf_generator import generate_contract_pdf
+    from contracts.services.pdf_generator import generate_admission_request_pdf
 
     try:
         contract = Contract.objects.select_related('sponsor', 'event').get(pk=contract_id)
@@ -59,7 +59,7 @@ def send_contract_signed_notification(self, contract_id):
     # Genera PDF e prepara allegato
     pdf_attachment = None
     try:
-        document = generate_contract_pdf(contract)
+        document = generate_admission_request_pdf(contract)
         # Leggi il file salvato
         from django.conf import settings
         from pathlib import Path
