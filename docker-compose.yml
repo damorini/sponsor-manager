@@ -117,17 +117,22 @@ services:
     networks:
       - sponsor_network
 
-  # Nginx (reverse proxy + file statici/media)
-  nginx:
-    image: nginx:alpine
-    container_name: sponsor_manager_nginx
+  # Caddy: reverse proxy pubblico con HTTPS automatico (Let's Encrypt) + static/media.
+  # In .env imposta SITE_ADDRESS=tuodominio.it (in locale resta 'localhost').
+  caddy:
+    image: caddy:2-alpine
+    container_name: sponsor_manager_caddy
     ports:
       - "80:80"
       - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - static_data:/app/staticfiles:ro
       - media_data:/app/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
       - web
     networks:
@@ -141,6 +146,10 @@ volumes:
   media_data:
     driver: local
   static_data:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
     driver: local
 
 networks:

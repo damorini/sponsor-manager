@@ -1,0 +1,20 @@
+# Caddy = entrypoint pubblico con HTTPS automatico (Let's Encrypt).
+# In produzione metti SITE_ADDRESS=tuodominio.it nel .env: Caddy ottiene e
+# rinnova il certificato da solo. In locale, SITE_ADDRESS=localhost usa un
+# certificato interno (curl -k).
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	# File statici e media serviti direttamente da Caddy
+	handle_path /static/* {
+		root * /app/staticfiles
+		file_server
+	}
+	handle_path /media/* {
+		root * /app/media
+		file_server
+	}
+
+	# Tutto il resto all'app Django (Gunicorn)
+	reverse_proxy web:8000
+}

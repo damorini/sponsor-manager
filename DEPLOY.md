@@ -40,12 +40,12 @@ docker compose up -d --build
 docker compose exec web python manage.py createsuperuser
 
 # 5. Controlla che sia tutto su
-docker compose ps
-curl -i http://localhost/health/      # deve rispondere 200 {"status":"ok"}
+docker compose ps                       # 'web' deve risultare healthy
+curl -i https://<tuo-dominio>/health/   # 200 {"status":"ok"}
 ```
 
-Poi apri `http://<tuo-dominio>/admin/` (backoffice) e
-`http://<tuo-dominio>/portal/login/` (portale sponsor).
+Poi apri `https://<tuo-dominio>/admin/` (backoffice) e
+`https://<tuo-dominio>/portal/login/` (portale sponsor).
 
 ## 3. Aggiornamenti successivi
 
@@ -61,21 +61,19 @@ Lo stack è stato collaudato e parte correttamente. Punti da sapere:
 
 - **PDF**: la generazione (LibreOffice per contratti/domande, WeasyPrint per il
   preventivo grafico) gira nei container `web`/`celery_worker` — verificata.
-- **HTTPS**: di default lo stack serve in **HTTP** sulla porta 80, con il
-  redirect HTTPS dell'app **disattivato** se imposti `SECURE_SSL_REDIRECT=False`.
-  Per andare in produzione vera con HTTPS hai due strade:
-  1. **Consigliata**: metti un reverse proxy con certificati automatici davanti
-     (es. **Caddy** o **Traefik** con Let's Encrypt), che gira il traffico a
-     `web:8000`. Lascia `SECURE_SSL_REDIRECT=True` (default).
-  2. Configura i certificati direttamente in `nginx.conf` (blocco `server` su 443).
+- **HTTPS: automatico** ✅ — l'edge è **Caddy**, che ottiene e rinnova da solo il
+  certificato Let's Encrypt. Ti basta impostare `SITE_ADDRESS=tuodominio.it` nel
+  `.env` (il dominio deve puntare via DNS all'IP del server, porte 80/443 aperte).
+  Caddy reindirizza automaticamente HTTP→HTTPS. Niente certificati da gestire a mano.
+  Collaudato in locale con cert interno (`SITE_ADDRESS=localhost`).
 - **Email**: finché non imposti `EMAIL_HOST` nel `.env`, le email vanno nei log
   (console), non vengono inviate davvero. L'app parte comunque.
 
 Per ri-collaudare in locale (serve Docker installato):
 ```bash
-printf 'SECRET_KEY=test\nALLOWED_HOSTS=localhost\nDB_PASSWORD=test\nSECURE_SSL_REDIRECT=False\n' > .env
+printf 'SECRET_KEY=test\nALLOWED_HOSTS=localhost\nDB_PASSWORD=test\nSITE_ADDRESS=localhost\n' > .env
 docker compose up -d --build
-curl -i http://localhost/health/     # 200 {"status":"ok"}
+curl -ik https://localhost/health/   # 200 {"status":"ok"} (cert interno -> -k)
 docker compose down -v               # pulizia
 ```
 
@@ -95,6 +93,6 @@ docker compose down -v               # pulizia
 | `web`           | Django + Gunicorn (HTTP su 8000, interno)      |
 | `celery_worker` | invio email, generazione PDF                   |
 | `celery_beat`   | task schedulati (reminder, solleciti, recovery)|
-| `nginx`         | reverse proxy pubblico (porta 80/443)          |
+| `caddy`         | reverse proxy pubblico + HTTPS automatico (80/443) |
 
 I segreti stanno solo nel file `.env` sul server. Mai nel repo.
