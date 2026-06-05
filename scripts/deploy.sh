@@ -1,15 +1,19 @@
 #!/bin/bash
 # =============================================================================
-# Deploy in produzione
+# Deploy in produzione (Docker Compose)
 # =============================================================================
-# Da eseguire sul server VPS dopo aver fatto git pull.
-# Esegue: build immagine, migrate, collectstatic, restart container app.
-# Non riavvia db/redis (zero downtime per il database).
+# Da eseguire sul server dopo aver clonato/aggiornato il repo.
+# Prerequisiti sul server: Docker + Docker Compose, e un file .env accanto al
+# docker-compose.yml con almeno SECRET_KEY, DB_PASSWORD, ALLOWED_HOSTS.
+#
+# Il container 'web' esegue da solo migrate + compilemessages + collectstatic
+# all'avvio (vedi docker-compose.yml), quindi qui basta build + up.
 # =============================================================================
 
 set -euo pipefail
 
-PROJECT_DIR="/opt/sponsor_manager"
+# Cartella del progetto (modifica se il repo non è in /opt/sponsor_manager)
+PROJECT_DIR="${PROJECT_DIR:-/opt/sponsor_manager}"
 cd "${PROJECT_DIR}"
 
 echo "[$(date)] === Deploy iniziato ==="
@@ -18,32 +22,22 @@ echo "[$(date)] === Deploy iniziato ==="
 echo "[$(date)] Git pull..."
 git pull origin main
 
-# 2. Build nuova immagine app
-echo "[$(date)] Build immagine Docker..."
-docker compose -f docker-compose.prod.yml build app celery_worker celery_beat
+# 2. Build nuove immagini (web, worker, beat condividono lo stesso Dockerfile)
+echo "[$(date)] Build immagini Docker..."
+docker compose build web celery_worker celery_beat
 
-# 3. Esegue migrate (in un container temporaneo)
-echo "[$(date)] Esecuzione migrazioni..."
-docker compose -f docker-compose.prod.yml run --rm app python manage.py migrate --noinput
+# 3. Avvia/aggiorna tutti i servizi. 'web' fa migrate+compilemessages+collectstatic
+#    all'avvio; db e redis restano up (zero downtime sul database).
+echo "[$(date)] Avvio servizi..."
+docker compose up -d
 
-# 4. Collectstatic
-echo "[$(date)] Raccolta file statici..."
-docker compose -f docker-compose.prod.yml run --rm app python manage.py collectstatic --noinput
-
-# 5. Compila traduzioni
-echo "[$(date)] Compilazione traduzioni..."
-docker compose -f docker-compose.prod.yml run --rm app python manage.py compilemessages
-
-# 6. Riavvia solo i servizi applicativi (db, redis, nginx restano up)
-echo "[$(date)] Riavvio servizi app..."
-docker compose -f docker-compose.prod.yml up -d --no-deps app celery_worker celery_beat
-
-# 7. Reload nginx (per nuovi file statici)
+# 4. Reload nginx (per eventuali nuovi file statici)
 echo "[$(date)] Reload nginx..."
-docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
+docker compose exec -T nginx nginx -s reload || true
 
-# 8. Pulizia immagini Docker vecchie
+# 5. Pulizia immagini Docker vecchie
 echo "[$(date)] Pulizia immagini vecchie..."
 docker image prune -f
 
-echo "[$(date)] === Deploy completato con successo ==="
+echo "[$(date)] === Deploy completato. Stato servizi: ==="
+docker compose ps
