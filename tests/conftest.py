@@ -3,7 +3,7 @@ Configurazione pytest per il progetto.
 """
 import pytest
 from django.contrib.auth import get_user_model
-from sponsors.models import Sponsor, Contact
+from sponsors.models import Sponsor, Contact, ContactRole
 from portal.models import Wishlist
 from users.models import UserRole
 
@@ -37,13 +37,18 @@ def sponsor(db, user_sponsor):
 
 @pytest.fixture
 def contact(db, user_sponsor, sponsor):
-    """Crea un contact collegato all'utente."""
+    """Crea un contact collegato all'utente.
+
+    Ha il ruolo OPERATIONAL: senza, il gate del portale
+    (portal/views/dashboard.py) reindirizza a 'I miei dati'.
+    """
     contact = Contact.objects.create(
         portal_user=user_sponsor,
         sponsor=sponsor,
         full_name='Test Contact',
         email='contact@test.it',
-        phone='+39123456789'
+        phone='+39123456789',
+        roles=[ContactRole.OPERATIONAL],
     )
     return contact
 
