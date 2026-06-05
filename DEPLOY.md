@@ -4,9 +4,12 @@ Questa app si mette online con **Docker Compose**: un solo comando avvia tutto
 (database, redis, app web, worker email/PDF, task schedulati, nginx).
 
 > Oggi **non c'è ancora un deploy attivo**: giri l'app in locale (WSL). Questa
-> guida ti porta da zero a online su un server. I file Docker sono stati resi
-> coerenti, ma **vanno collaudati con un `docker compose build` su una macchina
-> con Docker** prima di considerarli "in produzione" (vedi §4).
+> guida ti porta da zero a online su un server.
+>
+> ✅ Lo stack è stato **collaudato davvero** (2026-06-05) con `docker compose up`
+> su una macchina con Docker: tutti i container partono, `/health` risponde 200,
+> Celery si connette, e i PDF (LibreOffice + WeasyPrint) vengono generati nel
+> container. Resta da configurare **HTTPS** sul tuo dominio (vedi §4).
 
 ## 1. Cosa ti serve
 
@@ -52,29 +55,29 @@ cd /opt/sponsor_manager
 ./scripts/deploy.sh        # git pull + build + up + reload nginx
 ```
 
-## 4. Collaudo PRIMA della produzione (importante)
+## 4. Note e HTTPS
 
-I file Docker non sono ancora stati eseguiti su una macchina con Docker. Prima
-di affidarci, su un server di test (o sul tuo PC con Docker installato):
+Lo stack è stato collaudato e parte correttamente. Punti da sapere:
 
+- **PDF**: la generazione (LibreOffice per contratti/domande, WeasyPrint per il
+  preventivo grafico) gira nei container `web`/`celery_worker` — verificata.
+- **HTTPS**: di default lo stack serve in **HTTP** sulla porta 80, con il
+  redirect HTTPS dell'app **disattivato** se imposti `SECURE_SSL_REDIRECT=False`.
+  Per andare in produzione vera con HTTPS hai due strade:
+  1. **Consigliata**: metti un reverse proxy con certificati automatici davanti
+     (es. **Caddy** o **Traefik** con Let's Encrypt), che gira il traffico a
+     `web:8000`. Lascia `SECURE_SSL_REDIRECT=True` (default).
+  2. Configura i certificati direttamente in `nginx.conf` (blocco `server` su 443).
+- **Email**: finché non imposti `EMAIL_HOST` nel `.env`, le email vanno nei log
+  (console), non vengono inviate davvero. L'app parte comunque.
+
+Per ri-collaudare in locale (serve Docker installato):
 ```bash
-cp .env.prod.example .env   # metti valori di test
-docker compose build        # deve finire senza errori
-docker compose up -d
-docker compose ps           # tutti 'healthy'/'running'
-docker compose logs web     # nessun traceback; deve arrivare a "Booting worker"
-curl -i http://localhost/health/
+printf 'SECRET_KEY=test\nALLOWED_HOSTS=localhost\nDB_PASSWORD=test\nSECURE_SSL_REDIRECT=False\n' > .env
+docker compose up -d --build
+curl -i http://localhost/health/     # 200 {"status":"ok"}
+docker compose down -v               # pulizia
 ```
-
-Cose da verificare in particolare (sono i punti più a rischio):
-- **PDF**: conferma un preventivo e genera un PDF → serve LibreOffice nel
-  container (aggiunto nel Dockerfile). Se fallisce, controlla `docker compose logs celery_worker`.
-- **Permessi volumi**: `collectstatic` scrive in `static_data`. Se dà
-  "permission denied", il container gira come utente non-root (uid 1000):
-  potrebbe servire `chown` sui volumi o passare a bind mount.
-- **HTTPS**: questa config serve in HTTP sulla porta 80. Per HTTPS aggiungi un
-  reverse proxy con certificati (es. Caddy o Traefik con Let's Encrypt) davanti,
-  oppure configura i certificati in `nginx.conf`.
 
 ## 5. Backup / restore database
 
