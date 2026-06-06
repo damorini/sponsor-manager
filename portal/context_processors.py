@@ -68,4 +68,23 @@ def cart_count(request):
     except Exception:
         has_purchasable = False
 
-    return {'cart_count': count, 'has_purchasable_services': has_purchasable}
+    # Messaggi portale non letti (per il badge nel menu)
+    unread_messages = 0
+    try:
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            contact = getattr(user, 'contact_profile', None)
+            sponsor = getattr(contact, 'sponsor', None) if contact else None
+            if sponsor:
+                from sponsors.models import PortalMessage
+                unread_messages = PortalMessage.objects.filter(
+                    sponsor=sponsor, is_active=True, read_at__isnull=True,
+                ).count()
+    except Exception:
+        unread_messages = 0
+
+    return {
+        'cart_count': count,
+        'has_purchasable_services': has_purchasable,
+        'unread_messages': unread_messages,
+    }

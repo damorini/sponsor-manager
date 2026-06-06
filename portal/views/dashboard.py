@@ -129,6 +129,12 @@ def dashboard_view(request):
     prossimi_eventi = _futuri + _passati
     prossimo_evento = _futuri[0] if _futuri else None
 
+    from sponsors.models import PortalMessage
+    messaggi_non_letti = list(
+        PortalMessage.objects.filter(
+            sponsor=sponsor, is_active=True, read_at__isnull=True)
+        .order_by('-created_at'))
+
     return render(request, 'portal/dashboard/dashboard.html', {
         'admin_items': admin_items[:15],
         'tech_items': tech_items[:15],
@@ -137,7 +143,7 @@ def dashboard_view(request):
         'saldo_da_pagare': saldo_da_pagare,
         'prossimo_evento': prossimo_evento,
         'prossimi_eventi': prossimi_eventi,
-        'portal_message': (getattr(sponsor, 'portal_message', '') or '').strip(),
+        'messaggi_non_letti': messaggi_non_letti,
     })
 
 

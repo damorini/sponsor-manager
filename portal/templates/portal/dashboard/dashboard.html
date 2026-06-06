@@ -21,10 +21,20 @@
     </a>
   </div>
 
-  {% if portal_message %}
-  <div class="bg-amber-100 border-l-4 border-amber-500 text-amber-900 rounded-lg p-4 mb-6 text-sm leading-relaxed shadow-sm">
-    {{ portal_message|linebreaks }}
+  {% if messaggi_non_letti %}
+  {% for m in messaggi_non_letti %}
+  <div style="background:#faff00;border-left:7px solid #d39e00;border-radius:8px;padding:14px 18px;margin-bottom:14px;box-shadow:0 2px 6px rgba(0,0,0,.18);font-family:Arial,Helvetica,sans-serif;font-size:11pt;font-weight:bold;color:#1a1a1a;">
+    <div style="white-space:pre-line;">{{ m.body }}</div>
+    <form method="post" action="{% url 'portal:message_mark_read' m.id %}" style="margin-top:10px;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit"
+              style="background:#1f7a3d;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-weight:bold;cursor:pointer;">
+        ✓ {% trans "Ho letto questo messaggio" %}
+      </button>
+    </form>
   </div>
+  {% endfor %}
   {% endif %}
 
   {% if not has_events %}

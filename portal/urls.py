@@ -6,6 +6,7 @@ Da SOSTITUIRE al portal/urls.py della parte 2.
 from django.urls import path
 
 from portal.views import auth, dashboard, contract, catalog, cart, materials, wishlist, profile
+from portal.views import messages as portal_messages
 from contracts.views import checkout
 
 app_name = 'portal'
@@ -37,6 +38,9 @@ urlpatterns = [
     path('smetti-impersona/', auth.impersonate_stop, name='impersonate_stop'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
     path('acquisti/', dashboard.purchases_view, name='purchases'),
+    path('messaggi/', portal_messages.messages_list, name='messages'),
+    path('messaggi/<uuid:message_id>/letto/', portal_messages.message_mark_read,
+         name='message_mark_read'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),
     path('contracts/<uuid:contract_id>/conferma/anteprima/', contract.quote_confirm_page_view,

@@ -1,0 +1,56 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Archivio messaggi" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold text-gray-900">{% trans "Archivio messaggi" %}</h1>
+    {% if non_letti %}
+    <span class="text-sm font-semibold text-red-600">
+      {% blocktrans count counter=non_letti %}{{ counter }} da leggere{% plural %}{{ counter }} da leggere{% endblocktrans %}
+    </span>
+    {% endif %}
+  </div>
+
+  {% if messaggi %}
+  <div class="space-y-4">
+    {% for m in messaggi %}
+    {% if m.is_read %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+      <div class="flex items-center justify-between mb-2">
+        <span class="inline-flex items-center text-xs font-medium bg-green-100 text-green-800 px-2 py-0.5 rounded">✓ {% trans "Letto" %}</span>
+        <span class="text-xs text-gray-400">{{ m.created_at|date:"d/m/Y H:i" }}</span>
+      </div>
+      <div class="text-sm text-gray-800" style="white-space:pre-line;">{{ m.body }}</div>
+      <div class="text-xs text-gray-400 mt-2">{% trans "Letto il" %} {{ m.read_at|date:"d/m/Y H:i" }}</div>
+    </div>
+    {% else %}
+    <div style="background:#faff00;border-left:7px solid #d39e00;border-radius:8px;padding:14px 18px;box-shadow:0 2px 6px rgba(0,0,0,.18);">
+      <div class="flex items-center justify-between mb-2" style="font-family:Arial,Helvetica,sans-serif;">
+        <span style="background:#d39e00;color:#fff;font-size:10pt;font-weight:bold;padding:2px 10px;border-radius:4px;">{% trans "DA LEGGERE" %}</span>
+        <span style="font-size:9pt;color:#5b5b00;">{{ m.created_at|date:"d/m/Y H:i" }}</span>
+      </div>
+      <div style="font-family:Arial,Helvetica,sans-serif;font-size:11pt;font-weight:bold;color:#1a1a1a;white-space:pre-line;">{{ m.body }}</div>
+      <form method="post" action="{% url 'portal:message_mark_read' m.id %}" style="margin-top:10px;">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'portal:messages' %}">
+        <button type="submit"
+                style="background:#1f7a3d;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-family:Arial,Helvetica,sans-serif;font-size:10pt;font-weight:bold;cursor:pointer;">
+          ✓ {% trans "Ho letto questo messaggio" %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+    <p class="text-gray-500">{% trans "Nessun messaggio." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

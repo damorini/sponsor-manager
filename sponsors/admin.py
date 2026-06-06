@@ -14,7 +14,7 @@ from django.db.models.functions import Lower
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Contact, ContactRole, Sponsor
+from .models import Contact, ContactRole, PortalMessage, Sponsor
 
 
 class _Cognome(Func):
@@ -54,6 +54,33 @@ class ContactInline(admin.TabularInline):
         css = {'all': ('admin/css/sponsor_contact_inline.css',)}
 
 
+def _stato_messaggio_badge(msg):
+    if msg.is_read:
+        return format_html(
+            '<span style="background:#41ad7c;color:#fff;padding:2px 8px;'
+            'border-radius:3px;font-size:.85em;">LETTO</span>')
+    return format_html(
+        '<span style="background:#e6a23c;color:#fff;padding:2px 8px;'
+        'border-radius:3px;font-size:.85em;font-weight:700;">DA LEGGERE</span>')
+
+
+class PortalMessageInline(admin.TabularInline):
+    """Messaggi al portale di questo sponsor, con stato letto/da leggere."""
+    model = PortalMessage
+    extra = 0
+    fields = ('body', 'event', 'is_active', 'stato', 'read_at', 'read_by')
+    readonly_fields = ('stato', 'read_at', 'read_by')
+    verbose_name = 'Messaggio portale'
+    verbose_name_plural = 'Messaggi al portale (archivio)'
+    ordering = ('-created_at',)
+
+    @admin.display(description='Stato')
+    def stato(self, obj):
+        if not obj.pk:
+            return '—'
+        return _stato_messaggio_badge(obj)
+
+
 @admin.register(Sponsor)
 class SponsorAdmin(admin.ModelAdmin):
     list_display = (
@@ -72,8 +99,19 @@ class SponsorAdmin(admin.ModelAdmin):
     )
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary', 'logo_preview')
     ordering = (Lower('legal_name'),)
-    inlines = [ContactInline]
+    inlines = [ContactInline, PortalMessageInline]
     actions = ['action_generate_client_summary', 'action_compose_email']
+
+    def save_formset(self, request, form, formset, change):
+        # Imposta 'inviato da' sui nuovi messaggi portale creati dall'inline.
+        instances = formset.save(commit=False)
+        for obj in instances:
+            if isinstance(obj, PortalMessage) and obj.created_by_id is None:
+                obj.created_by = request.user
+            obj.save()
+        formset.save_m2m()
+        for obj in formset.deleted_objects:
+            obj.delete()
 
     def get_urls(self):
         urls = super().get_urls()
@@ -285,10 +323,6 @@ class SponsorAdmin(admin.ModelAdmin):
         ('Note', {
             'fields': ('notes',),
             'classes': ('collapse',),
-        }),
-        ('Messaggio portale', {
-            'fields': ('portal_message',),
-            'description': 'Mostrato a questo sponsor nella home del portale (In evidenza).',
         }),
         ('Riepilogo contratti', {
             'fields': ('contracts_summary',),
@@ -508,3 +542,51 @@ class ContactAdmin(admin.ModelAdmin):
             for r in obj.roles
         ])
         return format_html(badges)
+
+
+class _LettoFilter(admin.SimpleListFilter):
+    title = 'Stato lettura'
+    parameter_name = 'letto'
+
+    def lookups(self, request, model_admin):
+        return (('si', 'Letto'), ('no', 'Da leggere'))
+
+    def queryset(self, request, queryset):
+        if self.value() == 'si':
+            return queryset.filter(read_at__isnull=False)
+        if self.value() == 'no':
+            return queryset.filter(read_at__isnull=True)
+        return queryset
+
+
+@admin.register(PortalMessage)
+class PortalMessageAdmin(admin.ModelAdmin):
+    """Archivio messaggi al portale, con stato letto / da leggere."""
+    list_display = ('sponsor', 'estratto', 'stato', 'event', 'is_active',
+                    'created_at', 'read_at', 'created_by')
+    list_filter = (_LettoFilter, 'is_active', 'event')
+    search_fields = ('sponsor__legal_name', 'sponsor__display_name', 'body')
+    list_select_related = ('sponsor', 'event', 'read_by', 'created_by')
+    autocomplete_fields = ['sponsor', 'event']
+    readonly_fields = ('read_at', 'read_by', 'created_by', 'created_at', 'updated_at')
+    ordering = ('-created_at',)
+    fieldsets = (
+        (None, {'fields': ('sponsor', 'event', 'body', 'is_active')}),
+        ('Stato lettura', {'fields': ('read_at', 'read_by')}),
+        ('Sistema', {'fields': ('created_by', 'created_at', 'updated_at'),
+                     'classes': ('collapse',)}),
+    )
+
+    @admin.display(description='Messaggio')
+    def estratto(self, obj):
+        t = (obj.body or '').strip().replace('\n', ' ')
+        return (t[:60] + '…') if len(t) > 60 else t
+
+    @admin.display(description='Stato')
+    def stato(self, obj):
+        return _stato_messaggio_badge(obj)
+
+    def save_model(self, request, obj, form, change):
+        if obj.created_by_id is None:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)

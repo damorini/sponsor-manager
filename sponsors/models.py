@@ -336,3 +336,70 @@ class Contact(SoftDeleteModel):
     def tax_code(self):
         """Alias per signer_tax_code (usato nei template contratto)."""
         return self.signer_tax_code
+
+
+class PortalMessage(TimeStampedModel):
+    """Messaggio dall'operatore allo sponsor, mostrato nel portale.
+
+    Tiene traccia di letto / da leggere: il cliente conferma la lettura con un
+    pulsante. L'operatore vede lo stato nell'archivio messaggi del backoffice.
+    """
+    sponsor = models.ForeignKey(
+        Sponsor,
+        on_delete=models.CASCADE,
+        related_name='portal_messages',
+        verbose_name="Sponsor",
+    )
+    event = models.ForeignKey(
+        'events.Event',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='portal_messages',
+        verbose_name="Evento (opzionale)",
+        help_text="Lascia vuoto per un messaggio generico.",
+    )
+    body = models.TextField(verbose_name="Messaggio")
+    is_active = models.BooleanField(
+        default=True, verbose_name="Attivo",
+        help_text="Se disattivato non compare nel portale.",
+    )
+    read_at = models.DateTimeField(null=True, blank=True, verbose_name="Letto il")
+    read_by = models.ForeignKey(
+        'sponsors.Contact',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='read_portal_messages',
+        verbose_name="Letto da",
+    )
+    created_by = models.ForeignKey(
+        'users.User',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='sent_portal_messages',
+        verbose_name="Inviato da",
+    )
+
+    class Meta:
+        verbose_name = "Messaggio portale"
+        verbose_name_plural = "Messaggi portale"
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['sponsor', 'read_at']),
+        ]
+
+    def __str__(self):
+        stato = 'letto' if self.is_read else 'da leggere'
+        return f"{self.sponsor} · {stato}"
+
+    @property
+    def is_read(self):
+        return self.read_at is not None
+
+    def mark_read(self, contact=None):
+        """Marca il messaggio come letto (idempotente)."""
+        from django.utils import timezone
+        if self.read_at is None:
+            self.read_at = timezone.now()
+            if contact is not None:
+                self.read_by = contact
+            self.save(update_fields=['read_at', 'read_by', 'updated_at'])
