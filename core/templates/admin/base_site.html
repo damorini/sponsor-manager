@@ -4,11 +4,99 @@
 {% block title %}{{ title }} | {{ site_title|default:_("Django site admin") }}{% endblock %}
 
 {% block extrastyle %}{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>/* no-number-spinners */
   /* Niente frecce su/giu sui campi numero (cambiavano valore per sbaglio) */
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+</style>
+
+<style>/* ===== Tema VALET: admin in stile editoriale caldo (coerente col Cruscotto) ===== */
+  :root {
+    --primary: #7A3613;              /* terra */
+    --secondary: #1A1612;            /* ink (header) */
+    --accent: #C8A04E;               /* oro caldo */
+    --primary-fg: #ffffff;
+
+    --header-color: #EDE6DA;
+    --header-branding-color: var(--accent);
+    --header-bg: #1A1612;
+    --header-link-color: #FAF8F5;
+
+    --breadcrumbs-fg: #8A7F71;
+    --breadcrumbs-link-fg: #4A4137;
+    --breadcrumbs-bg: #F2EFEA;
+
+    --link-fg: #7A3613;
+    --link-hover-color: #1A1612;
+    --link-selected-fg: #1A1612;
+
+    --button-bg: #1A1612;
+    --button-hover-bg: #4A4137;
+    --default-button-bg: #7A3613;
+    --default-button-hover-bg: #9C4A1F;
+    --close-button-bg: #8A7F71;
+    --close-button-hover-bg: #4A4137;
+    --object-tools-bg: #1A1612;
+    --object-tools-hover-bg: #4A4137;
+
+    --body-fg: #1A1612;
+    --body-quiet-color: #8A7F71;
+    --hairline-color: #E8E2D8;
+    --border-color: #E8E2D8;
+    --selected-bg: #F2EFEA;
+    --selected-row: #FAF8F5;
+  }
+
+  html, body, .module, #content, input, select, textarea, button, .button {
+    font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  }
+  /* Titoli in serif editoriale (come il Cruscotto) */
+  #content h1, .module h2, .module h3, #content-main h2,
+  fieldset h2, .inline-group h2, #site-name {
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+    letter-spacing: -.01em;
+  }
+
+  body { background: #FAF8F5; }
+
+  /* Header ink con leggero gradiente */
+  #header {
+    background: linear-gradient(180deg, #211B15 0%, #1A1612 100%);
+    box-shadow: 0 1px 0 rgba(0,0,0,.12);
+  }
+  #branding h1, #site-name a:link, #site-name a:visited { font-weight: 600; letter-spacing: -.01em; }
+
+  /* Titoli più curati */
+  h1 { font-weight: 600; }
+
+  /* Moduli e box: angoli morbidi + ombra leggera */
+  .module { border-radius: 12px; border: 1px solid var(--hairline-color); box-shadow: 0 1px 2px rgba(15,41,66,.04); overflow: hidden; }
+  /* Intestazioni dei moduli nel CONTENUTO: crema soft + ink */
+  #content-main .module > caption,
+  #content-main .module > h2,
+  #content-main .module > h3 { background: #F2EFEA; color: #4A4137; font-weight: 600; }
+  /* Intestazioni della SIDEBAR: ink + testo crema (leggibile) */
+  #nav-sidebar .module caption,
+  #nav-sidebar .module caption a { background: #1A1612; color: #EDE6DA !important; }
+
+  /* Pulsanti: pill + transizione */
+  .button, input[type=submit], input[type=button], .submit-row input, a.button {
+    border-radius: 10px; font-weight: 600; transition: background .15s ease, transform .05s ease;
+  }
+  .button:active, input[type=submit]:active { transform: translateY(1px); }
+
+  /* Sidebar app list più ariosa */
+  #nav-sidebar .module caption { letter-spacing: .04em; text-transform: uppercase; font-size: .72rem; }
+
+  /* Righe tabella: selezione/hover gentili */
+  #changelist tbody tr:hover { background: var(--selected-row); }
+
+  /* Link "Cruscotto" iniettato via JS: stile coerente (vedi anche lo script sotto) */
+  #cruscotto-sidebar-link a { border-radius: 10px !important; }
 </style>
 <script>
   // Evita che la rotellina del mouse cambi un campo numero a fuoco
@@ -28,7 +116,7 @@
     var a = document.createElement('a');
     a.href = '/admin/cruscotto/';
     a.textContent = '📊 Cruscotto';
-    a.style.cssText = 'display:block;text-align:center;font-weight:bold;background:#417690;color:#fff;padding:8px 12px;border-radius:6px;text-decoration:none;';
+    a.style.cssText = 'display:block;text-align:center;font-weight:600;background:#1A1612;color:#fff;padding:9px 12px;border-radius:10px;text-decoration:none;';
     wrap.appendChild(a);
     sb.insertBefore(wrap, sb.firstChild);
   });
