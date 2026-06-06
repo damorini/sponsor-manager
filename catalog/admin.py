@@ -157,6 +157,10 @@ class ServiceAdmin(admin.ModelAdmin):
     ordering = ('event', 'display_order')
     inlines = [DeadlineTemplateInline, ServiceVariantInline, ServiceInclusionInline]
 
+    class Media:
+        # Filtra i "Servizi inclusi" per l'evento scelto nel form (anche in creazione)
+        js = ('admin/js/service_event_filter.js',)
+
     fieldsets = (
         (None, {
             'fields': ('event', 'code', 'name', 'description', 'image', 'image_preview', 'category'),
