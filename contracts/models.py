@@ -1123,6 +1123,14 @@ class ContractLine(TimeStampedModel):
             raise ValidationError({'service_variant':
                 "La variante selezionata non appartiene a questo servizio."})
 
+        # Quantità massima per riga (campo 'Quantità massima' del servizio).
+        # Es. servizio unico (muletto): max_quantity=1 -> non se ne possono mettere 2.
+        mq = getattr(self.service, 'max_quantity', None)
+        if mq is not None and (self.quantity or 0) > mq:
+            raise ValidationError({'quantity':
+                f"«{self.service.translated('name', 'it')}»: quantità massima consentita "
+                f"per riga = {mq}. Hai inserito {self.quantity}."})
+
         # Disponibilità della VARIANTE (ha scorte proprie, es. "restano 10").
         if self.service_variant_id:
             v = self.service_variant

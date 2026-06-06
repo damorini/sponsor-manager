@@ -85,6 +85,19 @@ def test_variante_oltre_disponibilita_blocca(evento, contratto):
 
 
 @pytest.mark.django_db
+def test_max_quantity_blocca_oltre_il_massimo(evento, contratto):
+    """Servizio 'unico' (max_quantity=1): non se ne possono inserire 2 in una riga."""
+    s = Service.objects.create(
+        event=evento, code='UNI', name={'it': 'Muletto', 'en': 'Forklift'},
+        base_price=Decimal('120.00'), vat_rate=Decimal('22.00'), max_quantity=1,
+    )
+    with pytest.raises(ValidationError) as exc:
+        _line(contratto, s, qty=2).clean()
+    assert 'quantity' in exc.value.message_dict
+    _line(contratto, s, qty=1).clean()  # qty 1 consentita
+
+
+@pytest.mark.django_db
 def test_variante_di_altro_servizio_blocca(evento, contratto):
     s1 = Service.objects.create(
         event=evento, code='S5', name={'it': 'Tavolo', 'en': 'Table'},
