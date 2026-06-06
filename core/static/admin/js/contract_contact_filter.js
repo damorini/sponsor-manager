@@ -16,21 +16,35 @@
             const el = document.querySelector(sel);
             return el ? (el.value || '') : '';
         }
+        function addParam(options, key, value) {
+            if (!value) { return; }
+            if (options.data && typeof options.data === 'object') {
+                options.data[key] = value;
+            } else if (typeof options.data === 'string'
+                       && options.data.indexOf(key + '=') === -1) {
+                options.data += '&' + key + '=' + encodeURIComponent(value);
+            }
+        }
         $.ajaxPrefilter(function (options) {
             if (!options.url || options.url.indexOf('autocomplete') === -1) { return; }
-            if (!fieldIs(options.data, 'sponsor_signer_contact')) { return; }
-            const sp = valOf('#id_sponsor');
-            if (!sp) { return; }
-            if (options.data && typeof options.data === 'object') {
-                options.data.sponsor = sp;
-            } else if (typeof options.data === 'string' && options.data.indexOf('sponsor=') === -1) {
-                options.data += '&sponsor=' + encodeURIComponent(sp);
+            // Firmatario: filtra per sponsor scelto.
+            if (fieldIs(options.data, 'sponsor_signer_contact')) {
+                addParam(options, 'sponsor', valOf('#id_sponsor'));
+            }
+            // Contratto principale (parent): solo contratti dello stesso sponsor
+            // (e stesso evento). Il server limita gia' ai contratti PRINCIPALI.
+            if (fieldIs(options.data, 'parent_contract')) {
+                addParam(options, 'sponsor', valOf('#id_sponsor'));
+                addParam(options, 'event', valOf('#id_event'));
             }
         });
         $(function () {
+            // Cambiando sponsor, azzera i campi dipendenti.
             $('#id_sponsor').on('change', function () {
-                const $c = $('#id_sponsor_signer_contact');
-                if ($c.length) { $c.val(null).trigger('change'); }
+                ['#id_sponsor_signer_contact', '#id_parent_contract'].forEach(function (sel) {
+                    const $c = $(sel);
+                    if ($c.length) { $c.val(null).trigger('change'); }
+                });
             });
         });
     }

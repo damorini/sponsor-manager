@@ -221,6 +221,20 @@ class ContractAdmin(admin.ModelAdmin):
         from core.event_scope import scope_by_event
         return scope_by_event(request, super().get_queryset(request), 'event')
 
+    def get_search_results(self, request, queryset, search_term):
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            sp = request.GET.get('sponsor')
+            if sp:
+                queryset = queryset.filter(sponsor_id=sp)
+            ev = request.GET.get('event')
+            if ev:
+                queryset = queryset.filter(event_id=ev)
+            # Per il campo 'Contratto principale' mostra solo i contratti PRINCIPALI.
+            if request.GET.get('field_name') == 'parent_contract':
+                queryset = queryset.filter(contract_kind=ContractKind.MAIN)
+        return queryset, may_dup
+
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',)
