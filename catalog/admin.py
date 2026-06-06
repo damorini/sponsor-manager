@@ -305,6 +305,31 @@ class CatalogServiceAdmin(admin.ModelAdmin):
             return obj.code
 
 
+@admin.register(ServiceVariant)
+class ServiceVariantAdmin(admin.ModelAdmin):
+    """Registrato per abilitare l'autocomplete della variante nelle Righe
+    contratto. Le varianti si gestiscono comunque dentro il Servizio."""
+    list_display = ('label', 'service', 'code', 'base_price', 'is_active')
+    list_filter = (evento_filter('service__event'), 'is_active')
+    search_fields = ('label', 'label_en', 'code',
+                     'service__name', 'service__event__name', 'service__event__slug')
+    list_select_related = ('service', 'service__event')
+    autocomplete_fields = ['service']
+
+    def get_search_results(self, request, queryset, search_term):
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            # Solo varianti attive; filtrate per evento se passato (?event=...)
+            queryset = queryset.filter(is_active=True)
+            _ev = request.GET.get("event")
+            if _ev:
+                queryset = queryset.filter(service__event_id=_ev)
+            _serv = request.GET.get("service")
+            if _serv:
+                queryset = queryset.filter(service_id=_serv)
+        return queryset, may_dup
+
+
 @admin.register(ServiceCategory)
 class ServiceCategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'code', 'display_order', 'is_active')

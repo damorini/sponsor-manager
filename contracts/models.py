@@ -949,6 +949,10 @@ class ContractLine(TimeStampedModel):
             super_clean()
         if not self.service_id:
             return
+        # La variante scelta deve appartenere al servizio della riga.
+        if self.service_variant_id and self.service_variant.service_id != self.service_id:
+            raise ValidationError({'service_variant':
+                "La variante selezionata non appartiene a questo servizio."})
         # contratto cui appartiene questa riga (per escluderlo dal conteggio)
         contract_id = self.contract_id
         avail = self.service.quantity_available(exclude_contract_id=contract_id)
@@ -1154,9 +1158,15 @@ class ContractLine(TimeStampedModel):
                 self.service_name_snapshot = self.service.translated('name')
             if not self.service_description_snapshot:
                 self.service_description_snapshot = self.service.translated('description')
+            # Variante scelta: salva l'etichetta e usa il suo prezzo.
+            if self.service_variant_id and not self.variant_label_snapshot:
+                self.variant_label_snapshot = self.service_variant.label
             if not self.unit_price:
-                # Prezzo base; logica avanzata (scaglioni) gestita a livello applicativo
-                self.unit_price = self.service.base_price
+                if self.service_variant_id and self.service_variant.base_price is not None:
+                    self.unit_price = self.service_variant.base_price
+                else:
+                    # Prezzo base; logica avanzata (scaglioni) gestita a livello applicativo
+                    self.unit_price = self.service.base_price
             if not self.vat_rate:
                 self.vat_rate = self.service.vat_rate
 

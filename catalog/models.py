@@ -425,7 +425,11 @@ class ServiceVariant(TimeStampedModel):
         ordering = ['display_order', 'label']
 
     def __str__(self):
-        return self.label
+        # Mostra "variante — servizio" per distinguerla nelle tendine admin.
+        try:
+            return f"{self.label} — {self.service.translated('name', 'it')}"
+        except Exception:
+            return self.label
 
     def label_display(self):
         """Etichetta nella lingua attiva del portale (fallback: italiano)."""

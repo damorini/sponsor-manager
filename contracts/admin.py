@@ -42,17 +42,17 @@ class ContractLineInline(admin.TabularInline):
     model = ContractLine
     extra = 0
     fields = (
-        'service', 'quantity', 'unit_price',
+        'service', 'service_variant', 'quantity', 'unit_price',
         'discount_percent', 'discount_amount',
         'line_subtotal', 'line_vat', 'line_total',
     )
     readonly_fields = ('line_subtotal', 'line_vat', 'line_total')
-    autocomplete_fields = ['service']
+    autocomplete_fields = ['service', 'service_variant']
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # La tendina 'service' mostra SOLO i servizi dell'evento del contratto
-        # (come per i 'servizi inclusi'). Filtro lato server, non solo via JS.
-        if db_field.name == 'service':
+        # Le tendine 'service' e 'service_variant' mostrano SOLO le voci
+        # dell'evento del contratto. Filtro lato server, non solo via JS.
+        if db_field.name in ('service', 'service_variant'):
             contract_id = None
             try:
                 contract_id = request.resolver_match.kwargs.get('object_id')
@@ -63,12 +63,17 @@ class ContractLineInline(admin.TabularInline):
                 contract = Contract.objects.filter(pk=contract_id).first()
                 if contract is not None and contract.event_id:
                     from catalog.admin import _AutocompleteServiceByEvento
-                    from catalog.models import Service
+                    from catalog.models import Service, ServiceVariant
                     kwargs['widget'] = _AutocompleteServiceByEvento(
                         db_field, self.admin_site,
                         parent_event_id=contract.event_id,
                     )
-                    kwargs['queryset'] = Service.objects.filter(event_id=contract.event_id)
+                    if db_field.name == 'service':
+                        kwargs['queryset'] = Service.objects.filter(
+                            event_id=contract.event_id)
+                    else:
+                        kwargs['queryset'] = ServiceVariant.objects.filter(
+                            service__event_id=contract.event_id, is_active=True)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
