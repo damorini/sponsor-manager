@@ -71,8 +71,16 @@ class EventAdmin(admin.ModelAdmin):
     @admin.action(description='Archivia eventi selezionati (spariscono dal portale, niente acquisti)')
     def action_archivia(self, request, queryset):
         from events.models import EventStatus
-        n = queryset.update(status=EventStatus.ARCHIVED)
-        self.message_user(request, f"{n} evento/i archiviato/i. Non sono più visibili né acquistabili nel portale (restano in 'Archivio eventi').")
+        n = 0
+        scad = 0
+        for e in queryset.exclude(status=EventStatus.ARCHIVED):
+            e.status = EventStatus.ARCHIVED
+            e.save(update_fields=['status', 'updated_at'])  # chiude anche le scadenze
+            n += 1
+        self.message_user(
+            request,
+            f"{n} evento/i archiviato/i. Non sono più visibili né acquistabili nel "
+            f"portale (restano in 'Archivio eventi') e le scadenze aperte sono state annullate.")
 
     @admin.action(description='Riattiva eventi selezionati (vendita aperta)')
     def action_riattiva(self, request, queryset):

@@ -226,7 +226,35 @@ class Event(TimeStampedModel):
         if self.code:
             self.code = ''.join(self.code.split()).upper()
 
+        # Rileva il passaggio -> ARCHIVIATO per chiudere le scadenze aperte.
+        era_archiviato = False
+        if self.pk:
+            era_archiviato = (
+                type(self).objects
+                .filter(pk=self.pk)
+                .values_list('status', flat=True)
+                .first() == EventStatus.ARCHIVED
+            )
+
         super().save(*args, **kwargs)
+
+        if self.status == EventStatus.ARCHIVED and not era_archiviato:
+            self.chiudi_scadenze_aperte()
+
+    def chiudi_scadenze_aperte(self):
+        """Evento archiviato: annulla (WAIVED) le scadenze ancora aperte dei
+        suoi contratti, così non risultano 'da fare' nel portale e non partono
+        più i reminder. Storico preservato (non vengono cancellate fisicamente)."""
+        from contracts.models import Deadline, DeadlineStatus
+        aperte = [
+            DeadlineStatus.PENDING,
+            DeadlineStatus.REMINDER_SENT,
+            DeadlineStatus.OVERDUE,
+        ]
+        return Deadline.objects.filter(
+            contract__event=self,
+            status__in=aperte,
+        ).update(status=DeadlineStatus.WAIVED)
 
     # ---------------------------------------------------------------------
     # Helper multilingua

@@ -56,6 +56,26 @@ def test_catalogo_evento_archiviato_vietato(client, user_sponsor, sponsor, conta
 
 
 @pytest.mark.django_db
+def test_archiviazione_chiude_le_scadenze_aperte(evento_con_contratto):
+    from contracts.models import Deadline, DeadlineStatus
+    c = Contract.objects.get(event=evento_con_contratto)
+    d_open = Deadline.objects.create(
+        contract=c, deadline_type='materiale', title='Invia logo',
+        due_date=date.today() + timedelta(days=5), status=DeadlineStatus.PENDING)
+    d_done = Deadline.objects.create(
+        contract=c, deadline_type='materiale', title='Già fatto',
+        due_date=date.today(), status=DeadlineStatus.RECEIVED)
+
+    evento_con_contratto.status = EventStatus.ARCHIVED
+    evento_con_contratto.save(update_fields=['status'])
+
+    d_open.refresh_from_db()
+    d_done.refresh_from_db()
+    assert d_open.status == DeadlineStatus.WAIVED   # aperta -> annullata
+    assert d_done.status == DeadlineStatus.RECEIVED  # già chiusa: invariata
+
+
+@pytest.mark.django_db
 def test_servizi_acquistabili_vuoti_se_archiviato(evento_con_contratto):
     from portal.views.catalog import _get_purchasable_services
     Service.objects.create(
