@@ -11,7 +11,7 @@
   <nav class="text-sm text-gray-500 mb-4">
     <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">Dashboard</a>
     <span class="mx-2">/</span>
-    <a href="{% url 'portal:contracts_list' %}" class="hover:text-brand-500">{% trans "Contratti" %}</a>
+    <a href="{% url 'portal:contracts_list' %}" class="hover:text-brand-500">{% trans "Domanda di ammissione" %}</a>
     <span class="mx-2">/</span>
     <span class="text-gray-700">{{ contract.contract_number }}</span>
   </nav>
@@ -151,7 +151,7 @@
         </table>
         {% else %}
         <div class="px-5 py-8 text-center text-gray-500">
-          {% trans "Nessuna riga sul contratto." %}
+          {% trans "Nessuna riga sulla domanda di ammissione." %}
         </div>
         {% endif %}
       </div>
@@ -237,7 +237,7 @@
         <span class="inline-block bg-white/40 text-white/80 font-medium px-5 py-2 rounded text-sm cursor-not-allowed select-none">
           {% trans "Esplora il catalogo" %}
         </span>
-        <p class="text-sm text-brand-50 mt-3">{% trans "I servizi potranno essere acquistati a seguito della firma del contratto." %}</p>
+        <p class="text-sm text-brand-50 mt-3">{% trans "I servizi potranno essere acquistati a seguito della conferma della domanda di ammissione." %}</p>
         {% endif %}
       </div>
       {% endif %}
@@ -260,7 +260,7 @@
           </div>
           
           <div>
-            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Tipo contratto" %}</dt>
+            <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Tipo documento" %}</dt>
             <dd class="text-gray-900">
               {{ contract.contract_kind|kind_label }}
               {% if contract.parent_contract %}

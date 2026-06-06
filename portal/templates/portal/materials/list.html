@@ -35,7 +35,7 @@
   {% endif %}
   {% else %}
   <p class="text-gray-600 mb-6">
-    Carica i materiali richiesti per il contratto
+    Carica i materiali richiesti per la domanda di ammissione
     <strong>{{ contract.contract_number }}</strong>
     ({{ contract.event.get_name }})
   </p>
@@ -127,9 +127,9 @@
 
       {% if m.is_payment %}
       <div class="px-5 py-4 border-b border-gray-100 text-sm text-gray-700 space-y-1">
-        <div><span class="text-gray-500">Contratto:</span> <span class="font-medium">{{ m.deadline.contract.contract_number }}</span></div>
+        <div><span class="text-gray-500">Domanda di ammissione:</span> <span class="font-medium">{{ m.deadline.contract.contract_number }}</span></div>
         <div><span class="text-gray-500">{{ m.payment_label }}:</span> <span class="font-semibold text-gray-900">&euro; {{ m.payment_amount|floatformat:2 }}</span></div>
-        <div class="text-xs text-gray-500">Totale contratto: &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
+        <div class="text-xs text-gray-500">Totale domanda: &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
       </div>
       {% endif %}
 
@@ -260,9 +260,9 @@
   </div>
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center text-gray-500">
-    <p>Nessuna scadenza operativa per questo contratto.</p>
+    <p>Nessuna scadenza operativa per questa domanda di ammissione.</p>
     <p class="text-sm mt-2">
-      Le scadenze vengono generate automaticamente quando il contratto viene firmato.
+      Le scadenze vengono generate automaticamente alla conferma della domanda di ammissione.
     </p>
   </div>
   {% endif %}

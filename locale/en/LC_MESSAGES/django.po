@@ -1,8 +1,9 @@
+#: portal/templatetags/portal_labels.py:37
 msgid ""
 msgstr ""
 "Project-Id-Version: sponsor_manager\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-02 12:00+0000\n"
+"POT-Creation-Date: 2026-06-06 09:02+0200\n"
 "PO-Revision-Date: 2026-06-02 12:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -12,704 +13,1244 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: core/admin_widgets.py:159
+#, python-format
+msgid "La traduzione in %(language)s è obbligatoria."
+msgstr ""
+
+#: core/templates/admin/app_list.html:21 core/templates/admin/app_list.html:39
+#: core/templates/admin/app_list.html:57 core/templates/admin/app_list.html:75
+#: core/templates/admin/app_list.html:93 core/templates/admin/app_list.html:111
+#, fuzzy
+#| msgid "Addon"
+msgid "Add"
+msgstr "Add-on"
+
+#: core/templates/admin/app_list.html:22 core/templates/admin/app_list.html:40
+#: core/templates/admin/app_list.html:58 core/templates/admin/app_list.html:76
+#: core/templates/admin/app_list.html:94 core/templates/admin/app_list.html:112
+msgid "View"
+msgstr ""
+
+#: core/templates/admin/app_list.html:22 core/templates/admin/app_list.html:40
+#: core/templates/admin/app_list.html:58 core/templates/admin/app_list.html:76
+#: core/templates/admin/app_list.html:94 core/templates/admin/app_list.html:112
+msgid "Change"
+msgstr ""
+
+#: core/templates/admin/app_list.html:120
+msgid "You don\\u2019t have permission to view or edit anything."
+msgstr ""
+
+#: core/templates/admin/base_site.html:4 core/templates/cruscotto/home.html:4
+msgid "Django site admin"
+msgstr ""
+
+#: core/templates/admin/base_site.html:68
+#: core/templates/cruscotto/evento.html:12
+#: core/templates/cruscotto/home.html:11
+#: core/templates/cruscotto/scadenza_dettaglio.html:11
+#: core/templates/cruscotto/scadenze_cliente.html:11
+#: core/templates/cruscotto/servizio.html:12
+#: core/templates/cruscotto/utility.html:11
+#, fuzzy
+#| msgid "Amministrazione"
+msgid "Django administration"
+msgstr "Administration"
+
+#: core/templates/admin/evento_dropdown_filter.html:2
+#, fuzzy
+#| msgid "Apri evento →"
+msgid "Per evento"
+msgstr "Open event →"
+
+#: portal/templates/portal/auth/login.html:4
+msgid "Accesso"
+msgstr "Login"
+
+#: portal/templates/portal/auth/login.html:32
+msgid "Accesso portale sponsor"
+msgstr "Sponsor portal login"
+
+#: portal/templates/portal/auth/login.html:47
+msgid "Credenziali non valide"
+msgstr "Invalid credentials"
+
+#: portal/templates/portal/auth/login.html:49
+msgid "Verifica email e password. Se hai dimenticato la password,"
+msgstr "Check your email and password. If you forgot your password,"
+
+#: portal/templates/portal/auth/login.html:51
+msgid "richiedi un nuovo accesso"
+msgstr "request new access"
+
+#: portal/templates/portal/auth/login.html:78
+msgid "Accedi"
+msgstr "Log in"
+
+#: portal/templates/portal/auth/login.html:84
+msgid "Hai dimenticato la password?"
+msgstr "Forgot your password?"
+
+#: portal/templates/portal/auth/login.html:93
+msgid ""
+"Non hai ancora un account? L'accesso al portale è riservato agli sponsor "
+"invitati. Contatta"
+msgstr ""
+"Don't have an account yet? Portal access is reserved for invited sponsors. "
+"Contact"
+
+#: portal/templates/portal/auth/login.html:97
+msgid "per richiedere l'invito."
+msgstr "to request an invitation."
+
+#: portal/templates/portal/base.html:6
 msgid "Portale Sponsor"
 msgstr "Sponsor Portal"
 
+#: portal/templates/portal/base.html:113
+msgid "Menu"
+msgstr ""
+
+#: portal/templates/portal/base.html:115
+#: portal/templates/portal/dashboard/dashboard.html:5
 msgid "In evidenza"
 msgstr "Overview"
 
+#: portal/templates/portal/base.html:117
+#: portal/templates/portal/events/list.html:4
+#: portal/templates/portal/events/list.html:9
 msgid "I miei eventi"
 msgstr "My events"
 
-msgid "Contratti"
-msgstr "Contracts"
+#: portal/templates/portal/base.html:119
+#: portal/templates/portal/contract/detail.html:14
+#: portal/templates/portal/dashboard/contracts_list.html:11
+msgid "Domanda di ammissione"
+msgstr "Admission request"
 
+#: portal/templates/portal/base.html:121
+#: portal/templates/portal/purchases/list.html:4
+#: portal/templates/portal/purchases/list.html:9
 msgid "I miei acquisti"
 msgstr "My purchases"
 
+#: portal/templates/portal/base.html:123
+#: portal/templates/portal/profile/edit.html:4
+#: portal/templates/portal/profile/edit.html:8
 msgid "I miei dati"
 msgstr "My details"
 
+#: portal/templates/portal/base.html:128
+#: portal/templates/portal/dashboard/dashboard.html:20
 msgid "Acquista servizi"
 msgstr "Buy services"
 
+#: portal/templates/portal/base.html:132 portal/templates/portal/base.html:159
+#: portal/templates/portal/cart/checkout.html:10
+#: portal/templates/portal/cart/view.html:4
+#: portal/templates/portal/cart/view.html:9
+#: portal/templates/portal/wishlist/list.html:61
 msgid "Carrello"
 msgstr "Cart"
 
+#: portal/templates/portal/base.html:148
 msgid "Esci"
 msgstr "Log out"
 
-msgid "Stai navigando come cliente:"
-msgstr "You are browsing as client:"
-
-msgid "Torna all'amministrazione"
-msgstr "Back to administration"
-
-msgid "Per assistenza:"
-msgstr "For support:"
-
+#: portal/templates/portal/base.html:155
 msgid "Apri menu"
 msgstr "Open menu"
 
-msgid "in ritardo"
-msgstr "overdue"
+#: portal/templates/portal/base.html:181
+msgid "Stai navigando come cliente:"
+msgstr "You are browsing as client:"
 
-msgid "Bentornato/a,"
-msgstr "Welcome back,"
+#: portal/templates/portal/base.html:182
+msgid "Torna all'amministrazione"
+msgstr "Back to administration"
 
-msgid "Non risultano eventi associati al tuo profilo."
-msgstr "No events are linked to your profile."
+#: portal/templates/portal/base.html:191
+msgid "Per assistenza:"
+msgstr "For support:"
 
-msgid "Prossimi eventi"
-msgstr "Upcoming events"
+#: portal/templates/portal/cart/checkout.html:4
+#: portal/templates/portal/cart/checkout.html:15
+msgid "Conferma e paga"
+msgstr "Confirm and pay"
 
-msgid "Nessun evento in programma."
-msgstr "No upcoming events."
+#: portal/templates/portal/cart/checkout.html:12
+msgid "Conferma"
+msgstr "Confirmation"
 
-msgid "Scadenze aperte"
-msgstr "Open deadlines"
+#: portal/templates/portal/cart/checkout.html:17
+msgid "Verifica i dettagli prima di procedere al pagamento."
+msgstr "Check the details before proceeding to payment."
 
-msgid "da completare"
-msgstr "to complete"
-
-msgid "tutto in regola"
-msgstr "all clear"
-
-msgid "Saldo da pagare"
-msgstr "Balance due"
-
-msgid "importo residuo"
-msgstr "remaining amount"
-
-msgid "nessun importo dovuto"
-msgstr "no amount due"
-
-msgid "Amministrative"
-msgstr "Administrative"
-
-msgid "Nessuna scadenza amministrativa in sospeso."
-msgstr "No pending administrative deadlines."
-
-msgid "Tecniche"
-msgstr "Technical"
-
-msgid "Nessuna scadenza tecnica in sospeso."
-msgstr "No pending technical deadlines."
-
-msgid "Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i materiali richiesti per quell'evento."
-msgstr "The events you take part in. Open an event to see its deadlines and required materials."
-
-msgid "da fare"
-msgstr "to do"
-
-msgid "completate"
-msgstr "completed"
-
-msgid "Apri evento →"
-msgstr "Open event →"
-
-msgid "← I miei eventi"
-msgstr "← My events"
-
-msgid "Servizi disponibili"
-msgstr "Available services"
-
-msgid "Scadenze di questo evento →"
-msgstr "Deadlines for this event →"
-
-msgid "Acquista servizi per questo evento"
-msgstr "Buy services for this event"
-
-msgid "I servizi potranno essere acquistati a seguito della firma del contratto."
-msgstr "Services can be purchased once the contract is signed."
-
-msgid "Per acquistare servizi serve un contratto attivo per questo evento."
-msgstr "An active contract for this event is required to purchase services."
-
-msgid "Al momento non ci sono servizi acquistabili per questo evento."
-msgstr "There are currently no services to purchase for this event."
-
-msgid "I tuoi contratti"
-msgstr "Your contracts"
-
+#: portal/templates/portal/cart/checkout.html:22
+#: portal/templates/portal/dashboard/contracts_list.html:21
 msgid "Evento"
 msgstr "Event"
 
-msgid "Tutti gli eventi"
-msgstr "All events"
+#: portal/templates/portal/cart/checkout.html:35
+msgid "Servizi acquistati"
+msgstr "Purchased services"
 
-msgid "Stato"
-msgstr "Status"
+#: portal/templates/portal/cart/checkout.html:40
+#: portal/templates/portal/cart/view.html:64
+msgid "Servizio"
+msgstr "Service"
 
-msgid "Tutti gli stati"
-msgstr "All statuses"
-
-msgid "Attivi"
-msgstr "Active"
-
-msgid "In attesa"
-msgstr "Pending"
-
-msgid "Completati"
-msgstr "Completed"
-
-msgid "Filtra"
-msgstr "Filter"
-
-msgid "Reset filtri"
-msgstr "Reset filters"
-
-msgid "Addon"
-msgstr "Add-on"
-
-msgid "Blocco"
-msgstr "Block"
-
-msgid "← Precedente"
-msgstr "← Previous"
-
-msgid "Pagina %(num)s di %(tot)s"
-msgstr "Page %(num)s of %(tot)s"
-
-msgid "Successiva →"
-msgstr "Next →"
-
-msgid "Nessun contratto corrisponde ai filtri selezionati."
-msgstr "No contract matches the selected filters."
-
-msgid "Paga ora"
-msgstr "Pay now"
-
-msgid "[DEV] Segna come pagato"
-msgstr "[DEV] Mark as paid"
-
-msgid "Servizi inclusi"
-msgstr "Included services"
-
-msgid "Descrizione"
-msgstr "Description"
-
+#: portal/templates/portal/cart/checkout.html:41
+#: portal/templates/portal/contract/detail.html:111
 msgid "Q.tà"
 msgstr "Qty"
 
+#: portal/templates/portal/cart/checkout.html:42
+#: portal/templates/portal/cart/view.html:66
+#: portal/templates/portal/contract/detail.html:112
 msgid "Prezzo"
 msgstr "Price"
 
+#: portal/templates/portal/cart/checkout.html:43
+#: portal/templates/portal/cart/view.html:67
+#: portal/templates/portal/contract/detail.html:113
 msgid "Totale"
 msgstr "Total"
 
+#: portal/templates/portal/cart/checkout.html:60
+#: portal/templates/portal/cart/view.html:133
+#: portal/templates/portal/contract/detail.html:137
 msgid "Subtotale:"
 msgstr "Subtotal:"
 
+#: portal/templates/portal/cart/checkout.html:64
+#: portal/templates/portal/cart/view.html:138
+#: portal/templates/portal/contract/detail.html:142
 msgid "IVA:"
 msgstr "VAT:"
 
+#: portal/templates/portal/cart/checkout.html:68
+msgid "Totale da pagare:"
+msgstr "Total to pay:"
+
+#: portal/templates/portal/cart/checkout.html:77
+msgid "Dati fatturazione"
+msgstr "Billing details"
+
+#: portal/templates/portal/cart/checkout.html:82
+msgid "P.IVA:"
+msgstr "VAT no.:"
+
+#: portal/templates/portal/cart/checkout.html:85
+msgid "C.F.:"
+msgstr "Tax code:"
+
+#: portal/templates/portal/cart/checkout.html:95
+msgid ""
+"I dati sono ereditati dalla domanda di ammissione principale. Per modifiche, "
+"contatta"
+msgstr ""
+"The data is inherited from the main admission request. For changes, contact"
+
+#: portal/templates/portal/cart/checkout.html:102
+msgid "Scegli come pagare"
+msgstr "Choose how to pay"
+
+#: portal/templates/portal/cart/checkout.html:112
+msgid "Carta di credito/debito"
+msgstr ""
+
+#: portal/templates/portal/cart/checkout.html:115
+#, fuzzy
+#| msgid ""
+#| "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
+msgid "Visa, Mastercard, American Express. Pagamento immediato."
+msgstr "Visa, Mastercard, American Express or PayPal login. Instant payment."
+
+#: portal/templates/portal/cart/checkout.html:130
+msgid "Login PayPal o pagamento come ospite. Redirect su paypal.com."
+msgstr "PayPal login or guest checkout. Redirect to paypal.com."
+
+#: portal/templates/portal/cart/checkout.html:156
+msgid "Bonifico bancario"
+msgstr "Bank transfer"
+
+#: portal/templates/portal/cart/checkout.html:159
+msgid ""
+"Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui "
+"sotto. Alla ricezione del bonifico registreremo il tuo acquisto."
+msgstr ""
+"Would you like to pay by bank transfer? Make the transfer using the details "
+"below. We will register your purchase once the transfer is received."
+
+#: portal/templates/portal/cart/checkout.html:162
+#: portal/templates/portal/purchases/list.html:37
+msgid "Intestatario:"
+msgstr "Account holder:"
+
+#: portal/templates/portal/cart/checkout.html:163
+#: portal/templates/portal/purchases/list.html:38
+msgid "Banca:"
+msgstr "Bank:"
+
+#: portal/templates/portal/cart/checkout.html:166
+#: portal/templates/portal/purchases/list.html:41
+msgid "Causale:"
+msgstr "Reference:"
+
+#: portal/templates/portal/cart/checkout.html:166
+#: portal/templates/portal/purchases/list.html:41
+#, python-format
+msgid "Ordine %(num)s"
+msgstr "Order %(num)s"
+
+#: portal/templates/portal/cart/checkout.html:171
+msgid "Conferma ordine con bonifico"
+msgstr "Confirm order with bank transfer"
+
+#: portal/templates/portal/cart/checkout.html:179
+msgid "← Torna al carrello"
+msgstr "← Back to cart"
+
+#: portal/templates/portal/cart/view.html:17
+msgid "Il carrello è vuoto"
+msgstr "Your cart is empty"
+
+#: portal/templates/portal/cart/view.html:19
+msgid "Esplora il catalogo per aggiungere servizi ai tuoi eventi."
+msgstr "Browse the catalog to add services to your events."
+
+#: portal/templates/portal/cart/view.html:23
+msgid "Vai al catalogo"
+msgstr "Go to catalog"
+
+#: portal/templates/portal/cart/view.html:30
+msgid "Hai un carrello per ciascun evento. Conferma e paga separatamente."
+msgstr "You have a separate cart for each event. Confirm and pay separately."
+
+#: portal/templates/portal/cart/view.html:48
+#, python-format
+msgid "Carrello #%(num)s"
+msgstr "Cart #%(num)s"
+
+#: portal/templates/portal/cart/view.html:56
+msgid ""
+"⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili "
+"prima di procedere al pagamento."
+msgstr ""
+"⚠ Some services have expired (past the purchase deadline). Remove them "
+"before proceeding to payment."
+
+#: portal/templates/portal/cart/view.html:65
+#: portal/templates/portal/catalog/service_detail.html:121
+msgid "Quantità"
+msgstr "Quantity"
+
+#: portal/templates/portal/cart/view.html:83
+msgid "Scaduto: termine acquisto superato"
+msgstr "Expired: purchase deadline passed"
+
+#: portal/templates/portal/cart/view.html:87
+#, python-format
+msgid "Ancora %(n)s giorni per acquistare"
+msgstr "%(n)s days left to purchase"
+
+#: portal/templates/portal/cart/view.html:94
+#, fuzzy
+#| msgid "IVA inclusa"
+msgid "incluso"
+msgstr "VAT included"
+
+#: portal/templates/portal/cart/view.html:118
+#: portal/templates/portal/profile/edit.html:114
+msgid "Rimuovi"
+msgstr "Remove"
+
+#: portal/templates/portal/cart/view.html:143
+#: portal/templates/portal/contract/detail.html:147
 msgid "Totale:"
 msgstr "Total:"
 
-msgid "Nessuna riga sul contratto."
-msgstr "No lines on this contract."
+#: portal/templates/portal/cart/view.html:154
+msgid "← Continua acquisti per questo evento"
+msgstr "← Continue shopping for this event"
 
+#: portal/templates/portal/cart/view.html:160
+msgid "Rimuovi prima i servizi scaduti"
+msgstr "Remove expired services first"
+
+#: portal/templates/portal/cart/view.html:165
+msgid "Procedi al pagamento →"
+msgstr "Proceed to payment →"
+
+#: portal/templates/portal/catalog/event.html:4
+#, python-format
+msgid "Servizi · %(name)s"
+msgstr "Services · %(name)s"
+
+#: portal/templates/portal/catalog/event.html:10
+#: portal/templates/portal/catalog/service_detail.html:10
+msgid "Catalogo"
+msgstr "Catalog"
+
+#: portal/templates/portal/catalog/event.html:43
+#: portal/templates/portal/catalog/list.html:51
+msgid "Scaduto"
+msgstr "Expired"
+
+#: portal/templates/portal/catalog/event.html:47
+#: portal/templates/portal/catalog/list.html:55
+#, python-format
+msgid "Ancora %(n)sgg"
+msgstr "%(n)s days left"
+
+#: portal/templates/portal/catalog/event.html:60
+#: portal/templates/portal/catalog/list.html:68
+#: portal/templates/portal/catalog/service_detail.html:78
+#: portal/templates/portal/wishlist/list.html:47
+msgid "IVA"
+msgstr "VAT"
+
+#: portal/templates/portal/catalog/event.html:63
+#: portal/templates/portal/catalog/event.html:73
+#: portal/templates/portal/catalog/list.html:71
+#: portal/templates/portal/catalog/list.html:81
+#: portal/templates/portal/catalog/service_detail.html:81
+#: portal/templates/portal/catalog/service_detail.html:87
+#: portal/templates/portal/catalog/service_detail.html:107
+msgid "Esaurito"
+msgstr "Sold out"
+
+#: portal/templates/portal/catalog/event.html:65
+#: portal/templates/portal/catalog/list.html:73
+#: portal/templates/portal/catalog/service_detail.html:83
+#, python-format
+msgid "Ne rimangono solo %(n)s"
+msgstr "Only %(n)s left"
+
+#: portal/templates/portal/catalog/event.html:78
+#: portal/templates/portal/catalog/list.html:86
+msgid "Vedi dettaglio"
+msgstr "View details"
+
+#: portal/templates/portal/catalog/event.html:83
+#: portal/templates/portal/catalog/list.html:91
+#: portal/templates/portal/catalog/service_detail.html:32
+#: portal/templates/portal/catalog/service_detail.html:141
+msgid "Non più acquistabile"
+msgstr "No longer available"
+
+#: portal/templates/portal/catalog/event.html:92
+msgid "Nessun servizio disponibile per questo evento al momento."
+msgstr "No services available for this event at the moment."
+
+#: portal/templates/portal/catalog/list.html:4
+msgid "Catalogo servizi"
+msgstr "Service catalog"
+
+#: portal/templates/portal/catalog/list.html:9
+#: portal/templates/portal/events/dashboard.html:25
+msgid "Servizi disponibili"
+msgstr "Available services"
+
+#: portal/templates/portal/catalog/list.html:11
+msgid ""
+"Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali "
+"e altro."
+msgstr ""
+"Add extra services to your events: workshops, hostesses, promotional spaces "
+"and more."
+
+#: portal/templates/portal/catalog/list.html:31
+msgid "Vedi tutti →"
+msgstr "See all →"
+
+#: portal/templates/portal/catalog/list.html:103
+#, python-format
+msgid "Vedi tutti gli altri %(n)s servizi →"
+msgstr "See the other %(n)s services →"
+
+#: portal/templates/portal/catalog/list.html:113
+msgid "Al momento non ci sono servizi acquistabili per i tuoi eventi."
+msgstr "There are currently no services available to purchase for your events."
+
+#: portal/templates/portal/catalog/list.html:116
+msgid ""
+"Per acquistare servizi devi avere almeno una domanda di ammissione attiva "
+"per un evento futuro."
+msgstr ""
+"To purchase services you need at least one active admission request for an "
+"upcoming event."
+
+#: portal/templates/portal/catalog/list.html:120
+msgid "Vedi le tue domande di ammissione →"
+msgstr "View your admission requests →"
+
+#: portal/templates/portal/catalog/service_detail.html:27
+msgid "Per:"
+msgstr "For:"
+
+#: portal/templates/portal/catalog/service_detail.html:47
+#: portal/templates/portal/contract/detail.html:110
+msgid "Descrizione"
+msgstr "Description"
+
+#: portal/templates/portal/catalog/service_detail.html:61
+msgid "Termine acquisto:"
+msgstr "Purchase deadline:"
+
+#: portal/templates/portal/catalog/service_detail.html:63
+#, python-format
+msgid "Ancora %(n)s giorni (entro %(d)s giorni dall'evento)."
+msgstr "%(n)s days left (up to %(d)s days before the event)."
+
+#: portal/templates/portal/catalog/service_detail.html:65
+#, python-format
+msgid "Scaduto (%(d)s giorni prima dell'evento)."
+msgstr "Expired (%(d)s days before the event)."
+
+#: portal/templates/portal/catalog/service_detail.html:89
+msgid "Tutte le opzioni sono esaurite"
+msgstr ""
+
+#: portal/templates/portal/catalog/service_detail.html:97
+msgid "Scegli un'opzione"
+msgstr ""
+
+#: portal/templates/portal/catalog/service_detail.html:111
+#, fuzzy, python-format
+#| msgid "tra %(n)s gg"
+msgid "restano %(n)s"
+msgstr "in %(n)s days"
+
+#: portal/templates/portal/catalog/service_detail.html:131
+msgid "Aggiungi al carrello"
+msgstr "Add to cart"
+
+#: portal/templates/portal/catalog/service_detail.html:144
+msgid "Il termine per acquistare questo servizio è scaduto."
+msgstr "The deadline to purchase this service has passed."
+
+#: portal/templates/portal/contract/detail.html:36
+#: portal/templates/portal/dashboard/contracts_list.html:68
+msgid "Addon"
+msgstr "Add-on"
+
+#: portal/templates/portal/contract/detail.html:52
+msgid "Paga ora"
+msgstr "Pay now"
+
+#: portal/templates/portal/contract/detail.html:58
+msgid "[DEV] Segna come pagato"
+msgstr "[DEV] Mark as paid"
+
+#: portal/templates/portal/contract/detail.html:70
+msgid "La tua proposta di sponsorizzazione"
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:71
+#, python-format
+msgid ""
+"Grazie per l'interesse verso %(evento)s. Abbiamo preparato per voi una "
+"proposta dedicata: di seguito gli spazi e i servizi selezionati. Confermando "
+"il preventivo riservate la vostra presenza e diamo avvio alla pratica di "
+"partecipazione."
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:77
+#, python-format
+msgid "Spazi riservati per voi fino al %(d)s"
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:78
+msgid "Trascorsa questa data gli spazi tornano disponibili per altri sponsor."
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:84
+#: portal/templates/portal/contract/quote_confirm.html:16
+msgid "Totale proposta (IVA inclusa)"
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:88
+msgid "Conferma il preventivo"
+msgstr ""
+
+#: portal/templates/portal/contract/detail.html:103
+msgid "Servizi inclusi"
+msgstr "Included services"
+
+#: portal/templates/portal/contract/detail.html:131
+#, fuzzy
+#| msgid "IVA inclusa"
+msgid "Incluso"
+msgstr "VAT included"
+
+#: portal/templates/portal/contract/detail.html:154
+msgid "Nessuna riga sulla domanda di ammissione."
+msgstr "No lines on this admission request."
+
+#: portal/templates/portal/contract/detail.html:163
 msgid "Scadenze operative"
 msgstr "Operational deadlines"
 
-msgid "Materiali e attività richieste per il corretto svolgimento dello sponsorship"
-msgstr "Materials and activities required for the proper running of the sponsorship"
+#: portal/templates/portal/contract/detail.html:165
+msgid ""
+"Materiali e attività richieste per il corretto svolgimento dello sponsorship"
+msgstr ""
+"Materials and activities required for the proper running of the sponsorship"
 
+#: portal/templates/portal/contract/detail.html:201
 msgid "Ricevuto"
 msgstr "Received"
 
+#: portal/templates/portal/contract/detail.html:203
 msgid "Esonerato"
 msgstr "Waived"
 
+#: portal/templates/portal/contract/detail.html:205
+#, python-format
 msgid "%(n)s gg in ritardo"
 msgstr "%(n)s days overdue"
 
+#: portal/templates/portal/contract/detail.html:207
+#, python-format
 msgid "tra %(n)s gg"
 msgstr "in %(n)s days"
 
+#: portal/templates/portal/contract/detail.html:217
 msgid "Per caricare i materiali richiesti, vai alla"
 msgstr "To upload the required materials, go to the"
 
+#: portal/templates/portal/contract/detail.html:219
 msgid "sezione Materiali"
 msgstr "Materials section"
 
+#: portal/templates/portal/contract/detail.html:227
 msgid "Aggiungi altri servizi"
 msgstr "Add more services"
 
-msgid "Sono disponibili %(n)s servizi acquistabili per questo evento. Workshop, hostess, spazi promozionali extra e molto altro."
-msgstr "There are %(n)s services available to purchase for this event. Workshops, hostesses, extra promotional spaces and much more."
+#: portal/templates/portal/contract/detail.html:229
+#, python-format
+msgid ""
+"Sono disponibili %(n)s servizi acquistabili per questo evento. Workshop, "
+"hostess, spazi promozionali extra e molto altro."
+msgstr ""
+"There are %(n)s services available to purchase for this event. Workshops, "
+"hostesses, extra promotional spaces and much more."
 
+#: portal/templates/portal/contract/detail.html:234
+#: portal/templates/portal/contract/detail.html:238
 msgid "Esplora il catalogo"
 msgstr "Explore the catalog"
 
+#: portal/templates/portal/contract/detail.html:240
+#: portal/templates/portal/events/dashboard.html:38
+msgid ""
+"I servizi potranno essere acquistati a seguito della conferma della domanda "
+"di ammissione."
+msgstr "Services can be purchased after the admission request is confirmed."
+
+#: portal/templates/portal/contract/detail.html:253
+#: portal/templates/portal/wishlist/list.html:55
 msgid "Dettagli"
 msgstr "Details"
 
-msgid "Tipo contratto"
-msgstr "Contract type"
+#: portal/templates/portal/contract/detail.html:263
+msgid "Tipo documento"
+msgstr "Document type"
 
+#: portal/templates/portal/contract/detail.html:269
+#, python-format
 msgid "Da %(num)s"
 msgstr "From %(num)s"
 
+#: portal/templates/portal/contract/detail.html:277
 msgid "Stand assegnato"
 msgstr "Assigned stand"
 
+#: portal/templates/portal/contract/detail.html:285
 msgid "Blocco stand"
 msgstr "Stand block"
 
+#: portal/templates/portal/contract/detail.html:293
 msgid "Creato"
 msgstr "Created"
 
+#: portal/templates/portal/contract/detail.html:299
 msgid "Firmato"
 msgstr "Signed"
 
+#: portal/templates/portal/contract/detail.html:311
 msgid "Pagamenti"
 msgstr "Payments"
 
+#: portal/templates/portal/contract/detail.html:347
 msgid "Documenti"
 msgstr "Documents"
 
-msgid "%(counter)s contratto"
-msgid_plural "%(counter)s contratti"
-msgstr[0] "%(counter)s contract"
-msgstr[1] "%(counter)s contracts"
+#: portal/templates/portal/contract/quote_confirm.html:3
+msgid "Conferma preventivo"
+msgstr ""
 
+#: portal/templates/portal/contract/quote_confirm.html:7
+#, fuzzy
+#| msgid "← Torna al carrello"
+msgid "Torna al preventivo"
+msgstr "← Back to cart"
+
+#: portal/templates/portal/contract/quote_confirm.html:11
+#, fuzzy
+#| msgid "Conferma e paga"
+msgid "Conferma del preventivo"
+msgstr "Confirm and pay"
+
+#: portal/templates/portal/contract/quote_confirm.html:12
+#, python-format
+msgid "opzione valida fino al %(d)s"
+msgstr ""
+
+#: portal/templates/portal/contract/quote_confirm.html:20
+msgid ""
+"Con il click su «Accetta preventivo», il fornitore ricevera' la conferma "
+"dell'ordine e saranno automaticamente generate le scadenze tecnico-"
+"amministrative."
+msgstr ""
+
+#: portal/templates/portal/contract/quote_confirm.html:21
+msgid ""
+"Per qualsiasi ulteriore informazione potete contattare la segreteria "
+"organizzativa"
+msgstr ""
+
+#: portal/templates/portal/contract/quote_confirm.html:25
+#: portal/templates/portal/profile/edit.html:79
+msgid "Annulla"
+msgstr "Cancel"
+
+#: portal/templates/portal/contract/quote_confirm.html:28
+msgid "Accetta preventivo"
+msgstr ""
+
+#: portal/templates/portal/dashboard/contracts_list.html:5
+msgid "Le tue domande di ammissione"
+msgstr "Your admission requests"
+
+#: portal/templates/portal/dashboard/contracts_list.html:13
+#, python-format
+msgid "%(counter)s domanda di ammissione"
+msgid_plural "%(counter)s domande di ammissione"
+msgstr[0] "%(counter)s admission request"
+msgstr[1] "%(counter)s admission requests"
+
+#: portal/templates/portal/dashboard/contracts_list.html:23
+msgid "Tutti gli eventi"
+msgstr "All events"
+
+#: portal/templates/portal/dashboard/contracts_list.html:32
+msgid "Stato"
+msgstr "Status"
+
+#: portal/templates/portal/dashboard/contracts_list.html:34
+msgid "Tutti gli stati"
+msgstr "All statuses"
+
+#: portal/templates/portal/dashboard/contracts_list.html:35
+msgid "Attivi"
+msgstr "Active"
+
+#: portal/templates/portal/dashboard/contracts_list.html:36
+msgid "In attesa"
+msgstr "Pending"
+
+#: portal/templates/portal/dashboard/contracts_list.html:37
+msgid "Completati"
+msgstr "Completed"
+
+#: portal/templates/portal/dashboard/contracts_list.html:42
+msgid "Filtra"
+msgstr "Filter"
+
+#: portal/templates/portal/dashboard/contracts_list.html:46
+msgid "Reset filtri"
+msgstr "Reset filters"
+
+#: portal/templates/portal/dashboard/contracts_list.html:91
+msgid "Blocco"
+msgstr "Block"
+
+#: portal/templates/portal/dashboard/contracts_list.html:115
+#, python-format
 msgid "%(counter)s scadenza aperta"
 msgid_plural "%(counter)s scadenze aperte"
 msgstr[0] "%(counter)s open deadline"
 msgstr[1] "%(counter)s open deadlines"
 
-msgid "Catalogo servizi"
-msgstr "Service catalog"
+#: portal/templates/portal/dashboard/contracts_list.html:132
+msgid "← Precedente"
+msgstr "← Previous"
 
-msgid "Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali e altro."
-msgstr "Add extra services to your events: workshops, hostesses, promotional spaces and more."
+#: portal/templates/portal/dashboard/contracts_list.html:137
+#, python-format
+msgid "Pagina %(num)s di %(tot)s"
+msgstr "Page %(num)s of %(tot)s"
 
-msgid "Vedi tutti →"
-msgstr "See all →"
+#: portal/templates/portal/dashboard/contracts_list.html:143
+msgid "Successiva →"
+msgstr "Next →"
 
-msgid "Scaduto"
-msgstr "Expired"
+#: portal/templates/portal/dashboard/contracts_list.html:151
+msgid "Nessuna domanda di ammissione corrisponde ai filtri selezionati."
+msgstr "No admission request matches the selected filters."
 
-msgid "Ancora %(n)sgg"
-msgstr "%(n)s days left"
+#: portal/templates/portal/dashboard/dashboard.html:13
+msgid "Bentornato/a,"
+msgstr "Welcome back,"
 
-msgid "IVA"
-msgstr "VAT"
+#: portal/templates/portal/dashboard/dashboard.html:35
+#: portal/templates/portal/events/list.html:38
+msgid "Non risultano eventi associati al tuo profilo."
+msgstr "No events are linked to your profile."
 
-msgid "Vedi dettaglio"
-msgstr "View details"
+#: portal/templates/portal/dashboard/dashboard.html:36
+msgid "Quando verrai associato a un evento del congresso, comparirà qui."
+msgstr ""
 
-msgid "Non più acquistabile"
-msgstr "No longer available"
+#: portal/templates/portal/dashboard/dashboard.html:41
+msgid "Prossimi eventi"
+msgstr "Upcoming events"
 
-msgid "Vedi tutti gli altri %(n)s servizi →"
-msgstr "See the other %(n)s services →"
+#: portal/templates/portal/dashboard/dashboard.html:54
+msgid "Nessun evento in programma."
+msgstr "No upcoming events."
 
-msgid "Al momento non ci sono servizi acquistabili per i tuoi eventi."
-msgstr "There are currently no services available to purchase for your events."
+#: portal/templates/portal/dashboard/dashboard.html:63
+msgid "Scadenze aperte"
+msgstr "Open deadlines"
 
-msgid "Per acquistare servizi devi avere almeno un contratto attivo per un evento futuro."
-msgstr "To purchase services you need at least one active contract for an upcoming event."
+#: portal/templates/portal/dashboard/dashboard.html:64
+msgid "da completare"
+msgstr "to complete"
 
-msgid "Vedi i tuoi contratti →"
-msgstr "View your contracts →"
+#: portal/templates/portal/dashboard/dashboard.html:64
+msgid "tutto in regola"
+msgstr "all clear"
 
-msgid "Servizi · %(name)s"
-msgstr "Services · %(name)s"
+#: portal/templates/portal/dashboard/dashboard.html:74
+msgid "Saldo da pagare"
+msgstr "Balance due"
 
-msgid "Catalogo"
-msgstr "Catalog"
+#: portal/templates/portal/dashboard/dashboard.html:75
+msgid "importo residuo"
+msgstr "remaining amount"
 
-msgid "Nessun servizio disponibile per questo evento al momento."
-msgstr "No services available for this event at the moment."
+#: portal/templates/portal/dashboard/dashboard.html:75
+msgid "nessun importo dovuto"
+msgstr "no amount due"
 
-msgid "Per:"
-msgstr "For:"
+#: portal/templates/portal/dashboard/dashboard.html:85
+msgid "Amministrative"
+msgstr "Administrative"
 
-msgid "Termine acquisto:"
-msgstr "Purchase deadline:"
+#: portal/templates/portal/dashboard/dashboard.html:94
+#: portal/templates/portal/dashboard/dashboard.html:120
+#: portal/templates/portal/events/list.html:28
+msgid "in ritardo"
+msgstr "overdue"
 
-msgid "Ancora %(n)s giorni (entro %(d)s giorni dall'evento)."
-msgstr "%(n)s days left (up to %(d)s days before the event)."
+#: portal/templates/portal/dashboard/dashboard.html:105
+msgid "Nessuna scadenza amministrativa in sospeso."
+msgstr "No pending administrative deadlines."
 
-msgid "Scaduto (%(d)s giorni prima dell'evento)."
-msgstr "Expired (%(d)s days before the event)."
+#: portal/templates/portal/dashboard/dashboard.html:111
+msgid "Tecniche"
+msgstr "Technical"
 
-msgid "Quantità"
-msgstr "Quantity"
+#: portal/templates/portal/dashboard/dashboard.html:131
+msgid "Nessuna scadenza tecnica in sospeso."
+msgstr "No pending technical deadlines."
 
-msgid "Aggiungi al carrello"
-msgstr "Add to cart"
+#: portal/templates/portal/events/dashboard.html:9
+msgid "← I miei eventi"
+msgstr "← My events"
 
-msgid "Il termine per acquistare questo servizio è scaduto."
-msgstr "The deadline to purchase this service has passed."
+#: portal/templates/portal/events/dashboard.html:26
+msgid "Scadenze di questo evento →"
+msgstr "Deadlines for this event →"
 
-msgid "Il carrello è vuoto"
-msgstr "Your cart is empty"
+#: portal/templates/portal/events/dashboard.html:35
+#: portal/templates/portal/events/dashboard.html:37
+msgid "Acquista servizi per questo evento"
+msgstr "Buy services for this event"
 
-msgid "Esplora il catalogo per aggiungere servizi ai tuoi eventi."
-msgstr "Browse the catalog to add services to your events."
+#: portal/templates/portal/events/dashboard.html:41
+msgid ""
+"Per acquistare servizi serve una domanda di ammissione attiva per questo "
+"evento."
+msgstr ""
+"An active admission request for this event is required to purchase services."
 
-msgid "Vai al catalogo"
-msgstr "Go to catalog"
+#: portal/templates/portal/events/dashboard.html:43
+msgid "Al momento non ci sono servizi acquistabili per questo evento."
+msgstr "There are currently no services to purchase for this event."
 
-msgid "Hai un carrello per ciascun evento. Conferma e paga separatamente."
-msgstr "You have a separate cart for each event. Confirm and pay separately."
+#: portal/templates/portal/events/list.html:11
+msgid ""
+"Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i "
+"materiali richiesti per quell'evento."
+msgstr ""
+"The events you take part in. Open an event to see its deadlines and required "
+"materials."
 
-msgid "Carrello #%(num)s"
-msgstr "Cart #%(num)s"
+#: portal/templates/portal/events/list.html:26
+msgid "da fare"
+msgstr "to do"
 
-msgid "⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili prima di procedere al pagamento."
-msgstr "⚠ Some services have expired (past the purchase deadline). Remove them before proceeding to payment."
+#: portal/templates/portal/events/list.html:30
+msgid "completate"
+msgstr "completed"
 
-msgid "Servizio"
-msgstr "Service"
+#: portal/templates/portal/events/list.html:32
+msgid "Apri evento →"
+msgstr "Open event →"
 
-msgid "Scaduto: termine acquisto superato"
-msgstr "Expired: purchase deadline passed"
-
-msgid "Ancora %(n)s giorni per acquistare"
-msgstr "%(n)s days left to purchase"
-
-msgid "Rimuovi"
-msgstr "Remove"
-
-msgid "← Continua acquisti per questo evento"
-msgstr "← Continue shopping for this event"
-
-msgid "Rimuovi prima i servizi scaduti"
-msgstr "Remove expired services first"
-
-msgid "Procedi al pagamento →"
-msgstr "Proceed to payment →"
-
-msgid "Conferma e paga"
-msgstr "Confirm and pay"
-
-msgid "Conferma"
-msgstr "Confirmation"
-
-msgid "Verifica i dettagli prima di procedere al pagamento."
-msgstr "Check the details before proceeding to payment."
-
-msgid "Servizi acquistati"
-msgstr "Purchased services"
-
-msgid "Totale da pagare:"
-msgstr "Total to pay:"
-
-msgid "Dati fatturazione"
-msgstr "Billing details"
-
-msgid "P.IVA:"
-msgstr "VAT no.:"
-
-msgid "C.F.:"
-msgstr "Tax code:"
-
-msgid "I dati sono ereditati dal contratto principale. Per modifiche, contatta"
-msgstr "The data is inherited from the main contract. For changes, contact"
-
-msgid "Scegli come pagare"
-msgstr "Choose how to pay"
-
-msgid "Carta o PayPal"
-msgstr "Card or PayPal"
-
-msgid "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
-msgstr "Visa, Mastercard, American Express or PayPal login. Instant payment."
-
-msgid "Login PayPal o pagamento come ospite. Redirect su paypal.com."
-msgstr "PayPal login or guest checkout. Redirect to paypal.com."
-
-msgid "Bonifico bancario?"
-msgstr "Bank transfer?"
-
-msgid "Per importi superiori a € 1.000 puoi richiedere il pagamento tramite bonifico:"
-msgstr "For amounts over € 1,000 you can request payment by bank transfer:"
-
-msgid "contatta l'amministrazione"
-msgstr "contact administration"
-
-msgid "← Torna al carrello"
-msgstr "← Back to cart"
-
-msgid "Non hai ancora effettuato acquisti."
-msgstr "You haven't made any purchases yet."
-
-msgid "Acquistato il %(d)s"
-msgstr "Purchased on %(d)s"
-
-msgid "IVA inclusa"
-msgstr "VAT included"
-
-msgid "Nella wishlist"
-msgstr "In wishlist"
-
-msgid "La mia Wishlist"
-msgstr "My Wishlist"
-
-msgid "♥ La mia Wishlist"
-msgstr "♥ My Wishlist"
-
-msgid "Non hai ancora salvato nessun servizio nella tua wishlist."
-msgstr "You haven't saved any service to your wishlist yet."
-
-msgid "Sfoglia il catalogo"
-msgstr "Browse the catalog"
-
+#: portal/templates/portal/profile/edit.html:12
 msgid "⚠️ Manca un soggetto operativo"
 msgstr "⚠️ An operational contact is missing"
 
-msgid "Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale."
-msgstr "You must specify <strong>at least one contact classified as OPERATIONAL</strong>, to whom the platform will send the operational information for the congress and the deadlines. Add it below (contacts section) by ticking the <strong>Operational</strong> role: without it, you cannot proceed to the other sections of the portal."
+#: portal/templates/portal/profile/edit.html:13
+msgid ""
+"Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</"
+"strong>, al quale la piattaforma invierà le informazioni operative per il "
+"congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando "
+"il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre "
+"sezioni del portale."
+msgstr ""
+"You must specify <strong>at least one contact classified as OPERATIONAL</"
+"strong>, to whom the platform will send the operational information for the "
+"congress and the deadlines. Add it below (contacts section) by ticking the "
+"<strong>Operational</strong> role: without it, you cannot proceed to the "
+"other sections of the portal."
 
+#: portal/templates/portal/profile/edit.html:16
 msgid "Cambia password"
 msgstr "Change password"
 
-msgid "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche vengono salvate subito."
-msgstr "Check and update your company and contact details. Changes are saved immediately."
+#: portal/templates/portal/profile/edit.html:17
+msgid ""
+"Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche "
+"vengono salvate subito."
+msgstr ""
+"Check and update your company and contact details. Changes are saved "
+"immediately."
 
+#: portal/templates/portal/profile/edit.html:31
 msgid "Logo aziendale"
 msgstr "Company logo"
 
+#: portal/templates/portal/profile/edit.html:40
 msgid "Nessun logo caricato"
 msgstr "No logo uploaded"
 
+#: portal/templates/portal/profile/edit.html:43
 msgid "Carica un nuovo logo"
 msgstr "Upload a new logo"
 
-msgid "L'immagine viene ridimensionata e compressa automaticamente. In alternativa puoi indicare un URL qui sotto."
-msgstr "The image is automatically resized and compressed. Alternatively, you can provide a URL below."
+#: portal/templates/portal/profile/edit.html:46
+msgid ""
+"L'immagine viene ridimensionata e compressa automaticamente. In alternativa "
+"puoi indicare un URL qui sotto."
+msgstr ""
+"The image is automatically resized and compressed. Alternatively, you can "
+"provide a URL below."
 
+#: portal/templates/portal/profile/edit.html:52
 msgid "Dati azienda"
 msgstr "Company details"
 
+#: portal/templates/portal/profile/edit.html:65
 msgid "Contatto di riferimento"
 msgstr "Main contact"
 
-msgid "Annulla"
-msgstr "Cancel"
-
+#: portal/templates/portal/profile/edit.html:82
 msgid "Salva modifiche"
 msgstr "Save changes"
 
+#: portal/templates/portal/profile/edit.html:89
 msgid "Altri contatti aziendali"
 msgstr "Other company contacts"
 
+#: portal/templates/portal/profile/edit.html:95
 msgid "Nome"
 msgstr "Name"
 
+#: portal/templates/portal/profile/edit.html:96
+#: portal/templates/portal/profile/edit.html:142 portal/views/profile.py:68
 msgid "Telefono"
 msgstr "Phone"
 
+#: portal/templates/portal/profile/edit.html:96
 msgid "Ruoli"
 msgstr "Roles"
 
+#: portal/templates/portal/profile/edit.html:96
 msgid "Azioni"
 msgstr "Actions"
 
+#: portal/templates/portal/profile/edit.html:108
 msgid "tu"
 msgstr "you"
 
+#: portal/templates/portal/profile/edit.html:123
 msgid "Nessun altro contatto registrato."
 msgstr "No other contacts registered."
 
+#: portal/templates/portal/profile/edit.html:126
 msgid "Aggiungi un contatto"
 msgstr "Add a contact"
 
+#: portal/templates/portal/profile/edit.html:132
 msgid "Nome e cognome *"
 msgstr "Full name *"
 
+#: portal/templates/portal/profile/edit.html:147
 msgid "Ruolo aziendale"
 msgstr "Company role"
 
+#: portal/templates/portal/profile/edit.html:148
 msgid "es. Responsabile marketing"
 msgstr "e.g. Marketing manager"
 
+#: portal/templates/portal/profile/edit.html:153
 msgid "Ruoli funzionali (chi riceve quali comunicazioni)"
 msgstr "Functional roles (who receives which communications)"
 
+#: portal/templates/portal/profile/edit.html:167
 msgid "Aggiungi contatto"
 msgstr "Add contact"
 
-msgid "Accesso"
-msgstr "Login"
+#: portal/templates/portal/purchases/list.html:13
+msgid "In attesa di pagamento"
+msgstr "Awaiting payment"
 
-msgid "Accesso portale sponsor"
-msgstr "Sponsor portal login"
+#: portal/templates/portal/purchases/list.html:24
+msgid "Da pagare · Bonifico"
+msgstr "To pay · Bank transfer"
 
-msgid "Credenziali non valide"
-msgstr "Invalid credentials"
+#: portal/templates/portal/purchases/list.html:36
+msgid "Effettua il bonifico con questi dati:"
+msgstr "Make the bank transfer using these details:"
 
-msgid "Verifica email e password. Se hai dimenticato la password,"
-msgstr "Check your email and password. If you forgot your password,"
+#: portal/templates/portal/purchases/list.html:43
+msgid "Alla ricezione del bonifico registreremo il tuo acquisto."
+msgstr "We will register your purchase once the transfer is received."
 
-msgid "richiedi un nuovo accesso"
-msgstr "request new access"
+#: portal/templates/portal/purchases/list.html:52
+msgid "Non hai ancora effettuato acquisti."
+msgstr "You haven't made any purchases yet."
 
-msgid "Accedi"
-msgstr "Log in"
+#: portal/templates/portal/purchases/list.html:62
+#, python-format
+msgid "Acquistato il %(d)s"
+msgstr "Purchased on %(d)s"
 
-msgid "Hai dimenticato la password?"
-msgstr "Forgot your password?"
+#: portal/templates/portal/purchases/list.html:67
+msgid "IVA inclusa"
+msgstr "VAT included"
 
-msgid "Non hai ancora un account? L'accesso al portale è riservato agli sponsor invitati. Contatta"
-msgstr "Don't have an account yet? Portal access is reserved for invited sponsors. Contact"
+#: portal/templates/portal/wishlist/button.html:72
+msgid "Nella wishlist"
+msgstr "In wishlist"
 
-msgid "per richiedere l'invito."
-msgstr "to request an invitation."
+#: portal/templates/portal/wishlist/list.html:3
+msgid "La mia Wishlist"
+msgstr "My Wishlist"
 
+#: portal/templates/portal/wishlist/list.html:9
+msgid "♥ La mia Wishlist"
+msgstr "♥ My Wishlist"
+
+#: portal/templates/portal/wishlist/list.html:10
+#, python-format
 msgid "%(counter)s servizio salvato"
 msgid_plural "%(counter)s servizi salvati"
 msgstr[0] "%(counter)s saved service"
 msgstr[1] "%(counter)s saved services"
 
-msgid "Bozza"
-msgstr "Draft"
+#: portal/templates/portal/wishlist/list.html:15
+msgid "Non hai ancora salvato nessun servizio nella tua wishlist."
+msgstr "You haven't saved any service to your wishlist yet."
 
-msgid "Inviato"
-msgstr "Sent"
+#: portal/templates/portal/wishlist/list.html:17
+msgid "Sfoglia il catalogo"
+msgstr "Browse the catalog"
 
-msgid "In attesa pagamento"
-msgstr "Pending payment"
-
-msgid "Attivo"
-msgstr "Active"
-
-msgid "Completato"
-msgstr "Completed"
-
-msgid "Annullato"
-msgstr "Cancelled"
-
-msgid "Principale"
-msgstr "Main"
-
-msgid "Addon ecommerce"
-msgstr "Add-on (e-commerce)"
-
-msgid "Bonifico"
-msgstr "Bank transfer"
-
-msgid "Rateale"
-msgstr "Installments"
-
-msgid "Altro"
-msgstr "Other"
-
-msgid "In elaborazione"
-msgstr "Processing"
-
-msgid "Fallito"
-msgstr "Failed"
-
-msgid "Rimborsato"
-msgstr "Refunded"
-
-msgid "Rimborso parziale"
-msgstr "Partial refund"
-
+#: portal/views/profile.py:41
 msgid "Firmatario"
 msgstr "Signatory"
 
+#: portal/views/profile.py:42
+msgid "Marketing"
+msgstr ""
+
+#: portal/views/profile.py:43
 msgid "Amministrazione"
 msgstr "Administration"
 
+#: portal/views/profile.py:44
 msgid "Operativo"
 msgstr "Operational"
 
+#: portal/views/profile.py:45
+msgid "CC"
+msgstr ""
+
+#: portal/views/profile.py:46
+msgid "Educational manager"
+msgstr ""
+
+#: portal/views/profile.py:51
 msgid "Ragione sociale"
 msgstr "Legal name"
 
+#: portal/views/profile.py:52
 msgid "Partita IVA"
 msgstr "VAT number"
 
+#: portal/views/profile.py:53
 msgid "Codice fiscale"
 msgstr "Tax code"
 
+#: portal/views/profile.py:54
 msgid "Codice destinatario SDI"
 msgstr "SDI recipient code"
 
+#: portal/views/profile.py:55
 msgid "PEC"
 msgstr "Certified email (PEC)"
 
+#: portal/views/profile.py:56
 msgid "Indirizzo"
 msgstr "Address"
 
+#: portal/views/profile.py:57
 msgid "Città"
 msgstr "City"
 
+#: portal/views/profile.py:58
 msgid "CAP"
 msgstr "ZIP code"
 
+#: portal/views/profile.py:59
 msgid "Provincia"
 msgstr "Province"
 
+#: portal/views/profile.py:60
 msgid "Paese"
 msgstr "Country"
 
+#: portal/views/profile.py:61
 msgid "Sito web"
 msgstr "Website"
 
+#: portal/views/profile.py:62
 msgid "URL logo"
 msgstr "Logo URL"
 
+#: portal/views/profile.py:63
 msgid "Descrizione attività"
 msgstr "Business description"
 
+#: portal/views/profile.py:66
 msgid "Nome e cognome"
 msgstr "Full name"
 
+#: portal/views/profile.py:67
+msgid "Email"
+msgstr ""
+
+#: portal/views/profile.py:69
 msgid "Ruolo"
 msgstr "Role"
 
-msgid "Acconto da pagare"
-msgstr "Deposit due"
+#~ msgid "Contratti"
+#~ msgstr "Contracts"
 
-msgid "Scadenza acconto"
-msgstr "Deposit deadline"
+#~ msgid "I tuoi contratti"
+#~ msgstr "Your contracts"
 
-msgid "Scadenza saldo"
-msgstr "Balance deadline"
+#~ msgid "%(counter)s contratto"
+#~ msgid_plural "%(counter)s contratti"
+#~ msgstr[0] "%(counter)s contract"
+#~ msgstr[1] "%(counter)s contracts"
 
-msgid "Bonifico bancario"
-msgstr "Bank transfer"
+#~ msgid "Vedi i tuoi contratti →"
+#~ msgstr "View your contracts →"
 
-msgid "Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui sotto. Alla ricezione del bonifico registreremo il tuo acquisto."
-msgstr "Would you like to pay by bank transfer? Make the transfer using the details below. We will register your purchase once the transfer is received."
+#~ msgid "Carta o PayPal"
+#~ msgstr "Card or PayPal"
 
-msgid "Intestatario:"
-msgstr "Account holder:"
+#~ msgid "Bonifico bancario?"
+#~ msgstr "Bank transfer?"
 
-msgid "Banca:"
-msgstr "Bank:"
+#~ msgid ""
+#~ "Per importi superiori a € 1.000 puoi richiedere il pagamento tramite "
+#~ "bonifico:"
+#~ msgstr "For amounts over € 1,000 you can request payment by bank transfer:"
 
-msgid "Causale:"
-msgstr "Reference:"
+#~ msgid "contatta l'amministrazione"
+#~ msgstr "contact administration"
 
-msgid "Ordine %(num)s"
-msgstr "Order %(num)s"
+#~ msgid "Bozza"
+#~ msgstr "Draft"
 
-msgid "Conferma ordine con bonifico"
-msgstr "Confirm order with bank transfer"
+#~ msgid "Inviato"
+#~ msgstr "Sent"
 
-msgid "In attesa di pagamento"
-msgstr "Awaiting payment"
+#~ msgid "In attesa pagamento"
+#~ msgstr "Pending payment"
 
-msgid "Da pagare · Bonifico"
-msgstr "To pay · Bank transfer"
+#~ msgid "Attivo"
+#~ msgstr "Active"
 
-msgid "Effettua il bonifico con questi dati:"
-msgstr "Make the bank transfer using these details:"
+#~ msgid "Completato"
+#~ msgstr "Completed"
 
-msgid "Alla ricezione del bonifico registreremo il tuo acquisto."
-msgstr "We will register your purchase once the transfer is received."
+#~ msgid "Annullato"
+#~ msgstr "Cancelled"
 
-msgid "Esaurito"
-msgstr "Sold out"
+#~ msgid "Principale"
+#~ msgstr "Main"
 
-msgid "Ne rimangono solo %(n)s"
-msgstr "Only %(n)s left"
+#~ msgid "Addon ecommerce"
+#~ msgstr "Add-on (e-commerce)"
+
+#~ msgid "Bonifico"
+#~ msgstr "Bank transfer"
+
+#~ msgid "Rateale"
+#~ msgstr "Installments"
+
+#~ msgid "Altro"
+#~ msgstr "Other"
+
+#~ msgid "In elaborazione"
+#~ msgstr "Processing"
+
+#~ msgid "Fallito"
+#~ msgstr "Failed"
+
+#~ msgid "Rimborsato"
+#~ msgstr "Refunded"
+
+#~ msgid "Rimborso parziale"
+#~ msgstr "Partial refund"
+
+#~ msgid "Acconto da pagare"
+#~ msgstr "Deposit due"
+
+#~ msgid "Scadenza acconto"
+#~ msgstr "Deposit deadline"
+
+#~ msgid "Scadenza saldo"
+#~ msgstr "Balance deadline"

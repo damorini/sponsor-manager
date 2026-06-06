@@ -116,7 +116,7 @@
     <a href="{% url 'portal:events' %}"
        class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>{% trans "I miei eventi" %}</a>
     <a href="{% url 'portal:contracts_list' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "Contratti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "Domanda di ammissione" %}</a>
     <a href="{% url 'portal:purchases' %}"
        class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>{% trans "I miei acquisti" %}</a>
     <a href="{% url 'portal:profile' %}"

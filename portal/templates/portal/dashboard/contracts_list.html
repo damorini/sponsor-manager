@@ -2,15 +2,15 @@
 {% load i18n %}
 {% load portal_labels %}
 
-{% block title %}{% trans "I tuoi contratti" %}{% endblock %}
+{% block title %}{% trans "Le tue domande di ammissione" %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
   
   <div class="flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">{% trans "Contratti" %}</h1>
+    <h1 class="text-3xl font-bold text-gray-900">{% trans "Domanda di ammissione" %}</h1>
     <div class="text-sm text-gray-600">
-      {% blocktrans count counter=total_count %}{{ counter }} contratto{% plural %}{{ counter }} contratti{% endblocktrans %}
+      {% blocktrans count counter=total_count %}{{ counter }} domanda di ammissione{% plural %}{{ counter }} domande di ammissione{% endblocktrans %}
     </div>
   </div>
   
@@ -148,7 +148,7 @@
   
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center">
-    <p class="text-gray-500">{% trans "Nessun contratto corrisponde ai filtri selezionati." %}</p>
+    <p class="text-gray-500">{% trans "Nessuna domanda di ammissione corrisponde ai filtri selezionati." %}</p>
   </div>
   {% endif %}
   

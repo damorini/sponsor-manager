@@ -113,11 +113,11 @@
       {% trans "Al momento non ci sono servizi acquistabili per i tuoi eventi." %}
     </p>
     <p class="text-sm text-gray-400 mt-2">
-      {% trans "Per acquistare servizi devi avere almeno un contratto attivo per un evento futuro." %}
+      {% trans "Per acquistare servizi devi avere almeno una domanda di ammissione attiva per un evento futuro." %}
     </p>
-    <a href="{% url 'portal:contracts_list' %}" 
+    <a href="{% url 'portal:contracts_list' %}"
        class="inline-block mt-4 text-brand-500 hover:underline text-sm">
-      {% trans "Vedi i tuoi contratti →" %}
+      {% trans "Vedi le tue domande di ammissione →" %}
     </a>
   </div>
   {% endif %}
