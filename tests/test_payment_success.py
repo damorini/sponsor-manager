@@ -41,9 +41,16 @@ def addon_cart(db, user_sponsor, sponsor):
     return contract
 
 
+def _enable_debug_without_toolbar(settings):
+    """dev_mark_paid richiede DEBUG=True, ma attivarlo accende anche il Debug
+    Toolbar (le cui URL 'djdt' non sono registrate -> NoReverseMatch). Lo tolgo."""
+    settings.DEBUG = True
+    settings.MIDDLEWARE = [m for m in settings.MIDDLEWARE if 'debug_toolbar' not in m]
+
+
 @pytest.mark.django_db
 def test_dev_mark_paid_registers_payment_and_signs(client, user_sponsor, addon_cart, settings):
-    settings.DEBUG = True  # dev_mark_paid e' disponibile solo con DEBUG=True
+    _enable_debug_without_toolbar(settings)
     client.force_login(user_sponsor)
     url = reverse('portal:checkout_dev_mark_paid', args=[addon_cart.id])
     resp = client.post(url)
@@ -57,7 +64,7 @@ def test_dev_mark_paid_registers_payment_and_signs(client, user_sponsor, addon_c
 
 @pytest.mark.django_db
 def test_dev_mark_paid_forbidden_for_non_owner(client, addon_cart, settings):
-    settings.DEBUG = True
+    _enable_debug_without_toolbar(settings)
     from django.contrib.auth import get_user_model
     from users.models import UserRole
     User = get_user_model()
