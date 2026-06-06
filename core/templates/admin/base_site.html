@@ -42,6 +42,7 @@
     --vt-addlink-fg: #2F5421; --vt-changelink-fg: #5A4636;
     --vt-sidebar-cap-bg: #1A1612; --vt-sidebar-cap-fg: #EDE6DA;
     --vt-content-cap-bg: #F2EFEA; --vt-content-cap-fg: #4A4137;
+    --vt-input-bg: #FFFFFF; --vt-input-border: #CFC4B0;
   }
 
   /* ---- SCURO (espresso): blocco riusato per auto-scuro e scuro-forzato ---- */
@@ -66,6 +67,7 @@
     --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
     --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
     --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+    --vt-input-bg: #2C2319; --vt-input-border: #4F4030;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -89,6 +91,7 @@
       --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
       --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
       --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+      --vt-input-bg: #2C2319; --vt-input-border: #4F4030;
     }
   }
 
@@ -114,11 +117,21 @@
   /* Leggibilità form: etichette forti + help un po' più scuro (chiaro e scuro) */
   .form-row label, .aligned label, fieldset .form-row label, .checkbox-row label { color: var(--body-fg); }
   .help, .form-row .help, div.help, p.help, .form-row .help a, .aligned p.help { color: var(--body-medium-color) !important; }
-  /* Campi: bordo un filo più definito */
+  /* Campi: sfondo distinto dal form + bordo definito (visibili in chiaro e scuro) */
   input[type=text], input[type=number], input[type=email], input[type=url],
-  input[type=password], input[type=tel], textarea, select {
-    border: 1px solid var(--border-color); border-radius: 8px;
+  input[type=password], input[type=tel], input[type=search], input[type=date],
+  input[type=time], input[type=datetime-local], textarea, select {
+    background: var(--vt-input-bg) !important;
+    color: var(--body-fg) !important;
+    border: 1px solid var(--vt-input-border) !important;
+    border-radius: 8px;
   }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent) !important;
+    outline: none;
+  }
+  ::placeholder { color: var(--body-quiet-color); opacity: .8; }
   #nav-sidebar .module caption,
   #nav-sidebar .module caption a { background: var(--vt-sidebar-cap-bg); color: var(--vt-sidebar-cap-fg) !important; }
 
