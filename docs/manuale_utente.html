@@ -62,6 +62,8 @@
     <li><a href="#stati">Ciclo di vita della Domanda di ammissione</a></li>
     <li><a href="#howto">Come si fa, passo per passo</a></li>
     <li><a href="#portale">Lato sponsor (il portale)</a></li>
+    <li><a href="#messaggi">Messaggi al portale (letto/da leggere)</a></li>
+    <li><a href="#archivio">Archiviare un evento</a></li>
     <li><a href="#excel">Import da Excel (servizi e stand)</a></li>
     <li><a href="#traduzioni">Traduzioni italiano/inglese</a></li>
     <li><a href="#faq">Problemi comuni (FAQ)</a></li>
@@ -182,14 +184,14 @@ stateDiagram-v2
   <ol>
     <li>Admin → <strong>Eventi</strong> → <strong>Aggiungi</strong>.</li>
     <li>Compila nome (in italiano), date, luogo, tipo (ECM / non-ECM), <strong>sigla</strong> (es. <code>AITEB</code>: serve per i numeri delle domande).</li>
-    <li>Salva. L'inglese del nome/descrizione si compila <strong>da solo</strong> (vedi §9).</li>
+    <li>Salva. L'inglese del nome/descrizione si compila <strong>da solo</strong> (vedi §11).</li>
   </ol>
 
   <h3>6.2 Caricare il catalogo (servizi e stand)</h3>
   <p>Due modi:</p>
   <ul>
     <li><strong>A mano</strong>: Admin → <strong>Servizi</strong> / <strong>Stand</strong> → Aggiungi.</li>
-    <li><strong>Da Excel</strong> (consigliato se sono tanti): Cruscotto → <strong>Utility</strong> → scarica il <em>Modello</em>, compilalo, e ricaricalo (vedi §8).</li>
+    <li><strong>Da Excel</strong> (consigliato se sono tanti): Cruscotto → <strong>Utility</strong> → scarica il <em>Modello</em>, compilalo, e ricaricalo (vedi §10).</li>
   </ul>
 
   <h3>6.3 Servizi inclusi (un servizio che ne omaggia altri)</h3>
@@ -209,16 +211,32 @@ stateDiagram-v2
   <h3>6.5 Creare e inviare il preventivo</h3>
   <ol>
     <li>Admin → <strong>Domanda di ammissione</strong> → Aggiungi: scegli evento + sponsor.</li>
-    <li>Aggiungi le <strong>righe</strong> (servizi/stand): la tendina mostra <strong>solo</strong> i servizi di quell'evento.</li>
+    <li>Aggiungi le <strong>righe</strong> (servizi/stand): la tendina <strong>Servizio</strong> mostra solo i servizi di quell'evento; il menu <strong>Contratto principale</strong> e il <strong>Firmatario</strong> mostrano solo voci di quello sponsor.</li>
     <li>Usa l'azione <strong>"Genera e invia preventivo"</strong> → scegli i destinatari → invio.</li>
   </ol>
+  <div class="nota">Quando inserisci una quantità superiore alla <strong>disponibilità</strong> (scorte del servizio o della variante) o alla <strong>quantità massima</strong> impostata, il salvataggio viene <strong>bloccato</strong> con un avviso. Per rendere un servizio "unico" (es. il muletto) imposta <em>Quantità massima = 1</em>.</div>
 
-  <h3>6.6 Conferma e seguito</h3>
+  <h3>6.6 Varianti del servizio (es. fasce orarie, colori)</h3>
+  <ol>
+    <li>Nella scheda del servizio, sezione <strong>"Varianti servizio"</strong>, aggiungi una riga per ogni variante (etichetta, prezzo, scorte). L'inglese si compila <strong>da solo</strong>.</li>
+    <li>Nelle righe del contratto, accanto a <strong>Servizio</strong>, scegli la <strong>Variante</strong>: la tendina mostra <strong>solo le varianti di quel servizio</strong>. Prezzo ed etichetta vengono ereditati.</li>
+  </ol>
+
+  <h3>6.7 Creare un servizio "dal catalogo" (auto-compila)</h3>
+  <p>Nella scheda Servizio, in cima, c'è il menu <strong>"Crea da catalogo"</strong>: scegli una voce del Catalogo madre e si compilano da soli codice, nome IT/EN, descrizione, prezzo e IVA. Poi puoi modificarli per quell'evento.</p>
+
+  <h3>6.8 Prezzo del blocco stand</h3>
+  <p>Creando un <strong>Blocco stand</strong>: scegli prima il congresso, poi nella casella vedi <strong>solo gli stand disponibili</strong> di quell'evento e li sposti nel blocco. Per il <strong>prezzo</strong>: se lasci vuoto "Prezzo blocco" il sistema usa la <strong>somma dei prezzi degli stand</strong>; se inserisci un prezzo, vale quello.</p>
+
+  <h3>6.9 Conferma e seguito</h3>
   <p>Quando lo sponsor conferma dal portale, il sistema genera la <strong>Domanda di ammissione in PDF</strong>, le <strong>scadenze</strong> (acconto/saldo + materiali) e invia l'email di conferma. Tu poi <strong>registri gli incassi</strong> e segui i materiali fino all'evento.</p>
+  <div class="nota"><strong>Addendum:</strong> per un contratto di tipo <em>Addendum</em> viene usato lo stesso modulo della Domanda, ma intitolato «Addendum al contratto n° … del …». Gli <strong>acquisti online (Addon)</strong> non hanno preventivo da confermare: il cliente paga e l'acquisto è subito valido (vedi §7).</div>
+  <div class="attenzione">Quando clicchi <strong>Elimina</strong> (su una scheda o sull'azione di gruppo) il sistema chiede <strong>conferma</strong> prima di cancellare.</div>
 </section>
 
 <section id="portale">
   <h2>7. Lato sponsor (il portale)</h2>
+  <p>Nel menu di sinistra lo sponsor trova: <strong>In evidenza</strong> (scadenze e messaggi), <strong>I miei eventi</strong>, <strong>Archivio eventi</strong> (eventi conclusi, sola consultazione), <strong>I miei documenti</strong> (domande di ammissione + copia degli acquisti online), <strong>I miei acquisti</strong>, <strong>Archivio messaggi</strong>, <strong>I miei dati</strong>, <strong>Wishlist</strong>.</p>
   <p>Cosa fa lo sponsor, una volta invitato:</p>
   <div class="diagram">
     <pre class="mermaid">
@@ -235,8 +253,47 @@ flowchart TD
   </div>
 </section>
 
+<section id="messaggi">
+  <h2>8. Messaggi al portale (letto / da leggere)</h2>
+  <p>Puoi inviare messaggi che lo sponsor vede nel portale e <strong>confermare la lettura</strong>.</p>
+  <h3>Come invii un messaggio (tu)</h3>
+  <ol>
+    <li>Admin → <strong>Sponsor</strong> → apri l'azienda → sezione <strong>"Messaggi al portale"</strong> → scrivi il testo e salva. (In alternativa: Admin → <strong>Messaggi portale</strong> → Aggiungi.)</li>
+    <li>Nell'archivio messaggi vedi lo stato: <span style="background:#e6a23c;color:#fff;padding:1px 6px;border-radius:3px;font-size:.85em;">DA LEGGERE</span> / <span style="background:#41ad7c;color:#fff;padding:1px 6px;border-radius:3px;font-size:.85em;">LETTO</span>, con data e nome di chi ha letto.</li>
+  </ol>
+  <h3>Cosa vede lo sponsor</h3>
+  <ul>
+    <li>Un <strong>banner giallo</strong> in evidenza in home per i messaggi non letti, con il pulsante <strong>"Ho letto questo messaggio"</strong>.</li>
+    <li>La voce di menu <strong>"Archivio messaggi"</strong> (con il numero dei non letti) per rileggerli tutti.</li>
+  </ul>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  A["Operatore scrive il messaggio<br/>(scheda Sponsor)"] --> B["Sponsor lo vede in home<br/>banner giallo"]
+  B --> C["Clicca 'Ho letto'"]
+  C --> D["Stato = LETTO<br/>(operatore vede chi e quando)"]
+    </pre>
+  </div>
+</section>
+
+<section id="archivio">
+  <h2>9. Archiviare un evento</h2>
+  <p>Quando un congresso è concluso puoi <strong>archiviarlo</strong>: sparisce dalle aree attive del portale ma resta consultabile.</p>
+  <h3>Come si archivia (tu)</h3>
+  <ol>
+    <li>Admin → <strong>Eventi</strong> → seleziona l'evento → azione <strong>"Archivia eventi selezionati"</strong> (oppure imposta lo stato su <em>Archiviato</em> nella scheda e salva).</li>
+    <li>Per riaprirlo: azione <strong>"Riattiva eventi selezionati"</strong>.</li>
+  </ol>
+  <h3>Cosa succede</h3>
+  <ul>
+    <li>L'evento <strong>sparisce</strong> da: In evidenza, I miei eventi, catalogo, I miei documenti, I miei acquisti. Non è più <strong>acquistabile</strong>.</li>
+    <li>Le <strong>scadenze aperte</strong> dell'evento vengono <strong>annullate</strong> (niente più reminder).</li>
+    <li>Compare nella voce di menu <strong>"Archivio eventi"</strong>: cliccando si apre lo <strong>storico in sola consultazione</strong> (contratti, righe, scadenze, documenti scaricabili). L'etichetta <span style="background:#fee2e2;color:#b91c1c;padding:1px 6px;border-radius:3px;font-size:.85em;font-weight:700;">Archiviato</span> è rossa.</li>
+  </ul>
+</section>
+
 <section id="excel">
-  <h2>8. Import da Excel (servizi e stand)</h2>
+  <h2>10. Import da Excel (servizi e stand)</h2>
   <div class="diagram">
     <pre class="mermaid">
 flowchart TD
@@ -258,8 +315,8 @@ flowchart TD
 </section>
 
 <section id="traduzioni">
-  <h2>9. Traduzioni italiano / inglese (automatiche)</h2>
-  <p>Il portale è bilingue (IT/EN). <strong>Non devi tradurre a mano</strong>: quando salvi (o importi da Excel) un servizio, uno stand o un evento compilando solo l'<strong>italiano</strong>, il sistema genera l'<strong>inglese</strong> in automatico.</p>
+  <h2>11. Traduzioni italiano / inglese (automatiche)</h2>
+  <p>Il portale è bilingue (IT/EN). <strong>Non devi tradurre a mano</strong>: quando salvi (o importi da Excel) un servizio, una <strong>variante</strong>, uno stand o un evento compilando solo l'<strong>italiano</strong>, il sistema genera l'<strong>inglese</strong> in automatico.</p>
   <ul>
     <li>Se scrivi tu l'inglese, viene rispettato (non sovrascritto).</li>
     <li>Lo sponsor sceglie la lingua nel portale (IT/EN) e vede i testi nella sua lingua.</li>
@@ -267,7 +324,7 @@ flowchart TD
 </section>
 
 <section id="faq">
-  <h2>10. Problemi comuni (FAQ)</h2>
+  <h2>12. Problemi comuni (FAQ)</h2>
 
   <h3>Il download del modello Excel crea un file senza estensione (nome strano)</h3>
   <p>È un <em>service worker</em> "fantasma" lasciato da un altro progetto sulla stessa porta del browser. Soluzioni: usa l'indirizzo alternativo del gestionale (porta diversa), oppure rimuovi il service worker da <code>chrome://serviceworker-internals</code> (cerca l'indirizzo e clicca <em>Unregister</em>). In caso, rinomina il file aggiungendo <code>.xlsx</code>.</p>
@@ -276,10 +333,16 @@ flowchart TD
   <p>La tendina mostra solo i servizi <strong>dell'evento</strong> selezionato. Se è vuota, quel congresso non ha ancora servizi a catalogo: creali prima (§6.2).</p>
 
   <h3>Ho importato gli stand ma "non ci sono"</h3>
-  <p>Probabili codici duplicati nel file (vedi §8): le righe con lo stesso codice vengono unite. Usa un codice unico per ciascuno e ricontrolla il riepilogo dell'import.</p>
+  <p>Probabili codici duplicati nel file (vedi §10): le righe con lo stesso codice vengono unite. Usa un codice unico per ciascuno e ricontrolla il riepilogo dell'import.</p>
 
   <h3>Le email non arrivano</h3>
   <p>In ambiente di prova le email vengono mostrate nei log, non inviate davvero. Per l'invio reale va configurato l'SMTP.</p>
+
+  <h3>Ho archiviato un evento ma il cliente lo vede ancora</h3>
+  <p>Controlla che lo stato dell'evento sia davvero <strong>Archiviato</strong> e che la modifica sia stata <strong>salvata</strong> (usa l'azione "Archivia eventi selezionati"). Poi fai un <strong>refresh</strong> (Ctrl+F5) del portale.</p>
+
+  <h3>Nella riga del contratto non vedo le varianti</h3>
+  <p>La tendina <strong>Variante</strong> mostra solo le varianti <strong>del servizio scelto in quella riga</strong>. Se è vuota, quel servizio non ha varianti: aggiungile nella scheda del servizio, sezione "Varianti servizio" (vedi §6.6).</p>
 </section>
 
 <footer>
