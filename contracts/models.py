@@ -941,38 +941,6 @@ class Contract(SoftDeleteModel):
 
 
 class ContractLine(TimeStampedModel):
-    def clean(self):
-        """Blocca l'assegnazione se il servizio e' esaurito."""
-        from django.core.exceptions import ValidationError
-        super_clean = getattr(super(), 'clean', None)
-        if super_clean:
-            super_clean()
-        if not self.service_id:
-            return
-        # La variante scelta deve appartenere al servizio della riga.
-        if self.service_variant_id and self.service_variant.service_id != self.service_id:
-            raise ValidationError({'service_variant':
-                "La variante selezionata non appartiene a questo servizio."})
-        # contratto cui appartiene questa riga (per escluderlo dal conteggio)
-        contract_id = self.contract_id
-        avail = self.service.quantity_available(exclude_contract_id=contract_id)
-        if avail is None:
-            return  # illimitato
-        # quanto gia' impegnato da QUESTO contratto per lo stesso servizio
-        already = 0
-        if contract_id:
-            from django.db.models import Sum
-            already = (self.service.contract_lines
-                       .filter(contract_id=contract_id)
-                       .exclude(pk=self.pk)
-                       .aggregate(t=Sum('quantity'))['t'] or 0)
-        richiesta = (self.quantity or 0) + already
-        if richiesta > avail + already:
-            raise ValidationError(
-                f"Servizio '{self.service}' non disponibile in quantita' "
-                f"sufficiente: richiesti {self.quantity}, disponibili {avail}."
-            )
-
     """
     Riga di un contratto: un servizio acquistato in una certa quantità.
     
@@ -1100,6 +1068,7 @@ class ContractLine(TimeStampedModel):
         return '[incluso:' in (self.notes or '')
 
     def clean(self):
+        from django.db.models import Sum
         super().clean()
         if self.quantity < 1:
             raise ValidationError({'quantity': "La quantità deve essere almeno 1."})
@@ -1121,6 +1090,46 @@ class ContractLine(TimeStampedModel):
                 f"'{_ev_serv}', ma questo contratto e' per l'evento '{_ev_contr}'. "
                 f"Nella tendina del servizio digita il nome dell'evento "
                 f"'{_ev_contr}' per vedere solo i suoi servizi.")})
+
+        if not self.service_id:
+            return
+        contract_id = self.contract_id
+
+        # La variante scelta deve appartenere al servizio della riga.
+        if self.service_variant_id and self.service_variant.service_id != self.service_id:
+            raise ValidationError({'service_variant':
+                "La variante selezionata non appartiene a questo servizio."})
+
+        # Disponibilità della VARIANTE (ha scorte proprie, es. "restano 10").
+        if self.service_variant_id:
+            v = self.service_variant
+            v_avail = v.quantity_available(exclude_contract_id=contract_id)
+            if v_avail is not None:
+                already_v = 0
+                if contract_id:
+                    already_v = (v.variant_lines
+                                 .filter(contract_id=contract_id)
+                                 .exclude(pk=self.pk)
+                                 .aggregate(t=Sum('quantity'))['t'] or 0)
+                if (self.quantity or 0) + already_v > v_avail:
+                    raise ValidationError({'quantity':
+                        f"Variante «{v.label}» non disponibile in quantità "
+                        f"sufficiente: richiesti {self.quantity}, disponibili {v_avail}."})
+
+        # Disponibilità del SERVIZIO.
+        avail = self.service.quantity_available(exclude_contract_id=contract_id)
+        if avail is None:
+            return  # illimitato
+        already = 0
+        if contract_id:
+            already = (self.service.contract_lines
+                       .filter(contract_id=contract_id)
+                       .exclude(pk=self.pk)
+                       .aggregate(t=Sum('quantity'))['t'] or 0)
+        if (self.quantity or 0) + already > avail:
+            raise ValidationError({'quantity':
+                f"Servizio «{self.service.translated('name', 'it')}» non disponibile "
+                f"in quantità sufficiente: richiesti {self.quantity}, disponibili {avail}."})
 
     def calculate_totals(self):
         """Calcola line_subtotal, line_vat, line_total dai dati base."""
