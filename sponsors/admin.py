@@ -68,17 +68,40 @@ class PortalMessageInline(admin.TabularInline):
     """Messaggi al portale di questo sponsor, con stato letto/da leggere."""
     model = PortalMessage
     extra = 0
-    fields = ('body', 'event', 'is_active', 'stato', 'read_at', 'read_by')
-    readonly_fields = ('stato', 'read_at', 'read_by')
+    fields = ('body', 'event', 'is_active', 'stato', 'letto_il', 'letto_da')
+    readonly_fields = ('stato', 'letto_il', 'letto_da')
     verbose_name = 'Messaggio portale'
     verbose_name_plural = 'Messaggi al portale (archivio)'
     ordering = ('-created_at',)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        ff = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == 'body' and ff is not None:
+            # Textarea a 1 riga (espandibile a mano), non occupa tutto lo spazio.
+            ff.widget.attrs.update({
+                'rows': 1,
+                'style': 'width:26em; height:2.4em; min-height:2.4em; resize:both;',
+            })
+        return ff
 
     @admin.display(description='Stato')
     def stato(self, obj):
         if not obj.pk:
             return '—'
         return _stato_messaggio_badge(obj)
+
+    @admin.display(description='Letto il')
+    def letto_il(self, obj):
+        if not obj.pk or not obj.read_at:
+            return '—'
+        from django.utils import timezone
+        return timezone.localtime(obj.read_at).strftime('%d/%m/%Y %H:%M')
+
+    @admin.display(description='Letto da')
+    def letto_da(self, obj):
+        if not obj.pk or not obj.read_by_id:
+            return '—'
+        return obj.read_by.full_name
 
 
 @admin.register(Sponsor)

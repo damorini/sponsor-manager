@@ -202,6 +202,14 @@
   #lines-group td.field-unit_price input       { width: 100px; box-sizing: border-box; }
   #lines-group td.field-discount_percent input { width: 70px; box-sizing: border-box; }
   #lines-group td.field-discount_amount input  { width: 90px; box-sizing: border-box; }
+
+  /* Messaggi al portale (inline sullo Sponsor): righe compatte, una sola riga */
+  #portal_messages-group td { vertical-align: top; }
+  #portal_messages-group td.field-body textarea { font-size: .9em; line-height: 1.3; }
+  #portal_messages-group td.field-stato,
+  #portal_messages-group td.field-letto_il,
+  #portal_messages-group td.field-letto_da,
+  #portal_messages-group td.field-is_active { white-space: nowrap; }
 </style>
 <script>
   // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
