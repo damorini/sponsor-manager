@@ -204,7 +204,9 @@ class Service(TranslatableMixin, TimeStampedModel):
         ]
 
     def __str__(self):
-        return f"{self.translated('name')} ({self.event.slug})"
+        # Backoffice italiano-first: il menu/etichette admin mostrano sempre il
+        # nome italiano (fallback alle altre lingue se l'IT manca).
+        return f"{self.translated('name', 'it')} ({self.event.slug})"
 
     def get_name(self, language=None):
         return self.translated('name', language)
