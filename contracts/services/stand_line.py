@@ -47,7 +47,8 @@ def _stand_price_and_label(contract):
     if stand:
         return stand.base_price, f"Spazio espositivo - {stand.code}", f"stand:{stand.code}"
     if block:
-        return block.block_price, f"Spazio espositivo - Blocco {block.code}", f"block:{block.code}"
+        # Prezzo a mano se impostato, altrimenti somma dei prezzi degli stand.
+        return block.effective_price, f"Spazio espositivo - Blocco {block.code}", f"block:{block.code}"
     raise ValueError("Il contratto non ha ne' uno stand ne' un blocco assegnato.")
 
 

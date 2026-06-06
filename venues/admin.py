@@ -121,6 +121,9 @@ class StandBlockAdmin(admin.ModelAdmin):
         }),
         ('Dimensioni e prezzo', {
             'fields': ('total_area_sqm', 'block_price'),
+            'description': "Prezzo blocco: lascialo VUOTO per usare in automatico "
+                           "la somma dei prezzi degli stand inclusi. Inseriscilo "
+                           "solo se vuoi forzare un prezzo diverso.",
         }),
         ('Note', {
             'fields': ('notes',),
@@ -158,6 +161,9 @@ class StandBlockAdmin(admin.ModelAdmin):
                 }),
                 ('Dimensioni e prezzo', {
                     'fields': ('total_area_sqm', 'block_price'),
+                    'description': "Prezzo blocco: lascialo VUOTO per usare la somma "
+                                   "dei prezzi degli stand. Inseriscilo solo per "
+                                   "forzare un prezzo diverso.",
                 }),
                 ('Note', {
                     'fields': ('notes',),
@@ -204,8 +210,13 @@ class StandBlockAdmin(admin.ModelAdmin):
     @admin.display(description='Prezzo')
     def block_price_display(self, obj):
         if obj.block_price is not None:
-            return f"\u20ac {obj.block_price:,.2f}"
-        return '\u2014'
+            return format_html('\u20ac {}', f"{obj.block_price:,.2f}")
+        # Nessun prezzo a mano: mostra la somma degli stand (calcolata).
+        somma = obj.stands_price_sum
+        return format_html(
+            '<span title="Somma prezzi stand (nessun prezzo blocco impostato)">'
+            '\u20ac {} <small style="color:#8a7a66;">(somma stand)</small></span>',
+            f"{somma:,.2f}")
 
     @admin.display(description='Stato')
     def status_badge(self, obj):

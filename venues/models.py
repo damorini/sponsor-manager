@@ -4,8 +4,10 @@ Modelli dell'app Venues (spazi espositivi).
 StandBlock raggruppa stand venduti come unico spazio.
 Stand sono le postazioni espositive fisiche.
 """
+from decimal import Decimal
+
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.utils import timezone
 
 from core.models import TimeStampedModel
@@ -109,6 +111,26 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
     @property
     def stands_count(self):
         return self.stands.count()
+
+    @property
+    def stands_price_sum(self):
+        """Somma dei prezzi base degli stand che compongono il blocco."""
+        return self.stands.aggregate(t=Sum('base_price'))['t'] or Decimal('0.00')
+
+    @property
+    def effective_price(self):
+        """Prezzo da usare per il blocco:
+        - se 'block_price' è impostato a mano, vale quello;
+        - altrimenti la somma dei prezzi degli stand inclusi.
+        """
+        if self.block_price is not None:
+            return self.block_price
+        return self.stands_price_sum
+
+    @property
+    def price_is_computed(self):
+        """True se il prezzo deriva dalla somma stand (block_price non impostato)."""
+        return self.block_price is None
 
     def update_status_from_contract(self):
         """
