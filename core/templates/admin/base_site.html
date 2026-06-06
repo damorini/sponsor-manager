@@ -132,6 +132,32 @@
     outline: none;
   }
   ::placeholder { color: var(--body-quiet-color); opacity: .8; }
+
+  /* Select2 (campi autocomplete: Evento, Blocco, Sponsor, ecc.): stesso look dei campi */
+  .select2-container--admin-autocomplete .select2-selection,
+  .select2-container .select2-selection--single,
+  .select2-container .select2-selection--multiple {
+    background: var(--vt-input-bg) !important;
+    border: 1px solid var(--vt-input-border) !important;
+    border-radius: 8px !important;
+    color: var(--body-fg) !important;
+  }
+  .select2-container--admin-autocomplete .select2-selection__rendered,
+  .select2-selection__rendered { color: var(--body-fg) !important; }
+  .select2-selection__placeholder { color: var(--body-quiet-color) !important; }
+  .select2-dropdown {
+    background: var(--vt-input-bg) !important;
+    border: 1px solid var(--vt-input-border) !important;
+  }
+  .select2-results__option { color: var(--body-fg) !important; }
+  .select2-container--admin-autocomplete .select2-results__option--highlighted,
+  .select2-results__option--highlighted[aria-selected] {
+    background: var(--primary) !important; color: #fff !important;
+  }
+  .select2-search__field {
+    background: var(--vt-input-bg) !important; color: var(--body-fg) !important;
+    border: 1px solid var(--vt-input-border) !important;
+  }
   #nav-sidebar .module caption,
   #nav-sidebar .module caption a { background: var(--vt-sidebar-cap-bg); color: var(--vt-sidebar-cap-fg) !important; }
 
