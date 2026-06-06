@@ -183,6 +183,16 @@
   #nav-sidebar .module caption { letter-spacing: .04em; text-transform: uppercase; font-size: .72rem; }
   #changelist tbody tr:hover { background: var(--selected-row); }
   #cruscotto-sidebar-link a { border-radius: 10px !important; }
+
+  /* Tabella VARIANTI SERVIZIO: input piu' compatti per stare in larghezza */
+  #variants-group td.field-label input    { width: 100%; max-width: 240px; box-sizing: border-box; }
+  #variants-group td.field-label_en input { width: 100%; max-width: 200px; box-sizing: border-box; }
+  #variants-group td.field-code input      { width: 100%; max-width: 120px; box-sizing: border-box; }
+  #variants-group td.field-base_price input { width: 100%; max-width: 100px; box-sizing: border-box; }
+  #variants-group td.field-total_available input { width: 64px; box-sizing: border-box; }
+  #variants-group td.field-display_order input   { width: 64px; box-sizing: border-box; }
+  #variants-group td.field-is_active { text-align: center; }
+  #variants-group td.original { font-size: .8em; color: #8a7a66; }
 </style>
 <script>
   // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
