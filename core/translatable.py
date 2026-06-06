@@ -77,3 +77,39 @@ class TranslatableMixin:
         if not isinstance(value, dict):
             return []
         return [lang for lang, val in value.items() if val]
+
+    def autofill_translations(self, source='it', target='en'):
+        """Compila automaticamente le traduzioni mancanti (es. EN da IT) via DeepL.
+
+        - agisce solo dove c'è il testo sorgente e MANCA quello di destinazione
+          (non sovrascrive mai una traduzione già inserita a mano);
+        - non solleva eccezioni: se DeepL non è disponibile, lascia il campo
+          vuoto e `translated()` fa il fallback sull'italiano.
+
+        Viene richiamato automaticamente al salvataggio (vedi core/signals.py),
+        così l'inglese si popola da solo anche negli import da Excel.
+        """
+        from django.conf import settings
+        if not getattr(settings, 'AUTO_TRANSLATE_ON_SAVE', True):
+            return
+        try:
+            from core.translation import translate_text
+        except Exception:
+            return
+
+        for field in self.TRANSLATABLE_FIELDS:
+            value = getattr(self, field, None)
+            if not isinstance(value, dict):
+                continue
+            src_text = (value.get(source) or '').strip()
+            has_target = bool((value.get(target) or '').strip())
+            if not src_text or has_target:
+                continue
+            try:
+                is_html = '<' in src_text and '>' in src_text
+                translated = translate_text(src_text, source=source, target=target, html=is_html)
+            except Exception:
+                continue  # non bloccare il salvataggio
+            if translated:
+                value[target] = translated
+                setattr(self, field, value)

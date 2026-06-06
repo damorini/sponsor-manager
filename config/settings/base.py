@@ -24,6 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config('SECRET_KEY')
 DEEPL_API_KEY = config('DEEPL_API_KEY', default='')  # traduzione IT->EN (chiave gratuita deepl.com)
+# Se True, al salvataggio (admin + import Excel) l'inglese mancante viene
+# compilato automaticamente da DeepL partendo dall'italiano.
+AUTO_TRANSLATE_ON_SAVE = config('AUTO_TRANSLATE_ON_SAVE', default=True, cast=bool)
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 

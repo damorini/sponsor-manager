@@ -10,6 +10,13 @@ from users.models import UserRole
 User = get_user_model()
 
 
+@pytest.fixture(autouse=True)
+def _no_auto_translate(settings):
+    """I test NON devono chiamare DeepL al salvataggio dei modelli traducibili.
+    L'auto-traduzione è testata a parte (mockata) in test_autotranslate.py."""
+    settings.AUTO_TRANSLATE_ON_SAVE = False
+
+
 @pytest.fixture
 def user_sponsor(db):
     """Crea un utente sponsor per i test."""
