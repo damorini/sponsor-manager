@@ -163,7 +163,10 @@ def build_quote_summary_rows(contract):
     stand_desc = (getattr(contract, 'stand_description_override', '') or '').strip()
     if not stand_desc:
         _obj = contract.stand or contract.stand_block
-        stand_desc = (getattr(_obj, 'quote_description', '') or '').strip() if _obj else ''
+        if _obj is not None and hasattr(_obj, 'translated'):
+            stand_desc = (_obj.translated('quote_description', getattr(contract, 'language', None)) or '').strip()
+        else:
+            stand_desc = ''
 
     # marcatore riga-stand (vedi stand_line.py): la riga stand ha 'stand:'/'block:' nelle notes
     stand_rows = []

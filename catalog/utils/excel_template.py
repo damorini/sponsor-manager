@@ -256,7 +256,8 @@ def export_stand_workbook(event):
         ws.cell(row=r, column=11, value=_norm_bool_out(st.has_water))
         ws.cell(row=r, column=12, value=_norm_bool_out(st.has_internet))
         ws.cell(row=r, column=13, value=float(st.max_height_meters) if st.max_height_meters is not None else '')
-        ws.cell(row=r, column=14, value=st.quote_description or '')
+        _qd = st.quote_description if isinstance(st.quote_description, dict) else {}
+        ws.cell(row=r, column=14, value=_qd.get('it', '') or '')
         r += 1
 
     for col in range(1, len(headers) + 1):

@@ -8,6 +8,7 @@ incluso 'IN BLOCCO' per gli stand che fanno parte di un blocco.
 from django import forms
 from django.contrib import admin
 from core.admin_filters import evento_filter
+from core.admin_widgets import TranslatableJSONField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Q
 from django.urls import reverse
@@ -27,6 +28,10 @@ class StandBlockForm(forms.ModelForm):
         help_text="Solo stand DISPONIBILI di questo evento (non prenotati/"
                   "assegnati). Gli stand si creano prima (import Excel o lista "
                   "Stand); qui scegli quali raggruppare nel blocco.",
+    )
+    quote_description = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=[], required=False,
+        label="Descrizione per preventivo (IT/EN)",
     )
 
     class Meta:
@@ -195,8 +200,22 @@ class StandBlockAdmin(admin.ModelAdmin):
         return _stand_status_badge(obj.status, obj.get_status_display())
 
 
+class StandAdminForm(forms.ModelForm):
+    """Form Stand con descrizione preventivo bilingue (IT/EN)."""
+    quote_description = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=[], required=False,
+        label="Descrizione per preventivo (IT/EN)",
+    )
+
+    class Meta:
+        model = Stand
+        fields = '__all__'
+
+
 @admin.register(Stand)
 class StandAdmin(admin.ModelAdmin):
+    form = StandAdminForm
+
     def get_queryset(self, request):
         from core.event_scope import scope_by_event
         return scope_by_event(request, super().get_queryset(request), 'event')
@@ -250,6 +269,11 @@ class StandAdmin(admin.ModelAdmin):
         }),
         ('Prezzo', {
             'fields': ('base_price',),
+        }),
+        ('Descrizione per il preventivo', {
+            'fields': ('quote_description',),
+            'description': "Compare SOLO nel preventivo del cliente. "
+                           "L'inglese si compila da solo al salvataggio.",
         }),
         ('Note', {
             'fields': ('notes',),

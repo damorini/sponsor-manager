@@ -148,7 +148,7 @@ class Command(BaseCommand):
                     "has_power": ha_elettrico,
                     "has_water": ha_idrico,
                     "has_internet": ha_internet,
-                    "quote_description": descr,
+                    "quote_description": ({"it": descr} if descr else {}),
                 }
                 if larghezza is not None:
                     campi["width_meters"] = larghezza

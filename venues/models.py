@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from core.models import TimeStampedModel
+from core.translatable import TranslatableMixin
 from events.models import Event
 
 
@@ -19,15 +20,17 @@ class StandStatus(models.TextChoices):
     UNAVAILABLE = 'unavailable', 'Non disponibile'
 
 
-class StandBlock(TimeStampedModel):
+class StandBlock(TranslatableMixin, TimeStampedModel):
     """
     Blocco logico di stand venduti come unico spazio.
-    
+
     Esempi: "Blocco B12-B13" (due stand adiacenti), "Area Centrale" (4 stand
     a isola). Un contratto può essere assegnato al blocco intero, e tutti gli
     stand del blocco passano automaticamente a 'assigned' (logica gestita in
     Contract.mark_as_signed()).
     """
+    TRANSLATABLE_FIELDS = ['quote_description']
+
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
@@ -75,12 +78,13 @@ class StandBlock(TimeStampedModel):
         verbose_name="Stato",
     )
 
-    quote_description = models.TextField(
+    quote_description = models.JSONField(
+        default=dict,
         blank=True,
-        verbose_name="Descrizione per preventivo",
-        help_text="Descrizione dello stand mostrata SOLO nel preventivo "
+        verbose_name="Descrizione per preventivo (IT/EN)",
+        help_text="Descrizione mostrata SOLO nel preventivo "
                   "(es. 'stand rettangolare con 1 lato libero, senza arredo...'). "
-                  "Non compare nel contratto.",
+                  "Non compare nel contratto. L'inglese si compila da solo al salvataggio.",
     )
 
     notes = models.TextField(blank=True, verbose_name="Note")
@@ -145,11 +149,13 @@ class StandBlock(TimeStampedModel):
         self.stands.update(status=new_status)
 
 
-class Stand(TimeStampedModel):
+class Stand(TranslatableMixin, TimeStampedModel):
     """
     Postazione espositiva fisica. Appartiene a un evento e facoltativamente
     a un blocco.
     """
+    TRANSLATABLE_FIELDS = ['quote_description']
+
     event = models.ForeignKey(
         Event,
         on_delete=models.CASCADE,
@@ -235,12 +241,13 @@ class Stand(TimeStampedModel):
         verbose_name="Prezzo base",
     )
 
-    quote_description = models.TextField(
+    quote_description = models.JSONField(
+        default=dict,
         blank=True,
-        verbose_name="Descrizione per preventivo",
-        help_text="Descrizione dello stand mostrata SOLO nel preventivo "
+        verbose_name="Descrizione per preventivo (IT/EN)",
+        help_text="Descrizione mostrata SOLO nel preventivo "
                   "(es. 'stand rettangolare con 1 lato libero, senza arredo...'). "
-                  "Non compare nel contratto.",
+                  "Non compare nel contratto. L'inglese si compila da solo al salvataggio.",
     )
 
     notes = models.TextField(blank=True, verbose_name="Note")

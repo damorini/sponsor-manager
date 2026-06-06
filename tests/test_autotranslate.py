@@ -52,3 +52,15 @@ class TestAutoTranslate:
         s.refresh_from_db()
         assert not m.called
         assert not (s.name or {}).get('en')
+
+    def test_stand_quote_description_autofilled(self, settings):
+        """La descrizione stand (ora bilingue) si auto-traduce al salvataggio/import."""
+        from venues.models import Stand
+        settings.AUTO_TRANSLATE_ON_SAVE = True
+        ev = _event('AT4')
+        with patch('core.translation.translate_text', return_value='Rectangular booth') as m:
+            st = Stand.objects.create(event=ev, code='S1', base_price=Decimal('100.00'),
+                                      quote_description={'it': 'Stand rettangolare'})
+        st.refresh_from_db()
+        assert st.quote_description.get('en') == 'Rectangular booth'
+        assert m.called

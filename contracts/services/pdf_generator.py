@@ -716,7 +716,10 @@ def build_quote_context(contract):
     descrizione_stand = (getattr(contract, 'stand_description_override', '') or '').strip()
     if not descrizione_stand:
         _obj = contract.stand or contract.stand_block
-        descrizione_stand = (getattr(_obj, 'quote_description', '') or '').strip() if _obj else ''
+        if _obj is not None and hasattr(_obj, 'translated'):
+            descrizione_stand = (_obj.translated('quote_description', getattr(contract, 'language', None)) or '').strip()
+        else:
+            descrizione_stand = ''
 
     # Frase opzione spazio (solo se il contratto ha un'opzione impostata)
     _opt = getattr(contract, 'option_until', None)
