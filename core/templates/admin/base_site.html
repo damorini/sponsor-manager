@@ -185,6 +185,27 @@
   #cruscotto-sidebar-link a { border-radius: 10px !important; }
 </style>
 <script>
+  // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
+  // (es. lasciati da altri progetti girati sulla stessa porta): intercettano
+  // i download e li salvano come blob senza nome/estensione (file UUID).
+  (function () {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      if (!regs || !regs.length) return;
+      Promise.all(regs.map(function (r) { return r.unregister(); })).then(function () {
+        if (window.caches && caches.keys) {
+          caches.keys().then(function (ks) { ks.forEach(function (k) { caches.delete(k); }); });
+        }
+        // Una sola ricarica per liberare la pagina dal SW già attivo
+        if (!sessionStorage.getItem('_sw_cleaned')) {
+          sessionStorage.setItem('_sw_cleaned', '1');
+          location.reload();
+        }
+      });
+    }).catch(function () {});
+  })();
+</script>
+<script>
   // Evita che la rotellina del mouse cambi un campo numero a fuoco
   document.addEventListener('wheel', function () {
     var el = document.activeElement;
