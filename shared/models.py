@@ -421,8 +421,11 @@ class InvoiceExport(TimeStampedModel):
 
     # Snapshot dati fiscali al momento dell'export
     fiscal_data_snapshot = models.JSONField(
+        default=dict,
+        blank=True,
         verbose_name="Snapshot dati fiscali",
-        help_text="Dati sponsor congelati al momento dell'export",
+        help_text="Dati sponsor congelati al momento dell'export. "
+                  "Se vuoto, viene compilato in automatico dallo sponsor del contratto.",
     )
 
     export_file_url = models.URLField(
@@ -447,6 +450,15 @@ class InvoiceExport(TimeStampedModel):
             models.Index(fields=['status']),
             models.Index(fields=['external_invoice_number']),
         ]
+
+    def save(self, *args, **kwargs):
+        # Congela i dati fiscali dello sponsor se non già presenti.
+        if not self.fiscal_data_snapshot and self.contract_id:
+            try:
+                self.fiscal_data_snapshot = self.contract.sponsor.fiscal_data_dict
+            except Exception:
+                self.fiscal_data_snapshot = {}
+        super().save(*args, **kwargs)
 
     def __str__(self):
         ref = self.external_invoice_number or self.contract.contract_number
