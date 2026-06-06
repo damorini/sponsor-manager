@@ -8,23 +8,49 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
-    theme: { extend: { colors: { 'brand': {
-      50:'#eff6ff', 100:'#dbeafe',
-      500:'{{ brand_primary_color|default:"#1f4e79" }}',
-      600:'{{ brand_primary_color|default:"#1f4e79" }}',
-      700:'#1a3f63', 900:'#0f2942' } } } }
+    theme: {
+      extend: {
+        colors: {
+          brand: {
+            50:'#f0f5fa', 100:'#dbe7f2', 200:'#bcd0e6', 300:'#8fb0d3',
+            400:'#5d88ba', 500:'{{ brand_primary_color|default:"#1f4e79" }}',
+            600:'#1f4e79', 700:'#1a3f63', 800:'#163450', 900:'#0f2942'
+          },
+          accent: {
+            50:'#fbf7ee', 100:'#f3e9cf', 400:'#cba14e', 500:'#b8862f', 600:'#9a6f23'
+          }
+        },
+        fontFamily: { sans: ['Manrope','-apple-system','BlinkMacSystemFont','Segoe UI','Arial','sans-serif'] },
+        boxShadow: {
+          card: '0 1px 2px rgba(15,41,66,.04), 0 8px 24px -12px rgba(15,41,66,.12)',
+          soft: '0 1px 3px rgba(15,41,66,.06)'
+        },
+        borderRadius: { xl: '0.875rem', '2xl': '1.125rem' }
+      }
+    }
   }
 </script>
 
-<style>
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+<style type="text/tailwindcss">
   input[type=number]::-webkit-outer-spin-button,
   input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
-  .alert-success { @apply bg-green-50 border-l-4 border-green-500 text-green-800 p-4; }
-  .alert-error { @apply bg-red-50 border-l-4 border-red-500 text-red-800 p-4; }
-  .alert-warning { @apply bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-4; }
-  .alert-info { @apply bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4; }
+
+  /* Avvisi: pill morbide con icona a sinistra */
+  .alert-success { @apply bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl shadow-soft; }
+  .alert-error   { @apply bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl shadow-soft; }
+  .alert-warning { @apply bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl shadow-soft; }
+  .alert-info    { @apply bg-brand-50 border border-brand-200 text-brand-800 px-4 py-3 rounded-xl shadow-soft; }
+
+  /* Componenti riutilizzabili */
+  .card { @apply bg-white rounded-2xl border border-slate-200/70 shadow-card; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 font-semibold text-white shadow-soft transition hover:bg-brand-700 active:scale-[.98] focus:outline-none focus:ring-2 focus:ring-brand-400 focus:ring-offset-2; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-semibold text-brand-700 transition hover:bg-slate-50; }
+
+  /* Scrollbar discreta nella sidebar */
+  .nav-scroll::-webkit-scrollbar { width: 6px; }
+  .nav-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.18); border-radius: 9999px; }
+  .nav-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
 </style>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -39,7 +65,7 @@
 {% block extra_head %}{% endblock %}
 </head>
 
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased">
 
 {% if user.is_authenticated and user.is_sponsor %}
 {% with un=request.resolver_match.url_name %}
@@ -47,11 +73,11 @@
      class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
 
 <aside id="sidebar"
-       class="fixed inset-y-0 left-0 w-64 bg-brand-600 z-40
+       class="fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-brand-600 to-brand-900 z-40 shadow-xl ring-1 ring-black/5
               flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200">
 
   <div class="px-4 pt-4 pb-3">
-    <a href="{% url 'portal:dashboard' %}" class="block bg-white rounded-xl px-3 py-2.5">
+    <a href="{% url 'portal:dashboard' %}" class="block bg-white rounded-xl px-3 py-2.5 shadow-soft">
       {% if user.contact_profile.sponsor.logo_file %}
       <img src="{{ user.contact_profile.sponsor.logo_file.url }}" alt="{{ user.contact_profile.sponsor.legal_name }}" class="h-10 w-auto max-w-full object-contain mx-auto">
       {% elif user.contact_profile.sponsor.logo_url %}
@@ -62,7 +88,7 @@
     </a>
   </div>
 
-  <div class="mx-4 mb-2 flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5">
+  <div class="mx-4 mb-2 flex items-center gap-3 rounded-xl bg-white/10 px-3 py-2.5 ring-1 ring-white/10">
     <span class="flex items-center justify-center h-9 w-9 rounded-full bg-white text-brand-700 font-semibold text-sm shrink-0">{{ user.contact_profile.full_name|default:"?"|first|upper }}</span>
     <div class="min-w-0">
       <div class="text-xs font-semibold text-white leading-tight break-words">{{ user.contact_profile.full_name }}</div>
@@ -77,31 +103,32 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.path }}">
       <button type="submit" name="language" value="it"
-              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇮🇹 IT</button>
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇮🇹 IT</button>
       <button type="submit" name="language" value="en"
-              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇬🇧 EN</button>
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇬🇧 EN</button>
     </form>
   </div>
 
-  <nav class="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+  <nav class="nav-scroll flex-1 overflow-y-auto px-3 py-3 space-y-1">
+    <p class="px-3.5 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">{% trans "Menu" %}</p>
     <a href="{% url 'portal:dashboard' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>{% trans "In evidenza" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>{% trans "In evidenza" %}</a>
     <a href="{% url 'portal:events' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>{% trans "I miei eventi" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>{% trans "I miei eventi" %}</a>
     <a href="{% url 'portal:contracts_list' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "Contratti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "Contratti" %}</a>
     <a href="{% url 'portal:purchases' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>{% trans "I miei acquisti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>{% trans "I miei acquisti" %}</a>
     <a href="{% url 'portal:profile' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-user text-lg shrink-0"></i>{% trans "I miei dati" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'profile' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-user text-lg shrink-0"></i>{% trans "I miei dati" %}</a>
     <a href="{% url 'portal:wishlist_page' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'wishlist_page' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-heart text-lg shrink-0"></i>Wishlist</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'wishlist_page' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-heart text-lg shrink-0"></i>Wishlist</a>
     {% if has_purchasable_services %}
     <a href="{% url 'portal:catalog' %}"
-       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}"><i class="ti ti-building-store text-lg shrink-0"></i>{% trans "Acquista servizi" %}</a>
+       class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-building-store text-lg shrink-0"></i>{% trans "Acquista servizi" %}</a>
     {% endif %}
     <a href="{% url 'portal:cart_view' %}"
-       class="flex items-center justify-between px-3.5 py-2.5 rounded-lg font-medium {% if un == 'cart_view' %}bg-white text-brand-700{% else %}text-white/80 hover:bg-white/10{% endif %}">
+       class="flex items-center justify-between px-3.5 py-2.5 rounded-lg font-medium {% if un == 'cart_view' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}">
       <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-lg shrink-0"></i>{% trans "Carrello" %}</span>
       {% if cart_count and cart_count > 0 %}
       <span class="bg-white text-brand-700 text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>

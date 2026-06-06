@@ -21,19 +21,23 @@
     <!-- Header -->
     <div class="text-center mb-8">
       {% if brand_logo_url %}
-      <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}" 
+      <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}"
            class="mx-auto h-16 w-auto mb-4">
+      {% else %}
+      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-900 text-white shadow-card">
+        <i class="ti ti-building-community text-2xl"></i>
+      </div>
       {% endif %}
-      <h1 class="text-3xl font-bold text-gray-900">
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">
         {% trans "Accesso portale sponsor" %}
       </h1>
-      <p class="mt-2 text-sm text-gray-600">
+      <p class="mt-2 text-sm text-slate-500">
         {{ organizer_name|default:"Sponsor Manager" }}
       </p>
     </div>
-    
+
     <!-- Form -->
-    <div class="bg-white rounded-lg shadow-md p-8">
+    <div class="card p-8">
       <form method="post" action="{% url 'portal:login' %}">
         {% csrf_token %}
         {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
@@ -57,7 +61,7 @@
             </label>
             <input type="email" name="username" id="id_username" required autofocus
                    autocomplete="email"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                   class="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-slate-50/50 placeholder-slate-400 transition focus:bg-white focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none">
           </div>
           
           <div>
@@ -66,18 +70,17 @@
             </label>
             <input type="password" name="password" id="id_password" required
                    autocomplete="current-password"
-                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+                   class="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-slate-50/50 placeholder-slate-400 transition focus:bg-white focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none">
           </div>
         </div>
         
-        <button type="submit" 
-                class="w-full mt-6 bg-brand-500 hover:bg-brand-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors">
-          {% trans "Accedi" %}
+        <button type="submit" class="btn-primary w-full mt-6 py-2.5">
+          <i class="ti ti-login"></i>{% trans "Accedi" %}
         </button>
-        
+
         <div class="mt-4 text-center">
-          <a href="{% url 'portal:password_reset' %}" 
-             class="text-sm text-brand-500 hover:underline">
+          <a href="{% url 'portal:password_reset' %}"
+             class="text-sm text-brand-600 hover:underline">
             {% trans "Hai dimenticato la password?" %}
           </a>
         </div>
