@@ -105,10 +105,20 @@
   #branding h1, #site-name a:link, #site-name a:visited { font-weight: 600; letter-spacing: -.01em; }
   h1 { font-weight: 600; }
 
-  .module { border-radius: 12px; border: 1px solid var(--hairline-color); box-shadow: 0 1px 2px rgba(0,0,0,.05); overflow: hidden; }
+  /* Bordo via box-shadow (segue il border-radius senza "buchi" agli angoli) */
+  .module { border-radius: 12px; border: 0; box-shadow: 0 0 0 1px var(--hairline-color), 0 1px 2px rgba(0,0,0,.05); overflow: hidden; }
   #content-main .module > caption,
   #content-main .module > h2,
   #content-main .module > h3 { background: var(--vt-content-cap-bg); color: var(--vt-content-cap-fg); font-weight: 600; }
+
+  /* Leggibilità form: etichette forti + help un po' più scuro (chiaro e scuro) */
+  .form-row label, .aligned label, fieldset .form-row label, .checkbox-row label { color: var(--body-fg); }
+  .help, .form-row .help, div.help, p.help, .form-row .help a, .aligned p.help { color: var(--body-medium-color) !important; }
+  /* Campi: bordo un filo più definito */
+  input[type=text], input[type=number], input[type=email], input[type=url],
+  input[type=password], input[type=tel], textarea, select {
+    border: 1px solid var(--border-color); border-radius: 8px;
+  }
   #nav-sidebar .module caption,
   #nav-sidebar .module caption a { background: var(--vt-sidebar-cap-bg); color: var(--vt-sidebar-cap-fg) !important; }
 
