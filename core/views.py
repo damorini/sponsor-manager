@@ -356,6 +356,20 @@ def download_template_stand(request):
 
 
 @staff_member_required
+def manuale(request):
+    """Serve il manuale d'uso (docs/manuale_utente.html) dentro l'area admin."""
+    import os
+    from django.conf import settings
+    from django.http import HttpResponse, Http404
+    path = os.path.join(settings.BASE_DIR, 'docs', 'manuale_utente.html')
+    try:
+        with open(path, encoding='utf-8') as f:
+            return HttpResponse(f.read())
+    except FileNotFoundError:
+        raise Http404("Manuale non trovato.")
+
+
+@staff_member_required
 def da_incassare_evento(request, pk):
     """Listato dei residui da incassare per i contratti confermati di un evento."""
     from datetime import date

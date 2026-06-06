@@ -213,7 +213,7 @@
   }, { passive: true });
 </script>
 <script>
-  // Link "Cruscotto" in cima al menu laterale sinistro dell'admin
+  // Link "Cruscotto" + "Manuale d'uso" in cima al menu laterale sinistro dell'admin
   document.addEventListener('DOMContentLoaded', function () {
     var sb = document.getElementById('nav-sidebar');
     if (!sb || document.getElementById('cruscotto-sidebar-link')) return;
@@ -225,6 +225,13 @@
     a.textContent = '📊 Cruscotto';
     a.style.cssText = 'display:block;text-align:center;font-weight:600;background:#1A1612;color:#fff;padding:9px 12px;border-radius:10px;text-decoration:none;';
     wrap.appendChild(a);
+    var man = document.createElement('a');
+    man.href = '/admin/cruscotto/manuale/';
+    man.target = '_blank';
+    man.rel = 'noopener';
+    man.textContent = '📖 Manuale d\'uso';
+    man.style.cssText = 'display:block;text-align:center;font-weight:600;background:#7A3613;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none;margin-top:8px;';
+    wrap.appendChild(man);
     sb.insertBefore(wrap, sb.firstChild);
   });
 </script>
