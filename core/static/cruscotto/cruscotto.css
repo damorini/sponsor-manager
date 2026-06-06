@@ -236,3 +236,37 @@ a.cr-btn--ghost, a.cr-btn--ghost:link, a.cr-btn--ghost:visited { color: var(--in
 
 /* Menu evento (Utility): testo non tagliato e larghezza adeguata */
 #export-evento { line-height: 1.4; min-width: 320px; max-width: 100%; }
+
+
+/* ===== Variante SCURA (espresso) — coerente col tema admin scuro =====
+   Ridefinisce le variabili del cruscotto per data-theme=dark e per l'auto-scuro. */
+:root[data-theme="dark"] {
+  --bg-warm:#17120E; --bg-card:#211A13; --bg-soft:#2A2117;
+  --line:#352B20; --line-strong:#473A2B;
+  --ink:#ECE3D6; --ink-2:#CFC4B4; --ink-3:#B3A899; --ink-mute:#8A7F71;
+  --green-bg:#20301C; --green-ink:#9FC47A; --green-acc:#B7D69A;
+  --terra-bg:#34241A; --terra-ink:#D98C5A; --terra-acc:#E0A877;
+  --indigo-bg:#23264A; --indigo-ink:#9AA6E8; --indigo-acc:#B3BCF0;
+  --rose-bg:#3A211F; --rose-ink:#E08A86;
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-2: 0 8px 24px -8px rgba(0,0,0,0.55);
+}
+:root[data-theme="dark"] .cr-hero {
+  background: linear-gradient(180deg,#1E1813 0%, var(--bg-warm) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-warm:#17120E; --bg-card:#211A13; --bg-soft:#2A2117;
+    --line:#352B20; --line-strong:#473A2B;
+    --ink:#ECE3D6; --ink-2:#CFC4B4; --ink-3:#B3A899; --ink-mute:#8A7F71;
+    --green-bg:#20301C; --green-ink:#9FC47A; --green-acc:#B7D69A;
+    --terra-bg:#34241A; --terra-ink:#D98C5A; --terra-acc:#E0A877;
+    --indigo-bg:#23264A; --indigo-ink:#9AA6E8; --indigo-acc:#B3BCF0;
+    --rose-bg:#3A211F; --rose-ink:#E08A86;
+    --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
+    --shadow-2: 0 8px 24px -8px rgba(0,0,0,0.55);
+  }
+  :root:not([data-theme="light"]) .cr-hero {
+    background: linear-gradient(180deg,#1E1813 0%, var(--bg-warm) 100%);
+  }
+}

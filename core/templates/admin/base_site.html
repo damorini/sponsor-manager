@@ -14,111 +14,120 @@
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 </style>
 
-<style>/* ===== Tema VALET: admin in stile editoriale caldo (coerente col Cruscotto) =====
-   Applico le variabili in TUTTE le modalità (chiaro/scuro/auto): senza i selettori
-   [data-theme], in dark mode Django sovrascriverebbe questi colori. */
-  :root,
-  :root[data-theme="light"],
-  :root[data-theme="dark"] {
+<style>/* ===== Tema VALET: admin editoriale caldo, con variante CHIARA e SCURA =====
+   Il selettore Auto/Chiaro/Scuro di Django funziona davvero:
+   - chiaro = crema (come il Cruscotto)
+   - scuro  = espresso (stesso linguaggio, fondo scuro caldo) */
+
+  /* ---- CHIARO (default + forzato chiaro) ---- */
+  :root, :root[data-theme="light"] {
     color-scheme: light;
-    --primary: #7A3613;              /* terra */
-    --secondary: #1A1612;            /* ink (header) */
-    --accent: #C8A04E;               /* oro caldo */
-    --primary-fg: #ffffff;
-
-    --header-color: #EDE6DA;
-    --header-branding-color: var(--accent);
-    --header-bg: #1A1612;
-    --header-link-color: #FAF8F5;
-
-    --breadcrumbs-fg: #8A7F71;
-    --breadcrumbs-link-fg: #4A4137;
-    --breadcrumbs-bg: #F2EFEA;
-
-    --link-fg: #7A3613;
-    --link-hover-color: #1A1612;
-    --link-selected-fg: #1A1612;
-
-    --button-bg: #1A1612;
-    --button-hover-bg: #4A4137;
-    --default-button-bg: #7A3613;
-    --default-button-hover-bg: #9C4A1F;
-    --close-button-bg: #8A7F71;
-    --close-button-hover-bg: #4A4137;
-    --object-tools-bg: #1A1612;
-    --object-tools-hover-bg: #4A4137;
-
-    --body-fg: #1A1612;
-    --body-quiet-color: #8A7F71;
-    --hairline-color: #E8E2D8;
-    --border-color: #E8E2D8;
-    --selected-bg: #F2EFEA;
-    --selected-row: #FAF8F5;
-    --body-bg: #FAF8F5;
-    --body-medium-color: #4A4137;
-    --darkened-bg: #F2EFEA;
-    --module-bg: #ffffff;
-    --message-success-bg: #EBF1E7;
-    --message-warning-bg: #F5E8DC;
-    --message-error-bg: #F4E1DC;
+    --primary: #7A3613; --secondary: #1A1612; --accent: #C8A04E; --primary-fg: #ffffff;
+    --header-color: #EDE6DA; --header-branding-color: var(--accent);
+    --header-bg: #1A1612; --header-link-color: #FAF8F5;
+    --breadcrumbs-fg: #8A7F71; --breadcrumbs-link-fg: #4A4137; --breadcrumbs-bg: #F2EFEA;
+    --link-fg: #7A3613; --link-hover-color: #1A1612; --link-selected-fg: #1A1612;
+    --button-bg: #1A1612; --button-hover-bg: #4A4137;
+    --default-button-bg: #7A3613; --default-button-hover-bg: #9C4A1F;
+    --close-button-bg: #8A7F71; --close-button-hover-bg: #4A4137;
+    --object-tools-bg: #1A1612; --object-tools-hover-bg: #4A4137;
+    --body-fg: #1A1612; --body-quiet-color: #8A7F71; --body-medium-color: #4A4137;
+    --hairline-color: #E8E2D8; --border-color: #E8E2D8;
+    --selected-bg: #F2EFEA; --selected-row: #FAF8F5;
+    --body-bg: #FAF8F5; --darkened-bg: #F2EFEA; --module-bg: #ffffff;
+    --message-success-bg: #EBF1E7; --message-warning-bg: #F5E8DC; --message-error-bg: #F4E1DC;
+    /* var. proprie (elementi tema-dipendenti) */
+    --vt-header-grad: linear-gradient(180deg,#211B15 0%,#1A1612 100%);
+    --vt-menu-fg: #241B12; --vt-menu-hover: #000000;
+    --vt-addlink-fg: #2F5421; --vt-changelink-fg: #5A4636;
+    --vt-sidebar-cap-bg: #1A1612; --vt-sidebar-cap-fg: #EDE6DA;
+    --vt-content-cap-bg: #F2EFEA; --vt-content-cap-fg: #4A4137;
   }
 
+  /* ---- SCURO (espresso): blocco riusato per auto-scuro e scuro-forzato ---- */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --primary: #B5612C; --secondary: #120E0A; --accent: #D9B36A; --primary-fg: #ffffff;
+    --header-color: #EDE6DA; --header-branding-color: #D9B36A;
+    --header-bg: #120E0A; --header-link-color: #F2E8DC;
+    --breadcrumbs-fg: #B3A899; --breadcrumbs-link-fg: #EDE6DA; --breadcrumbs-bg: #1F1812;
+    --link-fg: #E0B36A; --link-hover-color: #F3DCAE; --link-selected-fg: #F3DCAE;
+    --button-bg: #B5612C; --button-hover-bg: #C76B3A;
+    --default-button-bg: #3A2E22; --default-button-hover-bg: #4A3B2C;
+    --close-button-bg: #4A3B2C; --close-button-hover-bg: #5A4636;
+    --object-tools-bg: #B5612C; --object-tools-hover-bg: #C76B3A;
+    --body-fg: #ECE3D6; --body-quiet-color: #B3A899; --body-medium-color: #CFC4B4;
+    --hairline-color: #352B20; --border-color: #352B20;
+    --selected-bg: #2A2117; --selected-row: #241D15;
+    --body-bg: #17120E; --darkened-bg: #211A13; --module-bg: #211A13;
+    --message-success-bg: #20301C; --message-warning-bg: #322417; --message-error-bg: #321C19;
+    --vt-header-grad: linear-gradient(180deg,#1A1410 0%,#120E0A 100%);
+    --vt-menu-fg: #ECE3D6; --vt-menu-hover: #FFFFFF;
+    --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
+    --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
+    --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --primary: #B5612C; --secondary: #120E0A; --accent: #D9B36A; --primary-fg: #ffffff;
+      --header-color: #EDE6DA; --header-branding-color: #D9B36A;
+      --header-bg: #120E0A; --header-link-color: #F2E8DC;
+      --breadcrumbs-fg: #B3A899; --breadcrumbs-link-fg: #EDE6DA; --breadcrumbs-bg: #1F1812;
+      --link-fg: #E0B36A; --link-hover-color: #F3DCAE; --link-selected-fg: #F3DCAE;
+      --button-bg: #B5612C; --button-hover-bg: #C76B3A;
+      --default-button-bg: #3A2E22; --default-button-hover-bg: #4A3B2C;
+      --close-button-bg: #4A3B2C; --close-button-hover-bg: #5A4636;
+      --object-tools-bg: #B5612C; --object-tools-hover-bg: #C76B3A;
+      --body-fg: #ECE3D6; --body-quiet-color: #B3A899; --body-medium-color: #CFC4B4;
+      --hairline-color: #352B20; --border-color: #352B20;
+      --selected-bg: #2A2117; --selected-row: #241D15;
+      --body-bg: #17120E; --darkened-bg: #211A13; --module-bg: #211A13;
+      --message-success-bg: #20301C; --message-warning-bg: #322417; --message-error-bg: #321C19;
+      --vt-header-grad: linear-gradient(180deg,#1A1410 0%,#120E0A 100%);
+      --vt-menu-fg: #ECE3D6; --vt-menu-hover: #FFFFFF;
+      --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
+      --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
+      --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+    }
+  }
+
+  /* ===== Regole elemento (usano le variabili: valgono in chiaro e scuro) ===== */
   html, body, .module, #content, input, select, textarea, button, .button {
     font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   }
-  /* Titoli in serif editoriale (come il Cruscotto) */
   #content h1, .module h2, .module h3, #content-main h2,
   fieldset h2, .inline-group h2, #site-name {
-    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-    letter-spacing: -.01em;
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif; letter-spacing: -.01em;
   }
-
-  body { background: #FAF8F5; }
-
-  /* Header ink con leggero gradiente */
-  #header {
-    background: linear-gradient(180deg, #211B15 0%, #1A1612 100%);
-    box-shadow: 0 1px 0 rgba(0,0,0,.12);
-  }
+  body { background: var(--body-bg); }
+  #header { background: var(--vt-header-grad); box-shadow: 0 1px 0 rgba(0,0,0,.12); }
   #branding h1, #site-name a:link, #site-name a:visited { font-weight: 600; letter-spacing: -.01em; }
-
-  /* Titoli più curati */
   h1 { font-weight: 600; }
 
-  /* Moduli e box: angoli morbidi + ombra leggera */
-  .module { border-radius: 12px; border: 1px solid var(--hairline-color); box-shadow: 0 1px 2px rgba(15,41,66,.04); overflow: hidden; }
-  /* Intestazioni dei moduli nel CONTENUTO: crema soft + ink */
+  .module { border-radius: 12px; border: 1px solid var(--hairline-color); box-shadow: 0 1px 2px rgba(0,0,0,.05); overflow: hidden; }
   #content-main .module > caption,
   #content-main .module > h2,
-  #content-main .module > h3 { background: #F2EFEA; color: #4A4137; font-weight: 600; }
-  /* Intestazioni della SIDEBAR: ink + testo crema (leggibile) */
+  #content-main .module > h3 { background: var(--vt-content-cap-bg); color: var(--vt-content-cap-fg); font-weight: 600; }
   #nav-sidebar .module caption,
-  #nav-sidebar .module caption a { background: #1A1612; color: #EDE6DA !important; }
+  #nav-sidebar .module caption a { background: var(--vt-sidebar-cap-bg); color: var(--vt-sidebar-cap-fg) !important; }
 
-  /* Voci di menu della sidebar: contrasto più alto (quasi-ink, peso medio) */
+  /* Voci di menu della sidebar: alto contrasto in entrambi i temi */
   #nav-sidebar a:link, #nav-sidebar a:visited,
-  #nav-sidebar tr > th a, #nav-sidebar .model a { color: #241B12 !important; font-weight: 500; }
-  #nav-sidebar a:hover { color: #000000 !important; }
-  #nav-sidebar .addlink:link, #nav-sidebar .addlink:visited { color: #2F5421 !important; font-weight: 600; }
-  #nav-sidebar .changelink:link, #nav-sidebar .changelink:visited { color: #5A4636 !important; }
-  /* Eccezione: il pulsante "Cruscotto" (fondo ink) tiene il testo bianco */
+  #nav-sidebar tr > th a, #nav-sidebar .model a { color: var(--vt-menu-fg) !important; font-weight: 500; }
+  #nav-sidebar a:hover { color: var(--vt-menu-hover) !important; }
+  #nav-sidebar .addlink:link, #nav-sidebar .addlink:visited { color: var(--vt-addlink-fg) !important; font-weight: 600; }
+  #nav-sidebar .changelink:link, #nav-sidebar .changelink:visited { color: var(--vt-changelink-fg) !important; }
   #nav-sidebar #cruscotto-sidebar-link a:link,
   #nav-sidebar #cruscotto-sidebar-link a:visited,
   #nav-sidebar #cruscotto-sidebar-link a:hover { color: #ffffff !important; }
 
-  /* Pulsanti: pill + transizione */
   .button, input[type=submit], input[type=button], .submit-row input, a.button {
     border-radius: 10px; font-weight: 600; transition: background .15s ease, transform .05s ease;
   }
   .button:active, input[type=submit]:active { transform: translateY(1px); }
-
-  /* Sidebar app list più ariosa */
   #nav-sidebar .module caption { letter-spacing: .04em; text-transform: uppercase; font-size: .72rem; }
-
-  /* Righe tabella: selezione/hover gentili */
   #changelist tbody tr:hover { background: var(--selected-row); }
-
-  /* Link "Cruscotto" iniettato via JS: stile coerente (vedi anche lo script sotto) */
   #cruscotto-sidebar-link a { border-radius: 10px !important; }
 </style>
 <script>
