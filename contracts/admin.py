@@ -49,6 +49,28 @@ class ContractLineInline(admin.TabularInline):
     readonly_fields = ('line_subtotal', 'line_vat', 'line_total')
     autocomplete_fields = ['service']
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        # La tendina 'service' mostra SOLO i servizi dell'evento del contratto
+        # (come per i 'servizi inclusi'). Filtro lato server, non solo via JS.
+        if db_field.name == 'service':
+            contract_id = None
+            try:
+                contract_id = request.resolver_match.kwargs.get('object_id')
+            except Exception:
+                pass
+            if contract_id:
+                from .models import Contract
+                contract = Contract.objects.filter(pk=contract_id).first()
+                if contract is not None and contract.event_id:
+                    from catalog.admin import _AutocompleteServiceByEvento
+                    from catalog.models import Service
+                    kwargs['widget'] = _AutocompleteServiceByEvento(
+                        db_field, self.admin_site,
+                        parent_event_id=contract.event_id,
+                    )
+                    kwargs['queryset'] = Service.objects.filter(event_id=contract.event_id)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class DeadlineInline(admin.TabularInline):
     """Scadenze viewable inline (sola lettura, perchè generate automatico)."""
