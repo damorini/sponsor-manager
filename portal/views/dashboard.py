@@ -149,7 +149,7 @@ def dashboard_view(request):
 @sponsor_required
 def contracts_list_view(request):
     """Lista contratti con filtri (per evento, per stato)."""
-    from contracts.models import Contract, ContractStatus, DeadlineStatus
+    from contracts.models import Contract, ContractStatus, ContractKind, DeadlineStatus
     from events.models import Event
 
     sponsor = request.sponsor
@@ -199,12 +199,26 @@ def contracts_list_view(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
+    # Copia degli acquisti ecommerce (contratti addon pagati): mostrati anche qui,
+    # nella stessa pagina "I miei documenti". Filtrati per evento se il filtro e' attivo.
+    paid = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+    eco_qs = (Contract.objects
+              .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
+                      status__in=paid, deleted_at__isnull=True)
+              .select_related('event')
+              .prefetch_related('lines')
+              .order_by('-signed_date', '-created_at'))
+    if event_id:
+        eco_qs = eco_qs.filter(event_id=event_id)
+    ecommerce_orders = list(eco_qs)
+
     return render(request, 'portal/dashboard/contracts_list.html', {
         'contracts': page_obj.object_list,
         'page_obj': page_obj,
         'is_paginated': page_obj.has_other_pages(),
         'total_count': qs.count(),
         'available_events': available_events,
+        'ecommerce_orders': ecommerce_orders,
     })
 
 
