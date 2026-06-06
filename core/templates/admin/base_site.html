@@ -14,8 +14,13 @@
   input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 </style>
 
-<style>/* ===== Tema VALET: admin in stile editoriale caldo (coerente col Cruscotto) ===== */
-  :root {
+<style>/* ===== Tema VALET: admin in stile editoriale caldo (coerente col Cruscotto) =====
+   Applico le variabili in TUTTE le modalità (chiaro/scuro/auto): senza i selettori
+   [data-theme], in dark mode Django sovrascriverebbe questi colori. */
+  :root,
+  :root[data-theme="light"],
+  :root[data-theme="dark"] {
+    color-scheme: light;
     --primary: #7A3613;              /* terra */
     --secondary: #1A1612;            /* ink (header) */
     --accent: #C8A04E;               /* oro caldo */
@@ -49,6 +54,13 @@
     --border-color: #E8E2D8;
     --selected-bg: #F2EFEA;
     --selected-row: #FAF8F5;
+    --body-bg: #FAF8F5;
+    --body-medium-color: #4A4137;
+    --darkened-bg: #F2EFEA;
+    --module-bg: #ffffff;
+    --message-success-bg: #EBF1E7;
+    --message-warning-bg: #F5E8DC;
+    --message-error-bg: #F4E1DC;
   }
 
   html, body, .module, #content, input, select, textarea, button, .button {
