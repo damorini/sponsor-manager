@@ -13,6 +13,7 @@ Azioni admin custom:
 - Genera PDF contratto (via Celery, placeholder per ora)
 - Annulla contratto
 """
+from django import forms
 from django.contrib import admin, messages
 from core.admin_filters import evento_filter
 from django.urls import reverse
@@ -37,6 +38,23 @@ from .payments import (
 # Inline forms
 # =============================================================================
 
+class _VariantSelectByService(forms.Select):
+    """Select per la variante: ogni opzione porta data-service=<id servizio>,
+    cosi' un JS mostra solo le varianti del servizio scelto nella riga."""
+    def __init__(self, *args, service_by_pk=None, **kwargs):
+        self.service_by_pk = service_by_pk or {}
+        super().__init__(*args, **kwargs)
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(
+            name, value, label, selected, index, subindex=subindex, attrs=attrs)
+        raw = getattr(value, 'value', value)
+        sid = self.service_by_pk.get(str(raw))
+        if sid:
+            option['attrs']['data-service'] = str(sid)
+        return option
+
+
 class ContractLineInline(admin.TabularInline):
     """Righe contratto editabili dentro il form contratto."""
     model = ContractLine
@@ -47,33 +65,40 @@ class ContractLineInline(admin.TabularInline):
         'line_subtotal', 'line_vat', 'line_total',
     )
     readonly_fields = ('line_subtotal', 'line_vat', 'line_total')
-    autocomplete_fields = ['service', 'service_variant']
+    autocomplete_fields = ['service']
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        # Le tendine 'service' e 'service_variant' mostrano SOLO le voci
-        # dell'evento del contratto. Filtro lato server, non solo via JS.
+        # 'service': autocomplete filtrato per evento del contratto.
+        # 'service_variant': select con opzioni taggate per servizio, filtrate
+        #   lato client (JS) sul servizio scelto nella riga, e per evento.
+        contract = None
         if db_field.name in ('service', 'service_variant'):
             contract_id = None
             try:
                 contract_id = request.resolver_match.kwargs.get('object_id')
             except Exception:
-                pass
+                contract_id = None
             if contract_id:
                 from .models import Contract
                 contract = Contract.objects.filter(pk=contract_id).first()
-                if contract is not None and contract.event_id:
-                    from catalog.admin import _AutocompleteServiceByEvento
-                    from catalog.models import Service, ServiceVariant
-                    kwargs['widget'] = _AutocompleteServiceByEvento(
-                        db_field, self.admin_site,
-                        parent_event_id=contract.event_id,
-                    )
-                    if db_field.name == 'service':
-                        kwargs['queryset'] = Service.objects.filter(
-                            event_id=contract.event_id)
-                    else:
-                        kwargs['queryset'] = ServiceVariant.objects.filter(
-                            service__event_id=contract.event_id, is_active=True)
+
+        if db_field.name == 'service' and contract is not None and contract.event_id:
+            from catalog.admin import _AutocompleteServiceByEvento
+            from catalog.models import Service
+            kwargs['widget'] = _AutocompleteServiceByEvento(
+                db_field, self.admin_site, parent_event_id=contract.event_id)
+            kwargs['queryset'] = Service.objects.filter(event_id=contract.event_id)
+
+        elif db_field.name == 'service_variant':
+            from catalog.models import ServiceVariant
+            vqs = ServiceVariant.objects.filter(is_active=True)
+            if contract is not None and contract.event_id:
+                vqs = vqs.filter(service__event_id=contract.event_id)
+            vqs = vqs.select_related('service')
+            kwargs['queryset'] = vqs
+            kwargs['widget'] = _VariantSelectByService(
+                service_by_pk={str(v.pk): str(v.service_id) for v in vqs})
+
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -197,7 +222,8 @@ class ContractAdmin(admin.ModelAdmin):
         return scope_by_event(request, super().get_queryset(request), 'event')
 
     class Media:
-        js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',)
+        js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
+              'admin/js/contractline_variant_filter.js',)
 
     fieldsets = (
         (None, {

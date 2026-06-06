@@ -193,6 +193,15 @@
   #variants-group td.field-display_order input   { width: 64px; box-sizing: border-box; }
   #variants-group td.field-is_active { text-align: center; }
   #variants-group td.original { font-size: .8em; color: #8a7a66; }
+
+  /* Tabella RIGHE CONTRATTO: campi piu' compatti per stare in larghezza */
+  #lines-group td.field-service .select2,
+  #lines-group td.field-service select { max-width: 220px; }
+  #lines-group td.field-service_variant select { width: 100%; max-width: 220px; box-sizing: border-box; }
+  #lines-group td.field-quantity input        { width: 64px; box-sizing: border-box; }
+  #lines-group td.field-unit_price input       { width: 100px; box-sizing: border-box; }
+  #lines-group td.field-discount_percent input { width: 70px; box-sizing: border-box; }
+  #lines-group td.field-discount_amount input  { width: 90px; box-sizing: border-box; }
 </style>
 <script>
   // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
