@@ -191,6 +191,11 @@ def cart_add_view(request):
     )
     event = service.event
 
+    # Evento archiviato: niente acquisti.
+    if not event.is_active:
+        messages.error(request, "Questo evento è archiviato: non è più possibile acquistare.")
+        return redirect('portal:catalog')
+
     # Se il servizio ha varianti attive, una va scelta
     variant = None
     if service.variants.filter(is_active=True).exists():

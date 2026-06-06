@@ -31,6 +31,10 @@ def _get_purchasable_services(event, today=None):
     """
     from catalog.models import Service
 
+    # Eventi archiviati: nessun servizio acquistabile.
+    if not getattr(event, 'is_active', True):
+        return Service.objects.none()
+
     today = today or date.today()
     services = Service.objects.filter(
         event=event,
@@ -71,11 +75,11 @@ def catalog_view(request):
     ))
 
     # Per ciascun evento, calcola i servizi disponibili
-    from events.models import Event
+    from events.models import Event, EventStatus
     events = Event.objects.filter(
         id__in=sponsor_events,
         end_date__gte=date.today(),  # eventi futuri
-    ).order_by('start_date')
+    ).exclude(status=EventStatus.ARCHIVED).order_by('start_date')
 
     events_with_services = []
     for event in events:
@@ -100,6 +104,10 @@ def catalog_event_view(request, event_id):
 
     sponsor = request.sponsor
     event = get_object_or_404(Event, id=event_id)
+
+    # Evento archiviato: non acquistabile.
+    if not event.is_active:
+        return HttpResponseForbidden("Questo evento è archiviato: non è più possibile acquistare.")
 
     # Verifica che lo sponsor abbia un contratto attivo per questo evento
     has_contract = Contract.objects.filter(
@@ -134,6 +142,10 @@ def service_detail_view(request, service_id):
         is_active=True,
         is_self_purchasable=True,
     )
+
+    # Evento archiviato: non acquistabile.
+    if not service.event.is_active:
+        return HttpResponseForbidden("Questo evento è archiviato: non è più possibile acquistare.")
 
     # Verifica accesso (sponsor deve avere contratto attivo per l'evento)
     has_contract = Contract.objects.filter(

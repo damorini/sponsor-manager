@@ -66,6 +66,19 @@ class EventAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_date'
     ordering = ('-start_date',)
     readonly_fields = ('created_at', 'updated_at', 'sponsor_dashboard')
+    actions = ['action_archivia', 'action_riattiva']
+
+    @admin.action(description='Archivia eventi selezionati (spariscono dal portale, niente acquisti)')
+    def action_archivia(self, request, queryset):
+        from events.models import EventStatus
+        n = queryset.update(status=EventStatus.ARCHIVED)
+        self.message_user(request, f"{n} evento/i archiviato/i. Non sono più visibili né acquistabili nel portale (restano in 'Archivio eventi').")
+
+    @admin.action(description='Riattiva eventi selezionati (vendita aperta)')
+    def action_riattiva(self, request, queryset):
+        from events.models import EventStatus
+        n = queryset.update(status=EventStatus.SELLING)
+        self.message_user(request, f"{n} evento/i riattivato/i (stato: Vendita aperta).")
 
     fieldsets = (
         (None, {

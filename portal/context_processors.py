@@ -56,8 +56,10 @@ def cart_count(request):
             if sponsor:
                 from contracts.models import Contract
                 from catalog.models import Service
+                from events.models import EventStatus
                 eventi_ids = list(
                     Contract.objects.filter(sponsor=sponsor)
+                    .exclude(event__status=EventStatus.ARCHIVED)
                     .values_list('event_id', flat=True)
                 )
                 has_purchasable = Service.objects.filter(

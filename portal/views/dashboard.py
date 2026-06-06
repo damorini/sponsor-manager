@@ -67,6 +67,7 @@ def sponsor_required(view_func):
 def dashboard_view(request):
     """Home del portale: In evidenza generale - scadenze immediate di tutti gli eventi."""
     from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
+    from events.models import EventStatus
 
     sponsor = request.sponsor
     today = date.today()
@@ -74,6 +75,7 @@ def dashboard_view(request):
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
                  .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
+                 .exclude(event__status=EventStatus.ARCHIVED)
                  .select_related('event'))
     contract_event = {c.id: c.event for c in contracts if c.event_id}
     contract_by_id = {c.id: c for c in contracts}
@@ -232,13 +234,10 @@ def contracts_list_view(request):
 # I miei eventi (landing per il cliente)
 # ============================================================================
 
-@sponsor_required
-def events_view(request):
-    """Eventi a cui il cliente partecipa, con riepilogo scadenze."""
+def _build_event_items(sponsor, today, only_archived):
+    """Riepilogo eventi del cliente con stato scadenze.
+    only_archived=False -> eventi attivi; True -> eventi archiviati."""
     from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
-
-    sponsor = request.sponsor
-    today = date.today()
 
     contracts = (Contract.objects
                  .filter(sponsor=sponsor, deleted_at__isnull=True)
@@ -249,6 +248,9 @@ def events_view(request):
     contracts_by_event = {}
     for c in contracts:
         if not c.event_id:
+            continue
+        archived = not c.event.is_active
+        if archived != only_archived:
             continue
         events_map.setdefault(c.event_id, c.event)
         contracts_by_event.setdefault(c.event_id, []).append(c.id)
@@ -268,8 +270,21 @@ def events_view(request):
         })
 
     items.sort(key=lambda x: (x['event'].start_date or date.max))
+    return items
 
+
+@sponsor_required
+def events_view(request):
+    """Eventi ATTIVI a cui il cliente partecipa, con riepilogo scadenze."""
+    items = _build_event_items(request.sponsor, date.today(), only_archived=False)
     return render(request, 'portal/events/list.html', {'events_items': items})
+
+
+@sponsor_required
+def archived_events_view(request):
+    """Archivio eventi: eventi archiviati (sola consultazione, non acquistabili)."""
+    items = _build_event_items(request.sponsor, date.today(), only_archived=True)
+    return render(request, 'portal/events/archived.html', {'events_items': items})
 
 
 @sponsor_required
