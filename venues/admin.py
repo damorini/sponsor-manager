@@ -55,8 +55,10 @@ class StandBlockForm(forms.ModelForm):
             f.queryset = (Stand.objects
                 .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
                 .select_related('event').order_by('event__slug', 'code'))
+        # L'etichetta include il NOME dell'evento (come nella tendina Evento):
+        # cosi' il filtro integrato della casella puo' restringere per evento.
         f.label_from_instance = lambda st: (
-            f"{st.code} \u00b7 {st.event.slug}"
+            f"{st.code} \u00b7 {st.event}"
             + (f" ({st.width_meters}\u00d7{st.depth_meters}m)"
                if st.width_meters and st.depth_meters else "")
         )
@@ -130,16 +132,26 @@ class StandBlockAdmin(admin.ModelAdmin):
         }),
     )
 
+    class Media:
+        # Filtra la casella "Stand del blocco" per l'evento scelto nel form.
+        js = ('admin/js/standblock_event_filter.js',)
+
     def get_fieldsets(self, request, obj=None):
-        # In CREAZIONE non mostro ancora il selettore stand: prima si sceglie
-        # il congresso e si salva. Cosi' poi il picker mostra SOLO gli stand
-        # di quel congresso (in __init__ il queryset filtra su obj.event).
+        # In CREAZIONE mostro gia' il selettore stand: la casella elenca tutti
+        # gli stand DISPONIBILI e, scegliendo l'evento, si filtra in automatico
+        # su quel congresso (vedi standblock_event_filter.js). La validazione
+        # (clean_stands) impedisce comunque di legare stand di un altro evento.
         if obj is None:
             return (
                 (None, {
                     'fields': ('event', 'code', 'name', 'block_type', 'status'),
-                    'description': "Scegli il congresso e salva il blocco: "
-                                   "poi potrai selezionare gli stand di QUEL congresso.",
+                    'description': "Scegli prima il congresso: la casella qui sotto "
+                                   "mostrera' solo gli stand disponibili di QUEL congresso.",
+                }),
+                ('Stand del blocco', {
+                    'fields': ('stands',),
+                    'description': "Sposta a destra gli stand da includere nel blocco. "
+                                   "Sono elencati solo gli stand DISPONIBILI.",
                 }),
                 ('Descrizione per il preventivo', {
                     'fields': ('quote_description',),
