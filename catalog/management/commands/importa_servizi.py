@@ -110,9 +110,10 @@ class Command(BaseCommand):
 
         # 3) elaborazione righe
         cartella_img = (opts.get("immagini") or "").strip()
-        n_create = n_update = n_skip = n_err = 0
+        n_create = n_update = n_skip = n_err = n_dup = 0
         errori = []
         inclusi_pending = []  # (svc, evento, codici_raw, n_riga) da collegare dopo
+        seen_codes = set()  # (evento_slug, code) già visti NEL FILE
 
         for n_riga, row in enumerate(rows[1:], start=2):  # riga 2 e oltre (1 = header)
             if all(v is None or v == "" for v in row):
@@ -135,6 +136,17 @@ class Command(BaseCommand):
                 evento = trova_evento(evento_slug)
                 if not evento:
                     raise ValueError(f"evento '{evento_slug}' non trovato")
+
+                # codice duplicato NEL FILE: ogni servizio serve un codice unico
+                # per evento, altrimenti le righe si sovrascrivono a vicenda.
+                key_dup = (evento_slug, code)
+                if key_dup in seen_codes:
+                    n_dup += 1
+                    self.stdout.write(self.style.WARNING(
+                        f"  {n_riga:>4}: ⚠ codice '{code}' DUPLICATO nel file su "
+                        f"{evento_slug} - riga SALTATA (ogni servizio serve un codice unico)"))
+                    continue
+                seen_codes.add(key_dup)
 
                 nome_en = str(G("nome_en") or "").strip()
                 desc_it = str(G("descrizione_it") or "").strip()
@@ -279,6 +291,8 @@ class Command(BaseCommand):
         riepilogo = (
             f"Fatto: {n_create} create, {n_update} aggiornate, {n_err} errori."
         )
+        if n_dup:
+            riepilogo += f" {n_dup} righe saltate per codice duplicato."
         if dry:
             riepilogo = "[DRY-RUN] " + riepilogo + " (nessun salvataggio)"
         if n_err:
