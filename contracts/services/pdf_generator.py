@@ -1082,6 +1082,36 @@ def generate_client_summary_pdf(sponsor, event):
 ADMISSION_TEMPLATE = 'template_domanda_ammissione_it.docx'
 
 
+def _replace_title_in_docx(docx_path, new_title):
+    """Sostituisce il titolo 'DOMANDA DI AMMISSIONE' del docx con new_title,
+    preservando lo stile del paragrafo. Usato per gli ADDENDUM (stesso modello,
+    titolo diverso)."""
+    from docx import Document as _Docx
+    d = _Docx(str(docx_path))
+    for par in d.paragraphs:
+        if par.text.strip().upper() == 'DOMANDA DI AMMISSIONE':
+            if par.runs:
+                par.runs[0].text = new_title
+                for extra in par.runs[1:]:
+                    extra.text = ''
+            else:
+                par.add_run(new_title)
+            break
+    d.save(str(docx_path))
+
+
+def _addendum_title(contract):
+    """Titolo per l'addendum: «ADDENDUM AL CONTRATTO N° xxxx DEL gg/mm/aaaa»,
+    riferito al contratto principale (parent)."""
+    parent = contract.parent_contract or contract
+    numero = parent.contract_number or contract.contract_number
+    data = parent.signed_date or (parent.created_at.date() if parent.created_at else None)
+    titolo = f"ADDENDUM AL CONTRATTO N° {numero}"
+    if data:
+        titolo += f" DEL {data.strftime('%d/%m/%Y')}"
+    return titolo
+
+
 def generate_admission_request_pdf(contract):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
@@ -1092,6 +1122,9 @@ def generate_admission_request_pdf(contract):
     Raises:
         FileNotFoundError se manca il template; ValueError se manca il firmatario.
     """
+    from contracts.models import ContractKind
+    is_addendum = contract.contract_kind == ContractKind.ADDENDUM
+
     template_path = TEMPLATES_DIR / ADMISSION_TEMPLATE
     if not template_path.exists():
         raise FileNotFoundError(f"Template domanda non trovato: {template_path}")
@@ -1123,11 +1156,21 @@ def generate_admission_request_pdf(contract):
     doc = DocxTemplate(str(template_path))
     doc.render(context, jinja_env=get_jinja_env())
 
-    docx_filename = f"domanda_ammissione_{contract.contract_number}_{event.id}.docx"
+    file_prefix = 'addendum' if is_addendum else 'domanda_ammissione'
+    document_type = 'addendum' if is_addendum else 'admission_request'
+    docx_filename = f"{file_prefix}_{contract.contract_number}_{event.id}.docx"
     relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
     full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
     full_docx_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(full_docx_path))
+
+    # Addendum: stesso modello, ma il titolo diventa "ADDENDUM AL CONTRATTO N° ...".
+    if is_addendum:
+        try:
+            _replace_title_in_docx(full_docx_path, _addendum_title(contract))
+        except Exception as e:
+            logger.warning("Titolo addendum non applicato per %s: %s",
+                           contract.contract_number, e)
 
     try:
         _add_header_footer_to_docx(full_docx_path, contract)
@@ -1141,7 +1184,7 @@ def generate_admission_request_pdf(contract):
             contract, full_docx_path, relative_docx_path,
             file_name=docx_filename,
             mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            document_type='admission_request',
+            document_type=document_type,
         )
 
     pdf_filename = pdf_path.name
@@ -1149,10 +1192,10 @@ def generate_admission_request_pdf(contract):
     document = _create_document_record(
         contract, pdf_path, relative_pdf_path,
         file_name=pdf_filename, mime='application/pdf',
-        document_type='admission_request',
+        document_type=document_type,
     )
-    logger.info("Contract %s: domanda di ammissione generata (Document id=%s)",
-                contract.contract_number, document.id)
+    logger.info("Contract %s: documento %s generato (Document id=%s)",
+                contract.contract_number, document_type, document.id)
     return document
 
 

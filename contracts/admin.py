@@ -737,7 +737,7 @@ class ContractAdmin(admin.ModelAdmin):
 
     # Actions
 
-    @admin.action(description='Genera DOMANDA DI AMMISSIONE (allega e mostra nel portale)')
+    @admin.action(description='Genera DOMANDA DI AMMISSIONE / ADDENDUM (allega e mostra nel portale)')
     def action_genera_domanda_ammissione(self, request, queryset):
         from .services.pdf_generator import generate_admission_request_pdf
         ok = 0
@@ -747,7 +747,7 @@ class ContractAdmin(admin.ModelAdmin):
             except Exception as e:
                 self.message_user(
                     request,
-                    f"{contract.contract_number}: domanda non generata - {e}",
+                    f"{contract.contract_number}: documento non generato - {e}",
                     level=messages.ERROR,
                 )
                 continue
@@ -756,7 +756,8 @@ class ContractAdmin(admin.ModelAdmin):
         if ok:
             self.message_user(
                 request,
-                f"Domanda di ammissione generata per {ok} contratto/i. Ora e' visibile anche nel portale.",
+                f"Documento generato per {ok} contratto/i (domanda di ammissione per i "
+                f"principali, addendum per gli addendum). Ora e' visibile anche nel portale.",
                 level=messages.SUCCESS,
             )
 
