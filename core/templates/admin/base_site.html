@@ -263,6 +263,34 @@
     }, true);
   })();
 </script>
+<script>
+  // Conferma prima di cancellare: chiede "sei sicuro?" sia sul pulsante
+  // Elimina della scheda, sia sull'azione "Elimina selezionati" della lista.
+  (function () {
+    function ask(msg) { return window.confirm(msg); }
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest && e.target.closest('a.deletelink, a.deletelink-box, .submit-row a.deletelink');
+      if (link) {
+        if (!ask('Sei sicuro di voler cancellare questo elemento?\nL\'operazione non è reversibile.')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    }, true);
+    // Azione di gruppo "Elimina selezionati" nella lista
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form || !form.matches) return;
+      var sel = form.querySelector('select[name="action"]');
+      if (sel && sel.value === 'delete_selected') {
+        if (!ask('Sei sicuro di voler cancellare gli elementi selezionati?\nL\'operazione non è reversibile.')) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    }, true);
+  })();
+</script>
 {% endblock %}
 
 {% block branding %}
