@@ -512,17 +512,16 @@ msgstr "Expired (%(d)s days before the event)."
 
 #: portal/templates/portal/catalog/service_detail.html:89
 msgid "Tutte le opzioni sono esaurite"
-msgstr ""
+msgstr "All options are sold out"
 
 #: portal/templates/portal/catalog/service_detail.html:97
 msgid "Scegli un'opzione"
-msgstr ""
+msgstr "Choose an option"
 
 #: portal/templates/portal/catalog/service_detail.html:111
-#, fuzzy, python-format
-#| msgid "tra %(n)s gg"
+#, python-format
 msgid "restano %(n)s"
-msgstr "in %(n)s days"
+msgstr "%(n)s left"
 
 #: portal/templates/portal/catalog/service_detail.html:131
 msgid "Aggiungi al carrello"
