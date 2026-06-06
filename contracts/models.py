@@ -458,10 +458,33 @@ class Contract(SoftDeleteModel):
                 n += 1
 
     def save(self, *args, **kwargs):
-        if not self.contract_number:
+        from django.db import IntegrityError
+
+        # Numero gia' presente (o esplicito): salvataggio normale.
+        if self.contract_number:
+            super().save(*args, **kwargs)
+            self._sync_option_venue(kwargs.get('update_fields'))
+            return
+
+        # Numero assente: genera in automatico (vale anche per ADDON/ADDENDUM).
+        # Retry su IntegrityError per gestire creazioni simultanee (race):
+        # se due contratti generano lo stesso numero nello stesso istante, il
+        # secondo rigenera e riprova invece di andare in crash.
+        last_err = None
+        for _ in range(6):
             self.contract_number = self._generate_contract_number()
-        super().save(*args, **kwargs)
-        self._sync_option_venue(kwargs.get('update_fields'))
+            try:
+                with transaction.atomic():
+                    super().save(*args, **kwargs)
+                self._sync_option_venue(kwargs.get('update_fields'))
+                return
+            except IntegrityError as e:
+                if 'contract_number' not in str(e).lower():
+                    raise
+                last_err = e
+                self.contract_number = ''  # forza una nuova generazione
+        # Esauriti i tentativi: rilancia l'ultimo errore.
+        raise last_err
         self._sync_option_deadline(kwargs.get('update_fields'))
         self._sync_stand_line(kwargs.get('update_fields'))
 

@@ -63,3 +63,37 @@ def test_contract_number_preserved_if_explicit(sponsor):
         contract_number='CUSTOM-001',
     )
     assert c.contract_number == 'CUSTOM-001'
+
+
+@pytest.mark.django_db
+def test_save_riprova_su_collisione_numero(sponsor, monkeypatch):
+    """Se due contratti generano lo stesso numero (race), il secondo rigenera
+    e si salva comunque (nessun IntegrityError propagato)."""
+    event = Event.objects.create(
+        name={'it': 'Race Event', 'en': 'Race Event'},
+        code='RACE', start_date=date(2026, 6, 1), end_date=date(2026, 6, 2),
+    )
+    first = Contract.objects.create(
+        sponsor=sponsor, event=event,
+        contract_kind=ContractKind.ADDON, status=ContractStatus.DRAFT,
+    )
+    used = first.contract_number
+
+    orig = Contract._generate_contract_number
+    calls = {'n': 0}
+
+    def fake(self):
+        calls['n'] += 1
+        if calls['n'] == 1:
+            return used  # forza una collisione al primo tentativo
+        return orig(self)
+
+    monkeypatch.setattr(Contract, '_generate_contract_number', fake)
+
+    second = Contract.objects.create(
+        sponsor=sponsor, event=event,
+        contract_kind=ContractKind.ADDON, status=ContractStatus.DRAFT,
+    )
+    assert second.pk is not None
+    assert second.contract_number != used
+    assert calls['n'] >= 2  # ha dovuto rigenerare almeno una volta

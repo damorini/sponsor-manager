@@ -15,7 +15,14 @@
     <span class="mx-2">/</span>
     <span class="text-gray-700">{{ contract.contract_number }}</span>
   </nav>
-  
+
+  {% if contract.contract_kind == 'addon' %}
+  <div class="mb-5 rounded-lg border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-900">
+    <strong>{% trans "Acquisto online" %}</strong> ·
+    {% trans "Pagamento immediato: non serve confermare un preventivo. L'acquisto è valido al momento del pagamento (PayPal, carta o bonifico)." %}
+  </div>
+  {% endif %}
+
   <!-- Header contratto -->
   <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
     <div>

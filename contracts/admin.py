@@ -231,6 +231,15 @@ class ContractAdmin(admin.ModelAdmin):
         }),
         ('Tipo e origine', {
             'fields': ('contract_kind', 'parent_contract', 'origin', 'language'),
+            'description': (
+                'PRINCIPALE: segue il flusso preventivo (invio → conferma del cliente '
+                '→ Domanda di ammissione + scadenze acconto/saldo). '
+                'ADDON (acquisto online): pagamento immediato, NESSUN preventivo da '
+                'confermare, niente Domanda né scadenze acconto/saldo; il cliente paga '
+                'dal portale (PayPal, carta o bonifico) e l\'acquisto si conferma al pagamento. '
+                'ADDENDUM: usa lo stesso modulo della Domanda ma intitolato '
+                '«Addendum al contratto n° … del …». Il numero contratto è automatico.'
+            ),
         }),
         ('Spazio espositivo', {
             'fields': ('stand', 'stand_block'),
