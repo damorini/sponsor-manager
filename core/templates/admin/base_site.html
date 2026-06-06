@@ -41,7 +41,7 @@
     --vt-menu-fg: #241B12; --vt-menu-hover: #000000;
     --vt-addlink-fg: #2F5421; --vt-changelink-fg: #5A4636;
     --vt-sidebar-cap-bg: #1A1612; --vt-sidebar-cap-fg: #EDE6DA;
-    --vt-content-cap-bg: #F2EFEA; --vt-content-cap-fg: #4A4137;
+    --vt-content-cap-bg: #E8E0D1; --vt-content-cap-fg: #3A332A;
     --vt-input-bg: #FFFFFF; --vt-input-border: #CFC4B0;
   }
 
@@ -66,7 +66,7 @@
     --vt-menu-fg: #ECE3D6; --vt-menu-hover: #FFFFFF;
     --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
     --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
-    --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+    --vt-content-cap-bg: #33291B; --vt-content-cap-fg: #ECE0CC;
     --vt-input-bg: #2C2319; --vt-input-border: #4F4030;
   }
   @media (prefers-color-scheme: dark) {
@@ -90,7 +90,7 @@
       --vt-menu-fg: #ECE3D6; --vt-menu-hover: #FFFFFF;
       --vt-addlink-fg: #9FC47A; --vt-changelink-fg: #C9BBA6;
       --vt-sidebar-cap-bg: #2A2117; --vt-sidebar-cap-fg: #E6D9C5;
-      --vt-content-cap-bg: #2A2117; --vt-content-cap-fg: #D6CBB9;
+      --vt-content-cap-bg: #33291B; --vt-content-cap-fg: #ECE0CC;
       --vt-input-bg: #2C2319; --vt-input-border: #4F4030;
     }
   }
@@ -108,11 +108,16 @@
   #branding h1, #site-name a:link, #site-name a:visited { font-weight: 600; letter-spacing: -.01em; }
   h1 { font-weight: 600; }
 
-  /* Bordo via box-shadow (segue il border-radius senza "buchi" agli angoli) */
-  .module { border-radius: 12px; border: 0; box-shadow: 0 0 0 1px var(--hairline-color), 0 1px 2px rgba(0,0,0,.05); overflow: hidden; }
+  /* Niente bordi/box sui moduli (evita i "taglietti" agli angoli): le sezioni
+     si distinguono per la fascia di intestazione colorata + spaziatura. */
+  .module { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible; background: transparent; margin-bottom: 22px; }
   #content-main .module > caption,
   #content-main .module > h2,
-  #content-main .module > h3 { background: var(--vt-content-cap-bg); color: var(--vt-content-cap-fg); font-weight: 600; }
+  #content-main .module > h3 {
+    background: var(--vt-content-cap-bg); color: var(--vt-content-cap-fg);
+    font-weight: 700; border-bottom: 2px solid var(--primary);
+    border-radius: 0;
+  }
 
   /* Leggibilità form: etichette forti + help un po' più scuro (chiaro e scuro) */
   .form-row label, .aligned label, fieldset .form-row label, .checkbox-row label { color: var(--body-fg); }
