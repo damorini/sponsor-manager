@@ -158,15 +158,15 @@ def dashboard_view(request):
 def contracts_list_view(request):
     """Lista contratti con filtri (per evento, per stato)."""
     from contracts.models import Contract, ContractStatus, ContractKind, DeadlineStatus
-    from events.models import Event
+    from events.models import Event, EventStatus
 
     sponsor = request.sponsor
 
-    # Base queryset
+    # Base queryset (esclude gli eventi ARCHIVIATI: stanno in 'Archivio eventi')
     qs = Contract.objects.filter(
         sponsor=sponsor,
         deleted_at__isnull=True,
-    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).exclude(contract_kind='addon').select_related('event', 'stand', 'stand_block')
+    ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).exclude(contract_kind='addon').exclude(event__status=EventStatus.ARCHIVED).select_related('event', 'stand', 'stand_block')
 
     # Filtro per evento
     event_id = request.GET.get('event')
@@ -196,11 +196,11 @@ def contracts_list_view(request):
         )
     ).order_by('-created_at')
 
-    # Eventi disponibili per il filtro (solo quelli dello sponsor)
+    # Eventi disponibili per il filtro (solo quelli dello sponsor, non archiviati)
     available_events = Event.objects.filter(
         contracts__sponsor=sponsor,
         contracts__deleted_at__isnull=True,
-    ).distinct().order_by('-start_date')
+    ).exclude(status=EventStatus.ARCHIVED).distinct().order_by('-start_date')
 
     # Paginazione
     paginator = Paginator(qs, 20)
@@ -213,6 +213,7 @@ def contracts_list_view(request):
     eco_qs = (Contract.objects
               .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
                       status__in=paid, deleted_at__isnull=True)
+              .exclude(event__status=EventStatus.ARCHIVED)
               .select_related('event')
               .prefetch_related('lines')
               .order_by('-signed_date', '-created_at'))
@@ -324,6 +325,7 @@ def event_dashboard_view(request, event_id):
 def purchases_view(request):
     """I miei acquisti: contratti addon ecommerce pagati (data + importo)."""
     from contracts.models import Contract, ContractStatus, ContractKind
+    from events.models import EventStatus
 
     sponsor = request.sponsor
     paid = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
@@ -331,6 +333,7 @@ def purchases_view(request):
         Contract.objects
         .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
                 status__in=paid, deleted_at__isnull=True)
+        .exclude(event__status=EventStatus.ARCHIVED)
         .select_related('event')
         .prefetch_related('lines')
         .order_by('-signed_date', '-created_at')
@@ -339,6 +342,7 @@ def purchases_view(request):
         Contract.objects
         .filter(sponsor=sponsor, contract_kind=ContractKind.ADDON,
                 status=ContractStatus.PENDING_PAYMENT, deleted_at__isnull=True)
+        .exclude(event__status=EventStatus.ARCHIVED)
         .select_related('event')
         .prefetch_related('lines')
         .order_by('-created_at')

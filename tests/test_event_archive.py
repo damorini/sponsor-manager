@@ -56,6 +56,17 @@ def test_catalogo_evento_archiviato_vietato(client, user_sponsor, sponsor, conta
 
 
 @pytest.mark.django_db
+def test_documenti_escludono_evento_archiviato(client, user_sponsor, sponsor, contact, evento_con_contratto):
+    client.force_login(user_sponsor)
+    # attivo: il documento compare in 'I miei documenti'
+    assert 'ARCH-26-001' in client.get(reverse('portal:contracts_list')).content.decode()
+    # archiviato: sparisce
+    evento_con_contratto.status = EventStatus.ARCHIVED
+    evento_con_contratto.save(update_fields=['status'])
+    assert 'ARCH-26-001' not in client.get(reverse('portal:contracts_list')).content.decode()
+
+
+@pytest.mark.django_db
 def test_archiviazione_chiude_le_scadenze_aperte(evento_con_contratto):
     from contracts.models import Deadline, DeadlineStatus
     c = Contract.objects.get(event=evento_con_contratto)
