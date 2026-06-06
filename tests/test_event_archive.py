@@ -87,6 +87,24 @@ def test_archiviazione_chiude_le_scadenze_aperte(evento_con_contratto):
 
 
 @pytest.mark.django_db
+def test_storico_consultabile_se_archiviato(client, user_sponsor, sponsor, contact, evento_con_contratto):
+    evento_con_contratto.status = EventStatus.ARCHIVED
+    evento_con_contratto.save(update_fields=['status'])
+    client.force_login(user_sponsor)
+    r = client.get(reverse('portal:archived_event_detail', args=[evento_con_contratto.id]))
+    assert r.status_code == 200
+    assert 'ARCH-26-001' in r.content.decode()
+
+
+@pytest.mark.django_db
+def test_storico_redirect_se_evento_attivo(client, user_sponsor, sponsor, contact, evento_con_contratto):
+    # evento NON archiviato: la pagina storico rimanda alla pagina evento normale
+    client.force_login(user_sponsor)
+    r = client.get(reverse('portal:archived_event_detail', args=[evento_con_contratto.id]))
+    assert r.status_code in (301, 302)
+
+
+@pytest.mark.django_db
 def test_servizi_acquistabili_vuoti_se_archiviato(evento_con_contratto):
     from portal.views.catalog import _get_purchasable_services
     Service.objects.create(

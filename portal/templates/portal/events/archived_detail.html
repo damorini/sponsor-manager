@@ -1,0 +1,108 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+{% load portal_labels %}
+
+{% block title %}{{ event.get_name }} · {% trans "Archivio" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <nav class="text-sm text-gray-500 mb-4">
+    <a href="{% url 'portal:events_archived' %}" class="hover:text-brand-500">{% trans "Archivio eventi" %}</a>
+    <span class="mx-2">/</span>
+    <span class="text-gray-700">{{ event.get_name }}</span>
+  </nav>
+
+  <div class="flex items-center gap-3 mb-1">
+    <h1 class="text-3xl font-bold text-gray-900">{{ event.get_name }}</h1>
+    <span class="text-xs font-bold bg-red-100 text-red-700 px-2 py-1 rounded">{% trans "Archiviato" %}</span>
+  </div>
+  <p class="text-gray-600 mb-1">
+    {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date %} – {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
+    {% if event.location %} · {{ event.location }}{% endif %}
+  </p>
+  <p class="text-sm text-gray-400 mb-6">{% trans "Sola consultazione: l'evento è archiviato, non è più possibile modificare o acquistare." %}</p>
+
+  {% for c in contracts %}
+  <div class="bg-white rounded-lg shadow-sm border border-gray-100 mb-5">
+    <div class="flex flex-wrap justify-between items-center gap-2 px-5 py-3 border-b border-gray-100">
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-gray-900">{{ c.contract_number }}</span>
+        {% if c.contract_kind == 'addon' %}
+        <span class="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded">{% trans "Acquisto online" %}</span>
+        {% endif %}
+        <span class="text-xs px-2 py-0.5 rounded font-medium
+          {% if c.status == 'signed' or c.status == 'active' %}bg-green-100 text-green-800
+          {% elif c.status == 'completed' %}bg-gray-100 text-gray-700
+          {% else %}bg-gray-100 text-gray-700{% endif %}">{{ c.status|status_label }}</span>
+      </div>
+      <div class="font-semibold text-gray-900">€ {{ c.total|floatformat:2 }}</div>
+    </div>
+
+    <div class="px-5 py-4">
+      {% if c.stand %}
+      <div class="text-sm text-gray-600 mb-3">📍 Stand {{ c.stand.code }}{% if c.stand.area_sqm %} ({{ c.stand.area_sqm }} m²){% endif %}</div>
+      {% elif c.stand_block %}
+      <div class="text-sm text-gray-600 mb-3">📍 {% trans "Blocco" %} {{ c.stand_block.code }}</div>
+      {% endif %}
+
+      {% if c.lines.all %}
+      <table class="w-full text-sm mb-3">
+        <thead>
+          <tr class="text-left text-gray-400 border-b border-gray-100">
+            <th class="py-1 font-medium">{% trans "Servizio" %}</th>
+            <th class="py-1 font-medium text-right">{% trans "Q.tà" %}</th>
+            <th class="py-1 font-medium text-right">{% trans "Totale" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ln in c.lines.all %}
+          <tr class="border-b border-gray-50">
+            <td class="py-1.5 text-gray-800">
+              {{ ln.service_name_display }}{% if ln.variant_label_display %} – {{ ln.variant_label_display }}{% endif %}
+            </td>
+            <td class="py-1.5 text-right text-gray-600">{{ ln.quantity }}</td>
+            <td class="py-1.5 text-right text-gray-800">€ {{ ln.line_total|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if c.deadlines.all %}
+      <div class="text-xs font-semibold text-gray-500 mt-3 mb-1">{% trans "Scadenze" %}</div>
+      <ul class="text-sm space-y-1">
+        {% for d in c.deadlines.all %}
+        <li class="flex justify-between">
+          <span class="text-gray-700">{{ d.portal_title }} <span class="text-gray-400">· {{ d.due_date|date:"d/m/Y" }}</span></span>
+          <span class="text-xs px-2 py-0.5 rounded
+            {% if d.status == 'received' %}bg-green-100 text-green-800
+            {% elif d.status == 'waived' %}bg-gray-100 text-gray-500
+            {% else %}bg-amber-100 text-amber-800{% endif %}">{{ d.get_status_display }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      {% if c.docs %}
+      <div class="text-xs font-semibold text-gray-500 mt-4 mb-1">{% trans "Documenti" %}</div>
+      <ul class="text-sm space-y-1">
+        {% for doc in c.docs %}
+        <li>
+          <a href="{{ doc.storage_url }}" target="_blank" class="text-brand-600 hover:underline">
+            <i class="ti ti-file-text"></i> {{ doc.file_name|default:doc.document_type }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="bg-white rounded-lg shadow-sm p-8 text-center text-gray-500">
+    {% trans "Nessun documento per questo evento." %}
+  </div>
+  {% endfor %}
+
+</div>
+{% endblock %}

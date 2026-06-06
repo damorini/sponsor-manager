@@ -289,6 +289,49 @@ def archived_events_view(request):
 
 
 @sponsor_required
+def archived_event_detail_view(request, event_id):
+    """Storico (sola consultazione) di un evento archiviato: contratti, righe,
+    scadenze e documenti dello sponsor per quell'evento."""
+    from django.shortcuts import get_object_or_404, redirect
+    from contracts.models import Contract, ContractStatus
+    from events.models import Event
+    from shared.models import Document
+    from django.contrib.contenttypes.models import ContentType
+
+    sponsor = request.sponsor
+    event = get_object_or_404(Event, id=event_id)
+
+    # Solo eventi archiviati; se attivo, manda alla pagina evento normale.
+    if event.is_active:
+        return redirect('portal:event_dashboard', event_id=event.id)
+
+    contracts = list(
+        Contract.objects
+        .filter(sponsor=sponsor, event=event, deleted_at__isnull=True)
+        .exclude(status=ContractStatus.CANCELLED)
+        .prefetch_related('lines__service', 'deadlines')
+        .order_by('-created_at')
+    )
+    if not contracts:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("Non risultano documenti per questo evento.")
+
+    # Documenti allegati a ciascun contratto (PDF domanda, ecc.)
+    ct_type = ContentType.objects.get_for_model(Contract)
+    for c in contracts:
+        c.docs = list(
+            Document.objects.filter(
+                content_type=ct_type, object_id=c.id, deleted_at__isnull=True,
+            ).order_by('-created_at')
+        )
+
+    return render(request, 'portal/events/archived_detail.html', {
+        'event': event,
+        'contracts': contracts,
+    })
+
+
+@sponsor_required
 def event_dashboard_view(request, event_id):
     """Pagina evento: info dell'evento + servizi disponibili."""
     from django.shortcuts import get_object_or_404
