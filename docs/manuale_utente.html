@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sponsor Manager — Manuale d'uso</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  // Render dei diagrammi di flusso
+  window.addEventListener('DOMContentLoaded', function () {
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: {
+        primaryColor: '#F2EFEA', primaryTextColor: '#1A1612', primaryBorderColor: '#9C4A1F',
+        lineColor: '#7A3613', fontFamily: 'Georgia, serif', fontSize: '15px'
+      }});
+    }
+  });
+</script>
+<style>
+  :root { --ink:#1A1612; --ink2:#4A4137; --terra:#7A3613; --gold:#9C7A2F; --bg:#FAF8F5; --card:#fff; --line:#E8E2D8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif; line-height:1.6; }
+  header.top { background:linear-gradient(180deg,#211B15,#1A1612); color:#EDE6DA; padding:28px 24px; }
+  header.top h1 { margin:0; font-family:Georgia,serif; font-weight:700; letter-spacing:-.01em; }
+  header.top p { margin:6px 0 0; color:#C9BBA6; }
+  .wrap { max-width:980px; margin:0 auto; padding:0 24px 80px; }
+  nav.toc { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:28px 0; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  nav.toc h2 { margin:0 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--terra); }
+  nav.toc ol { margin:0; padding-left:20px; }
+  nav.toc a { color:var(--ink2); text-decoration:none; }
+  nav.toc a:hover { color:var(--terra); text-decoration:underline; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:24px 28px; margin:22px 0; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  h2 { font-family:Georgia,serif; color:var(--ink); border-bottom:2px solid var(--terra); padding-bottom:8px; margin-top:0; }
+  h3 { color:var(--terra); margin-top:26px; }
+  code { background:#F2EFEA; padding:1px 6px; border-radius:5px; font-size:.92em; }
+  .diagram { background:#FCFBF9; border:1px dashed #D4CCBE; border-radius:10px; padding:16px; margin:18px 0; overflow:auto; text-align:center; }
+  .nota { background:#FBF6EA; border-left:4px solid var(--gold); padding:12px 16px; border-radius:6px; margin:14px 0; }
+  .attenzione { background:#F8ECE6; border-left:4px solid #9C4A1F; padding:12px 16px; border-radius:6px; margin:14px 0; }
+  table { border-collapse:collapse; width:100%; margin:14px 0; }
+  th,td { border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top; }
+  th { background:#F2EFEA; }
+  ol li, ul li { margin:4px 0; }
+  .badge { display:inline-block; background:var(--terra); color:#fff; font-size:11px; padding:2px 8px; border-radius:999px; vertical-align:middle; }
+  footer { text-align:center; color:#8A7F71; font-size:13px; padding:24px; }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Sponsor Manager — Manuale d'uso</h1>
+  <p>Gestione sponsor per congressi VALET · backoffice operatore + portale sponsor</p>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <h2>Indice</h2>
+  <ol>
+    <li><a href="#intro">Cos'è e com'è fatto</a></li>
+    <li><a href="#accesso">Come accedere</a></li>
+    <li><a href="#concetti">I concetti chiave (mappa)</a></li>
+    <li><a href="#flusso">Il flusso completo (operatore)</a></li>
+    <li><a href="#stati">Ciclo di vita della Domanda di ammissione</a></li>
+    <li><a href="#howto">Come si fa, passo per passo</a></li>
+    <li><a href="#portale">Lato sponsor (il portale)</a></li>
+    <li><a href="#excel">Import da Excel (servizi e stand)</a></li>
+    <li><a href="#traduzioni">Traduzioni italiano/inglese</a></li>
+    <li><a href="#faq">Problemi comuni (FAQ)</a></li>
+  </ol>
+</nav>
+
+<section id="intro">
+  <h2>1. Cos'è e com'è fatto</h2>
+  <p><strong>Sponsor Manager</strong> gestisce gli sponsor dei congressi: anagrafiche, catalogo di servizi e stand, domande di ammissione (con PDF), pagamenti, email automatiche e scadenze.</p>
+  <p>Ci sono <strong>due ambienti</strong>:</p>
+  <table>
+    <tr><th>Ambiente</th><th>A chi serve</th><th>Indirizzo</th></tr>
+    <tr><td><strong>Backoffice</strong> (gestione)</td><td>A te / segreteria VALET: crei congressi, catalogo, sponsor, preventivi, incassi.</td><td><code>/admin/</code> e <code>/admin/cruscotto/</code></td></tr>
+    <tr><td><strong>Portale sponsor</strong></td><td>Allo sponsor invitato: vede il preventivo, conferma, acquista servizi, paga, carica materiali.</td><td><code>/portal/</code></td></tr>
+  </table>
+</section>
+
+<section id="accesso">
+  <h2>2. Come accedere</h2>
+  <h3>Backoffice (tu)</h3>
+  <ul>
+    <li>Vai su <code>/admin/</code></li>
+    <li>Accedi con la tua <strong>email</strong> e password.</li>
+    <li>La pagina iniziale è il <strong>Cruscotto</strong> (<code>/admin/cruscotto/</code>): mostra i congressi attivi e le scorciatoie.</li>
+  </ul>
+  <h3>Portale (lo sponsor)</h3>
+  <ul>
+    <li>Lo sponsor riceve un <strong>invito via email</strong> e imposta la password.</li>
+    <li>Accede su <code>/portal/login/</code> con la propria email.</li>
+  </ul>
+  <div class="nota">Il tema del backoffice può essere <strong>chiaro</strong> o <strong>scuro</strong> (icona in alto a destra): cambia solo l'aspetto, non i dati.</div>
+</section>
+
+<section id="concetti">
+  <h2>3. I concetti chiave (mappa)</h2>
+  <p>Tutto ruota intorno a queste entità. L'<strong>Evento</strong> (il congresso) è il centro: ogni servizio, stand e domanda appartiene a un evento.</p>
+  <div class="diagram">
+    <pre class="mermaid">
+graph TD
+  E["EVENTO / Congresso"]:::ev --> S["Catalogo: Servizi"]
+  E --> ST["Catalogo: Stand"]
+  SP["SPONSOR / Azienda"]:::sp --> C["Contatti"]
+  C -->|invito| P["Accesso al Portale"]
+  E --> DA["DOMANDA DI AMMISSIONE"]:::da
+  SP --> DA
+  DA --> R["Righe: Servizi e Stand acquistati"]
+  DA --> SC["Scadenze (acconto, saldo, materiali)"]
+  DA --> PG["Pagamenti"]
+  classDef ev fill:#E5E7F4,stroke:#2E3A8C;
+  classDef sp fill:#EBF1E7,stroke:#3D6B2B;
+  classDef da fill:#F5E8DC,stroke:#9C4A1F;
+    </pre>
+  </div>
+  <ul>
+    <li><strong>Evento</strong>: il congresso (date, luogo, tipo ECM/non-ECM, lingue).</li>
+    <li><strong>Sponsor</strong>: l'azienda. <strong>Contatti</strong>: le persone dell'azienda (uno può essere invitato al portale).</li>
+    <li><strong>Catalogo</strong>: i <strong>Servizi</strong> e gli <strong>Stand</strong> vendibili per quell'evento.</li>
+    <li><strong>Domanda di ammissione</strong>: il documento che lega sponsor + evento + ciò che acquista. (Il contratto ECM/non-ECM vero e proprio lo gestisci a parte, a mano.)</li>
+    <li><strong>Scadenze e Pagamenti</strong>: generati automaticamente alla conferma.</li>
+  </ul>
+</section>
+
+<section id="flusso">
+  <h2>4. Il flusso completo (operatore)</h2>
+  <p>Dal congresso vuoto fino all'incasso, ecco i passi tipici:</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  A["1 - Crea il Congresso / Evento"] --> B["2 - Carica il Catalogo<br/>Servizi e Stand<br/>(a mano o da Excel)"]
+  B --> C["3 - Inserisci Sponsor e Contatti"]
+  C --> D["4 - Invita un contatto al Portale"]
+  C --> E["5 - Crea la Domanda di ammissione<br/>(il preventivo)"]
+  E --> F["6 - Invia il preventivo allo sponsor"]
+  F --> G{"Lo sponsor conferma?"}
+  G -->|"Si"| H["7 - Si genera la Domanda in PDF<br/>+ Scadenze automatiche"]
+  G -->|"No"| F
+  H --> I["8 - Registri gli incassi<br/>(bonifico / PayPal / carta)"]
+  I --> L["9 - Materiali e scadenze<br/>fino all'evento"]
+    </pre>
+  </div>
+</section>
+
+<section id="stati">
+  <h2>5. Ciclo di vita della Domanda di ammissione</h2>
+  <p>Ogni domanda passa per questi stati:</p>
+  <div class="diagram">
+    <pre class="mermaid">
+stateDiagram-v2
+  [*] --> Bozza
+  Bozza --> Inviato: invii il preventivo
+  Inviato --> Firmato: lo sponsor conferma
+  Bozza --> InAttesaPagamento: acquisto dal portale (carrello)
+  InAttesaPagamento --> Firmato: pagamento ricevuto
+  Firmato --> Attivo
+  Attivo --> Completato: evento concluso
+  Bozza --> Annullato
+  Inviato --> Annullato
+  Firmato --> Annullato
+  Annullato --> [*]
+  Completato --> [*]
+    </pre>
+  </div>
+  <table>
+    <tr><th>Stato</th><th>Significato</th></tr>
+    <tr><td><strong>Bozza</strong></td><td>In preparazione, non ancora inviata.</td></tr>
+    <tr><td><strong>Inviato</strong></td><td>Preventivo inviato allo sponsor, in attesa di conferma.</td></tr>
+    <tr><td><strong>In attesa pagamento</strong></td><td>Acquisto dal portale in attesa dell'incasso.</td></tr>
+    <tr><td><strong>Firmato</strong></td><td>Confermata: generati PDF e scadenze.</td></tr>
+    <tr><td><strong>Attivo / Completato</strong></td><td>In corso / evento concluso.</td></tr>
+    <tr><td><strong>Annullato</strong></td><td>Annullata: libera lo stand ed esonera le scadenze.</td></tr>
+  </table>
+</section>
+
+<section id="howto">
+  <h2>6. Come si fa, passo per passo</h2>
+
+  <h3>6.1 Creare un congresso</h3>
+  <ol>
+    <li>Admin → <strong>Eventi</strong> → <strong>Aggiungi</strong>.</li>
+    <li>Compila nome (in italiano), date, luogo, tipo (ECM / non-ECM), <strong>sigla</strong> (es. <code>AITEB</code>: serve per i numeri delle domande).</li>
+    <li>Salva. L'inglese del nome/descrizione si compila <strong>da solo</strong> (vedi §9).</li>
+  </ol>
+
+  <h3>6.2 Caricare il catalogo (servizi e stand)</h3>
+  <p>Due modi:</p>
+  <ul>
+    <li><strong>A mano</strong>: Admin → <strong>Servizi</strong> / <strong>Stand</strong> → Aggiungi.</li>
+    <li><strong>Da Excel</strong> (consigliato se sono tanti): Cruscotto → <strong>Utility</strong> → scarica il <em>Modello</em>, compilalo, e ricaricalo (vedi §8).</li>
+  </ul>
+
+  <h3>6.3 Servizi inclusi (un servizio che ne omaggia altri)</h3>
+  <p>Un servizio "capofila" può includere altri servizi, aggiunti automaticamente a <strong>€0</strong> quando viene venduto.</p>
+  <ol>
+    <li>Apri il servizio capofila → sezione <strong>"Servizi inclusi (accessori)"</strong>.</li>
+    <li>Aggiungi i servizi inclusi + la quantità. (Devono essere servizi dello stesso evento.)</li>
+  </ol>
+
+  <h3>6.4 Anagrafica sponsor e contatti</h3>
+  <ol>
+    <li>Admin → <strong>Sponsor</strong> → Aggiungi (ragione sociale, P.IVA, sede…).</li>
+    <li>Aggiungi i <strong>Contatti</strong> (persone). Per il firmatario, spunta <em>è firmatario</em> e compila i dati anagrafici.</li>
+    <li>Per dare accesso al portale: usa l'azione di <strong>invito</strong> sul contatto.</li>
+  </ol>
+
+  <h3>6.5 Creare e inviare il preventivo</h3>
+  <ol>
+    <li>Admin → <strong>Domanda di ammissione</strong> → Aggiungi: scegli evento + sponsor.</li>
+    <li>Aggiungi le <strong>righe</strong> (servizi/stand): la tendina mostra <strong>solo</strong> i servizi di quell'evento.</li>
+    <li>Usa l'azione <strong>"Genera e invia preventivo"</strong> → scegli i destinatari → invio.</li>
+  </ol>
+
+  <h3>6.6 Conferma e seguito</h3>
+  <p>Quando lo sponsor conferma dal portale, il sistema genera la <strong>Domanda di ammissione in PDF</strong>, le <strong>scadenze</strong> (acconto/saldo + materiali) e invia l'email di conferma. Tu poi <strong>registri gli incassi</strong> e segui i materiali fino all'evento.</p>
+</section>
+
+<section id="portale">
+  <h2>7. Lato sponsor (il portale)</h2>
+  <p>Cosa fa lo sponsor, una volta invitato:</p>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  A["Accede al Portale"] --> B["Vede il preventivo<br/>(Domanda di ammissione)"]
+  B --> C{"Conferma?"}
+  C -->|"Conferma"| D["Domanda confermata<br/>(scarica il PDF)"]
+  D --> E["Acquista servizi extra<br/>(Carrello)"]
+  E --> F{"Come paga?"}
+  F -->|"PayPal / Carta"| G["Pagamento online<br/>conferma immediata"]
+  F -->|"Bonifico"| H["Ordine in attesa:<br/>l'operatore registra l'incasso"]
+  D --> I["Carica i materiali<br/>e rispetta le scadenze"]
+    </pre>
+  </div>
+</section>
+
+<section id="excel">
+  <h2>8. Import da Excel (servizi e stand)</h2>
+  <div class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  A["Scarica il Modello Excel<br/>(Servizi o Stand)"] --> B["Compila una riga per ciascuno<br/>codice UNICO + solo Italiano"]
+  B --> C["Carica in ANTEPRIMA (test)"]
+  C --> D{"Errori o<br/>codici duplicati?"}
+  D -->|"Si"| B
+  D -->|"No"| E["Caricamento definitivo"]
+  E --> F["Creati / aggiornati<br/>+ inglese tradotto in automatico"]
+    </pre>
+  </div>
+  <ol>
+    <li>Cruscotto → <strong>Utility</strong> → <strong>Scarica il Modello</strong> (servizi o stand).</li>
+    <li>Compila una riga per ogni elemento. <strong>Compila solo la colonna italiana</strong>: l'inglese si genera da solo.</li>
+    <li>Carica prima in <strong>anteprima</strong> (test), controlla, poi fai il caricamento <strong>definitivo</strong>.</li>
+  </ol>
+  <div class="attenzione"><strong>Regola d'oro:</strong> ogni servizio/stand deve avere un <strong>codice UNICO</strong> per evento. Se ripeti lo stesso codice su più righe, il sistema le considera lo <em>stesso</em> elemento (le righe doppie vengono <strong>saltate</strong> con un avviso). Esempio: <code>A-01, A-02, A-03…</code> e non <code>A-02, A-02, A-02</code>.</div>
+  <div class="nota">Per collegare i <strong>servizi inclusi</strong> via Excel: nella riga del capofila, colonna <code>servizi_inclusi</code>, scrivi i codici separati da virgola (es. <code>WIFI, FARETTO</code>).</div>
+</section>
+
+<section id="traduzioni">
+  <h2>9. Traduzioni italiano / inglese (automatiche)</h2>
+  <p>Il portale è bilingue (IT/EN). <strong>Non devi tradurre a mano</strong>: quando salvi (o importi da Excel) un servizio, uno stand o un evento compilando solo l'<strong>italiano</strong>, il sistema genera l'<strong>inglese</strong> in automatico.</p>
+  <ul>
+    <li>Se scrivi tu l'inglese, viene rispettato (non sovrascritto).</li>
+    <li>Lo sponsor sceglie la lingua nel portale (IT/EN) e vede i testi nella sua lingua.</li>
+  </ul>
+</section>
+
+<section id="faq">
+  <h2>10. Problemi comuni (FAQ)</h2>
+
+  <h3>Il download del modello Excel crea un file senza estensione (nome strano)</h3>
+  <p>È un <em>service worker</em> "fantasma" lasciato da un altro progetto sulla stessa porta del browser. Soluzioni: usa l'indirizzo alternativo del gestionale (porta diversa), oppure rimuovi il service worker da <code>chrome://serviceworker-internals</code> (cerca l'indirizzo e clicca <em>Unregister</em>). In caso, rinomina il file aggiungendo <code>.xlsx</code>.</p>
+
+  <h3>Nel preventivo non vedo i servizi del mio congresso</h3>
+  <p>La tendina mostra solo i servizi <strong>dell'evento</strong> selezionato. Se è vuota, quel congresso non ha ancora servizi a catalogo: creali prima (§6.2).</p>
+
+  <h3>Ho importato gli stand ma "non ci sono"</h3>
+  <p>Probabili codici duplicati nel file (vedi §8): le righe con lo stesso codice vengono unite. Usa un codice unico per ciascuno e ricontrolla il riepilogo dell'import.</p>
+
+  <h3>Le email non arrivano</h3>
+  <p>In ambiente di prova le email vengono mostrate nei log, non inviate davvero. Per l'invio reale va configurato l'SMTP.</p>
+</section>
+
+<footer>
+  Sponsor Manager · Manuale d'uso · VALET S.r.l.
+</footer>
+
+</div>
+</body>
+</html>
