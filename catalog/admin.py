@@ -158,10 +158,17 @@ class ServiceAdmin(admin.ModelAdmin):
     inlines = [DeadlineTemplateInline, ServiceVariantInline, ServiceInclusionInline]
 
     class Media:
-        # Filtra i "Servizi inclusi" per l'evento scelto nel form (anche in creazione)
-        js = ('admin/js/service_event_filter.js',)
+        # service_event_filter: filtra i "Servizi inclusi" per evento.
+        # service_from_catalog: auto-compila i campi scegliendo dal Catalogo madre.
+        js = ('admin/js/service_event_filter.js', 'admin/js/service_from_catalog.js')
 
     fieldsets = (
+        ('Crea da catalogo (opzionale)', {
+            'fields': ('catalog_source',),
+            'description': "Scegli una voce dal Catalogo madre: codice, nome IT/EN, "
+                           "descrizione, prezzo e IVA si compilano da soli. "
+                           "Poi puoi modificarli per questo evento.",
+        }),
         (None, {
             'fields': ('event', 'code', 'name', 'description', 'image', 'image_preview', 'category'),
         }),

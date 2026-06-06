@@ -356,6 +356,36 @@ def download_template_stand(request):
 
 
 @staff_member_required
+def catalog_service_data(request, pk):
+    """Dati di una voce del Catalogo madre (CatalogService), per auto-compilare
+    il form Servizio quando si sceglie 'dal catalogo'."""
+    from django.http import JsonResponse, Http404
+    from catalog.models import CatalogService
+    cs = CatalogService.objects.filter(pk=pk).first()
+    if not cs:
+        raise Http404()
+
+    def _t(field):
+        v = getattr(cs, field, None) or {}
+        if not isinstance(v, dict):
+            v = {}
+        return {'it': v.get('it', '') or '', 'en': v.get('en', '') or ''}
+
+    return JsonResponse({
+        'code': cs.code or '',
+        'name': _t('name'),
+        'description': _t('description'),
+        'base_price': str(cs.base_price if cs.base_price is not None else ''),
+        'vat_rate': str(cs.vat_rate if cs.vat_rate is not None else ''),
+        'pricing_mode': cs.pricing_mode or '',
+        'accounting_category': cs.accounting_category or '',
+        'max_quantity': '' if cs.max_quantity is None else cs.max_quantity,
+        'triggers_deadlines': bool(cs.triggers_deadlines),
+        'is_self_purchasable': bool(cs.is_self_purchasable),
+    })
+
+
+@staff_member_required
 def manuale(request):
     """Serve il manuale d'uso (docs/manuale_utente.html) dentro l'area admin."""
     import os
