@@ -215,7 +215,33 @@ class ContractAdmin(admin.ModelAdmin):
     )
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
-    inlines = [ContractLineInline, DeadlineInline, PaymentInline, RegistraIncassoInline]
+
+    @property
+    def inlines(self):
+        from shared.admin import ContractDocumentInline
+        return [ContractLineInline, DeadlineInline, PaymentInline,
+                RegistraIncassoInline, ContractDocumentInline]
+
+    def save_formset(self, request, form, formset, change):
+        from shared.models import Document
+        from shared.admin import _store_uploaded_document
+        if formset.model is not Document:
+            return super().save_formset(request, form, formset, change)
+        # Inline Documenti: gestisci il file caricato e l'autore.
+        instances = formset.save(commit=False)
+        for obj in instances:
+            frm = next((f for f in formset.forms if f.instance is obj), None)
+            up = frm.cleaned_data.get('upload') if frm else None
+            if not obj.object_id:
+                obj.object_id = form.instance.pk
+            if up:
+                _store_uploaded_document(obj, up)
+            if obj.uploaded_by_user_id is None:
+                obj.uploaded_by_user = request.user
+            obj.save()
+        formset.save_m2m()
+        for obj in formset.deleted_objects:
+            obj.delete()
 
     def get_queryset(self, request):
         from core.event_scope import scope_by_event

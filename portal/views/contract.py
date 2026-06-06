@@ -76,6 +76,7 @@ def contract_detail_view(request, contract_id):
         content_type=contract_ct,
         object_id=contract.id,
         deleted_at__isnull=True,
+        is_visible_to_sponsor=True,
     ).order_by('-created_at')
 
     # Comunicazioni inviate per il contratto

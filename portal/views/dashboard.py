@@ -322,6 +322,7 @@ def archived_event_detail_view(request, event_id):
         c.docs = list(
             Document.objects.filter(
                 content_type=ct_type, object_id=c.id, deleted_at__isnull=True,
+                is_visible_to_sponsor=True,
             ).order_by('-created_at')
         )
 

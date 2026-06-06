@@ -23,11 +23,86 @@ from .models import (
 # DOCUMENT
 # =============================================================================
 
+def _store_uploaded_document(doc, f):
+    """Salva il file caricato su storage e popola i riferimenti del Document."""
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+    model = doc.content_type.model if doc.content_type_id else 'misc'
+    rel = f"documents/{model}/{doc.object_id}/{f.name}"
+    saved = default_storage.save(rel, f)
+    doc.storage_url = settings.MEDIA_URL + saved
+    doc.file_name = f.name
+    doc.file_size_bytes = getattr(f, 'size', None)
+    doc.mime_type = getattr(f, 'content_type', '') or ''
+    doc.storage_provider = 'local'
+    if not doc.title:
+        doc.title = f.name
+
+
+class DocumentUploadForm(forms.ModelForm):
+    """Form Document con CARICAMENTO file: l'operatore allega un PDF e
+    URL/nome/dimensione si compilano da soli (niente più URL a mano)."""
+    upload = forms.FileField(
+        required=False, label="Carica file",
+        help_text="Allega un PDF: URL, nome e dimensione si compilano da soli.",
+    )
+
+    class Meta:
+        model = Document
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Con l'upload questi non sono più obbligatori a mano.
+        for f in ('storage_url', 'file_name'):
+            if f in self.fields:
+                self.fields[f].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('upload') and not cleaned.get('storage_url'):
+            raise forms.ValidationError("Carica un file oppure indica un URL.")
+        return cleaned
+
+
+from django.contrib.contenttypes.admin import GenericTabularInline
+
+
+class ContractDocumentInline(GenericTabularInline):
+    """Documenti allegati al contratto (fatture, allegati vari) con upload file.
+    Spunta 'Visibile a sponsor' per farli vedere al cliente nel portale."""
+    model = Document
+    form = DocumentUploadForm
+    ct_field = 'content_type'
+    ct_fk_field = 'object_id'
+    extra = 0
+    fields = ('document_type', 'title', 'upload', 'is_visible_to_sponsor', 'apri_file')
+    readonly_fields = ('apri_file',)
+    verbose_name = 'Documento'
+    verbose_name_plural = 'Documenti / Fatture (spunta "Visibile a sponsor" per il portale)'
+
+    @admin.display(description='File')
+    def apri_file(self, obj):
+        if obj and obj.pk and obj.storage_url:
+            return format_html('<a href="{}" target="_blank">apri</a>', obj.storage_url)
+        return '—'
+
+
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
+    form = DocumentUploadForm
+
     def get_queryset(self, request):
         from core.event_scope import scope_generic_by_event
         return scope_generic_by_event(request, super().get_queryset(request))
+
+    def save_model(self, request, obj, form, change):
+        f = form.cleaned_data.get('upload')
+        if f:
+            _store_uploaded_document(obj, f)
+        if obj.uploaded_by_user_id is None:
+            obj.uploaded_by_user = request.user
+        super().save_model(request, obj, form, change)
 
 
     list_display = (
@@ -54,8 +129,10 @@ class DocumentAdmin(admin.ModelAdmin):
             'description': "Tipo entità + ID entità (Contract, Sponsor, Event, Deadline)",
         }),
         ('File', {
-            'fields': ('storage_url', 'storage_provider', 'file_name',
+            'fields': ('upload', 'storage_url', 'storage_provider', 'file_name',
                        'file_size_bytes', 'mime_type'),
+            'description': "Carica un file con 'Carica file' (consigliato) "
+                           "oppure incolla un URL già pubblicato.",
         }),
         ('Versioning', {
             'fields': ('version', 'superseded_by'),
