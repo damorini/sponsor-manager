@@ -83,6 +83,17 @@
   #nav-sidebar .module caption,
   #nav-sidebar .module caption a { background: #1A1612; color: #EDE6DA !important; }
 
+  /* Voci di menu della sidebar: contrasto più alto (quasi-ink, peso medio) */
+  #nav-sidebar a:link, #nav-sidebar a:visited,
+  #nav-sidebar tr > th a, #nav-sidebar .model a { color: #241B12 !important; font-weight: 500; }
+  #nav-sidebar a:hover { color: #000000 !important; }
+  #nav-sidebar .addlink:link, #nav-sidebar .addlink:visited { color: #2F5421 !important; font-weight: 600; }
+  #nav-sidebar .changelink:link, #nav-sidebar .changelink:visited { color: #5A4636 !important; }
+  /* Eccezione: il pulsante "Cruscotto" (fondo ink) tiene il testo bianco */
+  #nav-sidebar #cruscotto-sidebar-link a:link,
+  #nav-sidebar #cruscotto-sidebar-link a:visited,
+  #nav-sidebar #cruscotto-sidebar-link a:hover { color: #ffffff !important; }
+
   /* Pulsanti: pill + transizione */
   .button, input[type=submit], input[type=button], .submit-row input, a.button {
     border-radius: 10px; font-weight: 600; transition: background .15s ease, transform .05s ease;
