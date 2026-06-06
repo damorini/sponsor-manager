@@ -7,7 +7,7 @@ incluso 'IN BLOCCO' per gli stand che fanno parte di un blocco.
 """
 from django import forms
 from django.contrib import admin
-from core.admin_filters import evento_filter
+from core.admin_filters import evento_filter, nascondi_archiviati_filter
 from core.admin_widgets import TranslatableJSONField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Q
@@ -87,7 +87,7 @@ class StandBlockAdmin(admin.ModelAdmin):
         'stands_count_display', 'total_area_display',
         'block_price_display', 'status_badge',
     )
-    list_filter = (evento_filter('event'), 'status', 'block_type')
+    list_filter = (nascondi_archiviati_filter('event'), evento_filter('event'), 'status', 'block_type')
     search_fields = ('code', 'name', 'event__name', 'event__slug')
 
     def get_search_results(self, request, queryset, search_term):
@@ -260,7 +260,7 @@ class StandAdmin(admin.ModelAdmin):
         'stand_type', 'amenities_display', 'status_badge', 'sponsor_display',
         'base_price_display',
     )
-    list_filter = (evento_filter('event'), 'status', 'stand_type', 'has_power', 'has_water')
+    list_filter = (nascondi_archiviati_filter('event'), evento_filter('event'), 'status', 'stand_type', 'has_power', 'has_water')
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
 
     def get_search_results(self, request, queryset, search_term):
