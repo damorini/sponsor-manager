@@ -218,11 +218,24 @@ class StandAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         from core.event_scope import scope_by_event
-        return scope_by_event(request, super().get_queryset(request), 'event')
+        from django.db.models import Prefetch
+        from contracts.models import Contract, ContractStatus
+        qs = super().get_queryset(request)
+        # Prefetch dei contratti (non bozza/annullati) che occupano lo stand,
+        # con lo sponsor, per mostrare chi ha acquistato/opzionato senza N+1.
+        rel = (Contract.objects
+               .filter(deleted_at__isnull=True)
+               .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
+               .select_related('sponsor')
+               .order_by('-created_at'))
+        qs = qs.prefetch_related(
+            Prefetch('contracts', queryset=rel, to_attr='occupanti'))
+        return scope_by_event(request, qs, 'event')
 
     list_display = (
         'code', 'event_link', 'block_link', 'dimensions_display',
-        'stand_type', 'amenities_display', 'status_badge', 'base_price_display',
+        'stand_type', 'amenities_display', 'status_badge', 'sponsor_display',
+        'base_price_display',
     )
     list_filter = (evento_filter('event'), 'status', 'stand_type', 'has_power', 'has_water')
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
@@ -335,6 +348,35 @@ class StandAdmin(admin.ModelAdmin):
         if obj.base_price is not None:
             return f"\u20ac {obj.base_price:,.2f}"
         return '\u2014'
+
+    @admin.display(description='Sponsor')
+    def sponsor_display(self, obj):
+        """Sponsor che ha acquistato (o opzionato) lo stand.
+        Prima cerca un contratto sullo stand singolo, poi sul blocco."""
+        from contracts.models import ContractStatus
+        occ = list(getattr(obj, 'occupanti', None) or [])
+        # Fallback: stand dentro un blocco venduto/opzionato -> contratto sul blocco
+        if not occ and obj.stand_block_id:
+            occ = list(obj.stand_block.contracts
+                       .filter(deleted_at__isnull=True)
+                       .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
+                       .select_related('sponsor')
+                       .order_by('-created_at'))
+        if not occ:
+            return '\u2014'
+        firmati = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+        attivi = [c for c in occ if c.status in firmati]
+        c = attivi[0] if attivi else occ[0]
+        if not c.sponsor_id:
+            return '\u2014'
+        url = reverse('admin:sponsors_sponsor_change', args=[c.sponsor_id])
+        label = c.sponsor.display_name or c.sponsor.legal_name
+        opzione = c.status in [ContractStatus.SENT, ContractStatus.PENDING_PAYMENT]
+        if opzione:
+            return format_html(
+                '<a href="{}">{}</a> <small style="color:#e6a23c;">(opzione)</small>',
+                url, label)
+        return format_html('<a href="{}">{}</a>', url, label)
 
 
 # Helper condiviso per badge stato
