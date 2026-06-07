@@ -222,6 +222,20 @@
   #portal_messages-group td.field-letto_il,
   #portal_messages-group td.field-letto_da,
   #portal_messages-group td.field-is_active { white-space: nowrap; }
+
+  /* ===== Pannello filtri di destra collassabile ===== */
+  #vt-filtri-toggle {
+    display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+    border: 1px solid var(--vt-input-border); background: var(--vt-input-bg);
+    color: var(--body-fg); border-radius: 10px; padding: 6px 14px;
+    font-weight: 600; font-size: .82rem; margin: 0 0 12px 0;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  #vt-filtri-toggle:hover { border-color: var(--primary); }
+  /* Quando collassato: nascondi il pannello filtri e libera la larghezza */
+  body.vt-filtri-collassati #changelist-filter { display: none !important; }
+  body.vt-filtri-collassati #changelist .results,
+  body.vt-filtri-collassati #changelist-form { margin-right: 0 !important; }
 </style>
 <script>
   // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
@@ -329,6 +343,39 @@
       }
     }, true);
   })();
+</script>
+<script>
+  // Rende collassabile il pannello filtri di destra della lista (changelist).
+  // Di default e' CHIUSO: la colonna azioni (es. "apri" del PDF) resta visibile.
+  // Un pulsante lo richiama al bisogno; la scelta e' ricordata nel browser.
+  document.addEventListener('DOMContentLoaded', function () {
+    var filter = document.getElementById('changelist-filter');
+    var main = document.getElementById('content-main');
+    if (!filter || !main) return;  // solo nelle liste con pannello filtri
+
+    var KEY = 'vt_filtri_collassati';
+    var saved = localStorage.getItem(KEY);
+    var collassati = (saved === null) ? true : (saved === '1');  // default: chiusi
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'vt-filtri-toggle';
+
+    function aggiorna() {
+      document.body.classList.toggle('vt-filtri-collassati', collassati);
+      btn.textContent = collassati ? '🔎 Mostra filtri' : '✕ Nascondi filtri';
+    }
+    btn.addEventListener('click', function () {
+      collassati = !collassati;
+      localStorage.setItem(KEY, collassati ? '1' : '0');
+      aggiorna();
+    });
+
+    // Inserisce il pulsante in cima alla lista (sopra la tabella risultati).
+    var host = document.getElementById('changelist') || main;
+    host.parentNode.insertBefore(btn, host);
+    aggiorna();
+  });
 </script>
 {% endblock %}
 
