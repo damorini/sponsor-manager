@@ -460,6 +460,17 @@ class Contract(SoftDeleteModel):
     def save(self, *args, **kwargs):
         from django.db import IntegrityError
 
+        # In CREAZIONE eredita la lingua dal cliente (contatto principale) se
+        # l'operatore l'ha lasciata sul default 'it'. Sull'edit non si tocca.
+        if self._state.adding and (self.language or 'it') == 'it' and self.sponsor_id:
+            try:
+                _c = self.sponsor.primary_contact or self.sponsor.contacts.first()
+                _pl = getattr(_c, 'preferred_language', None) if _c else None
+                if _pl in ('it', 'en'):
+                    self.language = _pl
+            except Exception:
+                pass
+
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
             super().save(*args, **kwargs)

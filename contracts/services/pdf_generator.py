@@ -1263,6 +1263,68 @@ def generate_quote_pdf_html(contract):
         'logo_url': org_logo_url,
     }
 
+    # ---- Testi del preventivo nella lingua del contratto (IT/EN) ----
+    from django.utils.html import escape, mark_safe
+    lang = (getattr(contract, 'language', '') or 'it')
+    EN = lang == 'en'
+    try:
+        ev_name = event.get_name(lang) if hasattr(event, 'get_name') else str(event)
+    except Exception:
+        ev_name = str(event)
+    sp_name = sponsor.legal_name if sponsor else ''
+    luogo = getattr(event, 'venue_name', '') or getattr(event, 'location', '') or ''
+    data_ev = ''
+    if getattr(event, 'start_date', None):
+        data_ev = event.start_date.strftime('%d/%m/%Y')
+        _end = getattr(event, 'end_date', None)
+        if _end and _end != event.start_date:
+            data_ev += ' – ' + _end.strftime('%d/%m/%Y')
+    valid_s = quote_valid_until.strftime('%d/%m/%Y') if quote_valid_until else ''
+    _sp, _ev, _lu = escape(sp_name), escape(ev_name), escape(luogo)
+
+    if EN:
+        intro = mark_safe(
+            f"Dear <strong>{_sp}</strong>,<br>following the preferences you indicated, we are "
+            f"pleased to submit our offer for your company's presence at <strong>{_ev}</strong>"
+            + (f", to be held in {_lu}" if luogo else "")
+            + (f" on {data_ev}" if data_ev else "")
+            + ". We are confident that these solutions can be an excellent showcase for your "
+            "company. The space and services selected are summarised below; please take careful "
+            "note of the details.")
+        attn = ("This document is a quote. The spaces indicated are not currently booked, but "
+                "simply held as an option" + (f" until {valid_s}" if valid_s else "") + ".")
+        validity = mark_safe(f"This quote is valid until <strong>{valid_s}</strong>. The spaces "
+                             "are not booked yet, but simply held as an option.")
+        t = {
+            'eyebrow': 'Sponsorship proposal', 'intro': intro, 'attn': attn,
+            'section_title': 'Summary of spaces and services on option',
+            'empty': 'No items selected.', 'incl': 'Included',
+            'imponibile': 'Net amount', 'iva': 'VAT', 'totale': 'Total (VAT included)',
+            'validity': validity, 'cta': 'View and confirm the quote', 'ref': 'Quote',
+        }
+    else:
+        intro = mark_safe(
+            f"Gentile <strong>{_sp}</strong>,<br>a seguito delle preferenze da voi indicate, siamo "
+            f"lieti di sottoporvi l'offerta relativa alla presenza della vostra azienda nell'ambito "
+            f"di <strong>{_ev}</strong>"
+            + (f", che si terrà a {_lu}" if luogo else "")
+            + (f" in data {data_ev}" if data_ev else "")
+            + ". Siamo certi che queste soluzioni potranno rappresentare un'ottima vetrina per la "
+            "vostra azienda. Lo spazio e i servizi selezionati sono riassunti qui di seguito; vi "
+            "preghiamo di prendere buona nota di quanto indicato.")
+        attn = ("Il presente documento è un preventivo. Gli spazi indicati non risultano al "
+                "momento prenotati, ma semplicemente opzionati"
+                + (f" fino al {valid_s}" if valid_s else "") + ".")
+        validity = mark_safe(f"Questo preventivo è valido fino al <strong>{valid_s}</strong>. "
+                             "Al momento gli spazi non sono prenotati ma semplicemente opzionati.")
+        t = {
+            'eyebrow': 'Proposta di sponsorizzazione', 'intro': intro, 'attn': attn,
+            'section_title': 'Riepilogo spazi e servizi in opzione',
+            'empty': 'Nessuna voce selezionata.', 'incl': 'Incluso',
+            'imponibile': 'Imponibile', 'iva': 'IVA', 'totale': 'Totale (IVA inclusa)',
+            'validity': validity, 'cta': 'Vedi e conferma il preventivo', 'ref': 'Preventivo',
+        }
+
     ctx = {
         'contract': contract,
         'sponsor': sponsor,
@@ -1273,6 +1335,8 @@ def generate_quote_pdf_html(contract):
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'quote_valid_until': quote_valid_until,
         'org': org,
+        't': t,
+        'ev_name': ev_name,
     }
     html = render_to_string('quote_pdf.html', ctx)
     pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()

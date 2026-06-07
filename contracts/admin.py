@@ -552,7 +552,9 @@ class ContractAdmin(admin.ModelAdmin):
                     context={'contract': contract, 'event': event,
                              'event_name': event_name},
                     to=recipients,
-                    subject=f"Preventivo {contract.contract_number} - {event_name}",
+                    subject=(f"Quote {contract.contract_number} - {event_name}"
+                             if (contract.language or 'it') == 'en'
+                             else f"Preventivo {contract.contract_number} - {event_name}"),
                     language=contract.language or 'it',
                     attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
                     related_to=contract,

@@ -41,33 +41,31 @@
 </style></head><body>
   {% if header_url %}<img class="hdr" src="{{ header_url }}">{% endif %}
   <div class="brandbar"></div>
-  <p class="eyebrow">Proposta di sponsorizzazione</p>
-  <h1>{{ event.name }}</h1>
+  <p class="eyebrow">{{ t.eyebrow }}</p>
+  <h1>{{ ev_name }}</h1>
   {% if event.start_date or event.venue_name or event.location %}<p class="meta">{% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.venue_name %} &middot; {{ event.venue_name }}{% elif event.location %} &middot; {{ event.location }}{% endif %}</p>{% endif %}
 
-  <p class="intro">Gentile <strong>{{ sponsor.legal_name }}</strong>,<br>
-  a seguito delle preferenze da voi indicate, siamo lieti di sottoporvi l'offerta relativa alla presenza della vostra azienda nell'ambito di <strong>{{ event.name }}</strong>{% if event.venue_name %}, che si terr&agrave; a {{ event.venue_name }}{% elif event.location %}, che si terr&agrave; a {{ event.location }}{% endif %}{% if event.start_date %} in data {{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}.
-  Siamo certi che queste soluzioni potranno rappresentare un'ottima vetrina per la vostra azienda. Lo spazio e i servizi selezionati sono riassunti qui di seguito; vi preghiamo di prendere buona nota di quanto indicato.</p>
+  <p class="intro">{{ t.intro }}</p>
 
-  <p class="intro">Il presente documento &egrave; un preventivo. Gli spazi indicati non risultano al momento prenotati, ma semplicemente opzionati{% if quote_valid_until %} fino al {{ quote_valid_until|date:"d/m/Y" }}{% endif %}.</p>
+  <p class="intro">{{ t.attn }}</p>
 
-  <p class="section-title">Riepilogo spazi e servizi in opzione</p>
+  <p class="section-title">{{ t.section_title }}</p>
   <table class="svc">
     {% for line in lines %}
-    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_total %}&euro; {{ line.line_total|floatformat:2 }}{% else %}<span class="incl">Incluso</span>{% endif %}</td></tr>
+    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_total %}&euro; {{ line.line_total|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
     {% empty %}
-    <tr><td colspan="2" class="desc">Nessuna voce selezionata.</td></tr>
+    <tr><td colspan="2" class="desc">{{ t.empty }}</td></tr>
     {% endfor %}
   </table>
   <table class="tot">
-    <tr><td class="lbl">Imponibile</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
-    <tr><td class="lbl">IVA</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
-    <tr class="grand"><td>Totale (IVA inclusa)</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">{{ t.imponibile }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
+    <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>
 
-  {% if quote_valid_until %}<div class="valid">Questo preventivo &egrave; valido fino al <strong>{{ quote_valid_until|date:"d/m/Y" }}</strong>. Al momento gli spazi non sono prenotati ma semplicemente opzionati.</div>{% endif %}
+  {% if quote_valid_until %}<div class="valid">{{ t.validity }}</div>{% endif %}
 
-  <div class="cta"><a class="btn" href="{{ confirm_url }}">Vedi e conferma il preventivo</a></div>
+  <div class="cta"><a class="btn" href="{{ confirm_url }}">{{ t.cta }}</a></div>
 
   <div class="pagefooter">
     <table><tr>
@@ -78,7 +76,7 @@
         {% if org.phone %}Tel: {{ org.phone }}{% if org.email %} &middot; {% endif %}{% endif %}{% if org.email %}Email: {{ org.email }}{% endif %}{% if org.website %}<br>{{ org.website }}{% endif %}
         {% if org.vat or org.rea %}<br>{% if org.vat %}P.IVA {{ org.vat }}{% endif %}{% if org.vat and org.rea %} &middot; {% endif %}{% if org.rea %}REA {{ org.rea }}{% endif %}{% endif %}
       </td>
-      <td class="ref">Preventivo {{ contract.contract_number }}</td>
+      <td class="ref">{{ t.ref }} {{ contract.contract_number }}</td>
     </tr></table>
   </div>
 </body></html>
