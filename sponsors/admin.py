@@ -458,59 +458,24 @@ class SponsorAdmin(admin.ModelAdmin):
     @admin.display(description='Conversazione')
     def conversazione_display(self, obj):
         from django.utils.safestring import mark_safe
-        from django.utils.html import escape
-        from django.utils import timezone
         if not obj or not obj.pk:
             return "—"
         conv_url = reverse('admin:sponsors_sponsor_conversazione', args=[obj.pk])
+        tot = obj.portal_messages.filter(is_active=True).count()
+        da_leggere = obj.portal_messages.filter(
+            is_active=True, sender=MessageSender.SPONSOR, read_at__isnull=True).count()
         btn = (f'<a href="{conv_url}" class="button" '
-               f'style="display:inline-block;margin-bottom:10px;background:#2e7d32;'
-               f'color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;">'
-               f'💬 Apri / continua la conversazione</a>')
-        msgs = list(obj.portal_messages.filter(is_active=True)
-                    .select_related('parent', 'read_by').order_by('created_at'))
-        if not msgs:
-            return mark_safe(btn + '<div style="color:#888;">Nessun messaggio.</div>')
-        figli = {}
-        for m in msgs:
-            if m.parent_id:
-                figli.setdefault(m.parent_id, []).append(m)
-        roots = [m for m in msgs if m.parent_id is None]
-
-        def bolla(m):
-            is_op = m.sender == MessageSender.OPERATOR
-            when = timezone.localtime(m.created_at).strftime('%d/%m/%Y %H:%M')
-            side = 'flex-start' if is_op else 'flex-end'
-            bg = '#eef2f7' if is_op else '#dff3df'
-            who = 'Operatore (tu)' if is_op else 'Cliente'
-            if is_op:
-                stato = ('<span style="color:#41ad7c;">letto dal cliente</span>'
-                         if m.read_at else
-                         '<span style="color:#b07d00;">in attesa di lettura</span>')
-            else:
-                if m.read_at:
-                    stato = '<span style="color:#41ad7c;">letta ✓</span>'
-                else:
-                    url = reverse('admin:sponsors_messaggio_letto', args=[m.id])
-                    stato = ('<span style="color:#c0392b;font-weight:700;">DA LEGGERE</span> '
-                             f'· <a href="{url}">segna come letta</a>')
-            return (
-                f'<div style="display:flex;justify-content:{side};margin:5px 0;">'
-                f'<div style="max-width:72%;background:{bg};border-radius:12px;padding:8px 12px;">'
-                f'<div style="font-size:11px;color:#555;font-weight:700;">{who} · {when}</div>'
-                f'<div style="white-space:pre-line;color:#111;margin:2px 0;">{escape(m.body)}</div>'
-                f'<div style="font-size:11px;">{stato}</div>'
-                f'</div></div>'
-            )
-
-        out = [btn, '<div style="max-width:760px;border:1px solid #e3ddd2;border-radius:10px;padding:10px;background:#fbfaf7;">']
-        for root in roots:
-            out.append(bolla(root))
-            for ch in sorted(figli.get(root.id, []), key=lambda x: x.created_at):
-                out.append(bolla(ch))
-            out.append('<hr style="border:none;border-top:1px dashed #d8cfc0;margin:8px 0;">')
-        out.append('</div>')
-        return mark_safe(''.join(out))
+               f'style="display:inline-block;background:#2e7d32;color:#fff;'
+               f'padding:8px 16px;border-radius:8px;font-weight:600;">'
+               f'💬 Apri conversazione col portale</a>')
+        if tot == 0:
+            info = '<span style="color:#888;">Nessun messaggio.</span>'
+        else:
+            info = f'<span style="color:#555;">{tot} messaggio/i</span>'
+            if da_leggere:
+                info += (f' · <span style="color:#c0392b;font-weight:700;">'
+                         f'{da_leggere} risposta/e da leggere</span>')
+        return mark_safe(f'{btn} &nbsp; {info}')
 
     def conversazione_view(self, request, object_id):
         """Pagina chat: leggi il thread e rispondi (o apri un nuovo messaggio).
@@ -827,7 +792,8 @@ class PortalMessageAdmin(admin.ModelAdmin):
     """Archivio conversazioni col portale, con stato letto / da leggere."""
     list_display = ('sponsor', 'mittente', 'estratto', 'stato', 'azioni',
                     'event', 'is_active', 'created_at', 'created_by')
-    list_filter = (_MittenteFilter, _LettoFilter, 'is_active', 'event')
+    list_filter = (('sponsor', admin.RelatedOnlyFieldListFilter),
+                   _MittenteFilter, _LettoFilter, 'is_active', 'event')
     search_fields = ('sponsor__legal_name', 'sponsor__display_name', 'body')
     list_select_related = ('sponsor', 'event', 'read_by', 'created_by', 'parent')
     autocomplete_fields = ['sponsor', 'event', 'parent']
