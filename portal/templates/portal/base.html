@@ -110,7 +110,6 @@
   </div>
 
   <nav class="nav-scroll flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-    <p class="px-3.5 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">{% trans "Menu" %}</p>
     <a href="{% url 'portal:dashboard' %}"
        class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>{% trans "In evidenza" %}</a>
     <a href="{% url 'portal:events' %}"
