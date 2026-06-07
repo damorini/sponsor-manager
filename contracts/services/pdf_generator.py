@@ -1239,6 +1239,30 @@ def generate_quote_pdf_html(contract):
     quote_valid_until = contract.option_until or (
         (_created_date + timedelta(days=30)) if _created_date else None)
 
+    # Dati organizzatore (segreteria) per il footer del preventivo.
+    try:
+        from core.models import OrganizerSettings
+        _org = OrganizerSettings.load()
+    except Exception:
+        _org = None
+    org_logo_url = ''
+    try:
+        if _org and _org.logo:
+            org_logo_url = (site_url + _org.logo.url) if site_url else _org.logo.url
+    except Exception:
+        org_logo_url = ''
+    org = {
+        'name': (_org.name if _org and _org.name else None)
+                or getattr(settings, 'ORGANIZER_DISPLAY_NAME', 'VALET S.r.l.'),
+        'address': (_org.address if _org else '') or '',
+        'email': (_org.email if _org else '') or getattr(settings, 'SUPPORT_EMAIL', ''),
+        'phone': (_org.phone if _org else '') or '',
+        'website': (_org.website if _org else '') or '',
+        'vat': (_org.vat_number if _org else '') or '',
+        'rea': (_org.rea if _org else '') or '',
+        'logo_url': org_logo_url,
+    }
+
     ctx = {
         'contract': contract,
         'sponsor': sponsor,
@@ -1248,6 +1272,7 @@ def generate_quote_pdf_html(contract):
         'header_url': header_url,
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'quote_valid_until': quote_valid_until,
+        'org': org,
     }
     html = render_to_string('quote_pdf.html', ctx)
     pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()
