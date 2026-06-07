@@ -69,4 +69,8 @@ class WishlistItem(models.Model):
         ordering = ['-added_at']
     
     def __str__(self):
-        return f"{self.service.name} in {self.wishlist.user.email}"
+        try:
+            nome = self.service.translated('name', 'it')
+        except Exception:
+            nome = str(self.service)
+        return f"{nome} · {self.wishlist.user.email}"
