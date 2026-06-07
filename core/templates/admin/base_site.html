@@ -131,6 +131,11 @@
     border: 1px solid var(--vt-input-border) !important;
     border-radius: 8px;
   }
+  /* Opzioni del menu a tendina: sempre leggibili (scuro su bianco) */
+  select option, select optgroup {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+  }
   input:focus, textarea:focus, select:focus {
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent) !important;
