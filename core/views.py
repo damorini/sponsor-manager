@@ -38,7 +38,8 @@ def cruscotto_home(request):
     from sponsors.models import PortalMessage, MessageSender
     from django.urls import reverse as _rev
     _unread = (PortalMessage.objects
-               .filter(sender=MessageSender.SPONSOR, read_at__isnull=True, is_active=True)
+               .filter(sender=MessageSender.SPONSOR, read_at__isnull=True,
+                       is_active=True, archived_at__isnull=True)
                .select_related('sponsor').order_by('-created_at'))
     _mittenti = []
     for _m in _unread[:10]:

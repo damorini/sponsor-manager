@@ -53,7 +53,8 @@ def _notifica_risposta_operatore(request, reply):
 def _build_threads(sponsor):
     from sponsors.models import PortalMessage
     roots = (PortalMessage.objects
-             .filter(sponsor=sponsor, is_active=True, parent__isnull=True)
+             .filter(sponsor=sponsor, is_active=True, parent__isnull=True,
+                     archived_at__isnull=True)
              .prefetch_related('replies', 'replies__read_by')
              .order_by('-created_at'))
     threads = []
@@ -73,7 +74,7 @@ def messages_list(request):
     from sponsors.models import PortalMessage, MessageSender
     threads = _build_threads(request.sponsor)
     non_letti = PortalMessage.objects.filter(
-        sponsor=request.sponsor, is_active=True,
+        sponsor=request.sponsor, is_active=True, archived_at__isnull=True,
         sender=MessageSender.OPERATOR, read_at__isnull=True).count()
     return render(request, 'portal/messages/list.html', {
         'threads': threads,

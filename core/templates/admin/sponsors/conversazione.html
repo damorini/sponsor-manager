@@ -15,6 +15,9 @@
 
   {% for t in threads %}
   <div style="border:1px solid #e3ddd2;border-radius:12px;padding:12px;margin-bottom:16px;background:#fbfaf7;">
+    <div style="font-size:12px;color:#6b5b45;margin-bottom:6px;">
+      📅 {% if t.root.event %}{{ t.root.event.get_name }}{% else %}<em>(evento non indicato)</em>{% endif %}
+    </div>
     {% for m in t.messages %}
       {% if m.sender == 'operator' %}
       <div style="display:flex;justify-content:flex-start;margin:5px 0;">
@@ -50,12 +53,20 @@
 
   <div style="border:2px dashed #cbbfa8;border-radius:12px;padding:14px;margin-top:8px;background:#fff;">
     <h3 style="margin-top:0;">✏️ Nuovo messaggio (nuovo thread)</h3>
-    <form method="post" style="display:flex;gap:8px;align-items:flex-end;">
+    <form method="post" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
       {% csrf_token %}
+      <label style="display:flex;flex-direction:column;font-size:12px;color:#555;">
+        Evento*
+        <select name="event" required style="border:1px solid #cbbfa8;border-radius:8px;padding:8px;min-width:220px;">
+          <option value="">— scegli l'evento —</option>
+          {% for ev in eventi %}<option value="{{ ev.id }}">{{ ev.get_name }}</option>{% endfor %}
+        </select>
+      </label>
       <textarea name="body" rows="2" required placeholder="Scrivi un nuovo messaggio al cliente…"
-                style="flex:1;border:1px solid #cbbfa8;border-radius:8px;padding:8px;"></textarea>
+                style="flex:1;min-width:240px;border:1px solid #cbbfa8;border-radius:8px;padding:8px;"></textarea>
       <button type="submit" class="button" style="background:#1f4e79;color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;">Invia</button>
     </form>
+    {% if not eventi %}<p style="color:#c0392b;font-size:12px;">Questo sponsor non ha eventi collegati: crea prima un contratto.</p>{% endif %}
   </div>
 
 </div>

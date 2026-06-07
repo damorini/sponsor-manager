@@ -485,9 +485,14 @@ class SponsorAdmin(admin.ModelAdmin):
 
         sponsor = get_object_or_404(Sponsor, pk=object_id)
 
+        from events.models import Event
+        eventi = list(Event.objects.filter(contracts__sponsor=sponsor)
+                      .distinct().order_by('-start_date'))
+
         if request.method == 'POST':
             body = (request.POST.get('body') or '').strip()
             reply_to = (request.POST.get('reply_to') or '').strip()
+            event_id = (request.POST.get('event') or '').strip()
             if not body:
                 self.message_user(request, "Scrivi un testo prima di inviare.",
                                   level=messages.WARNING)
@@ -496,8 +501,13 @@ class SponsorAdmin(admin.ModelAdmin):
             if reply_to:
                 p = PortalMessage.objects.filter(pk=reply_to, sponsor=sponsor).first()
                 parent = (p.parent or p) if p else None
+            if parent is None and not event_id:
+                self.message_user(request, "Scegli l'evento per il nuovo messaggio.",
+                                  level=messages.WARNING)
+                return redirect(request.path)
             PortalMessage.objects.create(
                 sponsor=sponsor, sender=MessageSender.OPERATOR, parent=parent,
+                event_id=(event_id or None) if parent is None else None,
                 body=body, is_active=True, created_by=request.user)
             _notifica_cliente_nuovo_messaggio(request, sponsor)
             self.message_user(request, "Messaggio inviato al cliente.",
@@ -505,12 +515,15 @@ class SponsorAdmin(admin.ModelAdmin):
             return redirect(request.path)
 
         # GET: l'operatore sta leggendo -> segna lette le risposte del cliente
+        # (solo conversazioni attive, non archiviate)
         PortalMessage.objects.filter(
             sponsor=sponsor, sender=MessageSender.SPONSOR,
-            read_at__isnull=True, is_active=True).update(read_at=timezone.now())
+            read_at__isnull=True, is_active=True, archived_at__isnull=True
+        ).update(read_at=timezone.now())
 
-        msgs = list(sponsor.portal_messages.filter(is_active=True)
-                    .select_related('parent', 'read_by').order_by('created_at'))
+        msgs = list(sponsor.portal_messages
+                    .filter(is_active=True, archived_at__isnull=True)
+                    .select_related('parent', 'read_by', 'event').order_by('created_at'))
         figli = {}
         for m in msgs:
             if m.parent_id:
@@ -527,6 +540,7 @@ class SponsorAdmin(admin.ModelAdmin):
             **self.admin_site.each_context(request),
             'title': f'Conversazione · {sponsor}',
             'sponsor': sponsor,
+            'eventi': eventi,
             'threads': threads,
             'opts': self.model._meta,
         }
@@ -809,19 +823,28 @@ class PortalMessageAdmin(admin.ModelAdmin):
 
     def changelist_view(self, request, extra_context=None):
         """Invece del classico elenco riga-per-riga, mostra una INBOX di
-        conversazioni (una per sponsor): clic -> chat del singolo sponsor."""
+        conversazioni ATTIVE (una per sponsor), con filtro evento e ricerca.
+        Clic su una riga -> chat del singolo sponsor."""
         from django.shortcuts import render
         from sponsors.models import Sponsor
+        from events.models import Event
 
         q = (request.GET.get('q') or '').strip()
-        sponsors = Sponsor.objects.filter(portal_messages__is_active=True).distinct()
+        event_id = (request.GET.get('event') or '').strip()
+
+        base = PortalMessage.objects.filter(is_active=True, archived_at__isnull=True)
+        if event_id:
+            base = base.filter(event_id=event_id)
+
+        sponsor_ids = base.values_list('sponsor_id', flat=True).distinct()
+        sponsors = Sponsor.objects.filter(pk__in=list(sponsor_ids))
         if q:
             sponsors = sponsors.filter(
                 Q(legal_name__icontains=q) | Q(display_name__icontains=q))
 
         conversazioni = []
         for sp in sponsors:
-            msgs = sp.portal_messages.filter(is_active=True)
+            msgs = base.filter(sponsor=sp)
             last = msgs.order_by('-created_at').first()
             unread = msgs.filter(
                 sender=MessageSender.SPONSOR, read_at__isnull=True).count()
@@ -836,14 +859,70 @@ class PortalMessageAdmin(admin.ModelAdmin):
             -(c['last'].created_at.timestamp() if c['last'] else 0),
         ))
 
+        # eventi che hanno conversazioni attive (per il filtro)
+        eventi = Event.objects.filter(
+            portal_messages__is_active=True,
+            portal_messages__archived_at__isnull=True,
+        ).distinct().order_by('-start_date')
+
         context = {
             **self.admin_site.each_context(request),
             'title': 'Messaggi portale',
             'conversazioni': conversazioni,
             'opts': self.model._meta,
             'q': q,
+            'eventi': eventi,
+            'event_id': event_id,
+            'archivio_url': reverse('admin:sponsors_messaggi_archivio'),
         }
         return render(request, 'admin/sponsors/conversazioni_inbox.html', context)
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('archivio/', self.admin_site.admin_view(self.archivio_view),
+                 name='sponsors_messaggi_archivio'),
+        ]
+        return custom + urls
+
+    def archivio_view(self, request):
+        """Archivio messaggi: thread archiviati raggruppati per azienda o evento."""
+        from django.shortcuts import render
+        group = request.GET.get('group', 'azienda')
+        if group not in ('azienda', 'evento'):
+            group = 'azienda'
+
+        msgs = list(PortalMessage.objects
+                    .filter(is_active=True, archived_at__isnull=False)
+                    .select_related('sponsor', 'event', 'parent', 'read_by')
+                    .order_by('created_at'))
+        figli = {}
+        for m in msgs:
+            if m.parent_id:
+                figli.setdefault(m.parent_id, []).append(m)
+        gruppi = {}
+        for r in [m for m in msgs if m.parent_id is None]:
+            thread = {
+                'root': r,
+                'messages': [r] + sorted(figli.get(r.id, []), key=lambda x: x.created_at),
+            }
+            if group == 'evento':
+                key = r.event.get_name() if r.event_id else '(senza evento)'
+            else:
+                key = r.sponsor.legal_name
+            gruppi.setdefault(key, []).append(thread)
+
+        gruppi_list = sorted(gruppi.items(), key=lambda kv: kv[0].lower())
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Archivio messaggi',
+            'gruppi': gruppi_list,
+            'group': group,
+            'opts': self.model._meta,
+            'inbox_url': reverse('admin:sponsors_portalmessage_changelist'),
+        }
+        return render(request, 'admin/sponsors/messaggi_archivio.html', context)
 
     @admin.display(description='Da')
     def mittente(self, obj):

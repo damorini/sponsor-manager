@@ -409,6 +409,9 @@ class PortalMessage(TimeStampedModel):
         related_name='read_portal_messages',
         verbose_name="Letto da",
     )
+    archived_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Archiviato il",
+        help_text="Messaggi archiviati: spostati nell'archivio, fuori dall'inbox attiva.")
     created_by = models.ForeignKey(
         'users.User',
         on_delete=models.SET_NULL,
@@ -438,9 +441,26 @@ class PortalMessage(TimeStampedModel):
         return self.sender == MessageSender.OPERATOR
 
     @property
+    def is_archived(self):
+        return self.archived_at is not None
+
+    @property
     def thread_root(self):
         """Il messaggio radice del thread (se stesso se non è una risposta)."""
         return self.parent or self
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        super().clean()
+        # Il messaggio radice (nuovo thread) deve indicare l'evento.
+        if self.parent_id is None and not self.event_id:
+            raise ValidationError({'event': "Indica l'evento del messaggio."})
+
+    def save(self, *args, **kwargs):
+        # Le risposte ereditano l'evento del thread.
+        if self.parent_id and not self.event_id:
+            self.event_id = self.parent.event_id
+        super().save(*args, **kwargs)
 
     def mark_read(self, contact=None):
         """Marca il messaggio come letto dal destinatario (idempotente)."""

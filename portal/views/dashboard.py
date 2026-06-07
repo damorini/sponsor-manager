@@ -147,7 +147,7 @@ def dashboard_view(request):
     messaggi_non_letti = list(
         PortalMessage.objects.filter(
             sponsor=sponsor, is_active=True, read_at__isnull=True,
-            sender=MessageSender.OPERATOR)
+            sender=MessageSender.OPERATOR, archived_at__isnull=True)
         .order_by('-created_at'))
 
     return render(request, 'portal/dashboard/dashboard.html', {

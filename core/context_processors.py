@@ -13,6 +13,7 @@ def admin_badges(request):
             from sponsors.models import PortalMessage, MessageSender
             count = PortalMessage.objects.filter(
                 sender=MessageSender.SPONSOR, read_at__isnull=True, is_active=True,
+                archived_at__isnull=True,
             ).count()
     except Exception:
         count = 0

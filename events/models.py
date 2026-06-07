@@ -240,6 +240,16 @@ class Event(TimeStampedModel):
 
         if self.status == EventStatus.ARCHIVED and not era_archiviato:
             self.chiudi_scadenze_aperte()
+            self.archivia_messaggi_portale()
+
+    def archivia_messaggi_portale(self):
+        """Evento archiviato: sposta i messaggi del portale di questo evento
+        nell'archivio messaggi (non li cancella)."""
+        from sponsors.models import PortalMessage
+        from django.utils import timezone
+        return PortalMessage.objects.filter(
+            event=self, archived_at__isnull=True,
+        ).update(archived_at=timezone.now())
 
     def chiudi_scadenze_aperte(self):
         """Evento archiviato: annulla (WAIVED) le scadenze ancora aperte dei

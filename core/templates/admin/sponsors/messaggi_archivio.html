@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div style="max-width:900px;">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <h1 style="margin-bottom:4px;">📦 Archivio messaggi</h1>
+    <a href="{{ inbox_url }}" style="align-self:center;">← Torna ai messaggi attivi</a>
+  </div>
+  <p style="color:#8a7a66;margin-bottom:14px;">Conversazioni archiviate (sola consultazione). Raggruppa per:</p>
+
+  <div style="margin-bottom:18px;">
+    <a href="?group=azienda" class="button" style="{% if group == 'azienda' %}background:#1f4e79;color:#fff;{% endif %}">Azienda</a>
+    <a href="?group=evento" class="button" style="{% if group == 'evento' %}background:#1f4e79;color:#fff;{% endif %}">Evento</a>
+  </div>
+
+  {% if gruppi %}
+    {% for nome, threads in gruppi %}
+    <h2 style="border-bottom:2px solid #d8cfc0;padding-bottom:4px;margin-top:22px;">
+      {% if group == 'evento' %}📅{% else %}🏢{% endif %} {{ nome }}
+      <span style="font-size:13px;color:#999;font-weight:400;">· {{ threads|length }} conversazione/i</span>
+    </h2>
+    {% for t in threads %}
+    <div style="border:1px solid #e3ddd2;border-radius:12px;padding:12px;margin:10px 0;background:#fbfaf7;">
+      <div style="font-size:12px;color:#6b5b45;margin-bottom:6px;">
+        {% if group == 'evento' %}🏢 {{ t.root.sponsor.legal_name }}{% else %}📅 {% if t.root.event %}{{ t.root.event.get_name }}{% else %}(senza evento){% endif %}{% endif %}
+      </div>
+      {% for m in t.messages %}
+        {% if m.sender == 'operator' %}
+        <div style="display:flex;justify-content:flex-start;margin:4px 0;">
+          <div style="max-width:75%;background:#eef2f7;border-radius:12px;padding:7px 11px;">
+            <div style="font-size:11px;color:#555;font-weight:700;">Operatore · {{ m.created_at|date:"d/m/Y H:i" }}</div>
+            <div style="white-space:pre-line;color:#111;">{{ m.body }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div style="display:flex;justify-content:flex-end;margin:4px 0;">
+          <div style="max-width:75%;background:#dff3df;border-radius:12px;padding:7px 11px;">
+            <div style="font-size:11px;color:#555;font-weight:700;text-align:right;">Cliente · {{ m.created_at|date:"d/m/Y H:i" }}</div>
+            <div style="white-space:pre-line;color:#111;">{{ m.body }}</div>
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% endfor %}
+  {% else %}
+  <div style="background:#fff;border:1px solid #e3ddd2;border-radius:12px;padding:30px;text-align:center;color:#888;">
+    Nessun messaggio archiviato.
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

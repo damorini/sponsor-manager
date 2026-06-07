@@ -4,14 +4,21 @@
 {% block content %}
 <div style="max-width:860px;">
 
-  <h1 style="margin-bottom:4px;">✉ Messaggi portale</h1>
-  <p style="color:#8a7a66;margin-bottom:16px;">Le conversazioni con i clienti. Clicca per aprire la chat, rispondere e (aprendola) segnare letti i messaggi.</p>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+    <h1 style="margin-bottom:4px;">✉ Messaggi portale</h1>
+    <a href="{{ archivio_url }}" class="button" style="background:#6b5b45;color:#fff;padding:8px 14px;border-radius:8px;">📦 Archivio messaggi</a>
+  </div>
+  <p style="color:#8a7a66;margin-bottom:16px;">Le conversazioni attive con i clienti. Clicca per aprire la chat, rispondere e (aprendola) segnare letti i messaggi.</p>
 
-  <form method="get" style="margin-bottom:16px;display:flex;gap:8px;">
+  <form method="get" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
     <input type="text" name="q" value="{{ q }}" placeholder="Cerca sponsor…"
-           style="flex:1;max-width:340px;border:1px solid #cbbfa8;border-radius:8px;padding:8px;">
-    <button type="submit" class="button">Cerca</button>
-    {% if q %}<a href="{% url 'admin:sponsors_portalmessage_changelist' %}" style="align-self:center;">Reset</a>{% endif %}
+           style="max-width:300px;border:1px solid #cbbfa8;border-radius:8px;padding:8px;">
+    <select name="event" style="border:1px solid #cbbfa8;border-radius:8px;padding:8px;">
+      <option value="">Tutti gli eventi</option>
+      {% for ev in eventi %}<option value="{{ ev.id }}" {% if ev.id|stringformat:'s' == event_id %}selected{% endif %}>{{ ev.get_name }}</option>{% endfor %}
+    </select>
+    <button type="submit" class="button">Filtra</button>
+    {% if q or event_id %}<a href="{% url 'admin:sponsors_portalmessage_changelist' %}" style="align-self:center;">Reset</a>{% endif %}
   </form>
 
   {% if conversazioni %}

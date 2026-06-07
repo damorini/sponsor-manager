@@ -81,7 +81,7 @@ def cart_count(request):
                 from sponsors.models import PortalMessage, MessageSender
                 unread_messages = PortalMessage.objects.filter(
                     sponsor=sponsor, is_active=True, read_at__isnull=True,
-                    sender=MessageSender.OPERATOR,
+                    sender=MessageSender.OPERATOR, archived_at__isnull=True,
                 ).count()
     except Exception:
         unread_messages = 0
