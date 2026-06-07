@@ -85,7 +85,7 @@
     <table>
       <caption><a class="section" href="#">🛒 Portale</a></caption>
       {% for app in app_list %}{% for model in app.models %}
-        {% if model.object_name == 'Wishlist' %}
+        {% if model.object_name == 'PortalMessage' or model.object_name == 'Wishlist' %}
           <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
             <th scope="row">
               {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
