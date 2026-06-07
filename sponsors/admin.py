@@ -184,7 +184,7 @@ class SponsorAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary',
                        'logo_preview', 'conversazione_display')
     ordering = (Lower('legal_name'),)
-    inlines = [ContactInline, PortalMessageInline]
+    inlines = [ContactInline]
     actions = ['action_generate_client_summary', 'action_compose_email']
 
     def save_formset(self, request, form, formset, change):
@@ -226,6 +226,11 @@ class SponsorAdmin(admin.ModelAdmin):
                 'messaggio/<uuid:message_id>/letto/',
                 self.admin_site.admin_view(self.mark_message_read_view),
                 name='sponsors_messaggio_letto',
+            ),
+            path(
+                '<path:object_id>/conversazione/',
+                self.admin_site.admin_view(self.conversazione_view),
+                name='sponsors_sponsor_conversazione',
             ),
             path(
                 '<path:object_id>/genera-scheda/',
@@ -437,9 +442,9 @@ class SponsorAdmin(admin.ModelAdmin):
         }),
         ('Conversazione col portale', {
             'fields': ('conversazione_display',),
-            'description': "Lo scambio di messaggi col cliente (botta e risposta). "
-                           "Per rispondere usa la sezione qui sotto «Conversazione "
-                           "col portale» scegliendo «In risposta a».",
+            'description': "Lo scambio di messaggi col cliente. Per scrivere o "
+                           "rispondere usa il pulsante «Apri / continua la "
+                           "conversazione».",
         }),
         ('Riepilogo contratti', {
             'fields': ('contracts_summary',),
@@ -457,10 +462,15 @@ class SponsorAdmin(admin.ModelAdmin):
         from django.utils import timezone
         if not obj or not obj.pk:
             return "—"
+        conv_url = reverse('admin:sponsors_sponsor_conversazione', args=[obj.pk])
+        btn = (f'<a href="{conv_url}" class="button" '
+               f'style="display:inline-block;margin-bottom:10px;background:#2e7d32;'
+               f'color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;">'
+               f'💬 Apri / continua la conversazione</a>')
         msgs = list(obj.portal_messages.filter(is_active=True)
                     .select_related('parent', 'read_by').order_by('created_at'))
         if not msgs:
-            return mark_safe('<em style="color:#888;">Nessun messaggio.</em>')
+            return mark_safe(btn + '<div style="color:#888;">Nessun messaggio.</div>')
         figli = {}
         for m in msgs:
             if m.parent_id:
@@ -493,7 +503,7 @@ class SponsorAdmin(admin.ModelAdmin):
                 f'</div></div>'
             )
 
-        out = ['<div style="max-width:760px;border:1px solid #e3ddd2;border-radius:10px;padding:10px;background:#fbfaf7;">']
+        out = [btn, '<div style="max-width:760px;border:1px solid #e3ddd2;border-radius:10px;padding:10px;background:#fbfaf7;">']
         for root in roots:
             out.append(bolla(root))
             for ch in sorted(figli.get(root.id, []), key=lambda x: x.created_at):
@@ -501,6 +511,61 @@ class SponsorAdmin(admin.ModelAdmin):
             out.append('<hr style="border:none;border-top:1px dashed #d8cfc0;margin:8px 0;">')
         out.append('</div>')
         return mark_safe(''.join(out))
+
+    def conversazione_view(self, request, object_id):
+        """Pagina chat: leggi il thread e rispondi (o apri un nuovo messaggio).
+        Aprendo la pagina, le risposte del cliente vengono segnate come lette."""
+        from django.shortcuts import get_object_or_404, redirect, render
+        from django.utils import timezone
+
+        sponsor = get_object_or_404(Sponsor, pk=object_id)
+
+        if request.method == 'POST':
+            body = (request.POST.get('body') or '').strip()
+            reply_to = (request.POST.get('reply_to') or '').strip()
+            if not body:
+                self.message_user(request, "Scrivi un testo prima di inviare.",
+                                  level=messages.WARNING)
+                return redirect(request.path)
+            parent = None
+            if reply_to:
+                p = PortalMessage.objects.filter(pk=reply_to, sponsor=sponsor).first()
+                parent = (p.parent or p) if p else None
+            PortalMessage.objects.create(
+                sponsor=sponsor, sender=MessageSender.OPERATOR, parent=parent,
+                body=body, is_active=True, created_by=request.user)
+            _notifica_cliente_nuovo_messaggio(request, sponsor)
+            self.message_user(request, "Messaggio inviato al cliente.",
+                              level=messages.SUCCESS)
+            return redirect(request.path)
+
+        # GET: l'operatore sta leggendo -> segna lette le risposte del cliente
+        PortalMessage.objects.filter(
+            sponsor=sponsor, sender=MessageSender.SPONSOR,
+            read_at__isnull=True, is_active=True).update(read_at=timezone.now())
+
+        msgs = list(sponsor.portal_messages.filter(is_active=True)
+                    .select_related('parent', 'read_by').order_by('created_at'))
+        figli = {}
+        for m in msgs:
+            if m.parent_id:
+                figli.setdefault(m.parent_id, []).append(m)
+        threads = []
+        for root in [m for m in msgs if m.parent_id is None]:
+            threads.append({
+                'root': root,
+                'messages': [root] + sorted(figli.get(root.id, []),
+                                            key=lambda x: x.created_at),
+            })
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': f'Conversazione · {sponsor}',
+            'sponsor': sponsor,
+            'threads': threads,
+            'opts': self.model._meta,
+        }
+        return render(request, 'admin/sponsors/conversazione.html', context)
 
     def mark_message_read_view(self, request, message_id):
         from django.shortcuts import get_object_or_404, redirect
@@ -797,8 +862,8 @@ class PortalMessageAdmin(admin.ModelAdmin):
 
     @admin.display(description='Azioni')
     def azioni(self, obj):
-        url = reverse('admin:sponsors_sponsor_change', args=[obj.sponsor_id])
-        return format_html('<a href="{}">apri / rispondi →</a>', url)
+        url = reverse('admin:sponsors_sponsor_conversazione', args=[obj.sponsor_id])
+        return format_html('<a href="{}">💬 apri / rispondi →</a>', url)
 
     @admin.action(description='Segna come letto')
     def action_segna_letto(self, request, queryset):
