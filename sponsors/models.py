@@ -299,6 +299,17 @@ class Contact(SoftDeleteModel):
         max_length=20, blank=True, verbose_name="Numero documento",
     )
 
+    # --- Privacy / consensi (GDPR) ---
+    privacy_accepted_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Informativa privacy accettata il")
+    privacy_policy_version = models.CharField(
+        max_length=20, blank=True,
+        verbose_name="Versione informativa accettata")
+    marketing_consent = models.BooleanField(
+        default=False, verbose_name="Consenso comunicazioni marketing")
+    marketing_consent_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Consenso marketing il")
+
     class Meta:
         verbose_name = "Anagrafica di riferimento"
         verbose_name_plural = "Anagrafica di riferimento"
@@ -311,6 +322,11 @@ class Contact(SoftDeleteModel):
 
     def __str__(self):
         return f"{self.full_name} ({self.sponsor.legal_name})"
+
+    def privacy_accettata(self, versione_corrente):
+        """True se ha accettato la versione corrente dell'informativa."""
+        return bool(self.privacy_accepted_at) and \
+            (self.privacy_policy_version or '') == (versione_corrente or '')
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

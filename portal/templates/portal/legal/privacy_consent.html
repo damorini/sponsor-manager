@@ -1,0 +1,36 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Informativa privacy" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <h1 class="text-2xl font-bold text-gray-900 mb-2">{% trans "Informativa privacy" %}</h1>
+  <p class="text-gray-600 mb-5">{% trans "Per usare il portale, prendi visione dell'informativa sul trattamento dei dati." %}</p>
+
+  <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-5 max-h-72 overflow-y-auto text-sm text-gray-700"
+       style="white-space:pre-line;">{{ testo }}</div>
+
+  <form method="post" action="{% url 'portal:privacy_consent' %}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 space-y-4">
+    {% csrf_token %}
+
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" name="privacy" required class="mt-1 h-4 w-4">
+      <span class="text-sm text-gray-800">
+        {% trans "Dichiaro di aver letto l'" %}<a href="{% url 'portal:privacy_policy' %}" target="_blank" class="text-brand-600 underline">{% trans "informativa privacy" %}</a>{% trans " (obbligatorio)." %}
+      </span>
+    </label>
+
+    <label class="flex items-start gap-3 cursor-pointer">
+      <input type="checkbox" name="marketing" {% if marketing_attuale %}checked{% endif %} class="mt-1 h-4 w-4">
+      <span class="text-sm text-gray-800">
+        {% trans "Acconsento a ricevere comunicazioni marketing e promozionali (facoltativo, revocabile)." %}
+      </span>
+    </label>
+
+    <button type="submit" class="btn-primary text-sm px-5">{% trans "Conferma e prosegui" %}</button>
+  </form>
+
+</div>
+{% endblock %}

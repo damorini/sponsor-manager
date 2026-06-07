@@ -134,6 +134,20 @@ class OrganizerSettings(models.Model):
                   "a un messaggio nel portale. Vuoto = usa l'email della segreteria.",
     )
 
+    # --- Informativa privacy mostrata nel portale ---
+    privacy_policy = models.TextField(
+        blank=True,
+        verbose_name="Informativa privacy (testo)",
+        help_text="Testo dell'informativa mostrato nel portale. Vuoto = testo "
+                  "segnaposto. Consigliato farlo validare da un consulente.",
+    )
+    privacy_policy_version = models.CharField(
+        max_length=20, default='1.0',
+        verbose_name="Versione informativa",
+        help_text="Cambia la versione quando aggiorni l'informativa: ai clienti "
+                  "verrà richiesta di nuovo l'accettazione al prossimo accesso.",
+    )
+
     # Piano pagamento (acconto/saldo)
     payment_deposit_days_after_signing = models.IntegerField(
         default=0,

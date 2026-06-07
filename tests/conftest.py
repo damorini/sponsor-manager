@@ -49,6 +49,8 @@ def contact(db, user_sponsor, sponsor):
     Ha il ruolo OPERATIONAL: senza, il gate del portale
     (portal/views/dashboard.py) reindirizza a 'I miei dati'.
     """
+    from django.utils import timezone
+    from core.models import OrganizerSettings
     contact = Contact.objects.create(
         portal_user=user_sponsor,
         sponsor=sponsor,
@@ -56,6 +58,10 @@ def contact(db, user_sponsor, sponsor):
         email='contact@test.it',
         phone='+39123456789',
         roles=[ContactRole.OPERATIONAL],
+        # presa visione privacy gia' fatta (cliente onboardato): evita il
+        # redirect al consenso nei test che esercitano le altre pagine.
+        privacy_accepted_at=timezone.now(),
+        privacy_policy_version=OrganizerSettings.load().privacy_policy_version or '1.0',
     )
     return contact
 

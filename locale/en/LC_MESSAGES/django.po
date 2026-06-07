@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sponsor_manager\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-07 11:32+0200\n"
+"POT-Creation-Date: 2026-06-07 11:53+0200\n"
 "PO-Revision-Date: 2026-06-02 12:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -943,6 +943,41 @@ msgstr "completed"
 #: portal/templates/portal/events/list.html:32
 msgid "Apri evento →"
 msgstr "Open event →"
+
+#: portal/templates/portal/legal/privacy_consent.html:4
+#: portal/templates/portal/legal/privacy_consent.html:9
+#: portal/templates/portal/legal/privacy_policy.html:4
+#: portal/templates/portal/legal/privacy_policy.html:8
+msgid "Informativa privacy"
+msgstr "Privacy policy"
+
+#: portal/templates/portal/legal/privacy_consent.html:10
+msgid "Per usare il portale, prendi visione dell'informativa sul trattamento dei dati."
+msgstr "To use the portal, please review the data processing notice."
+
+#: portal/templates/portal/legal/privacy_consent.html:21
+msgid "Dichiaro di aver letto l'"
+msgstr "I declare that I have read the "
+
+#: portal/templates/portal/legal/privacy_consent.html:21
+msgid "informativa privacy"
+msgstr "privacy policy"
+
+#: portal/templates/portal/legal/privacy_consent.html:21
+msgid " (obbligatorio)."
+msgstr " (required)."
+
+#: portal/templates/portal/legal/privacy_consent.html:28
+msgid "Acconsento a ricevere comunicazioni marketing e promozionali (facoltativo, revocabile)."
+msgstr "I consent to receiving marketing and promotional communications (optional, revocable)."
+
+#: portal/templates/portal/legal/privacy_consent.html:32
+msgid "Conferma e prosegui"
+msgstr "Confirm and continue"
+
+#: portal/templates/portal/legal/privacy_policy.html:9
+msgid "Versione"
+msgstr "Version"
 
 #: portal/templates/portal/messages/list.html:13
 #, python-format

@@ -24,6 +24,8 @@ from shared.models import Document
 @pytest.fixture
 def quote_setup(db, user_sponsor, sponsor):
     """Sponsor con un contatto operativo+firmatario e un contratto in stato SENT."""
+    from django.utils import timezone
+    from core.models import OrganizerSettings
     Contact.objects.create(
         portal_user=user_sponsor,
         sponsor=sponsor,
@@ -31,6 +33,8 @@ def quote_setup(db, user_sponsor, sponsor):
         email='mario@test.it',
         roles=[ContactRole.OPERATIONAL],
         is_signer=True,
+        privacy_accepted_at=timezone.now(),
+        privacy_policy_version=OrganizerSettings.load().privacy_policy_version or '1.0',
     )
     event = Event.objects.create(
         name={'it': 'Quote Event', 'en': 'Quote Event'},

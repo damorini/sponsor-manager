@@ -34,6 +34,12 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
                            "risponde a un messaggio nel portale. Se vuoto, usa "
                            "l'email della segreteria.",
         }),
+        ("Privacy (informativa portale)", {
+            "fields": ("privacy_policy_version", "privacy_policy"),
+            "description": "Testo dell'informativa mostrata nel portale e versione. "
+                           "Cambiando la versione, ai clienti verrà richiesta di nuovo "
+                           "la presa visione al prossimo accesso.",
+        }),
         ("Scadenze pagamento (calcolo automatico)", {
             "fields": ("payment_deposit_days_after_signing",
                        "payment_balance_days_before_event"),

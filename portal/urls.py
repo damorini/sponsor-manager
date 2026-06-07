@@ -7,6 +7,7 @@ from django.urls import path
 
 from portal.views import auth, dashboard, contract, catalog, cart, materials, wishlist, profile
 from portal.views import messages as portal_messages
+from portal.views import privacy as portal_privacy
 from contracts.views import checkout
 
 app_name = 'portal'
@@ -37,6 +38,8 @@ urlpatterns = [
     path('eventi/<uuid:event_id>/scadenze/', materials.event_materials_view,
          name='event_materials'),
     path('profilo/', profile.profile_view, name='profile'),
+    path('privacy/', portal_privacy.privacy_policy_view, name='privacy_policy'),
+    path('privacy/consenso/', portal_privacy.privacy_consent_view, name='privacy_consent'),
     path('impersona/<uuid:sponsor_id>/', auth.impersonate_start, name='impersonate_start'),
     path('smetti-impersona/', auth.impersonate_stop, name='impersonate_stop'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),

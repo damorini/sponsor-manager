@@ -508,7 +508,9 @@ class ContactAdmin(admin.ModelAdmin):
         return queryset, may_dup
     list_select_related = ('sponsor',)
     autocomplete_fields = ['sponsor', 'portal_user']
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at',
+                       'privacy_accepted_at', 'privacy_policy_version',
+                       'marketing_consent_at')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
         # Espressione autosufficiente: ordina per "cognome" ricavato da full_name,
@@ -539,8 +541,11 @@ class ContactAdmin(admin.ModelAdmin):
             'fields': ('has_portal_access', 'portal_user'),
             'description': 'Se has_portal_access è True, deve essere collegato un User.',
         }),
-        ('Consenso', {
-            'fields': ('marketing_consent',),
+        ('Privacy e consensi', {
+            'fields': ('privacy_accepted_at', 'privacy_policy_version',
+                       'marketing_consent', 'marketing_consent_at'),
+            'description': "Presa visione informativa e consenso marketing "
+                           "(registrati automaticamente dal portale).",
         }),
         ('Note', {
             'fields': ('notes',),

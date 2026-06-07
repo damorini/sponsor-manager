@@ -1,0 +1,13 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Informativa privacy" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <h1 class="text-2xl font-bold text-gray-900 mb-1">{% trans "Informativa privacy" %}</h1>
+  <p class="text-xs text-gray-400 mb-5">{% trans "Versione" %} {{ versione }}</p>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 text-sm text-gray-700"
+       style="white-space:pre-line;">{{ testo }}</div>
+</div>
+{% endblock %}

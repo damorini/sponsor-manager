@@ -147,10 +147,13 @@
            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
       <span style="display:none" class="block text-center text-brand-700 text-xs font-semibold">{{ organizer_name|default:"Sponsor Manager" }}</span>
     </div>
-    <form action="{% url 'portal:logout' %}" method="post">
-      {% csrf_token %}
-      <button type="submit" class="flex items-center gap-2 text-sm text-blue-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
-    </form>
+    <div class="flex items-center justify-between">
+      <form action="{% url 'portal:logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit" class="flex items-center gap-2 text-sm text-blue-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
+      </form>
+      <a href="{% url 'portal:privacy_policy' %}" class="text-xs text-white/50 hover:text-white">{% trans "Privacy" %}</a>
+    </div>
   </div>
 </aside>
 {% endwith %}

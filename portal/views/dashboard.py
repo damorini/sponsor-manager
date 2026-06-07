@@ -45,9 +45,21 @@ def sponsor_required(view_func):
         request.contact = contact
         request.sponsor = contact.sponsor
 
-        # Cancello: serve almeno un contatto OPERATIVO. Senza, manda a "I miei dati".
-        _allow = {'profile', 'logout', 'impersonate_stop'}
         _name = getattr(getattr(request, 'resolver_match', None), 'url_name', None)
+        _impersonando = bool(request.session.get('impersonator_id'))
+
+        # PRIVACY: al primo accesso (o se cambia la versione) serve la presa
+        # visione dell'informativa. Non vale durante l'impersonazione dell'operatore.
+        _allow_privacy = {'privacy_consent', 'privacy_policy', 'logout', 'impersonate_stop'}
+        if _name not in _allow_privacy and not _impersonando:
+            from core.models import OrganizerSettings
+            versione = OrganizerSettings.load().privacy_policy_version or '1.0'
+            if not contact.privacy_accettata(versione):
+                return redirect('portal:privacy_consent')
+
+        # Serve almeno un contatto OPERATIVO. Senza, manda a "I miei dati".
+        _allow = {'profile', 'logout', 'impersonate_stop',
+                  'privacy_consent', 'privacy_policy'}
         if _name not in _allow:
             _has_op = contact.sponsor.contacts.filter(
                 roles__contains=['operational']).exists()
