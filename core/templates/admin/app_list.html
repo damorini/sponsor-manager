@@ -83,13 +83,12 @@
   {# === 5. PORTALE === #}
   <div class="module sm-group">
     <table>
-      <caption><a class="section" href="#">🛒 Portale</a></caption>
+      <caption><a class="section" href="#">🛒 Portale{% if portal_unread_count %} <span class="sm-badge">{{ portal_unread_count }}</span>{% endif %}</a></caption>
       {% for app in app_list %}{% for model in app.models %}
         {% if model.object_name == 'PortalMessage' or model.object_name == 'Wishlist' %}
           <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
             <th scope="row">
               {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
-              {% if model.object_name == 'PortalMessage' and portal_unread_count %}<span style="display:inline-block;background:#e02424;color:#fff;font-size:11px;font-weight:700;border-radius:10px;padding:1px 7px;margin-left:6px;">{{ portal_unread_count }}</span>{% endif %}
             </th>
             {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
             {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
@@ -120,3 +119,36 @@
 {% else %}
   <p>{% translate 'You don\u2019t have permission to view or edit anything.' %}</p>
 {% endif %}
+
+<style>
+  .sm-group caption .section { cursor: pointer; user-select: none; }
+  .sm-group .sm-caret { display:inline-block; width:1em; transition: transform .15s ease; }
+  .sm-group.sm-collapsed .sm-caret { transform: rotate(-90deg); }
+  .sm-group.sm-collapsed table tr { display: none; }
+  .sm-badge { display:inline-block; background:#e02424; color:#fff; font-size:11px;
+              font-weight:700; border-radius:10px; padding:1px 7px; margin-left:6px; }
+</style>
+<script>
+  (function () {
+    var groups = document.querySelectorAll('.sm-group');
+    groups.forEach(function (g, idx) {
+      var cap = g.querySelector('caption .section') || g.querySelector('caption');
+      if (!cap) { return; }
+      // freccia indicatore
+      if (!cap.querySelector('.sm-caret')) {
+        var car = document.createElement('span');
+        car.className = 'sm-caret';
+        car.textContent = '\u25be';
+        cap.insertBefore(car, cap.firstChild);
+        cap.insertBefore(document.createTextNode(' '), car.nextSibling);
+      }
+      var key = 'smgrp:' + idx;
+      if (localStorage.getItem(key) === '1') { g.classList.add('sm-collapsed'); }
+      cap.addEventListener('click', function (e) {
+        e.preventDefault();
+        g.classList.toggle('sm-collapsed');
+        localStorage.setItem(key, g.classList.contains('sm-collapsed') ? '1' : '0');
+      });
+    });
+  })();
+</script>
