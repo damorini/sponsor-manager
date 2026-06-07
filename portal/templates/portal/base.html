@@ -111,28 +111,28 @@
 
   <nav class="nav-scroll flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
     <a href="{% url 'portal:dashboard' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'dashboard' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-layout-dashboard text-lg shrink-0"></i>{% trans "In evidenza" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'dashboard' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-layout-dashboard text-base shrink-0"></i>{% trans "In evidenza" %}</a>
     <a href="{% url 'portal:events' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-calendar-event text-lg shrink-0"></i>{% trans "I miei eventi" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'events' or un == 'event_materials' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-calendar-event text-base shrink-0"></i>{% trans "I miei eventi" %}</a>
     <a href="{% url 'portal:events_archived' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'events_archived' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-archive text-lg shrink-0"></i>{% trans "Archivio eventi" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'events_archived' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-archive text-base shrink-0"></i>{% trans "Archivio eventi" %}</a>
     <a href="{% url 'portal:contracts_list' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-lg shrink-0"></i>{% trans "I miei documenti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-base shrink-0"></i>{% trans "I miei documenti" %}</a>
     <a href="{% url 'portal:purchases' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'purchases' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-shopping-bag text-lg shrink-0"></i>{% trans "I miei acquisti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'purchases' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-shopping-bag text-base shrink-0"></i>{% trans "I miei acquisti" %}</a>
     <a href="{% url 'portal:messages' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'messages' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-mail text-lg shrink-0"></i>{% trans "Archivio messaggi" %}{% if unread_messages %}<span class="ml-auto inline-flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full px-2 py-0.5">{{ unread_messages }}</span>{% endif %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'messages' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-mail text-base shrink-0"></i>{% trans "Archivio messaggi" %}{% if unread_messages %}<span class="ml-auto inline-flex items-center justify-center text-xs font-bold bg-red-500 text-white rounded-full px-2 py-0.5">{{ unread_messages }}</span>{% endif %}</a>
     <a href="{% url 'portal:profile' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'profile' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-user text-lg shrink-0"></i>{% trans "I miei dati" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'profile' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-user text-base shrink-0"></i>{% trans "I miei dati" %}</a>
     <a href="{% url 'portal:wishlist_page' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'wishlist_page' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-heart text-lg shrink-0"></i>Wishlist</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'wishlist_page' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-heart text-base shrink-0"></i>Wishlist</a>
     {% if has_purchasable_services %}
     <a href="{% url 'portal:catalog' %}"
-       class="flex items-center gap-3 px-3.5 py-2 rounded-lg font-medium {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-building-store text-lg shrink-0"></i>{% trans "Acquista servizi" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-building-store text-base shrink-0"></i>{% trans "Acquista servizi" %}</a>
     {% endif %}
     <a href="{% url 'portal:cart_view' %}"
-       class="flex items-center justify-between px-3.5 py-2 rounded-lg font-medium {% if un == 'cart_view' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}">
-      <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-lg shrink-0"></i>{% trans "Carrello" %}</span>
+       class="flex items-center justify-between px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'cart_view' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}">
+      <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-base shrink-0"></i>{% trans "Carrello" %}</span>
       {% if cart_count and cart_count > 0 %}
       <span class="bg-white text-brand-700 text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
       {% endif %}
