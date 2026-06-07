@@ -78,9 +78,10 @@ def cart_count(request):
             contact = getattr(user, 'contact_profile', None)
             sponsor = getattr(contact, 'sponsor', None) if contact else None
             if sponsor:
-                from sponsors.models import PortalMessage
+                from sponsors.models import PortalMessage, MessageSender
                 unread_messages = PortalMessage.objects.filter(
                     sponsor=sponsor, is_active=True, read_at__isnull=True,
+                    sender=MessageSender.OPERATOR,
                 ).count()
     except Exception:
         unread_messages = 0

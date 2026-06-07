@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sponsor_manager\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-06 22:07+0200\n"
+"POT-Creation-Date: 2026-06-07 11:32+0200\n"
 "PO-Revision-Date: 2026-06-02 12:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -800,7 +800,6 @@ msgid "Bentornato/a,"
 msgstr "Welcome back,"
 
 #: portal/templates/portal/dashboard/dashboard.html:33
-#: portal/templates/portal/messages/list.html:42
 msgid "Ho letto questo messaggio"
 msgstr "I have read this message"
 
@@ -946,24 +945,33 @@ msgid "Apri evento →"
 msgstr "Open event →"
 
 #: portal/templates/portal/messages/list.html:13
+#, python-format
 msgid "%(counter)s da leggere"
 msgid_plural "%(counter)s da leggere"
 msgstr[0] "%(counter)s to read"
 msgstr[1] "%(counter)s to read"
 
-#: portal/templates/portal/messages/list.html:24
-msgid "Letto"
-msgstr "Read"
+#: portal/templates/portal/messages/list.html:30
+msgid "Organizzazione"
+msgstr "Organization"
 
-#: portal/templates/portal/messages/list.html:28
-msgid "Letto il"
-msgstr "Read on"
+#: portal/templates/portal/messages/list.html:35
+msgid "Ho letto"
+msgstr "I have read it"
 
-#: portal/templates/portal/messages/list.html:33
-msgid "DA LEGGERE"
-msgstr "TO READ"
+#: portal/templates/portal/messages/list.html:44
+msgid "Tu"
+msgstr "You"
 
-#: portal/templates/portal/messages/list.html:51
+#: portal/templates/portal/messages/list.html:58
+msgid "Scrivi una risposta…"
+msgstr "Write a reply…"
+
+#: portal/templates/portal/messages/list.html:62
+msgid "Invia"
+msgstr "Send"
+
+#: portal/templates/portal/messages/list.html:72
 msgid "Nessun messaggio."
 msgstr "No messages."
 
@@ -1208,6 +1216,12 @@ msgstr ""
 msgid "Ruolo"
 msgstr "Role"
 
+#~ msgid "Letto il"
+#~ msgstr "Read on"
+
+#~ msgid "DA LEGGERE"
+#~ msgstr "TO READ"
+
 #~ msgid "Le tue domande di ammissione"
 #~ msgstr "Your admission requests"
 
@@ -1239,9 +1253,6 @@ msgstr "Role"
 
 #~ msgid "Bozza"
 #~ msgstr "Draft"
-
-#~ msgid "Inviato"
-#~ msgstr "Sent"
 
 #~ msgid "In attesa pagamento"
 #~ msgstr "Pending payment"

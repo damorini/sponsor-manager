@@ -131,10 +131,11 @@ def dashboard_view(request):
     prossimi_eventi = _futuri + _passati
     prossimo_evento = _futuri[0] if _futuri else None
 
-    from sponsors.models import PortalMessage
+    from sponsors.models import PortalMessage, MessageSender
     messaggi_non_letti = list(
         PortalMessage.objects.filter(
-            sponsor=sponsor, is_active=True, read_at__isnull=True)
+            sponsor=sponsor, is_active=True, read_at__isnull=True,
+            sender=MessageSender.OPERATOR)
         .order_by('-created_at'))
 
     return render(request, 'portal/dashboard/dashboard.html', {

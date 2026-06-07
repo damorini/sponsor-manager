@@ -338,17 +338,39 @@ class Contact(SoftDeleteModel):
         return self.signer_tax_code
 
 
-class PortalMessage(TimeStampedModel):
-    """Messaggio dall'operatore allo sponsor, mostrato nel portale.
+class MessageSender(models.TextChoices):
+    OPERATOR = 'operator', 'Operatore'
+    SPONSOR = 'sponsor', 'Sponsor'
 
-    Tiene traccia di letto / da leggere: il cliente conferma la lettura con un
-    pulsante. L'operatore vede lo stato nell'archivio messaggi del backoffice.
+
+class PortalMessage(TimeStampedModel):
+    """Messaggio della conversazione operatore <-> sponsor, mostrato nel portale.
+
+    Conversazione a due vie: l'operatore scrive e il cliente puo' rispondere
+    (e viceversa). I messaggi di una stessa conversazione sono legati da
+    'parent' (il primo messaggio = radice del thread).
+
+    'read_at' = letto dal DESTINATARIO:
+    - messaggio dell'operatore -> destinatario = sponsor (conferma col pulsante);
+    - messaggio dello sponsor  -> destinatario = operatore (lo segna letto in admin).
     """
     sponsor = models.ForeignKey(
         Sponsor,
         on_delete=models.CASCADE,
         related_name='portal_messages',
         verbose_name="Sponsor",
+    )
+    sender = models.CharField(
+        max_length=20, choices=MessageSender.choices,
+        default=MessageSender.OPERATOR, verbose_name="Da",
+    )
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='replies',
+        verbose_name="In risposta a",
+        help_text="Vuoto = nuovo messaggio; valorizzato = risposta nel thread.",
     )
     event = models.ForeignKey(
         'events.Event',
@@ -389,14 +411,23 @@ class PortalMessage(TimeStampedModel):
 
     def __str__(self):
         stato = 'letto' if self.is_read else 'da leggere'
-        return f"{self.sponsor} · {stato}"
+        return f"{self.sponsor} · {self.get_sender_display()} · {stato}"
 
     @property
     def is_read(self):
         return self.read_at is not None
 
+    @property
+    def is_from_operator(self):
+        return self.sender == MessageSender.OPERATOR
+
+    @property
+    def thread_root(self):
+        """Il messaggio radice del thread (se stesso se non è una risposta)."""
+        return self.parent or self
+
     def mark_read(self, contact=None):
-        """Marca il messaggio come letto (idempotente)."""
+        """Marca il messaggio come letto dal destinatario (idempotente)."""
         from django.utils import timezone
         if self.read_at is None:
             self.read_at = timezone.now()

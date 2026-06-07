@@ -47,3 +47,31 @@ def test_messaggio_disattivato_non_compare(client, user_sponsor, sponsor, contac
     client.force_login(user_sponsor)
     r = client.get(reverse('portal:messages'))
     assert 'Nascosto' not in r.content.decode()
+
+
+@pytest.mark.django_db
+def test_cliente_puo_rispondere(client, user_sponsor, sponsor, contact):
+    from sponsors.models import MessageSender
+    root = PortalMessage.objects.create(
+        sponsor=sponsor, sender=MessageSender.OPERATOR, body='Domanda', is_active=True)
+    client.force_login(user_sponsor)
+    r = client.post(reverse('portal:message_reply', args=[root.id]),
+                    {'body': 'La mia risposta'})
+    assert r.status_code in (301, 302)
+    rep = PortalMessage.objects.filter(parent=root, sender=MessageSender.SPONSOR).first()
+    assert rep is not None and rep.body == 'La mia risposta'
+    assert rep.read_at is None  # non letta dall'operatore
+    root.refresh_from_db()
+    assert root.is_read  # rispondendo, il cliente ha letto il messaggio operatore
+
+
+@pytest.mark.django_db
+def test_badge_conta_solo_messaggi_operatore(client, user_sponsor, sponsor, contact):
+    from sponsors.models import MessageSender
+    PortalMessage.objects.create(sponsor=sponsor, sender=MessageSender.OPERATOR,
+                                 body='op', is_active=True)
+    PortalMessage.objects.create(sponsor=sponsor, sender=MessageSender.SPONSOR,
+                                 body='mia', is_active=True)
+    client.force_login(user_sponsor)
+    r = client.get(reverse('portal:messages'))
+    assert r.context['non_letti'] == 1  # conta solo i messaggi dell'operatore

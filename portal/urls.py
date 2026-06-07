@@ -44,6 +44,8 @@ urlpatterns = [
     path('messaggi/', portal_messages.messages_list, name='messages'),
     path('messaggi/<uuid:message_id>/letto/', portal_messages.message_mark_read,
          name='message_mark_read'),
+    path('messaggi/<uuid:message_id>/rispondi/', portal_messages.message_reply,
+         name='message_reply'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),
     path('contracts/<uuid:contract_id>/conferma/anteprima/', contract.quote_confirm_page_view,

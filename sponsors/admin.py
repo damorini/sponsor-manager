@@ -14,7 +14,7 @@ from django.db.models.functions import Lower
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Contact, ContactRole, PortalMessage, Sponsor
+from .models import Contact, ContactRole, MessageSender, PortalMessage, Sponsor
 
 
 class _Cognome(Func):
@@ -54,35 +54,66 @@ class ContactInline(admin.TabularInline):
         css = {'all': ('admin/css/sponsor_contact_inline.css',)}
 
 
-def _stato_messaggio_badge(msg):
-    if msg.is_read:
-        return format_html(
-            '<span style="background:#41ad7c;color:#fff;padding:2px 8px;'
-            'border-radius:3px;font-size:.85em;">LETTO</span>')
+def _badge(color, text, bold=False):
     return format_html(
-        '<span style="background:#e6a23c;color:#fff;padding:2px 8px;'
-        'border-radius:3px;font-size:.85em;font-weight:700;">DA LEGGERE</span>')
+        '<span style="background:{};color:#fff;padding:2px 8px;border-radius:3px;'
+        'font-size:.85em;{}">{}</span>',
+        color, 'font-weight:700;' if bold else '', text)
+
+
+def _stato_messaggio_badge(msg):
+    if msg.sender == MessageSender.SPONSOR:
+        # risposta del cliente: "letto" = letto dall'operatore
+        if msg.is_read:
+            return _badge('#41ad7c', 'RISPOSTA (letta)')
+        return _badge('#c0392b', '↩ RISPOSTA CLIENTE — DA LEGGERE', bold=True)
+    # messaggio dell'operatore: "letto" = letto dal cliente
+    if msg.is_read:
+        return _badge('#41ad7c', 'letto dal cliente')
+    return _badge('#e6a23c', 'da leggere (cliente)', bold=True)
 
 
 class PortalMessageInline(admin.TabularInline):
-    """Messaggi al portale di questo sponsor, con stato letto/da leggere."""
+    """Conversazione col portale di questo sponsor (messaggi + risposte cliente)."""
     model = PortalMessage
+    fk_name = 'sponsor'
     extra = 0
-    fields = ('body', 'event', 'is_active', 'stato', 'letto_il', 'letto_da')
-    readonly_fields = ('stato', 'letto_il', 'letto_da')
-    verbose_name = 'Messaggio portale'
-    verbose_name_plural = 'Messaggi al portale (archivio)'
-    ordering = ('-created_at',)
+    fields = ('mittente', 'body', 'parent', 'is_active', 'stato', 'letto_il', 'letto_da')
+    readonly_fields = ('mittente', 'stato', 'letto_il', 'letto_da')
+    verbose_name = 'Messaggio'
+    verbose_name_plural = 'Conversazione col portale (scrivi in basso; per rispondere a un thread scegli "In risposta a")'
+    ordering = ('created_at',)
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         ff = super().formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == 'body' and ff is not None:
-            # Textarea a 1 riga (espandibile a mano), non occupa tutto lo spazio.
             ff.widget.attrs.update({
                 'rows': 1,
                 'style': 'width:26em; height:2.4em; min-height:2.4em; resize:both;',
             })
         return ff
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == 'parent':
+            sponsor_id = None
+            try:
+                sponsor_id = request.resolver_match.kwargs.get('object_id')
+            except Exception:
+                sponsor_id = None
+            if sponsor_id:
+                kwargs['queryset'] = PortalMessage.objects.filter(
+                    sponsor_id=sponsor_id, parent__isnull=True).order_by('-created_at')
+            else:
+                kwargs['queryset'] = PortalMessage.objects.none()
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    @admin.display(description='Da')
+    def mittente(self, obj):
+        if not obj or not obj.pk:
+            return '(operatore)'
+        if obj.sender == MessageSender.SPONSOR:
+            return format_html('<strong style="color:#1f4e79;">Cliente</strong>')
+        return 'Operatore'
 
     @admin.display(description='Stato')
     def stato(self, obj):
@@ -126,15 +157,29 @@ class SponsorAdmin(admin.ModelAdmin):
     actions = ['action_generate_client_summary', 'action_compose_email']
 
     def save_formset(self, request, form, formset, change):
-        # Imposta 'inviato da' sui nuovi messaggi portale creati dall'inline.
+        from django.utils import timezone
         instances = formset.save(commit=False)
+        roots_risposti = set()
         for obj in instances:
-            if isinstance(obj, PortalMessage) and obj.created_by_id is None:
-                obj.created_by = request.user
-            obj.save()
+            if isinstance(obj, PortalMessage):
+                if obj.created_by_id is None:
+                    obj.created_by = request.user
+                if not obj.sender:
+                    obj.sender = MessageSender.OPERATOR
+                obj.save()
+                # se l'operatore risponde in un thread, segnerà lette le risposte cliente
+                if obj.sender == MessageSender.OPERATOR and obj.parent_id:
+                    roots_risposti.add(obj.parent_id)
+            else:
+                obj.save()
         formset.save_m2m()
         for obj in formset.deleted_objects:
             obj.delete()
+        if roots_risposti:
+            PortalMessage.objects.filter(
+                Q(pk__in=roots_risposti) | Q(parent_id__in=roots_risposti),
+                sender=MessageSender.SPONSOR, read_at__isnull=True,
+            ).update(read_at=timezone.now())
 
     def get_urls(self):
         urls = super().get_urls()
@@ -582,23 +627,43 @@ class _LettoFilter(admin.SimpleListFilter):
         return queryset
 
 
+class _MittenteFilter(admin.SimpleListFilter):
+    title = 'Mittente'
+    parameter_name = 'mitt'
+
+    def lookups(self, request, model_admin):
+        return (('operator', 'Operatore'), ('sponsor', 'Cliente (risposte)'))
+
+    def queryset(self, request, queryset):
+        if self.value() in ('operator', 'sponsor'):
+            return queryset.filter(sender=self.value())
+        return queryset
+
+
 @admin.register(PortalMessage)
 class PortalMessageAdmin(admin.ModelAdmin):
-    """Archivio messaggi al portale, con stato letto / da leggere."""
-    list_display = ('sponsor', 'estratto', 'stato', 'event', 'is_active',
-                    'created_at', 'read_at', 'created_by')
-    list_filter = (_LettoFilter, 'is_active', 'event')
+    """Archivio conversazioni col portale, con stato letto / da leggere."""
+    list_display = ('sponsor', 'mittente', 'estratto', 'stato', 'event',
+                    'is_active', 'created_at', 'created_by')
+    list_filter = (_MittenteFilter, _LettoFilter, 'is_active', 'event')
     search_fields = ('sponsor__legal_name', 'sponsor__display_name', 'body')
-    list_select_related = ('sponsor', 'event', 'read_by', 'created_by')
-    autocomplete_fields = ['sponsor', 'event']
+    list_select_related = ('sponsor', 'event', 'read_by', 'created_by', 'parent')
+    autocomplete_fields = ['sponsor', 'event', 'parent']
     readonly_fields = ('read_at', 'read_by', 'created_by', 'created_at', 'updated_at')
     ordering = ('-created_at',)
+    actions = ['action_segna_letto']
     fieldsets = (
-        (None, {'fields': ('sponsor', 'event', 'body', 'is_active')}),
+        (None, {'fields': ('sponsor', 'event', 'parent', 'body', 'is_active')}),
         ('Stato lettura', {'fields': ('read_at', 'read_by')}),
         ('Sistema', {'fields': ('created_by', 'created_at', 'updated_at'),
                      'classes': ('collapse',)}),
     )
+
+    @admin.display(description='Da')
+    def mittente(self, obj):
+        if obj.sender == MessageSender.SPONSOR:
+            return format_html('<strong style="color:#1f4e79;">Cliente</strong>')
+        return 'Operatore'
 
     @admin.display(description='Messaggio')
     def estratto(self, obj):
@@ -609,7 +674,15 @@ class PortalMessageAdmin(admin.ModelAdmin):
     def stato(self, obj):
         return _stato_messaggio_badge(obj)
 
+    @admin.action(description='Segna come letto')
+    def action_segna_letto(self, request, queryset):
+        from django.utils import timezone
+        n = queryset.filter(read_at__isnull=True).update(read_at=timezone.now())
+        self.message_user(request, f"{n} messaggio/i segnato/i come letto/i.")
+
     def save_model(self, request, obj, form, change):
         if obj.created_by_id is None:
             obj.created_by = request.user
+        if not obj.sender:
+            obj.sender = MessageSender.OPERATOR
         super().save_model(request, obj, form, change)
