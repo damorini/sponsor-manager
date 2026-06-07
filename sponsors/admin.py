@@ -54,6 +54,36 @@ class ContactInline(admin.TabularInline):
         css = {'all': ('admin/css/sponsor_contact_inline.css',)}
 
 
+def _notifica_cliente_nuovo_messaggio(request, sponsor):
+    """Avvisa via email i contatti col portale che la segreteria ha scritto.
+    Mette un link diretto all'archivio messaggi del portale. Non blocca mai."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+    from django.urls import reverse
+    try:
+        recipients = list(
+            sponsor.contacts.filter(has_portal_access=True)
+            .exclude(email='').values_list('email', flat=True))
+        if not recipients:
+            return
+        try:
+            url = request.build_absolute_uri(reverse('portal:messages'))
+        except Exception:
+            url = (getattr(settings, 'PORTAL_URL', '') or '').rstrip('/')
+        subject = "La segreteria ha risposto al tuo messaggio"
+        body = (
+            "Ciao,\n\nla segreteria organizzativa ha pubblicato un messaggio per te "
+            "nel portale.\n\n"
+            f"Vai a leggerlo qui: {url}\n\n"
+            "A presto."
+        )
+        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients,
+                  fail_silently=True)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Notifica messaggio al cliente non inviata")
+
+
 def _badge(color, text, bold=False):
     return format_html(
         '<span style="background:{};color:#fff;padding:2px 8px;border-radius:3px;'
@@ -160,13 +190,17 @@ class SponsorAdmin(admin.ModelAdmin):
         from django.utils import timezone
         instances = formset.save(commit=False)
         roots_risposti = set()
+        operatore_ha_scritto = False
         for obj in instances:
             if isinstance(obj, PortalMessage):
+                _nuovo = obj._state.adding
                 if obj.created_by_id is None:
                     obj.created_by = request.user
                 if not obj.sender:
                     obj.sender = MessageSender.OPERATOR
                 obj.save()
+                if obj.sender == MessageSender.OPERATOR and _nuovo:
+                    operatore_ha_scritto = True
                 # se l'operatore risponde in un thread, segnerà lette le risposte cliente
                 if obj.sender == MessageSender.OPERATOR and obj.parent_id:
                     roots_risposti.add(obj.parent_id)
@@ -180,6 +214,9 @@ class SponsorAdmin(admin.ModelAdmin):
                 Q(pk__in=roots_risposti) | Q(parent_id__in=roots_risposti),
                 sender=MessageSender.SPONSOR, read_at__isnull=True,
             ).update(read_at=timezone.now())
+        # un'unica email al cliente se la segreteria ha scritto nuovi messaggi
+        if operatore_ha_scritto:
+            _notifica_cliente_nuovo_messaggio(request, form.instance)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -686,8 +723,11 @@ class PortalMessageAdmin(admin.ModelAdmin):
         self.message_user(request, f"{n} messaggio/i segnato/i come letto/i.")
 
     def save_model(self, request, obj, form, change):
+        _nuovo = obj._state.adding
         if obj.created_by_id is None:
             obj.created_by = request.user
         if not obj.sender:
             obj.sender = MessageSender.OPERATOR
         super().save_model(request, obj, form, change)
+        if _nuovo and obj.sender == MessageSender.OPERATOR:
+            _notifica_cliente_nuovo_messaggio(request, obj.sponsor)
