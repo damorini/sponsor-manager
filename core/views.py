@@ -803,9 +803,15 @@ def documento_apri(request, document_id):
     relative_path = (document.storage_url or '').replace(settings.MEDIA_URL, '', 1).lstrip('/')
     if not relative_path or not default_storage.exists(relative_path):
         raise Http404("File non trovato sul server.")
-    return FileResponse(
+    resp = FileResponse(
         default_storage.open(relative_path, 'rb'),
         as_attachment=False, filename=document.file_name)
+    # Anti-cache: i PDF rigenerati (stesso path) devono essere sempre ricaricati,
+    # cosi' il browser non mostra una versione vecchia gia' aperta.
+    resp['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    resp['Pragma'] = 'no-cache'
+    resp['Expires'] = '0'
+    return resp
 
 
 @staff_member_required
