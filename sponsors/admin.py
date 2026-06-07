@@ -507,6 +507,10 @@ class SponsorAdmin(admin.ModelAdmin):
         msg = get_object_or_404(PortalMessage, id=message_id)
         msg.mark_read()
         self.message_user(request, "Messaggio segnato come letto.", level=messages.SUCCESS)
+        # torna da dove si arrivava (lista o scheda sponsor)
+        ref = request.META.get('HTTP_REFERER')
+        if ref:
+            return redirect(ref)
         return redirect(reverse('admin:sponsors_sponsor_change', args=[msg.sponsor_id]))
 
     def get_queryset(self, request):
@@ -756,8 +760,8 @@ class _MittenteFilter(admin.SimpleListFilter):
 @admin.register(PortalMessage)
 class PortalMessageAdmin(admin.ModelAdmin):
     """Archivio conversazioni col portale, con stato letto / da leggere."""
-    list_display = ('sponsor', 'mittente', 'estratto', 'stato', 'event',
-                    'is_active', 'created_at', 'created_by')
+    list_display = ('sponsor', 'mittente', 'estratto', 'stato', 'azioni',
+                    'event', 'is_active', 'created_at', 'created_by')
     list_filter = (_MittenteFilter, _LettoFilter, 'is_active', 'event')
     search_fields = ('sponsor__legal_name', 'sponsor__display_name', 'body')
     list_select_related = ('sponsor', 'event', 'read_by', 'created_by', 'parent')
@@ -785,7 +789,16 @@ class PortalMessageAdmin(admin.ModelAdmin):
 
     @admin.display(description='Stato')
     def stato(self, obj):
-        return _stato_messaggio_badge(obj)
+        badge = _stato_messaggio_badge(obj)
+        if obj.sender == MessageSender.SPONSOR and not obj.is_read:
+            url = reverse('admin:sponsors_messaggio_letto', args=[obj.id])
+            return format_html('{} &nbsp;<a href="{}">✓ segna letto</a>', badge, url)
+        return badge
+
+    @admin.display(description='Azioni')
+    def azioni(self, obj):
+        url = reverse('admin:sponsors_sponsor_change', args=[obj.sponsor_id])
+        return format_html('<a href="{}">apri / rispondi →</a>', url)
 
     @admin.action(description='Segna come letto')
     def action_segna_letto(self, request, queryset):
