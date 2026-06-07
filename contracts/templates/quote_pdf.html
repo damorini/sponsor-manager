@@ -24,9 +24,6 @@
   .tot .lbl { color:#6b7280; } .tot .val { text-align:right; color:#6b7280; }
   .tot .grand td { border-top:2px solid #e5e7eb; padding-top:12px; font-weight:800; color:#111827; }
   .tot .grand .g { color:{{ brand_color }}; font-size:17px; text-align:right; }
-  /* Box di ATTENZIONE (opzione, non prenotazione) */
-  .attn { background:#fff7ed; border:1px solid #f59e0b; border-left:5px solid #f59e0b; padding:15px 18px; margin:22px 0; color:#78350f; border-radius:6px; line-height:1.6; }
-  .attn .attn-title { font-weight:800; text-transform:uppercase; letter-spacing:.03em; font-size:11px; display:block; margin-bottom:6px; }
   /* Box validita' in fondo (evidenziato col colore brand) */
   .valid { background:#ecfdf5; border:1px solid {{ brand_color }}; border-left:5px solid {{ brand_color }}; padding:15px 18px; margin:24px 0 8px; color:#064e3b; border-radius:6px; line-height:1.6; font-weight:600; }
   .cta { text-align:center; margin:28px 0 10px; }
@@ -52,10 +49,7 @@
   a seguito delle preferenze da voi indicate, siamo lieti di sottoporvi l'offerta relativa alla presenza della vostra azienda nell'ambito di <strong>{{ event.name }}</strong>{% if event.venue_name %}, che si terr&agrave; a {{ event.venue_name }}{% elif event.location %}, che si terr&agrave; a {{ event.location }}{% endif %}{% if event.start_date %} in data {{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}.
   Siamo certi che queste soluzioni potranno rappresentare un'ottima vetrina per la vostra azienda. Lo spazio e i servizi selezionati sono riassunti qui di seguito; vi preghiamo di prendere buona nota di quanto indicato.</p>
 
-  <div class="attn">
-    <span class="attn-title">&#9888; Attenzione</span>
-    Il presente documento &egrave; un <strong>preventivo</strong>. Gli spazi indicati <strong>non risultano al momento PRENOTATI</strong>, ma semplicemente <strong>OPZIONATI</strong>{% if quote_valid_until %} fino al <strong>{{ quote_valid_until|date:"d/m/Y" }}</strong>{% endif %}.
-  </div>
+  <p class="intro">Il presente documento &egrave; un preventivo. Gli spazi indicati non risultano al momento prenotati, ma semplicemente opzionati{% if quote_valid_until %} fino al {{ quote_valid_until|date:"d/m/Y" }}{% endif %}.</p>
 
   <p class="section-title">Riepilogo spazi e servizi in opzione</p>
   <table class="svc">
