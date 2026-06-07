@@ -807,6 +807,44 @@ class PortalMessageAdmin(admin.ModelAdmin):
                      'classes': ('collapse',)}),
     )
 
+    def changelist_view(self, request, extra_context=None):
+        """Invece del classico elenco riga-per-riga, mostra una INBOX di
+        conversazioni (una per sponsor): clic -> chat del singolo sponsor."""
+        from django.shortcuts import render
+        from sponsors.models import Sponsor
+
+        q = (request.GET.get('q') or '').strip()
+        sponsors = Sponsor.objects.filter(portal_messages__is_active=True).distinct()
+        if q:
+            sponsors = sponsors.filter(
+                Q(legal_name__icontains=q) | Q(display_name__icontains=q))
+
+        conversazioni = []
+        for sp in sponsors:
+            msgs = sp.portal_messages.filter(is_active=True)
+            last = msgs.order_by('-created_at').first()
+            unread = msgs.filter(
+                sender=MessageSender.SPONSOR, read_at__isnull=True).count()
+            conversazioni.append({
+                'sponsor': sp,
+                'last': last,
+                'unread': unread,
+                'url': reverse('admin:sponsors_sponsor_conversazione', args=[sp.pk]),
+            })
+        conversazioni.sort(key=lambda c: (
+            0 if c['unread'] else 1,
+            -(c['last'].created_at.timestamp() if c['last'] else 0),
+        ))
+
+        context = {
+            **self.admin_site.each_context(request),
+            'title': 'Messaggi portale',
+            'conversazioni': conversazioni,
+            'opts': self.model._meta,
+            'q': q,
+        }
+        return render(request, 'admin/sponsors/conversazioni_inbox.html', context)
+
     @admin.display(description='Da')
     def mittente(self, obj):
         if obj.sender == MessageSender.SPONSOR:
