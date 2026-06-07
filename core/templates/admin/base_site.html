@@ -223,6 +223,15 @@
   #portal_messages-group td.field-letto_da,
   #portal_messages-group td.field-is_active { white-space: nowrap; }
 
+  /* Servizi dal catalogo (scheda Evento): checkbox su piu' colonne,
+     cosi' si vedono a colpo d'occhio invece di una lunga lista verticale. */
+  .field-catalog_services ul {
+    columns: 230px; column-gap: 28px;
+    list-style: none; margin: 0; padding: 0;
+  }
+  .field-catalog_services ul li { break-inside: avoid; margin: 0 0 6px; }
+  .field-catalog_services ul li label { display: inline; }
+
   /* ===== Pannello filtri di destra collassabile ===== */
   #vt-filtri-toggle {
     display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
