@@ -83,6 +83,7 @@ TEMPLATES = [
                 'django.template.context_processors.i18n',
                 'portal.context_processors.branding',
                 'portal.context_processors.cart_count',
+                'core.context_processors.admin_badges',
             ],
         },
     },
