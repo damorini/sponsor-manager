@@ -27,4 +27,5 @@ urlpatterns = [
     path('traduci/', views.translate_view, name='translate'),
     path('manuale/', views.manuale, name='cruscotto_manuale'),
     path('catalog-service/<uuid:pk>/dati/', views.catalog_service_data, name='catalog_service_data'),
+    path('documento/<uuid:document_id>/apri/', views.documento_apri, name='documento_apri'),
 ]

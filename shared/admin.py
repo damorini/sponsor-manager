@@ -84,7 +84,8 @@ class ContractDocumentInline(GenericTabularInline):
     @admin.display(description='File')
     def apri_file(self, obj):
         if obj and obj.pk and obj.storage_url:
-            return format_html('<a href="{}" target="_blank">apri</a>', obj.storage_url)
+            url = reverse('core:documento_apri', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank">📄 apri</a>', url)
         return '—'
 
 
@@ -153,7 +154,8 @@ class DocumentAdmin(admin.ModelAdmin):
     @admin.display(description='Apri')
     def apri_file(self, obj):
         if obj and obj.pk and obj.storage_url:
-            return format_html('<a href="{}" target="_blank">📄 apri</a>', obj.storage_url)
+            url = reverse('core:documento_apri', args=[obj.pk])
+            return format_html('<a href="{}" target="_blank">📄 apri</a>', url)
         return '—'
 
     @admin.display(description='Tipo')

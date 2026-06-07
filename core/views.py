@@ -784,6 +784,31 @@ def cruscotto_scadenza_file(request, document_id):
         as_attachment=True, filename=document.file_name)
 
 @staff_member_required
+def documento_apri(request, document_id):
+    """Apre un Document (PDF preventivo/contratto/ecc.) INLINE nel browser.
+
+    Streama il file dallo storage con autenticazione staff: funziona sia in
+    sviluppo sia in produzione (non dipende dal serving diretto di /media/),
+    e forza la visualizzazione inline invece del download.
+    """
+    from django.conf import settings
+    from django.core.files.storage import default_storage
+    from django.http import FileResponse, Http404
+    from django.shortcuts import get_object_or_404
+    from shared.models import Document
+
+    document = get_object_or_404(
+        scope_generic_by_event(request, Document.objects.filter(deleted_at__isnull=True)),
+        id=document_id)
+    relative_path = (document.storage_url or '').replace(settings.MEDIA_URL, '', 1).lstrip('/')
+    if not relative_path or not default_storage.exists(relative_path):
+        raise Http404("File non trovato sul server.")
+    return FileResponse(
+        default_storage.open(relative_path, 'rb'),
+        as_attachment=False, filename=document.file_name)
+
+
+@staff_member_required
 def download_template_sponsor(request):
     """Genera al volo il template Excel sponsor/clienti e lo serve come download."""
     from io import BytesIO
