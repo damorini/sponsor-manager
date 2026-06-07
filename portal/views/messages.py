@@ -4,6 +4,8 @@ Conversazione messaggi del portale (operatore <-> sponsor):
 - conferma di lettura,
 - risposta del cliente.
 """
+import logging
+
 from django.contrib import messages as flash
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,6 +13,41 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from portal.views.dashboard import sponsor_required
+
+logger = logging.getLogger(__name__)
+
+
+def _notifica_risposta_operatore(request, reply):
+    """Avvisa via email l'operatore quando un cliente risponde nel portale.
+    Destinatario configurabile in Impostazioni segreteria. Non blocca mai
+    la risposta in caso di errore."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+    from django.urls import reverse
+    from core.models import OrganizerSettings
+
+    try:
+        to = OrganizerSettings.load().notify_recipient
+        if not to:
+            return
+        sponsor = reply.sponsor
+        contact = getattr(request, 'contact', None)
+        chi = contact.full_name if contact else str(sponsor)
+        try:
+            admin_url = request.build_absolute_uri(
+                reverse('admin:sponsors_sponsor_change', args=[sponsor.pk]))
+        except Exception:
+            admin_url = ''
+        subject = f"[Portale] Nuova risposta da {sponsor}"
+        body = (
+            f"{chi} ({sponsor}) ha risposto a un messaggio nel portale:\n\n"
+            f"«{reply.body}»\n\n"
+            f"Apri la conversazione nel backoffice:\n{admin_url}"
+        )
+        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [to],
+                  fail_silently=True)
+    except Exception:
+        logger.exception("Notifica risposta portale non inviata")
 
 
 def _build_threads(sponsor):
@@ -70,7 +107,7 @@ def message_reply(request, message_id):
         flash.error(request, "Scrivi un testo prima di inviare.")
         return redirect('portal:messages')
 
-    PortalMessage.objects.create(
+    reply = PortalMessage.objects.create(
         sponsor=request.sponsor, sender=MessageSender.SPONSOR,
         parent=root, body=body, is_active=True)
     # rispondendo, il cliente ha letto i messaggi dell'operatore nel thread
@@ -78,5 +115,7 @@ def message_reply(request, message_id):
         Q(pk=root.pk) | Q(parent=root),
         sender=MessageSender.OPERATOR, read_at__isnull=True,
     ).update(read_at=timezone.now(), read_by=request.contact)
+    # avvisa l'operatore via email (indirizzo configurabile)
+    _notifica_risposta_operatore(request, reply)
     flash.success(request, "Risposta inviata.")
     return redirect('portal:messages')

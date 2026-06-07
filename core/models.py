@@ -127,6 +127,13 @@ class OrganizerSettings(models.Model):
         help_text="Logo mostrato nel footer delle email.",
     )
 
+    messages_notify_email = models.EmailField(
+        blank=True,
+        verbose_name="Email notifiche risposte portale",
+        help_text="Indirizzo a cui inviare un avviso quando un cliente risponde "
+                  "a un messaggio nel portale. Vuoto = usa l'email della segreteria.",
+    )
+
     # Piano pagamento (acconto/saldo)
     payment_deposit_days_after_signing = models.IntegerField(
         default=0,
@@ -156,3 +163,13 @@ class OrganizerSettings(models.Model):
         """Restituisce l'unico record, creandolo vuoto se non esiste."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    @property
+    def notify_recipient(self):
+        """Destinatario degli avvisi (risposte portale): email dedicata se
+        impostata, altrimenti l'email della segreteria, altrimenti il supporto."""
+        from django.conf import settings
+        candidate = (self.messages_notify_email or self.email or
+                     getattr(settings, 'SUPPORT_EMAIL', '') or
+                     getattr(settings, 'DEFAULT_FROM_EMAIL', ''))
+        return (candidate or '').strip()

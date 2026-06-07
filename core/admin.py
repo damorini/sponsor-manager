@@ -28,6 +28,12 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
         ("Logo", {
             "fields": ("logo",),
         }),
+        ("Notifiche", {
+            "fields": ("messages_notify_email",),
+            "description": "Indirizzo che riceve un avviso quando un cliente "
+                           "risponde a un messaggio nel portale. Se vuoto, usa "
+                           "l'email della segreteria.",
+        }),
         ("Scadenze pagamento (calcolo automatico)", {
             "fields": ("payment_deposit_days_after_signing",
                        "payment_balance_days_before_event"),

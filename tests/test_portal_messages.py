@@ -66,6 +66,22 @@ def test_cliente_puo_rispondere(client, user_sponsor, sponsor, contact):
 
 
 @pytest.mark.django_db
+def test_risposta_invia_notifica_email(client, user_sponsor, sponsor, contact, mailoutbox):
+    from sponsors.models import MessageSender
+    from core.models import OrganizerSettings
+    cfg = OrganizerSettings.load()
+    cfg.messages_notify_email = 'avvisi@valet.it'
+    cfg.save()
+    root = PortalMessage.objects.create(
+        sponsor=sponsor, sender=MessageSender.OPERATOR, body='Domanda', is_active=True)
+    client.force_login(user_sponsor)
+    client.post(reverse('portal:message_reply', args=[root.id]), {'body': 'rispondo'})
+    assert len(mailoutbox) == 1
+    assert 'avvisi@valet.it' in mailoutbox[0].to
+    assert 'rispondo' in mailoutbox[0].body
+
+
+@pytest.mark.django_db
 def test_badge_conta_solo_messaggi_operatore(client, user_sponsor, sponsor, contact):
     from sponsors.models import MessageSender
     PortalMessage.objects.create(sponsor=sponsor, sender=MessageSender.OPERATOR,
