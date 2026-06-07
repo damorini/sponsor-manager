@@ -261,6 +261,18 @@ class ContractAdmin(admin.ModelAdmin):
                 queryset = queryset.filter(contract_kind=ContractKind.MAIN)
         return queryset, may_dup
 
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        # Genera automaticamente la riga stand/blocco se non ancora presente.
+        if obj.stand_id or obj.stand_block_id:
+            from .services.stand_line import genera_riga_da_stand, has_stand_line
+            if not has_stand_line(obj):
+                esito, msg = genera_riga_da_stand(obj)
+                if esito == 'creata':
+                    self.message_user(request, f"Riga stand aggiunta automaticamente: {msg}")
+                elif esito == 'no_prezzo':
+                    self.message_user(request, f"Attenzione: {msg}", level=messages.WARNING)
+
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',)

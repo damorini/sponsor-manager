@@ -108,14 +108,14 @@ class DocumentAdmin(admin.ModelAdmin):
     list_display = (
         'title', 'type_badge', 'entity_display',
         'file_name', 'file_size_display', 'uploaded_by_display',
-        'is_visible_to_sponsor', 'created_at_short',
+        'is_visible_to_sponsor', 'created_at_short', 'apri_file',
     )
     list_filter = ('document_type', 'storage_provider', 'is_visible_to_sponsor')
     search_fields = ('title', 'file_name', 'description')
     list_select_related = ('content_type', 'uploaded_by_user', 'uploaded_by_contact')
     readonly_fields = (
         'created_at', 'updated_at',
-        'file_size_bytes', 'mime_type',
+        'file_size_bytes', 'mime_type', 'apri_file',
     )
     ordering = ('-created_at',)
     date_hierarchy = 'created_at'
@@ -130,7 +130,7 @@ class DocumentAdmin(admin.ModelAdmin):
         }),
         ('File', {
             'fields': ('upload', 'storage_url', 'storage_provider', 'file_name',
-                       'file_size_bytes', 'mime_type'),
+                       'file_size_bytes', 'mime_type', 'apri_file'),
             'description': "Carica un file con 'Carica file' (consigliato) "
                            "oppure incolla un URL già pubblicato.",
         }),
@@ -149,6 +149,12 @@ class DocumentAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Apri')
+    def apri_file(self, obj):
+        if obj and obj.pk and obj.storage_url:
+            return format_html('<a href="{}" target="_blank">📄 apri</a>', obj.storage_url)
+        return '—'
 
     @admin.display(description='Tipo')
     def type_badge(self, obj):
