@@ -377,6 +377,14 @@ class ContractAdmin(admin.ModelAdmin):
 
     @admin.display(description='Stato')
     def status_badge(self, obj):
+        # Preventivo principale in Bozza = creato ma NON inviato: avviso evidente.
+        if (obj.status == ContractStatus.DRAFT
+                and obj.contract_kind == ContractKind.MAIN):
+            return format_html(
+                '<span style="background:#ba2121; color:white; padding:2px 8px; '
+                'border-radius:3px; font-size:0.85em; font-weight:700;" '
+                'title="Preventivo creato ma non ancora inviato">&#9888; Bozza &middot; DA INVIARE</span>'
+            )
         colors = {
             ContractStatus.DRAFT: '#999',
             ContractStatus.SENT: '#79aec8',

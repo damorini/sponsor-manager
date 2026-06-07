@@ -47,6 +47,21 @@ def cruscotto_home(request):
         if _nome not in _mittenti:
             _mittenti.append(_nome)
 
+    # Avviso: preventivi creati ma NON ancora inviati (contratti principali in Bozza)
+    from contracts.models import Contract, ContractStatus, ContractKind
+    _bozze = scope_by_event(request, (Contract.objects
+              .filter(status=ContractStatus.DRAFT,
+                      contract_kind=ContractKind.MAIN,
+                      deleted_at__isnull=True)
+              .select_related('sponsor')
+              .order_by('-created_at')), 'event')
+    _bozze_count = _bozze.count()
+    _bozze_sponsors = []
+    for _c in _bozze[:10]:
+        _n = _c.sponsor.legal_name if _c.sponsor_id else '(senza cliente)'
+        if _n not in _bozze_sponsors:
+            _bozze_sponsors.append(_n)
+
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto',
@@ -55,6 +70,9 @@ def cruscotto_home(request):
         'unread_msg_count': _unread.count(),
         'unread_msg_senders': _mittenti,
         'unread_msg_url': _rev('admin:sponsors_portalmessage_changelist') + '?mitt=sponsor&letto=no',
+        'bozze_count': _bozze_count,
+        'bozze_sponsors': _bozze_sponsors,
+        'bozze_url': _rev('admin:contracts_contract_changelist') + '?status__exact=draft',
     }
     return render(request, 'cruscotto/home.html', context)
 

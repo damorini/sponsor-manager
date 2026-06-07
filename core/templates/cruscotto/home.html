@@ -21,6 +21,16 @@
 {% block content %}
 <div class="cr-content">
 
+  {% if bozze_count %}
+  <a href="{{ bozze_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#fdecea;border-left:6px solid #ba2121;border-radius:10px;padding:14px 18px;color:#7a1414;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>⚠ ATTENZIONE: hai {{ bozze_count }} preventivo/i creato/i ma NON inviato/i</strong>
+      {% if bozze_sponsors %}<span> — per: {{ bozze_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · clicca per vederli e inviarli →</span>
+    </div>
+  </a>
+  {% endif %}
+
   {% if unread_msg_count %}
   <a href="{{ unread_msg_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
     <div style="background:#fff7d6;border-left:6px solid #e6a23c;border-radius:10px;padding:14px 18px;color:#5b4a00;box-shadow:0 1px 4px rgba(0,0,0,.08);">
