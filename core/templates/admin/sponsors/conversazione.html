@@ -43,7 +43,7 @@
       {% csrf_token %}
       <input type="hidden" name="reply_to" value="{{ t.root.id }}">
       <textarea name="body" rows="2" required placeholder="Scrivi una risposta in questo thread…"
-                style="flex:1;border:1px solid #cbbfa8;border-radius:8px;padding:8px;"></textarea>
+                style="flex:1;border:1px solid #cbbfa8;border-radius:8px;padding:8px;background:#fff;color:#111;"></textarea>
       <button type="submit" class="button" style="background:#2e7d32;color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;">Invia risposta</button>
     </form>
   </div>
@@ -57,13 +57,13 @@
       {% csrf_token %}
       <label style="display:flex;flex-direction:column;font-size:12px;color:#555;">
         Evento*
-        <select name="event" required style="border:1px solid #cbbfa8;border-radius:8px;padding:8px;min-width:220px;">
+        <select name="event" required style="border:1px solid #cbbfa8;border-radius:8px;padding:8px;min-width:220px;background:#fff;color:#111;">
           <option value="">— scegli l'evento —</option>
           {% for ev in eventi %}<option value="{{ ev.id }}">{{ ev.get_name }}</option>{% endfor %}
         </select>
       </label>
       <textarea name="body" rows="2" required placeholder="Scrivi un nuovo messaggio al cliente…"
-                style="flex:1;min-width:240px;border:1px solid #cbbfa8;border-radius:8px;padding:8px;"></textarea>
+                style="flex:1;min-width:240px;border:1px solid #cbbfa8;border-radius:8px;padding:8px;background:#fff;color:#111;"></textarea>
       <button type="submit" class="button" style="background:#1f4e79;color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;">Invia</button>
     </form>
     {% if not eventi %}<p style="color:#c0392b;font-size:12px;">Questo sponsor non ha eventi collegati: crea prima un contratto.</p>{% endif %}
