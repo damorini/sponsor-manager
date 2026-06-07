@@ -227,6 +227,7 @@ stateDiagram-v2
 
   <h3>6.7 Creare un servizio "dal catalogo" (auto-compila)</h3>
   <p>Nella scheda Servizio, in cima, c'è il menu <strong>"Crea da catalogo"</strong>: scegli una voce del Catalogo madre e si compilano da soli codice, nome IT/EN, descrizione, prezzo e IVA. Poi puoi modificarli per quell'evento.</p>
+  <div class="nota"><strong>Ogni evento ha il suo servizio (valori indipendenti).</strong> Lo stesso servizio usato su <strong>due eventi diversi</strong> sono in realtà <strong>due record distinti</strong> (unicità per <em>evento + codice</em>): puoi impostare <strong>prezzo, IVA, quantità, descrizione, immagine e varianti diversi</strong> tra i due. Quando crei «dal catalogo», i valori vengono <strong>copiati</strong> dalla voce madre e poi <strong>scollegati</strong>: modificare il servizio dell'evento A non tocca l'evento B né il catalogo madre. Da Excel, la stessa riga (stesso codice) su <code>evento_slug</code> diversi crea/aggiorna servizi indipendenti.</div>
 
   <h3>6.8 Prezzo del blocco stand</h3>
   <p>Creando un <strong>Blocco stand</strong>: scegli prima il congresso, poi nella casella vedi <strong>solo gli stand disponibili</strong> di quell'evento e li sposti nel blocco. Per il <strong>prezzo</strong>: se lasci vuoto "Prezzo blocco" il sistema usa la <strong>somma dei prezzi degli stand</strong>; se inserisci un prezzo, vale quello.</p>
