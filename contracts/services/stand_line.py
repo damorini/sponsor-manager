@@ -36,25 +36,36 @@ def get_or_create_stand_service(event):
 
 def _stand_price_and_label(contract):
     """
-    Ritorna (prezzo, etichetta, marcatore) per lo stand/blocco del contratto.
+    Ritorna (prezzo, etichetta, marcatore, descrizione) per lo stand/blocco.
     prezzo puo' essere None se non impostato. marcatore identifica la riga
-    in modo univoco per evitare doppioni.
+    in modo univoco per evitare doppioni. descrizione = "Descrizione per il
+    preventivo" dello stand/blocco, nella lingua del contratto.
     Solleva ValueError se il contratto non ha ne' stand ne' blocco.
     """
     stand = getattr(contract, "stand", None)
     block = getattr(contract, "stand_block", None)
+    lang = (getattr(contract, "language", "") or "it")
+
+    def _desc(obj):
+        try:
+            return (obj.translated('quote_description', lang)
+                    or obj.translated('quote_description', 'it') or '')
+        except Exception:
+            return ''
 
     if stand:
-        return stand.base_price, f"Spazio espositivo - {stand.code}", f"stand:{stand.code}"
+        return (stand.base_price, f"Spazio espositivo - {stand.code}",
+                f"stand:{stand.code}", _desc(stand))
     if block:
         # Prezzo a mano se impostato, altrimenti somma dei prezzi degli stand.
-        return block.effective_price, f"Spazio espositivo - Blocco {block.code}", f"block:{block.code}"
+        return (block.effective_price, f"Spazio espositivo - Blocco {block.code}",
+                f"block:{block.code}", _desc(block))
     raise ValueError("Il contratto non ha ne' uno stand ne' un blocco assegnato.")
 
 
 def has_stand_line(contract):
     """True se esiste gia' una riga (viva) per lo stand/blocco di questo contratto."""
-    _, _, marker = _stand_price_and_label(contract)
+    _, _, marker, _ = _stand_price_and_label(contract)
     # il marcatore viene salvato nelle note riga per riconoscere la riga-stand
     return contract.lines.filter(notes__contains=marker).exists()
 
@@ -72,7 +83,7 @@ def genera_riga_da_stand(contract):
 
     # 1) stand o blocco presente?
     try:
-        price, label, marker = _stand_price_and_label(contract)
+        price, label, marker, descrizione = _stand_price_and_label(contract)
     except ValueError as e:
         return ("no_stand", str(e))
 
@@ -93,6 +104,7 @@ def genera_riga_da_stand(contract):
         contract=contract,
         service=service,
         service_name_snapshot=label,
+        service_description_snapshot=descrizione,
         quantity=1,
         unit_price=price,
         notes=marker,  # marcatore per idempotenza
