@@ -1231,6 +1231,14 @@ def generate_quote_pdf_html(contract):
             header_url = (site_url + _img.url) if site_url else _img.url
     except Exception:
         header_url = ''
+    # Validita' del preventivo: opzione fino alla data impostata sul contratto,
+    # altrimenti 30 giorni dalla data di creazione.
+    from datetime import timedelta
+    _created = getattr(contract, 'created_at', None)
+    _created_date = _created.date() if _created else None
+    quote_valid_until = contract.option_until or (
+        (_created_date + timedelta(days=30)) if _created_date else None)
+
     ctx = {
         'contract': contract,
         'sponsor': sponsor,
@@ -1239,6 +1247,7 @@ def generate_quote_pdf_html(contract):
         'confirm_url': (site_url + portal_path) if site_url else portal_path,
         'header_url': header_url,
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
+        'quote_valid_until': quote_valid_until,
     }
     html = render_to_string('quote_pdf.html', ctx)
     pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()
