@@ -1,6 +1,10 @@
 <!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
 <style>
-  @page { size: A4; margin: 18mm 18mm 24mm; }
+  @page {
+    size: A4;
+    margin: 18mm 18mm 36mm;
+    @bottom-center { content: element(pagefooter); }
+  }
   * { box-sizing: border-box; }
   body { font-family: 'Helvetica Neue', Arial, sans-serif; color:#1f2937; font-size:12px; margin:0; line-height:1.5; }
   .brandbar { height:6px; background:{{ brand_color }}; border-radius:3px; margin:0 0 20px; }
@@ -28,14 +32,15 @@
   .cta { text-align:center; margin:28px 0 10px; }
   .btn { background:{{ brand_color }}; color:#ffffff !important; text-decoration:none; padding:13px 30px; border-radius:6px; font-weight:700; font-size:13px; }
   .hdr { width:100%; max-height:95px; object-fit:contain; margin:0 0 16px; }
-  /* Footer organizzatore */
-  .foot { margin-top:30px; padding-top:14px; border-top:2px solid {{ brand_color }}; }
-  .foot table { width:100%; }
-  .foot .logo-cell { width:120px; vertical-align:middle; padding-right:16px; }
-  .foot .logo-cell img { max-width:120px; max-height:60px; object-fit:contain; }
-  .foot .org-cell { vertical-align:middle; color:#6b7280; font-size:10.5px; line-height:1.6; }
-  .foot .org-name { color:#111827; font-weight:700; font-size:12px; margin-bottom:2px; }
-  .ref { color:#9ca3af; font-size:10px; text-align:center; margin-top:14px; }
+  /* Footer organizzatore: elemento "running" -> stampato nel margine basso
+     di OGNI pagina (vero footer, non a meta' pagina). */
+  .pagefooter { position: running(pagefooter); padding-top:8px; border-top:2px solid {{ brand_color }}; }
+  .pagefooter table { width:100%; }
+  .pagefooter .logo-cell { width:110px; vertical-align:middle; padding-right:14px; }
+  .pagefooter .logo-cell img { max-width:110px; max-height:46px; object-fit:contain; }
+  .pagefooter .org-cell { vertical-align:middle; color:#6b7280; font-size:9.5px; line-height:1.5; }
+  .pagefooter .org-name { color:#111827; font-weight:700; font-size:11px; margin-bottom:1px; }
+  .pagefooter .ref { color:#9ca3af; font-size:8.5px; text-align:right; vertical-align:middle; white-space:nowrap; padding-left:10px; }
 </style></head><body>
   {% if header_url %}<img class="hdr" src="{{ header_url }}">{% endif %}
   <div class="brandbar"></div>
@@ -70,7 +75,7 @@
 
   <div class="cta"><a class="btn" href="{{ confirm_url }}">Vedi e conferma il preventivo</a></div>
 
-  <div class="foot">
+  <div class="pagefooter">
     <table><tr>
       {% if org.logo_url %}<td class="logo-cell"><img src="{{ org.logo_url }}"></td>{% endif %}
       <td class="org-cell">
@@ -79,7 +84,7 @@
         {% if org.phone %}Tel: {{ org.phone }}{% if org.email %} &middot; {% endif %}{% endif %}{% if org.email %}Email: {{ org.email }}{% endif %}{% if org.website %}<br>{{ org.website }}{% endif %}
         {% if org.vat or org.rea %}<br>{% if org.vat %}P.IVA {{ org.vat }}{% endif %}{% if org.vat and org.rea %} &middot; {% endif %}{% if org.rea %}REA {{ org.rea }}{% endif %}{% endif %}
       </td>
+      <td class="ref">Preventivo {{ contract.contract_number }}</td>
     </tr></table>
   </div>
-  <p class="ref">Preventivo {{ contract.contract_number }}</p>
 </body></html>
