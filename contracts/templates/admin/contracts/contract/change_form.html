@@ -1,0 +1,20 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block object-tools-items %}
+  {% if original and original.pk %}
+  <li>
+    <a href="{% url 'admin:contracts_contract_preview_quote' original.pk %}"
+       class="historylink" title="{% trans 'Genera il PDF del preventivo e aprilo, SENZA inviarlo' %}">
+      🔍 {% trans "Anteprima preventivo" %}
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'admin:contracts_contract_send_quote' original.pk %}"
+       class="addlink" title="{% trans 'Genera e invia il preventivo scegliendo i destinatari' %}">
+      ✉️ {% trans "Genera e invia preventivo" %}
+    </a>
+  </li>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

@@ -422,6 +422,11 @@ class ContractAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom = [
             path(
+                '<path:object_id>/anteprima-preventivo/',
+                self.admin_site.admin_view(self.preview_quote_view),
+                name='contracts_contract_preview_quote',
+            ),
+            path(
                 '<path:object_id>/invia-preventivo/',
                 self.admin_site.admin_view(self.send_quote_view),
                 name='contracts_contract_send_quote',
@@ -456,6 +461,30 @@ class ContractAdmin(admin.ModelAdmin):
                 'preselected': preselected,
             })
         return rows
+
+    def preview_quote_view(self, request, object_id):
+        """Genera il PDF del preventivo SENZA inviarlo e lo apre subito.
+
+        Non invia email e non cambia lo stato del contratto: serve a vedere
+        l'anteprima di cosa si sta per mandare. Il PDF resta allegato come
+        Documento (rigenerato a ogni anteprima)."""
+        from .models import Contract
+        from .services.pdf_generator import generate_quote_pdf_html
+
+        contract = get_object_or_404(Contract, pk=object_id)
+        try:
+            document = generate_quote_pdf_html(contract)
+        except Exception as e:
+            self.message_user(
+                request, f"Errore nella generazione dell'anteprima: {e}",
+                level=messages.ERROR)
+            return HttpResponseRedirect('../')
+        self.message_user(
+            request,
+            "Anteprima del preventivo generata (non inviata). "
+            "Controlla il PDF: se va bene, usa «Genera e invia preventivo».",
+            level=messages.SUCCESS)
+        return HttpResponseRedirect(reverse('core:documento_apri', args=[document.id]))
 
     def send_quote_view(self, request, object_id):
         """Pagina di conferma: scelta destinatari, poi genera PDF e invia."""
