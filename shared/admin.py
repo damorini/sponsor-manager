@@ -60,7 +60,12 @@ class DocumentUploadForm(forms.ModelForm):
 
     def clean(self):
         cleaned = super().clean()
-        if not cleaned.get('upload') and not cleaned.get('storage_url'):
+        # OK se: carichi un nuovo file, indichi un URL, oppure il documento ha
+        # GIA' un file salvato (es. PDF preventivo gia' allegato: modificando
+        # altre parti del contratto non si deve ricaricare il file).
+        has_existing = bool((getattr(self.instance, 'storage_url', '') or '').strip())
+        if (not cleaned.get('upload') and not cleaned.get('storage_url')
+                and not has_existing):
             raise forms.ValidationError("Carica un file oppure indica un URL.")
         return cleaned
 
