@@ -12,9 +12,9 @@
       extend: {
         colors: {
           brand: {
-            50:'#f0f5fa', 100:'#dbe7f2', 200:'#bcd0e6', 300:'#8fb0d3',
-            400:'#5d88ba', 500:'{{ brand_primary_color|default:"#1f4e79" }}',
-            600:'#1f4e79', 700:'#1a3f63', 800:'#163450', 900:'#0f2942'
+            50:'#f0faf0', 100:'#dcf0dc', 200:'#b8deb8', 300:'#85c485',
+            400:'#4da14d', 500:'{{ brand_primary_color|default:"#006400" }}',
+            600:'#006400', 700:'#004e00', 800:'#003c00', 900:'#002800'
           },
           accent: {
             50:'#fbf7ee', 100:'#f3e9cf', 400:'#cba14e', 500:'#b8862f', 600:'#9a6f23'
@@ -93,7 +93,7 @@
     <div class="min-w-0">
       <div class="text-xs font-semibold text-white leading-tight break-words">{{ user.contact_profile.full_name }}</div>
       {% if user.contact_profile.sponsor %}
-      <div class="text-xs text-blue-200 truncate">{{ user.contact_profile.sponsor.legal_name }}</div>
+      <div class="text-xs text-green-200 truncate">{{ user.contact_profile.sponsor.legal_name }}</div>
       {% endif %}
     </div>
   </div>
@@ -149,7 +149,7 @@
     <div class="flex items-center justify-between">
       <form action="{% url 'portal:logout' %}" method="post">
         {% csrf_token %}
-        <button type="submit" class="flex items-center gap-2 text-sm text-blue-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
+        <button type="submit" class="flex items-center gap-2 text-sm text-green-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
       </form>
       <a href="{% url 'portal:privacy_policy' %}" class="text-xs text-white/50 hover:text-white">{% trans "Privacy" %}</a>
     </div>
