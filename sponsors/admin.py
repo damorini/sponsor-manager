@@ -181,7 +181,8 @@ class SponsorAdmin(admin.ModelAdmin):
         'legal_name', 'display_name', 'vat_number', 'tax_code',
         'address_city', 'pec_email',
     )
-    readonly_fields = ('created_at', 'updated_at', 'contracts_summary', 'logo_preview')
+    readonly_fields = ('created_at', 'updated_at', 'contracts_summary',
+                       'logo_preview', 'conversazione_display')
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline, PortalMessageInline]
     actions = ['action_generate_client_summary', 'action_compose_email']
@@ -221,6 +222,11 @@ class SponsorAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom = [
+            path(
+                'messaggio/<uuid:message_id>/letto/',
+                self.admin_site.admin_view(self.mark_message_read_view),
+                name='sponsors_messaggio_letto',
+            ),
             path(
                 '<path:object_id>/genera-scheda/',
                 self.admin_site.admin_view(self.generate_summary_view),
@@ -429,6 +435,12 @@ class SponsorAdmin(admin.ModelAdmin):
             'fields': ('notes',),
             'classes': ('collapse',),
         }),
+        ('Conversazione col portale', {
+            'fields': ('conversazione_display',),
+            'description': "Lo scambio di messaggi col cliente (botta e risposta). "
+                           "Per rispondere usa la sezione qui sotto «Conversazione "
+                           "col portale» scegliendo «In risposta a».",
+        }),
         ('Riepilogo contratti', {
             'fields': ('contracts_summary',),
         }),
@@ -437,6 +449,65 @@ class SponsorAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Conversazione')
+    def conversazione_display(self, obj):
+        from django.utils.safestring import mark_safe
+        from django.utils.html import escape
+        from django.utils import timezone
+        if not obj or not obj.pk:
+            return "—"
+        msgs = list(obj.portal_messages.filter(is_active=True)
+                    .select_related('parent', 'read_by').order_by('created_at'))
+        if not msgs:
+            return mark_safe('<em style="color:#888;">Nessun messaggio.</em>')
+        figli = {}
+        for m in msgs:
+            if m.parent_id:
+                figli.setdefault(m.parent_id, []).append(m)
+        roots = [m for m in msgs if m.parent_id is None]
+
+        def bolla(m):
+            is_op = m.sender == MessageSender.OPERATOR
+            when = timezone.localtime(m.created_at).strftime('%d/%m/%Y %H:%M')
+            side = 'flex-start' if is_op else 'flex-end'
+            bg = '#eef2f7' if is_op else '#dff3df'
+            who = 'Operatore (tu)' if is_op else 'Cliente'
+            if is_op:
+                stato = ('<span style="color:#41ad7c;">letto dal cliente</span>'
+                         if m.read_at else
+                         '<span style="color:#b07d00;">in attesa di lettura</span>')
+            else:
+                if m.read_at:
+                    stato = '<span style="color:#41ad7c;">letta ✓</span>'
+                else:
+                    url = reverse('admin:sponsors_messaggio_letto', args=[m.id])
+                    stato = ('<span style="color:#c0392b;font-weight:700;">DA LEGGERE</span> '
+                             f'· <a href="{url}">segna come letta</a>')
+            return (
+                f'<div style="display:flex;justify-content:{side};margin:5px 0;">'
+                f'<div style="max-width:72%;background:{bg};border-radius:12px;padding:8px 12px;">'
+                f'<div style="font-size:11px;color:#555;font-weight:700;">{who} · {when}</div>'
+                f'<div style="white-space:pre-line;color:#111;margin:2px 0;">{escape(m.body)}</div>'
+                f'<div style="font-size:11px;">{stato}</div>'
+                f'</div></div>'
+            )
+
+        out = ['<div style="max-width:760px;border:1px solid #e3ddd2;border-radius:10px;padding:10px;background:#fbfaf7;">']
+        for root in roots:
+            out.append(bolla(root))
+            for ch in sorted(figli.get(root.id, []), key=lambda x: x.created_at):
+                out.append(bolla(ch))
+            out.append('<hr style="border:none;border-top:1px dashed #d8cfc0;margin:8px 0;">')
+        out.append('</div>')
+        return mark_safe(''.join(out))
+
+    def mark_message_read_view(self, request, message_id):
+        from django.shortcuts import get_object_or_404, redirect
+        msg = get_object_or_404(PortalMessage, id=message_id)
+        msg.mark_read()
+        self.message_user(request, "Messaggio segnato come letto.", level=messages.SUCCESS)
+        return redirect(reverse('admin:sponsors_sponsor_change', args=[msg.sponsor_id]))
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)

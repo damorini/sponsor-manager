@@ -34,11 +34,26 @@ def cruscotto_home(request):
             'location': getattr(ev, 'location', '') or '',
         })
 
+    # Avviso: risposte dei clienti non ancora lette dall'operatore
+    from sponsors.models import PortalMessage, MessageSender
+    from django.urls import reverse as _rev
+    _unread = (PortalMessage.objects
+               .filter(sender=MessageSender.SPONSOR, read_at__isnull=True, is_active=True)
+               .select_related('sponsor').order_by('-created_at'))
+    _mittenti = []
+    for _m in _unread[:10]:
+        _nome = _m.sponsor.legal_name
+        if _nome not in _mittenti:
+            _mittenti.append(_nome)
+
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto',
         'cards': cards,
         'n_eventi': len(cards),
+        'unread_msg_count': _unread.count(),
+        'unread_msg_senders': _mittenti,
+        'unread_msg_url': _rev('admin:sponsors_portalmessage_changelist') + '?mitt=sponsor&letto=no',
     }
     return render(request, 'cruscotto/home.html', context)
 

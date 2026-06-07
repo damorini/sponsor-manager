@@ -20,6 +20,17 @@
 
 {% block content %}
 <div class="cr-content">
+
+  {% if unread_msg_count %}
+  <a href="{{ unread_msg_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#fff7d6;border-left:6px solid #e6a23c;border-radius:10px;padding:14px 18px;color:#5b4a00;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>✉ Hai {{ unread_msg_count }} messaggio/i non letto/i dai clienti</strong>
+      {% if unread_msg_senders %}<span> — da: {{ unread_msg_senders|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · clicca per leggere e rispondere →</span>
+    </div>
+  </a>
+  {% endif %}
+
   <div class="cr-hero">
     <h1 class="cr-title">Cruscotto</h1>
     <p class="cr-sub">
