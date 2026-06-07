@@ -96,6 +96,82 @@ def build_template_servizi_workbook():
     return wb
 
 
+def build_template_catalogo_workbook():
+    """Template Excel per importa_catalogo (CATALOGO GENERALE, senza evento)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.comments import Comment
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Catalogo"
+
+    headers = [
+        ("code", "OBBLIGATORIO. Codice univoco nel catalogo, es. TAVOLO_STD"),
+        ("nome_it", "OBBLIGATORIO. Nome in italiano"),
+        ("nome_en", "Opzionale. Nome in inglese"),
+        ("descrizione_it", "Opzionale. Descrizione italiano"),
+        ("descrizione_en", "Opzionale. Descrizione inglese"),
+        ("categoria", "Opzionale. Nome categoria (creata se non esiste), es. Arredo"),
+        ("categoria_contabile", "Default 'altro'. Valori: viaggio_partecipanti, "
+         "viaggio_relatori, affitto_sala, stand, coffee_break, scheda_tecnica, "
+         "quota_iscrizione, altro"),
+        ("prezzo_base", "OBBLIGATORIO. Prezzo base di default in euro (es. 100.00)"),
+        ("iva_percento", "IVA in percentuale (default 22)"),
+        ("attivo", "s/n (default s)"),
+        ("quantita_max", "Quantita' massima per contratto (vuoto = illimitata)"),
+        ("ordine", "Ordine di visualizzazione (numero, default 0)"),
+        ("pricing_mode", "Default 'fixed'. Valori: fixed, quantity, tiered"),
+        ("genera_scadenze", "s/n (default n). Se 's', vendere il servizio crea le scadenze materiali."),
+        ("self_service", "s/n (default n). Acquistabile dal cliente in self-service."),
+        ("cutoff_giorni", "Giorni prima dell'evento entro cui si puo' acquistare self-service (vuoto = nessun limite)."),
+        ("immagine", "Opzionale. PERCORSO COMPLETO del file foto, anche stile Windows "
+         "(es. C:\\Users\\morin\\foto\\stand.jpg) - convertito da solo. Oppure solo il nome "
+         "file importando da CLI con: --immagini <cartella>."),
+    ]
+
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, (name, comment) in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=name)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.comment = Comment(comment, "Sponsor Manager")
+
+    esempio = ["TAVOLO_STD", "Tavolo standard", "Standard table",
+               "Tavolo 80x80 cm, bianco", "80x80 cm white table",
+               "Arredo", "altro", 100.00, 22, "s", "", 10, "fixed", "n", "n", "", ""]
+    for col, v in enumerate(esempio, start=1):
+        ws.cell(row=2, column=col, value=v)
+
+    larghezze = [18, 22, 22, 28, 28, 16, 22, 14, 14, 8, 14, 10, 14, 16, 12, 14, 40]
+    for i, w in enumerate(larghezze, start=1):
+        ws.column_dimensions[chr(64 + i)].width = w
+
+    ws2 = wb.create_sheet("Istruzioni")
+    istr = [
+        "IMPORT CATALOGO GENERALE - Istruzioni",
+        "",
+        "Questo importa nel CATALOGO MADRE (valido per tutti gli eventi), NON nel singolo evento.",
+        "Dal catalogo poi crei i servizi di un evento scegliendo 'dal catalogo'.",
+        "",
+        "1. La RIGA 2 e' un esempio: cancellala o sovrascrivila.",
+        "2. Colonne OBBLIGATORIE: code, nome_it, prezzo_base. (NESSUN evento_slug qui!)",
+        "3. code: univoco nel catalogo. Se esiste -> AGGIORNA, sennò -> CREA.",
+        "4. categoria_contabile (default 'altro'): viaggio_partecipanti / viaggio_relatori /",
+        "   affitto_sala / stand / coffee_break / scheda_tecnica / quota_iscrizione / altro",
+        "5. pricing_mode (default 'fixed'): fixed / quantity / tiered",
+        "6. immagine: PERCORSO COMPLETO nella cella (anche C:\\... si converte da solo),",
+        "   oppure solo nome file + da CLI: python manage.py importa_catalogo --file <f.xlsx> --immagini <cartella>",
+    ]
+    for r, riga in enumerate(istr, start=1):
+        ws2.cell(row=r, column=1, value=riga)
+    ws2.cell(row=1, column=1).font = Font(bold=True, size=14)
+    ws2.column_dimensions["A"].width = 90
+    return wb
+
+
 def build_template_stand_workbook():
     """Crea e ritorna un openpyxl Workbook col template Excel per importa_stand."""
     from openpyxl import Workbook

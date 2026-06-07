@@ -70,6 +70,27 @@
     <h2 class="cr-h2">Import da Excel</h2>
     <div class="cr-grid">
       <div class="cr-panel">
+        <h3>Catalogo generale</h3>
+        <p style="font-size:.82rem; color:var(--muted); margin:0 0 10px;">Servizi del catalogo madre, validi per tutti gli eventi (senza evento_slug).</p>
+        <a href="{% url 'core:cruscotto_download_template_catalogo' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello catalogo</a>
+        <form method="post" action="{% url 'core:cruscotto_importa_catalogo' %}"
+              enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
+          {% csrf_token %}
+          <label class="cr-dropzone">
+            <input type="file" name="file_excel" accept=".xlsx,.xls" hidden>
+            <span class="cr-dz-icon">⬆</span>
+            <span class="cr-dz-text">Trascina qui il file Excel
+              <span class="cr-dz-sub">oppure clicca per sceglierlo (.xlsx)</span>
+            </span>
+            <span class="cr-dz-file"></span>
+          </label>
+          <label class="cr-check" style="display:block; margin:8px 0;">
+            <input type="checkbox" name="dry_run" checked> Solo anteprima (non salva)
+          </label>
+          <button type="submit" class="cr-btn cr-btn--accent cr-btn--small">↑ Importa catalogo</button>
+        </form>
+      </div>
+      <div class="cr-panel">
         <h3>Servizi</h3>
         <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello servizi</a>
         <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"

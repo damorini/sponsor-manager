@@ -212,13 +212,8 @@ class Command(BaseCommand):
                         self.stdout.write(f"  {n_riga:>4}: ~ AGGIORNATO '{code}'")
 
                 if immagine_raw and not dry:
-                    _cand = Path(immagine_raw)
-                    if _cand.is_file():
-                        _img = _cand
-                    elif cartella_img and (Path(cartella_img) / immagine_raw).is_file():
-                        _img = Path(cartella_img) / immagine_raw
-                    else:
-                        _img = None
+                    from catalog.utils.img_path import resolve_image_path
+                    _img = resolve_image_path(immagine_raw, cartella_img)
                     if _img is not None:
                         from django.core.files import File as _DjFile
                         with open(_img, "rb") as _fh:

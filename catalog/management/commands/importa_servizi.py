@@ -51,35 +51,7 @@ def _norm_int(v):
         raise ValueError(f"valore non intero: {v!r}")
 
 
-def _win_to_wsl(p):
-    """Converte un percorso stile Windows (C:\\... o C:/...) nel percorso WSL
-    equivalente (/mnt/c/...). Lascia invariati i percorsi gia' in stile Unix."""
-    import re
-    s = str(p).strip().strip('"').strip("'")
-    if not s:
-        return s
-    m = re.match(r'^([A-Za-z]):[\\/](.*)$', s)
-    if m:
-        drive = m.group(1).lower()
-        rest = m.group(2).replace('\\', '/')
-        return f"/mnt/{drive}/{rest}"
-    return s.replace('\\', '/')
-
-
-def _resolve_image_path(immagine_raw, cartella_img):
-    """Trova il file immagine da una cella Excel.
-    Accetta: percorso completo (anche Windows C:\\..), oppure solo nome file
-    se e' stata passata --immagini <cartella>. Ritorna un Path o None."""
-    raw = _win_to_wsl(immagine_raw)
-    cand = Path(raw).expanduser()
-    if cand.is_file():
-        return cand
-    if cartella_img:
-        # prova: cartella + nome file (usa solo il basename, ignora eventuali path)
-        sub = Path(_win_to_wsl(cartella_img)).expanduser() / Path(raw).name
-        if sub.is_file():
-            return sub
-    return None
+from catalog.utils.img_path import resolve_image_path as _resolve_image_path  # noqa: E402
 
 
 class Command(BaseCommand):
