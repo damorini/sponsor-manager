@@ -117,7 +117,7 @@
               <th class="px-5 py-3 text-left">{% trans "Descrizione" %}</th>
               <th class="px-5 py-3 text-right">{% trans "Q.tà" %}</th>
               <th class="px-5 py-3 text-right">{% trans "Prezzo" %}</th>
-              <th class="px-5 py-3 text-right">{% trans "Totale" %}</th>
+              <th class="px-5 py-3 text-right">{% trans "Totale (IVA escl.)" %}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -135,7 +135,7 @@
               </td>
               <td class="px-5 py-3 text-right">{{ line.quantity }}</td>
               <td class="px-5 py-3 text-right whitespace-nowrap">€ {{ line.unit_price|floatformat:2 }}</td>
-              <td class="px-5 py-3 text-right whitespace-nowrap font-medium">{% if line.line_total %}€ {{ line.line_total|floatformat:2 }}{% else %}<span class="inline-block text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium">{% trans "Incluso" %}</span>{% endif %}</td>
+              <td class="px-5 py-3 text-right whitespace-nowrap font-medium">{% if line.line_subtotal %}€ {{ line.line_subtotal|floatformat:2 }}{% else %}<span class="inline-block text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium">{% trans "Incluso" %}</span>{% endif %}</td>
             </tr>
             {% endfor %}
           </tbody>
