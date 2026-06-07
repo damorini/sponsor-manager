@@ -43,6 +43,20 @@
             </tr>
             {% endfor %}
           </tbody>
+          <tfoot>
+            <tr class="border-t border-gray-200">
+              <td colspan="3" class="py-1.5 pr-2 text-right text-gray-500">{% trans "Totale imponibile" %}</td>
+              <td class="py-1.5 pl-2 text-right text-gray-700 whitespace-nowrap">&euro; {{ o.subtotal|floatformat:2 }}</td>
+            </tr>
+            <tr>
+              <td colspan="3" class="py-1.5 pr-2 text-right text-gray-500">{% trans "IVA" %}</td>
+              <td class="py-1.5 pl-2 text-right text-gray-700 whitespace-nowrap">&euro; {{ o.vat_amount|floatformat:2 }}</td>
+            </tr>
+            <tr class="border-t border-gray-200">
+              <td colspan="3" class="py-2 pr-2 text-right font-bold text-gray-900">{% trans "Totale (IVA inclusa)" %}</td>
+              <td class="py-2 pl-2 text-right font-bold text-gray-900 whitespace-nowrap">&euro; {{ o.total|floatformat:2 }}</td>
+            </tr>
+          </tfoot>
         </table>
         <div class="bg-gray-50 rounded p-3 text-sm text-gray-800 space-y-1">
           <div class="font-medium text-gray-900 mb-1">{% trans "Effettua il bonifico con questi dati:" %}</div>
@@ -98,6 +112,20 @@
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot>
+          <tr class="border-t border-gray-200">
+            <td colspan="3" class="py-1.5 pr-2 text-right text-gray-500">{% trans "Totale imponibile" %}</td>
+            <td class="py-1.5 pl-2 text-right text-gray-700 whitespace-nowrap">&euro; {{ o.subtotal|floatformat:2 }}</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="py-1.5 pr-2 text-right text-gray-500">{% trans "IVA" %}</td>
+            <td class="py-1.5 pl-2 text-right text-gray-700 whitespace-nowrap">&euro; {{ o.vat_amount|floatformat:2 }}</td>
+          </tr>
+          <tr class="border-t border-gray-200">
+            <td colspan="3" class="py-2 pr-2 text-right font-bold text-gray-900">{% trans "Totale (IVA inclusa)" %}</td>
+            <td class="py-2 pl-2 text-right font-bold text-gray-900 whitespace-nowrap">&euro; {{ o.total|floatformat:2 }}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     {% endfor %}
