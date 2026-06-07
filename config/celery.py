@@ -62,6 +62,11 @@ app.conf.beat_schedule = {
         'task': 'contracts.tasks.scheduled.check_abandoned_carts',
         'schedule': crontab(hour=10, minute=0),
     },
+    # Reminder wishlist: lunedì alle 9:30 (max una volta a settimana per cliente)
+    'check_wishlist_reminders_weekly': {
+        'task': 'contracts.tasks.scheduled.check_wishlist_reminders',
+        'schedule': crontab(hour=9, minute=30, day_of_week=1),
+    },
 
     # Esempi alternativi (commentati):
     

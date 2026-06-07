@@ -25,7 +25,9 @@ class Wishlist(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    last_reminder_sent_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Ultimo reminder inviato il")
+
     class Meta:
         verbose_name = "Wishlist"
         verbose_name_plural = "Wishlists"

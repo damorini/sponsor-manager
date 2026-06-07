@@ -262,3 +262,28 @@ def send_operator_alerts():
         logger.info("Operator alert inviato: %s", subject)
     except Exception:
         logger.exception("Errore invio operator alert")
+
+
+# ============================================================================
+# Reminder wishlist (ai clienti con articoli salvati)
+# ============================================================================
+
+@shared_task
+def check_wishlist_reminders(min_days=7):
+    """Manda un promemoria ai clienti che hanno articoli in wishlist, non più
+    spesso di una volta ogni `min_days` giorni."""
+    from portal.models import Wishlist
+    from contracts.tasks.notifications import send_wishlist_reminder
+
+    threshold = timezone.now() - timedelta(days=min_days)
+    qs = (Wishlist.objects
+          .filter(items__isnull=False)
+          .filter(Q(last_reminder_sent_at__isnull=True) |
+                  Q(last_reminder_sent_at__lt=threshold))
+          .distinct())
+    sent = 0
+    for wl in qs:
+        send_wishlist_reminder.delay(wl.id)
+        sent += 1
+    logger.info("check_wishlist_reminders: %d reminder schedulati", sent)
+    return sent

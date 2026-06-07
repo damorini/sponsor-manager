@@ -434,3 +434,67 @@ def send_cart_recovery_email(self, cart_session_id):
     except Exception as e:
         logger.exception("Errore cart recovery %s", cart_session_id)
         raise self.retry(exc=e)
+
+
+# ============================================================================
+# Reminder wishlist (al cliente: hai ancora articoli osservati)
+# ============================================================================
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=120)
+def send_wishlist_reminder(self, wishlist_id):
+    """Promemoria al cliente degli articoli nella wishlist.
+    Se ci sono articoli a disponibilita' limitata, aggiunge un invito a non
+    perdere l'occasione. Aggiorna last_reminder_sent_at."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+    from django.urls import reverse
+    from portal.models import Wishlist
+
+    try:
+        wl = Wishlist.objects.select_related('user').prefetch_related(
+            'items__service').get(id=wishlist_id)
+    except Wishlist.DoesNotExist:
+        return
+
+    email = (wl.user.email or '').strip()
+    items = list(wl.items.select_related('service').all())
+    if not email or not items:
+        return
+
+    limitati = []
+    for it in items:
+        s = it.service
+        try:
+            if s.total_available is not None or getattr(s, 'is_sold_out', False):
+                limitati.append(s)
+        except Exception:
+            pass
+
+    base = (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
+    link = base + reverse('portal:wishlist_page')
+    n = len(items)
+
+    righe = [
+        'Ciao,',
+        '',
+        ('hai ancora %d articolo/i tra i tuoi preferiti (wishlist) nel portale: '
+         'non lasciarli li ad aspettare!') % n,
+    ]
+    if limitati:
+        righe += [
+            '',
+            ("Attenzione: fra gli articoli che osservi ce ne sono alcuni con "
+             "DISPONIBILITA' LIMITATA. Non rischiare di perdere l'articolo di tuo "
+             "interesse: completa l'acquisto finche' sei in tempo."),
+        ]
+    righe += ['', 'Vai a vederli qui: ' + link, '', 'A presto!']
+    body = "\n".join(righe)
+
+    try:
+        send_mail('I tuoi articoli preferiti ti aspettano', body,
+                  settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
+        wl.last_reminder_sent_at = timezone.now()
+        wl.save(update_fields=['last_reminder_sent_at', 'updated_at'])
+    except Exception as e:
+        logger.exception('Errore reminder wishlist %s', wishlist_id)
+        raise self.retry(exc=e)
