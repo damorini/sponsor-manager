@@ -137,6 +137,10 @@ def profile_view(request):
                 if field in ('email', 'full_name') and not val:
                     continue
                 setattr(contact, field, val)
+        # lingua preferita (scelta con le bandierine)
+        _lang = (request.POST.get('contact_preferred_language') or '').strip()
+        if _lang in ('it', 'en'):
+            contact.preferred_language = _lang
         # logo caricato (opzionale)
         logo_caricato = request.FILES.get('sponsor_logo_file')
         if logo_caricato:

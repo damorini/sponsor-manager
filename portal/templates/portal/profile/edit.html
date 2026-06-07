@@ -73,6 +73,22 @@
         </div>
         {% endfor %}
       </div>
+
+      <div class="mt-5">
+        <label class="block text-sm font-medium text-gray-700 mb-2">{% trans "Lingua preferita" %}</label>
+        <p class="text-xs text-gray-500 mb-3">{% trans "Usata per il portale e per le email (es. il preventivo). Clicca la bandiera." %}</p>
+        <input type="hidden" name="contact_preferred_language" id="pref-lang-input" value="{{ contact.preferred_language|default:'it' }}">
+        <div class="flex gap-4">
+          <button type="button" data-lang="it"
+                  class="lang-flag flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all {% if contact.preferred_language != 'en' %}border-brand-500 bg-brand-50 shadow-sm{% else %}border-gray-200 opacity-50 grayscale{% endif %}">
+            <span class="text-2xl">🇮🇹</span><span class="font-semibold text-gray-800">Italiano</span>
+          </button>
+          <button type="button" data-lang="en"
+                  class="lang-flag flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all {% if contact.preferred_language == 'en' %}border-brand-500 bg-brand-50 shadow-sm{% else %}border-gray-200 opacity-50 grayscale{% endif %}">
+            <span class="text-2xl">🇬🇧</span><span class="font-semibold text-gray-800">English</span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="flex justify-end gap-3">
@@ -171,4 +187,29 @@
     </form>
   </div>
 </div>
+
+<script>
+  // Selettore lingua preferita: clic sulla bandiera -> quella scelta resta
+  // a colori ed evidenziata, l'altra diventa grigia.
+  (function () {
+    var input = document.getElementById('pref-lang-input');
+    var flags = document.querySelectorAll('.lang-flag');
+    if (!input || !flags.length) return;
+    function applica(lang) {
+      input.value = lang;
+      flags.forEach(function (b) {
+        var sel = b.getAttribute('data-lang') === lang;
+        b.classList.toggle('border-brand-500', sel);
+        b.classList.toggle('bg-brand-50', sel);
+        b.classList.toggle('shadow-sm', sel);
+        b.classList.toggle('border-gray-200', !sel);
+        b.classList.toggle('opacity-50', !sel);
+        b.classList.toggle('grayscale', !sel);
+      });
+    }
+    flags.forEach(function (b) {
+      b.addEventListener('click', function () { applica(b.getAttribute('data-lang')); });
+    });
+  })();
+</script>
 {% endblock %}
