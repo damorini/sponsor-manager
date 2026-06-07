@@ -33,8 +33,9 @@ def build_template_servizi_workbook():
          "materiali (servono i modelli di scadenza sul servizio)."),
         ("servizi_inclusi", "Opzionale. Codici di altri servizi dello STESSO evento separati "
          "da virgola: vengono aggiunti a 0 EUR quando questo servizio viene venduto."),
-        ("immagine", "Opzionale. Nome del file foto (es. stand_premium.jpg). Salva i file in una "
-         "cartella e importa con: --immagini <cartella>."),
+        ("immagine", "Opzionale. PERCORSO COMPLETO del file foto, anche in stile Windows "
+         "(es. C:\\Users\\morin\\foto\\stand.jpg) - viene convertito da solo. In alternativa "
+         "solo il nome file (es. stand.jpg) importando con: --immagini <cartella>."),
     ]
 
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -78,8 +79,11 @@ def build_template_servizi_workbook():
         "9. genera_scadenze: s/n. Se 's', vendere il servizio crea le scadenze materiali.",
         "10. servizi_inclusi: codici di altri servizi dello stesso evento (separati da virgola).",
         "    Vengono aggiunti a 0 EUR quando questo servizio entra in un contratto.",
-        "11. immagine: nome del file foto (es. stand_premium.jpg). Salva tutte le foto in una "
-        "cartella e lancia: python manage.py importa_servizi --file <file.xlsx> --immagini <cartella>",
+        "11. immagine: due modi.",
+        "    a) PERCORSO COMPLETO nella cella (consigliato, funziona anche dall'import web):",
+        "       es. C:\\Users\\morin\\foto\\stand.jpg  (i percorsi Windows si convertono da soli).",
+        "    b) solo il NOME del file (es. stand.jpg) + cartella da riga di comando:",
+        "       python manage.py importa_servizi --file <file.xlsx> --immagini <cartella>",
         "",
         "Lancio:",
         "  python manage.py importa_servizi --file <percorso_file.xlsx> --dry-run",

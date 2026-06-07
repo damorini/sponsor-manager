@@ -51,6 +51,37 @@ def _norm_int(v):
         raise ValueError(f"valore non intero: {v!r}")
 
 
+def _win_to_wsl(p):
+    """Converte un percorso stile Windows (C:\\... o C:/...) nel percorso WSL
+    equivalente (/mnt/c/...). Lascia invariati i percorsi gia' in stile Unix."""
+    import re
+    s = str(p).strip().strip('"').strip("'")
+    if not s:
+        return s
+    m = re.match(r'^([A-Za-z]):[\\/](.*)$', s)
+    if m:
+        drive = m.group(1).lower()
+        rest = m.group(2).replace('\\', '/')
+        return f"/mnt/{drive}/{rest}"
+    return s.replace('\\', '/')
+
+
+def _resolve_image_path(immagine_raw, cartella_img):
+    """Trova il file immagine da una cella Excel.
+    Accetta: percorso completo (anche Windows C:\\..), oppure solo nome file
+    se e' stata passata --immagini <cartella>. Ritorna un Path o None."""
+    raw = _win_to_wsl(immagine_raw)
+    cand = Path(raw).expanduser()
+    if cand.is_file():
+        return cand
+    if cartella_img:
+        # prova: cartella + nome file (usa solo il basename, ignora eventuali path)
+        sub = Path(_win_to_wsl(cartella_img)).expanduser() / Path(raw).name
+        if sub.is_file():
+            return sub
+    return None
+
+
 class Command(BaseCommand):
     help = "Importa o aggiorna Service da un file Excel (vedi template_servizi.xlsx)."
 
@@ -248,13 +279,7 @@ class Command(BaseCommand):
                     inclusi_pending.append((svc, evento, inclusi_raw, n_riga))
 
                 if immagine_raw:
-                    _cand = Path(immagine_raw)
-                    if _cand.is_file():
-                        _img = _cand            # percorso completo nella cella
-                    elif cartella_img and (Path(cartella_img) / immagine_raw).is_file():
-                        _img = Path(cartella_img) / immagine_raw   # nome file + cartella
-                    else:
-                        _img = None
+                    _img = _resolve_image_path(immagine_raw, cartella_img)
                     if _img is not None:
                         from django.core.files import File as _DjFile
                         with open(_img, "rb") as _fh:
