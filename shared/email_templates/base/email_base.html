@@ -17,14 +17,14 @@
   body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 
   /* Stili custom — modifica qui i colori del tuo brand */
-  .brand-primary { background-color: {{ brand_primary_color|default:"#1f4e79" }}; }
+  .brand-primary { background-color: {{ brand_primary_color|default:"#1d6534" }}; }
   .brand-text-on-primary { color: #ffffff; }
-  .text-primary { color: {{ brand_primary_color|default:"#1f4e79" }}; }
+  .text-primary { color: {{ brand_primary_color|default:"#1d6534" }}; }
   .text-muted { color: #6b7280; }
   .text-body { color: #1f2937; }
 
   .button {
-    background-color: {{ brand_primary_color|default:"#1f4e79" }};
+    background-color: {{ brand_primary_color|default:"#1d6534" }};
     color: #ffffff !important;
     text-decoration: none;
     display: inline-block;
@@ -134,8 +134,8 @@
                   {% if org_name %}<strong style="color:#374151;">{{ org_name }}</strong><br>{% endif %}
                   {% if org_address %}{{ org_address|linebreaksbr }}<br>{% endif %}
                   {% if org_phone %}Tel: {{ org_phone }}<br>{% endif %}
-                  {% if org_email %}Email: <a href="mailto:{{ org_email }}" style="color:#1f4e79;">{{ org_email }}</a><br>{% endif %}
-                  {% if org_website %}<a href="{{ org_website }}" style="color:#1f4e79;">{{ org_website }}</a><br>{% endif %}
+                  {% if org_email %}Email: <a href="mailto:{{ org_email }}" style="color:#1d6534;">{{ org_email }}</a><br>{% endif %}
+                  {% if org_website %}<a href="{{ org_website }}" style="color:#1d6534;">{{ org_website }}</a><br>{% endif %}
                   {% if org_vat %}P.IVA {{ org_vat }}{% if org_rea %} · REA {{ org_rea }}{% endif %}{% elif org_rea %}REA {{ org_rea }}{% endif %}
                 </td>
               </tr>

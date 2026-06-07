@@ -209,7 +209,7 @@ BANK_TRANSFER_BANK = config('BANK_TRANSFER_BANK', default='Banca di Esempio S.p.
 BANK_TRANSFER_IBAN = config('BANK_TRANSFER_IBAN', default='IT00 X000 0000 0000 0000 0000 000')
 BANK_TRANSFER_BIC = config('BANK_TRANSFER_BIC', default='')
 BRAND_LOGO_URL = config('BRAND_LOGO_URL', default='')
-BRAND_PRIMARY_COLOR = config('BRAND_PRIMARY_COLOR', default='#1f4e79')
+BRAND_PRIMARY_COLOR = config('BRAND_PRIMARY_COLOR', default='#1d6534')
 
 SITE_URL = config('SITE_URL', default='http://localhost:8000')
 PORTAL_URL = config('PORTAL_URL', default='http://localhost:8000/portal/')

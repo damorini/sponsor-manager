@@ -16,7 +16,7 @@
         <span class="text-gray-600">{% trans "Totale proposta (IVA inclusa)" %}</span>
         <span class="text-2xl font-bold text-gray-900">€ {{ contract.total|floatformat:2 }}</span>
       </div>
-      <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-900 p-4 rounded">
+      <div class="bg-brand-50 border-l-4 border-brand-500 text-brand-900 p-4 rounded">
         <p>{% trans "Con il click su «Accetta preventivo», il fornitore ricevera' la conferma dell'ordine e saranno automaticamente generate le scadenze tecnico-amministrative." %}</p>
         <p class="mt-2 text-sm">{% trans "Per qualsiasi ulteriore informazione potete contattare la segreteria organizzativa" %}{% if support_email %} (<a href="mailto:{{ support_email }}" class="underline">{{ support_email }}</a>){% endif %}.</p>
       </div>

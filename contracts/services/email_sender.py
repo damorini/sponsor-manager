@@ -115,7 +115,7 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
         'org_rea': (_org.rea if _org else '') ,
         'org_logo_url': ((getattr(settings, 'SITE_URL', '').rstrip('/') + _org.logo.url) if (_org and _org.logo) else ''),
         'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
-        'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
+        'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'portal_url': getattr(settings, 'PORTAL_URL', '/portal/'),
         'admin_url': getattr(settings, 'ADMIN_URL', '/admin/'),
         'checkout_url': getattr(settings, 'PORTAL_URL', '/portal/') + 'checkout/',

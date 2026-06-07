@@ -1238,7 +1238,7 @@ def generate_quote_pdf_html(contract):
         'lines': lines,
         'confirm_url': (site_url + portal_path) if site_url else portal_path,
         'header_url': header_url,
-        'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1f4e79'),
+        'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
     }
     html = render_to_string('quote_pdf.html', ctx)
     pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()
