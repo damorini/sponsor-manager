@@ -270,7 +270,7 @@ class StandAdmin(admin.ModelAdmin):
         queryset, may_dup = super().get_search_results(
             request, queryset, search_term)
         if "/autocomplete/" in request.path:
-            queryset = queryset.filter(status=StandStatus.AVAILABLE)
+            queryset = queryset.filter(status=StandStatus.AVAILABLE, stand_block__isnull=True)
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
