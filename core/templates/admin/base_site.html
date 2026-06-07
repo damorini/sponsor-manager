@@ -131,6 +131,13 @@
     border: 1px solid var(--vt-input-border) !important;
     border-radius: 8px;
   }
+  /* Evita che il testo dei menu a tendina venga tagliato: altezza/righe adeguate */
+  select {
+    line-height: 1.5 !important;
+    min-height: 2.5em !important;
+    height: auto !important;
+    padding: 6px 28px 6px 10px !important;
+  }
   /* Opzioni del menu a tendina: sempre leggibili (scuro su bianco) */
   select option, select optgroup {
     background: #ffffff !important;
