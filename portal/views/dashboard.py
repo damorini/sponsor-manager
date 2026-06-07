@@ -66,6 +66,18 @@ def sponsor_required(view_func):
             if not _has_op:
                 return redirect('portal:profile')
 
+        # Anagrafica azienda completa? Senza i dati obbligatori, manda a "I miei
+        # dati" con un avviso (non durante l'impersonazione dell'operatore).
+        if _name not in _allow and not _impersonando:
+            _mancanti = contact.sponsor.campi_anagrafica_mancanti()
+            if _mancanti:
+                from django.contrib import messages
+                messages.warning(
+                    request,
+                    "Per usare il portale completa l'anagrafica della tua azienda. "
+                    "Campi ancora da compilare: " + ", ".join(_mancanti) + ".")
+                return redirect('portal:profile')
+
         return view_func(request, *args, **kwargs)
 
     return wrapper

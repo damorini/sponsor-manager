@@ -162,8 +162,15 @@ def profile_view(request):
         return redirect('portal:profile')
 
     # GET: costruisco i campi con valori attuali
+    from sponsors.models import Sponsor as _Sponsor
+    _required = {f for f, _ in _Sponsor.PROFILO_OBBLIGATORIO}
+    _help = {
+        'business_description': _("Indicare se produttore o distributore e la "
+                                  "tipologia generica di prodotti trattati."),
+    }
     sponsor_fields = [
-        {'name': f'sponsor_{f}', 'label': lbl, 'value': getattr(sponsor, f, '') or ''}
+        {'name': f'sponsor_{f}', 'label': lbl, 'value': getattr(sponsor, f, '') or '',
+         'required': f in _required, 'help': _help.get(f, '')}
         for f, lbl in SPONSOR_FIELDS if hasattr(sponsor, f)
     ]
     contact_fields = [

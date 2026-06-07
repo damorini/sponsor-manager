@@ -135,6 +135,34 @@ class Sponsor(SoftDeleteModel):
     def __str__(self):
         return self.display_name or self.legal_name
 
+    # Campi anagrafici obbligatori per usare il portale (campo, etichetta).
+    PROFILO_OBBLIGATORIO = [
+        ('legal_name', 'Ragione sociale'),
+        ('vat_number', 'Partita IVA'),
+        ('sdi_code', 'Codice destinatario SDI'),
+        ('pec_email', 'PEC'),
+        ('address_street', 'Indirizzo'),
+        ('address_city', 'Città'),
+        ('address_zip', 'CAP'),
+        ('address_province', 'Provincia'),
+        ('address_country', 'Paese'),
+        ('website', 'Sito web'),
+        ('business_description', 'Descrizione attività'),
+    ]
+
+    def campi_anagrafica_mancanti(self):
+        """Etichette dei campi obbligatori ancora vuoti (lista, vuota se completo)."""
+        mancanti = []
+        for field, label in self.PROFILO_OBBLIGATORIO:
+            val = getattr(self, field, None)
+            if not (val and str(val).strip()):
+                mancanti.append(label)
+        return mancanti
+
+    @property
+    def anagrafica_completa(self):
+        return not self.campi_anagrafica_mancanti()
+
     @property
     def primary_contact(self):
         """Restituisce il contatto principale, se esiste."""
