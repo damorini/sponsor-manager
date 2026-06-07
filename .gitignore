@@ -48,3 +48,9 @@ celerybeat.pid
 applica_*.py
 fix_*.py
 _add*.py
+
+# Dati di sessione assistente
+.claude/
+
+# Backup database (dump binari, non versionare)
+deploy/backups/
