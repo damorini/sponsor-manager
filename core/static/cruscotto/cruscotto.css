@@ -195,6 +195,9 @@ table.cr-table a:hover { text-decoration: underline; }
 .cr-panel h3 { font-family: 'Fraunces', Georgia, serif; font-weight: 500;
   font-size: 17px; margin: 0 0 4px 0; color: var(--ink); }
 .cr-panel p { color: var(--ink-3); font-size: 13px; margin: 0 0 12px 0; }
+/* Descrizione card import: altezza minima fissa per uniformare le card */
+.cr-card-desc { color: var(--ink-3); font-size: 12.5px; line-height: 1.4;
+  margin: 0 0 12px 0; min-height: 2.8em; }
 .cr-panel .cr-form-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 .cr-panel input[type="file"] { font-size: 13px; }
 .cr-panel label.cr-check { font-size: 13px; color: var(--ink-2);

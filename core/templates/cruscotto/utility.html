@@ -71,7 +71,7 @@
     <div class="cr-grid">
       <div class="cr-panel">
         <h3>Catalogo generale</h3>
-        <p style="font-size:.82rem; color:var(--muted); margin:0 0 10px;">Servizi del catalogo madre, validi per tutti gli eventi (senza evento_slug).</p>
+        <p class="cr-card-desc">Servizi del catalogo madre, validi per tutti gli eventi (senza evento_slug).</p>
         <a href="{% url 'core:cruscotto_download_template_catalogo' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello catalogo</a>
         <form method="post" action="{% url 'core:cruscotto_importa_catalogo' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -92,6 +92,7 @@
       </div>
       <div class="cr-panel">
         <h3>Servizi</h3>
+        <p class="cr-card-desc">Servizi legati a un singolo evento (il file richiede la colonna evento_slug).</p>
         <a href="{% url 'core:cruscotto_download_template_servizi' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello servizi</a>
         <form method="post" action="{% url 'core:cruscotto_importa_servizi' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -112,6 +113,7 @@
       </div>
       <div class="cr-panel">
         <h3>Stand</h3>
+        <p class="cr-card-desc">Spazi espositivi di un evento: codice, dimensioni, dotazioni e prezzo.</p>
         <a href="{% url 'core:cruscotto_download_template_stand' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello stand</a>
         <form method="post" action="{% url 'core:cruscotto_importa_stand' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -132,6 +134,7 @@
       </div>
       <div class="cr-panel">
         <h3>Sponsor / clienti</h3>
+        <p class="cr-card-desc">Anagrafiche delle aziende: ragione sociale, P.IVA, indirizzo e recapiti.</p>
         <a href="{% url 'core:cruscotto_download_template_sponsor' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello sponsor</a>
         <form method="post" action="{% url 'core:cruscotto_importa_sponsor' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -152,6 +155,7 @@
       </div>
       <div class="cr-panel">
         <h3>Contatti</h3>
+        <p class="cr-card-desc">Persone di riferimento degli sponsor: nome, email, telefono e ruolo.</p>
         <a href="{% url 'core:cruscotto_download_template_contatti' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello contatti</a>
         <form method="post" action="{% url 'core:cruscotto_importa_contatti' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
