@@ -103,7 +103,7 @@
     <table>
       <caption><a class="section" href="#">⚙️ Impostazioni</a></caption>
       {% for app in app_list %}{% for model in app.models %}
-        {% if model.object_name == 'OrganizerSettings' or model.object_name == 'User' %}
+        {% if model.object_name == 'OrganizerSettings' or model.object_name == 'EmailSettings' or model.object_name == 'User' %}
           <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
             <th scope="row">
               {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
