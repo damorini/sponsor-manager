@@ -3,101 +3,174 @@
 
 {% block title %}{% trans "Accesso" %}{% endblock %}
 
-{% block content %}
-<div class="min-h-[80vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
-  <div class="max-w-md w-full">
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  .vt-serif { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; }
+  /* Pannello brand: verde profondo con texture a puntini + alone luminoso */
+  .vt-panel {
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(200,160,78,.22) 0%, rgba(200,160,78,0) 42%),
+      radial-gradient(90% 90% at 100% 100%, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 40%),
+      linear-gradient(160deg, #1d6534 0%, #154a26 45%, #0d3318 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .vt-panel::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.10) 1px, transparent 1.4px);
+    background-size: 22px 22px;
+    opacity: .5;
+    -webkit-mask-image: radial-gradient(80% 70% at 30% 30%, #000 30%, transparent 75%);
+            mask-image: radial-gradient(80% 70% at 30% 30%, #000 30%, transparent 75%);
+  }
+  /* Archi concentrici decorativi in basso a destra */
+  .vt-arcs {
+    position: absolute; right: -120px; bottom: -120px;
+    width: 420px; height: 420px; border-radius: 9999px;
+    border: 1px solid rgba(200,160,78,.35);
+    box-shadow:
+      0 0 0 48px rgba(200,160,78,.05) inset,
+      0 0 0 96px rgba(255,255,255,.04) inset;
+    pointer-events: none;
+  }
+  .vt-hairline { height: 2px; width: 56px; background: linear-gradient(90deg,#c8a04e,#e7cf9b); border-radius: 2px; }
 
-    <div class="flex justify-center mb-6">
-      <form action="{% url 'set_language' %}" method="post" class="inline-flex gap-1 bg-gray-100 rounded-lg p-1">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
-        <button type="submit" name="language" value="it"
-                class="text-xs font-semibold rounded-md px-3 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">🇮🇹 IT</button>
-        <button type="submit" name="language" value="en"
-                class="text-xs font-semibold rounded-md px-3 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700 shadow-sm{% else %}text-gray-500 hover:text-gray-700{% endif %}">🇬🇧 EN</button>
-      </form>
+  /* Reveal scaglionato al caricamento */
+  @keyframes vtUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .vt-up { opacity: 0; animation: vtUp .7s cubic-bezier(.2,.7,.2,1) forwards; }
+  .vt-d1 { animation-delay: .05s; } .vt-d2 { animation-delay: .15s; }
+  .vt-d3 { animation-delay: .25s; } .vt-d4 { animation-delay: .35s; } .vt-d5 { animation-delay: .45s; }
+
+  .vt-field input { transition: box-shadow .15s ease, border-color .15s ease, background .15s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grid lg:grid-cols-[1.05fr_1fr] min-h-[88vh] lg:min-h-[calc(100vh-1px)]">
+
+  <!-- ============ PANNELLO BRAND (sinistra) ============ -->
+  <aside class="vt-panel hidden lg:flex flex-col justify-between text-white px-12 xl:px-16 py-12">
+    <!-- Logo VALET in pill chiara -->
+    <div class="vt-up vt-d1">
+      <span class="inline-flex items-center gap-3 bg-white/95 rounded-2xl pl-3 pr-5 py-2.5 shadow-lg ring-1 ring-black/5">
+        <img src="{{ brand_logo_url|default:'/media/branding/valet_conference.png' }}"
+             alt="VALET Conference"
+             class="h-9 w-auto object-contain"
+             onerror="this.onerror=null;this.src='/media/organizer/LOGO_VALET.png';">
+      </span>
     </div>
-    
-    <!-- Header -->
-    <div class="text-center mb-8">
-      {% if brand_logo_url %}
-      <img src="{{ brand_logo_url }}" alt="{{ organizer_name }}"
-           class="mx-auto h-16 w-auto mb-4">
-      {% else %}
-      <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-900 text-white shadow-card">
-        <i class="ti ti-building-community text-2xl"></i>
-      </div>
-      {% endif %}
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900">
-        {% trans "Accesso portale sponsor" %}
+
+    <!-- Messaggio di benvenuto -->
+    <div class="max-w-xl">
+      <div class="vt-up vt-d2 vt-hairline mb-6"></div>
+      <p class="vt-up vt-d2 text-[13px] uppercase tracking-[.25em] text-[#e7cf9b] font-semibold mb-4">
+        {% trans "Portale congressi" %}
+      </p>
+      <h1 class="vt-up vt-d3 vt-serif text-4xl xl:text-5xl font-semibold leading-[1.08] tracking-tight">
+        {% trans "Benvenuto nel portale di gestione congressi" %}
+        <span class="block text-[#e7cf9b] mt-1">Valet Conference</span>
       </h1>
-      <p class="mt-2 text-sm text-slate-500">
-        {{ organizer_name|default:"Sponsor Manager" }}
+      <p class="vt-up vt-d4 mt-6 text-white/75 text-lg leading-relaxed">
+        {% trans "Da qui gestisci la tua partecipazione: preventivi, spazi espositivi, servizi, materiali e scadenze del congresso. Tutto in un unico posto." %}
       </p>
     </div>
 
-    <!-- Form -->
-    <div class="card p-8">
-      <form method="post" action="{% url 'portal:login' %}">
-        {% csrf_token %}
-        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
-        
-        {% if form.errors %}
-        <div class="alert-error rounded mb-4">
-          <p class="font-medium">{% trans "Credenziali non valide" %}</p>
-          <p class="text-sm mt-1">
-            {% trans "Verifica email e password. Se hai dimenticato la password," %}
-            <a href="{% url 'portal:password_reset' %}" class="underline">
-              {% trans "richiedi un nuovo accesso" %}
-            </a>.
+    <!-- Footer del pannello -->
+    <div class="vt-up vt-d5 flex items-center gap-3 text-white/55 text-sm">
+      <i class="ti ti-shield-check text-[#c8a04e] text-lg"></i>
+      <span>{% trans "Accesso riservato agli sponsor del congresso" %} · VALET S.r.l.</span>
+    </div>
+
+    <div class="vt-arcs"></div>
+  </aside>
+
+  <!-- ============ FORM (destra) ============ -->
+  <section class="flex items-center justify-center px-5 sm:px-8 py-12 bg-[#faf8f5]">
+    <div class="w-full max-w-md">
+
+      <!-- Lingua -->
+      <div class="vt-up vt-d1 flex justify-end mb-8">
+        <form action="{% url 'set_language' %}" method="post" class="inline-flex gap-1 bg-white rounded-xl p-1 ring-1 ring-slate-200 shadow-sm">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <button type="submit" name="language" value="it"
+                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'it' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">🇮🇹 IT</button>
+          <button type="submit" name="language" value="en"
+                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'en' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">🇬🇧 EN</button>
+        </form>
+      </div>
+
+      <!-- Logo per mobile (pannello nascosto) -->
+      <div class="vt-up vt-d1 lg:hidden mb-7 flex items-center gap-3">
+        <img src="{{ brand_logo_url|default:'/media/branding/valet_conference.png' }}"
+             alt="VALET Conference" class="h-10 w-auto object-contain"
+             onerror="this.onerror=null;this.src='/media/organizer/LOGO_VALET.png';">
+      </div>
+
+      <header class="vt-up vt-d2 mb-7">
+        <p class="text-xs uppercase tracking-[.2em] text-brand-600 font-bold mb-2">{% trans "Area riservata" %}</p>
+        <h2 class="vt-serif text-3xl font-semibold text-slate-900 tracking-tight">{% trans "Bentornato" %}</h2>
+        <p class="mt-2 text-slate-500">{% trans "Accedi con le credenziali ricevute via email." %}</p>
+      </header>
+
+      {% if form.errors %}
+      <div class="vt-up vt-d2 mb-5 flex gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-rose-800">
+        <i class="ti ti-alert-triangle text-lg mt-0.5"></i>
+        <div>
+          <p class="font-semibold">{% trans "Credenziali non valide" %}</p>
+          <p class="text-sm mt-0.5">{% trans "Verifica email e password, oppure" %}
+            <a href="{% url 'portal:password_reset' %}" class="underline font-medium">{% trans "richiedi un nuovo accesso" %}</a>.
           </p>
         </div>
-        {% endif %}
-        
-        <div class="space-y-5">
-          <div>
-            <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input type="email" name="username" id="id_username" required autofocus
-                   autocomplete="email"
-                   class="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-slate-50/50 placeholder-slate-400 transition focus:bg-white focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none">
-          </div>
-          
-          <div>
-            <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input type="password" name="password" id="id_password" required
-                   autocomplete="current-password"
-                   class="w-full px-4 py-2.5 border border-slate-300 rounded-xl bg-slate-50/50 placeholder-slate-400 transition focus:bg-white focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none">
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'portal:login' %}" class="vt-up vt-d3 space-y-5">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+        <div class="vt-field">
+          <label for="id_username" class="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+          <div class="relative">
+            <i class="ti ti-mail absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="email" name="username" id="id_username" required autofocus autocomplete="email"
+                   placeholder="nome@azienda.it"
+                   class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl bg-white placeholder-slate-400 outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500">
           </div>
         </div>
-        
-        <button type="submit" class="btn-primary w-full mt-6 py-2.5">
-          <i class="ti ti-login"></i>{% trans "Accedi" %}
+
+        <div class="vt-field">
+          <label for="id_password" class="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+          <div class="relative">
+            <i class="ti ti-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="password" name="password" id="id_password" required autocomplete="current-password"
+                   placeholder="••••••••"
+                   class="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-xl bg-white placeholder-slate-400 outline-none focus:ring-4 focus:ring-brand-500/15 focus:border-brand-500">
+          </div>
+        </div>
+
+        <button type="submit"
+                class="group w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3.5 font-semibold text-white shadow-lg shadow-brand-900/15 transition hover:bg-brand-700 active:scale-[.99] focus:outline-none focus:ring-4 focus:ring-brand-500/25">
+          {% trans "Accedi al portale" %}
+          <i class="ti ti-arrow-right transition-transform group-hover:translate-x-0.5"></i>
         </button>
 
-        <div class="mt-4 text-center">
-          <a href="{% url 'portal:password_reset' %}"
-             class="text-sm text-brand-600 hover:underline">
+        <div class="text-center pt-1">
+          <a href="{% url 'portal:password_reset' %}" class="text-sm text-brand-700 hover:text-brand-900 font-medium hover:underline">
             {% trans "Hai dimenticato la password?" %}
           </a>
         </div>
       </form>
-    </div>
-    
-    <!-- Info per chi non ha account -->
-    <div class="mt-6 text-center text-sm text-gray-600">
-      <p>
-        {% trans "Non hai ancora un account? L'accesso al portale è riservato agli sponsor invitati. Contatta" %}
-        <a href="mailto:{{ support_email }}" class="text-brand-500 hover:underline">
-          {{ support_email }}
-        </a>
+
+      <div class="vt-up vt-d4 mt-8 pt-6 border-t border-slate-200 text-center text-sm text-slate-500">
+        {% trans "L'accesso è riservato agli sponsor invitati." %}
+        <a href="mailto:{{ support_email }}" class="text-brand-700 font-medium hover:underline">{{ support_email|default:"info@valet.it" }}</a>
         {% trans "per richiedere l'invito." %}
-      </p>
+      </div>
+
     </div>
-    
-  </div>
+  </section>
 </div>
 {% endblock %}
