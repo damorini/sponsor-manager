@@ -1383,6 +1383,9 @@ msgstr "Sign in to the portal"
 msgid "L'accesso è riservato agli sponsor invitati."
 msgstr "Access is reserved for invited sponsors."
 
+msgid "Privacy"
+msgstr "Privacy"
+
 #~ msgid "Letto il"
 #~ msgstr "Read on"
 
