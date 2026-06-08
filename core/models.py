@@ -187,3 +187,74 @@ class OrganizerSettings(models.Model):
                      getattr(settings, 'SUPPORT_EMAIL', '') or
                      getattr(settings, 'DEFAULT_FROM_EMAIL', ''))
         return (candidate or '').strip()
+
+
+class EmailSettings(models.Model):
+    """Configurazione SMTP della casella da cui partono le email (singleton).
+
+    Se 'enabled' è attivo e c'è un host, le email usano questi dati invece di
+    quelli di sistema (.env / settings).
+    """
+    enabled = models.BooleanField(
+        default=False, verbose_name="Usa questa configurazione SMTP",
+        help_text="Se attivo, le email vengono inviate con i dati qui sotto. "
+                  "Se disattivo, si usano i dati di sistema (.env).",
+    )
+    host = models.CharField(
+        max_length=200, blank=True, verbose_name="Server SMTP (host)",
+        help_text="Es. smtp.gmail.com, smtp.aruba.it, ...",
+    )
+    port = models.IntegerField(default=587, verbose_name="Porta",
+                               help_text="587 (TLS) oppure 465 (SSL).")
+    username = models.CharField(max_length=200, blank=True, verbose_name="Utente",
+                                help_text="Di solito l'indirizzo email completo.")
+    password = models.CharField(
+        max_length=255, blank=True, verbose_name="Password",
+        help_text="Password della casella o password per app (es. Gmail).",
+    )
+    use_tls = models.BooleanField(default=True, verbose_name="Usa TLS (porta 587)")
+    use_ssl = models.BooleanField(default=False, verbose_name="Usa SSL (porta 465)")
+    from_email = models.EmailField(
+        blank=True, verbose_name="Mittente (from)",
+        help_text="Indirizzo che appare come mittente. Vuoto = usa l'utente.",
+    )
+    from_name = models.CharField(
+        max_length=120, blank=True, verbose_name="Nome mittente",
+        help_text="Es. «Segreteria VALET». Opzionale.",
+    )
+
+    class Meta:
+        verbose_name = "Configurazione email (SMTP)"
+        verbose_name_plural = "Configurazione email (SMTP)"
+
+    def __str__(self):
+        return f"SMTP {self.host}" if self.host else "Configurazione email (SMTP)"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def from_full(self):
+        """Mittente completo 'Nome <email>' per le email."""
+        addr = (self.from_email or self.username or '').strip()
+        if self.from_name and addr:
+            return f"{self.from_name} <{addr}>"
+        return addr
+
+    def get_connection(self):
+        """Connessione email Django dai dati SMTP, o None se non configurata."""
+        if not (self.enabled and self.host):
+            return None
+        from django.core.mail import get_connection
+        return get_connection(
+            backend='django.core.mail.backends.smtp.EmailBackend',
+            host=self.host, port=self.port,
+            username=self.username, password=self.password,
+            use_tls=self.use_tls, use_ssl=self.use_ssl,
+        )

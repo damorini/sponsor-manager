@@ -12,7 +12,7 @@ admin.site.index_title = "Pannello di gestione"
 
 from django.urls import reverse
 from django.utils.html import format_html
-from .models import OrganizerSettings
+from .models import OrganizerSettings, EmailSettings
 
 
 @admin.register(OrganizerSettings)
@@ -66,3 +66,65 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
         from django.shortcuts import redirect
         url = reverse("admin:core_organizersettings_change", args=[obj.pk])
         return redirect(url)
+
+
+@admin.register(EmailSettings)
+class EmailSettingsAdmin(admin.ModelAdmin):
+    """Pannello (singleton) per configurare l'account SMTP di invio email."""
+    fieldsets = (
+        (None, {
+            "fields": ("enabled",),
+            "description": "Attiva per inviare le email con i dati SMTP qui sotto. "
+                           "Se disattivo, si usano i dati di sistema (.env).",
+        }),
+        ("Server SMTP", {
+            "fields": ("host", "port", ("use_tls", "use_ssl")),
+            "description": "Porta 587 con TLS (consigliato) oppure 465 con SSL. "
+                           "Spunta una sola tra TLS e SSL.",
+        }),
+        ("Credenziali", {
+            "fields": ("username", "password"),
+        }),
+        ("Mittente", {
+            "fields": ("from_name", "from_email"),
+        }),
+    )
+    actions = ["invia_email_di_prova"]
+
+    def has_add_permission(self, request):
+        return not EmailSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.action(description="Invia un'email di PROVA al tuo indirizzo")
+    def invia_email_di_prova(self, request, queryset):
+        from django.core.mail import EmailMultiAlternatives
+        from django.contrib import messages
+        s = EmailSettings.load()
+        dest = request.user.email
+        if not dest:
+            self.message_user(request, "Il tuo utente non ha un'email impostata.",
+                              level=messages.ERROR)
+            return
+        conn = s.get_connection()
+        if conn is None:
+            self.message_user(
+                request,
+                "Configurazione SMTP non attiva o senza host: spunta «Usa questa "
+                "configurazione SMTP» e compila l'host, poi salva e riprova.",
+                level=messages.WARNING)
+            return
+        try:
+            msg = EmailMultiAlternatives(
+                subject="Email di prova · Sponsor Manager",
+                body="Se leggi questo messaggio, la configurazione SMTP funziona. 👍",
+                from_email=s.from_full or s.username,
+                to=[dest],
+                connection=conn,
+            )
+            msg.send(fail_silently=False)
+            self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
+                              level=messages.SUCCESS)
+        except Exception as e:
+            self.message_user(request, f"Invio fallito: {e}", level=messages.ERROR)

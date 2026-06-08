@@ -202,15 +202,28 @@ def send_email(
     )
 
     # 5. Costruisci e invia email
+    # Connessione e mittente: se c'è una configurazione SMTP da pannello, usala;
+    # altrimenti i dati di sistema (.env / settings).
+    _conn = None
+    _from = settings.DEFAULT_FROM_EMAIL
+    try:
+        from core.models import EmailSettings
+        _es = EmailSettings.load()
+        _conn = _es.get_connection()  # None se non abilitata
+        if _conn is not None and _es.from_full:
+            _from = _es.from_full
+    except Exception:
+        _conn = None
     try:
         email = EmailMultiAlternatives(
             subject=subject,
             body=body_text,
-            from_email=settings.DEFAULT_FROM_EMAIL,
+            from_email=_from,
             to=to,
             cc=cc or [],
             bcc=bcc or [],
-            reply_to=[settings.DEFAULT_FROM_EMAIL],
+            reply_to=[_from],
+            connection=_conn,
         )
         email.attach_alternative(body_html, 'text/html')
 
