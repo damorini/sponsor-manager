@@ -1386,6 +1386,12 @@ msgstr "Access is reserved for invited sponsors."
 msgid "Privacy"
 msgstr "Privacy"
 
+msgid "Per usare il portale, prendi visione dell'"
+msgstr "To use the portal, please review the "
+
+msgid "informativa sul trattamento dei dati"
+msgstr "personal data processing notice"
+
 #~ msgid "Letto il"
 #~ msgstr "Read on"
 
