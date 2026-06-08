@@ -66,6 +66,7 @@
     <li><a href="#archivio">Archiviare un evento</a></li>
     <li><a href="#excel">Import da Excel (servizi e stand)</a></li>
     <li><a href="#traduzioni">Traduzioni italiano/inglese</a></li>
+    <li><a href="#impostazioni">Impostazioni (email, privacy)</a></li>
     <li><a href="#faq">Problemi comuni (FAQ)</a></li>
   </ol>
 </nav>
@@ -216,6 +217,8 @@ stateDiagram-v2
     <li>Sulla scheda, in alto a destra, hai <strong>due pulsanti</strong>: <strong>«Anteprima preventivo»</strong> genera il PDF e te lo apre <strong>senza inviarlo</strong> (per controllare cosa stai per mandare, senza cambiare stato); <strong>«Genera e invia preventivo»</strong> lo invia scegliendo i destinatari.</li>
   </ol>
   <div class="nota"><strong>Cosa contiene il preventivo.</strong> Nome del congresso, frase di presentazione (evento, luogo, data), riepilogo di spazi e servizi, e l'avviso che gli spazi sono <strong>opzionati</strong> (non prenotati) con la <strong>validità</strong>: la data di opzione del contratto, oppure <strong>30 giorni</strong> dalla creazione. In fondo a ogni pagina c'è il <strong>footer</strong> con i dati della segreteria; l'immagine <strong>header</strong> compare se l'hai caricata sull'evento (campo «Header email congresso»).</div>
+  <div class="nota"><strong>Lingua automatica (IT/EN).</strong> Il preventivo (PDF + email) esce nella <strong>lingua preferita del cliente</strong>: alla creazione il contratto eredita la lingua del contatto principale, e resta modificabile a mano nel campo <em>Lingua</em>. Il cliente sceglie la lingua dalle <strong>bandierine</strong> in «I miei dati» (vedi §7).</div>
+  <div class="attenzione"><strong>Non dimenticare di inviare!</strong> Un preventivo <em>creato ma non ancora inviato</em> (contratto principale in Bozza) compare con un <strong>avviso rosso nel Cruscotto</strong> («hai N preventivi creati ma non inviati») e con il badge <strong>«DA INVIARE»</strong> nella lista Contratti. Cliccando l'avviso vai alla lista filtrata, pronto per inviarli.</div>
   <div class="nota"><strong>Riga stand automatica.</strong> Quando assegni uno <strong>Stand</strong> o un <strong>Blocco</strong> al contratto e salvi, la riga con il <strong>prezzo dello spazio</strong> viene aggiunta da sola al totale (se non è già presente). Nella tendina dello spazio compaiono solo gli stand <strong>disponibili</strong> dell'evento (quelli già inseriti in un blocco non appaiono).</div>
   <div class="nota">Quando inserisci una quantità superiore alla <strong>disponibilità</strong> (scorte del servizio o della variante) o alla <strong>quantità massima</strong> impostata, il salvataggio viene <strong>bloccato</strong> con un avviso. Per rendere un servizio "unico" (es. il muletto) imposta <em>Quantità massima = 1</em>.</div>
 
@@ -243,6 +246,7 @@ stateDiagram-v2
   <p>Nel menu di sinistra lo sponsor trova: <strong>In evidenza</strong> (eventi attivi, scadenze e messaggi), <strong>Archivio eventi</strong> (eventi conclusi, sola consultazione), <strong>I miei documenti</strong> (domande di ammissione + copia degli acquisti online), <strong>I miei acquisti</strong>, <strong>Archivio messaggi</strong>, <strong>I miei dati</strong>, <strong>Wishlist</strong>.</p>
   <div class="nota"><strong>Anagrafica obbligatoria.</strong> Al primo accesso, se mancano dati aziendali obbligatori (ragione sociale, P.IVA, codice SDI, PEC, indirizzo, città, CAP, provincia, paese, sito web, descrizione attività), lo sponsor viene portato a <strong>«I miei dati»</strong> con l'elenco dei campi da completare; quelli mancanti sono evidenziati (asterisco rosso, bordo arancione). Finché non li compila, il portale resta su quella pagina.</div>
   <div class="nota"><strong>I miei acquisti</strong> mostra ogni ordine con il dettaglio riga per riga (descrizione, prezzo unitario, quantità, totale <em>IVA esclusa</em>) e, in fondo, <strong>imponibile, IVA e totale</strong>. Dalla scheda di un articolo del catalogo il cliente ha il pulsante <strong>«Torna al catalogo»</strong>; dal carrello, <strong>«Continua acquisti per questo evento»</strong>.</div>
+  <div class="nota"><strong>Lingua preferita (bandierine).</strong> In «I miei dati» il cliente sceglie la lingua del portale e delle comunicazioni cliccando la bandiera <strong>🇮🇹 / 🇬🇧</strong>: quella scelta resta a colori, l'altra diventa grigia. Da questa scelta dipende anche la lingua del <strong>preventivo</strong> (§6.5).</div>
   <p>Cosa fa lo sponsor, una volta invitato:</p>
   <div class="diagram">
     <pre class="mermaid">
@@ -331,8 +335,31 @@ flowchart TD
   </ul>
 </section>
 
+<section id="impostazioni">
+  <h2>12. Impostazioni (email, privacy)</h2>
+  <p>Nel backoffice, sezione <strong>IMPOSTAZIONI</strong>, trovi tre voci: <strong>Impostazioni segreteria</strong> (dati azienda, scadenze, ecc.), <strong>Configurazione email (SMTP)</strong> e <strong>Utenti</strong>.</p>
+
+  <h3>12.1 Configurazione email (SMTP)</h3>
+  <p>Per far partire <em>davvero</em> le email (preventivi, conferme, reminder) imposta la casella di posta da cui inviare:</p>
+  <ol>
+    <li>Admin → <strong>IMPOSTAZIONI → Configurazione email (SMTP)</strong>.</li>
+    <li>Compila <strong>server SMTP (host)</strong>, <strong>porta</strong> (587 con TLS, oppure 465 con SSL), <strong>utente</strong> e <strong>password</strong> della casella, e il <strong>mittente</strong> (nome + email).</li>
+    <li>Spunta <strong>«Usa questa configurazione SMTP»</strong> e salva.</li>
+    <li>Seleziona la riga nella lista e usa l'azione <strong>«Invia un'email di PROVA»</strong> per verificare che funzioni.</li>
+  </ol>
+  <div class="nota">Se la configurazione è <strong>disattivata</strong>, valgono i dati di sistema; in ambiente di prova le email finiscono nei log invece di essere spedite.</div>
+
+  <h3>12.2 Privacy</h3>
+  <p>In <strong>Impostazioni segreteria → Privacy</strong> gestisci l'informativa mostrata nel portale:</p>
+  <ul>
+    <li><strong>Descrizione breve (IT)</strong> e <strong>(EN)</strong>: il testo mostrato nella pagina di consenso, nella lingua del cliente. I campi hanno un <strong>editor visuale</strong> (grassetto, corsivo, link, elenchi).</li>
+    <li>Il link <strong>«informativa sul trattamento dei dati»</strong> rimanda alla pagina completa sul sito (bilingue).</li>
+    <li><strong>Versione informativa</strong>: cambiala quando aggiorni il testo → ai clienti verrà richiesta di nuovo la presa visione al prossimo accesso.</li>
+  </ul>
+</section>
+
 <section id="faq">
-  <h2>12. Problemi comuni (FAQ)</h2>
+  <h2>13. Problemi comuni (FAQ)</h2>
 
   <h3>Il download del modello Excel crea un file senza estensione (nome strano)</h3>
   <p>È un <em>service worker</em> "fantasma" lasciato da un altro progetto sulla stessa porta del browser. Soluzioni: usa l'indirizzo alternativo del gestionale (porta diversa), oppure rimuovi il service worker da <code>chrome://serviceworker-internals</code> (cerca l'indirizzo e clicca <em>Unregister</em>). In caso, rinomina il file aggiungendo <code>.xlsx</code>.</p>
