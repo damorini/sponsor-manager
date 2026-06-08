@@ -35,8 +35,10 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
                            "l'email della segreteria.",
         }),
         ("Privacy (informativa portale)", {
-            "fields": ("privacy_policy_version", "privacy_policy"),
-            "description": "Testo dell'informativa mostrata nel portale e versione. "
+            "fields": ("privacy_policy_version", "privacy_short_it", "privacy_short_en",
+                       "privacy_policy"),
+            "description": "«Descrizione breve» (IT/EN) è il testo mostrato nella pagina "
+                           "di consenso del portale (il testo completo è sul sito). "
                            "Cambiando la versione, ai clienti verrà richiesta di nuovo "
                            "la presa visione al prossimo accesso.",
         }),

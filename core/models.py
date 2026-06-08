@@ -135,6 +135,17 @@ class OrganizerSettings(models.Model):
     )
 
     # --- Informativa privacy mostrata nel portale ---
+    privacy_short_it = models.TextField(
+        blank=True,
+        verbose_name="Descrizione breve (IT)",
+        help_text="Testo breve mostrato nella pagina di consenso del portale "
+                  "(italiano). Il testo completo è sul sito.",
+    )
+    privacy_short_en = models.TextField(
+        blank=True,
+        verbose_name="Descrizione breve (EN)",
+        help_text="Versione inglese della descrizione breve. Vuoto = usa l'italiano.",
+    )
     privacy_policy = models.TextField(
         blank=True,
         verbose_name="Informativa privacy (testo)",
@@ -177,6 +188,12 @@ class OrganizerSettings(models.Model):
         """Restituisce l'unico record, creandolo vuoto se non esiste."""
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def privacy_short(self, lang='it'):
+        """Descrizione breve privacy nella lingua richiesta (EN con fallback IT)."""
+        if str(lang or '').startswith('en') and (self.privacy_short_en or '').strip():
+            return self.privacy_short_en.strip()
+        return (self.privacy_short_it or '').strip()
 
     @property
     def notify_recipient(self):

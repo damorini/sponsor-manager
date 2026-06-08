@@ -71,8 +71,13 @@ def privacy_consent_view(request):
             flash.success(request, "Grazie. Preferenze salvate.")
             return redirect('portal:dashboard')
 
+    from core.models import OrganizerSettings
+    descrizione_breve = OrganizerSettings.load().privacy_short(
+        getattr(request, 'LANGUAGE_CODE', 'it'))
+
     return render(request, 'portal/legal/privacy_consent.html', {
         'testo': _testo_informativa(),
+        'descrizione_breve': descrizione_breve,
         'versione': versione,
         'gia_accettata': bool(contact.privacy_accepted_at),
         'marketing_attuale': contact.marketing_consent,
