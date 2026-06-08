@@ -10,14 +10,34 @@ admin.site.site_title = "Sponsor Manager Admin"
 admin.site.index_title = "Pannello di gestione"
 
 
+from django import forms
 from django.urls import reverse
 from django.utils.html import format_html
 from .models import OrganizerSettings, EmailSettings
 
 
+class OrganizerSettingsForm(forms.ModelForm):
+    """Editor visuale (TinyMCE) sui testi privacy: grassetto, corsivo, link…"""
+    class Meta:
+        model = OrganizerSettings
+        fields = '__all__'
+        widgets = {
+            'privacy_short_it': forms.Textarea(attrs={'data-richtext': '1', 'rows': 6}),
+            'privacy_short_en': forms.Textarea(attrs={'data-richtext': '1', 'rows': 6}),
+            'privacy_policy': forms.Textarea(attrs={'data-richtext': '1', 'rows': 10}),
+        }
+
+
 @admin.register(OrganizerSettings)
 class OrganizerSettingsAdmin(admin.ModelAdmin):
     """Pannello unico (singleton) per i dati della segreteria."""
+    form = OrganizerSettingsForm
+
+    class Media:
+        js = (
+            'https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
+            'admin/js/richtext.js',
+        )
     fieldsets = (
         ("Anagrafica segreteria", {
             "fields": ("name", "address", "email", "phone", "website"),

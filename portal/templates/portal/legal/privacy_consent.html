@@ -4,14 +4,22 @@
 {% block title %}{% trans "Informativa privacy" %}{% endblock %}
 
 {% block content %}
+<style>
+  .vt-richtext a { color: #1d6534; text-decoration: underline; }
+  .vt-richtext p { margin: 0 0 .5rem; }
+  .vt-richtext p:last-child { margin-bottom: 0; }
+  .vt-richtext ul, .vt-richtext ol { margin: .25rem 0 .5rem 1.25rem; list-style: revert; }
+  .vt-richtext strong { font-weight: 700; }
+  .vt-richtext em { font-style: italic; }
+</style>
 <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
   <h1 class="text-2xl font-bold text-gray-900 mb-2">{% trans "Informativa privacy" %}</h1>
   <p class="text-gray-600 mb-5">{% trans "Per usare il portale, prendi visione dell'" %}<a href="https://www.valet.it/privacy.html" target="_blank" rel="noopener" class="text-brand-600 underline">{% trans "informativa sul trattamento dei dati" %}</a>.</p>
 
   {% if descrizione_breve %}
-  <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-5 text-sm text-gray-700 text-justify"
-       style="white-space:pre-line; text-align:justify;">{{ descrizione_breve }}</div>
+  <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 mb-5 text-sm text-gray-700 vt-richtext"
+       style="text-align:justify;">{{ descrizione_breve|safe }}</div>
   {% endif %}
 
   <form method="post" action="{% url 'portal:privacy_consent' %}" class="bg-white rounded-lg shadow-sm border border-gray-100 p-5 space-y-4">
