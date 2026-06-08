@@ -1,4 +1,4 @@
-#: portal/templatetags/portal_labels.py:37
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: sponsor_manager\n"
@@ -20,7 +20,8 @@ msgstr "Translation in %(language)s is required."
 
 #: core/templates/admin/app_list.html:21 core/templates/admin/app_list.html:39
 #: core/templates/admin/app_list.html:57 core/templates/admin/app_list.html:75
-#: core/templates/admin/app_list.html:93 core/templates/admin/app_list.html:111
+#: core/templates/admin/app_list.html:93
+#: core/templates/admin/app_list.html:111
 #, fuzzy
 #| msgid "Addon"
 msgid "Add"
@@ -28,13 +29,15 @@ msgstr "Add-on"
 
 #: core/templates/admin/app_list.html:22 core/templates/admin/app_list.html:40
 #: core/templates/admin/app_list.html:58 core/templates/admin/app_list.html:76
-#: core/templates/admin/app_list.html:94 core/templates/admin/app_list.html:112
+#: core/templates/admin/app_list.html:94
+#: core/templates/admin/app_list.html:112
 msgid "View"
 msgstr ""
 
 #: core/templates/admin/app_list.html:22 core/templates/admin/app_list.html:40
 #: core/templates/admin/app_list.html:58 core/templates/admin/app_list.html:76
-#: core/templates/admin/app_list.html:94 core/templates/admin/app_list.html:112
+#: core/templates/admin/app_list.html:94
+#: core/templates/admin/app_list.html:112
 msgid "Change"
 msgstr ""
 
@@ -91,8 +94,12 @@ msgid "Hai dimenticato la password?"
 msgstr "Forgot your password?"
 
 #: portal/templates/portal/auth/login.html:93
-msgid "Non hai ancora un account? L'accesso al portale è riservato agli sponsor invitati. Contatta"
-msgstr "Don't have an account yet? Portal access is reserved for invited sponsors. Contact"
+msgid ""
+"Non hai ancora un account? L'accesso al portale è riservato agli sponsor "
+"invitati. Contatta"
+msgstr ""
+"Don't have an account yet? Portal access is reserved for invited sponsors. "
+"Contact"
 
 #: portal/templates/portal/auth/login.html:97
 msgid "per richiedere l'invito."
@@ -257,8 +264,11 @@ msgid "C.F.:"
 msgstr "Tax code:"
 
 #: portal/templates/portal/cart/checkout.html:95
-msgid "I dati sono ereditati dalla domanda di ammissione principale. Per modifiche, contatta"
-msgstr "The data is inherited from the main admission request. For changes, contact"
+msgid ""
+"I dati sono ereditati dalla domanda di ammissione principale. Per modifiche,"
+" contatta"
+msgstr ""
+"The data is inherited from the main admission request. For changes, contact"
 
 #: portal/templates/portal/cart/checkout.html:102
 msgid "Scegli come pagare"
@@ -270,7 +280,8 @@ msgstr "Credit/debit card"
 
 #: portal/templates/portal/cart/checkout.html:115
 #, fuzzy
-#| msgid "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
+#| msgid ""
+#| "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
 msgid "Visa, Mastercard, American Express. Pagamento immediato."
 msgstr "Visa, Mastercard, American Express or PayPal login. Instant payment."
 
@@ -283,8 +294,12 @@ msgid "Bonifico bancario"
 msgstr "Bank transfer"
 
 #: portal/templates/portal/cart/checkout.html:159
-msgid "Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui sotto. Alla ricezione del bonifico registreremo il tuo acquisto."
-msgstr "Would you like to pay by bank transfer? Make the transfer using the details below. We will register your purchase once the transfer is received."
+msgid ""
+"Desideri pagare con bonifico bancario? Effettua il bonifico con i dati qui "
+"sotto. Alla ricezione del bonifico registreremo il tuo acquisto."
+msgstr ""
+"Would you like to pay by bank transfer? Make the transfer using the details "
+"below. We will register your purchase once the transfer is received."
 
 #: portal/templates/portal/cart/checkout.html:162
 #: portal/templates/portal/purchases/list.html:37
@@ -337,8 +352,12 @@ msgid "Carrello #%(num)s"
 msgstr "Cart #%(num)s"
 
 #: portal/templates/portal/cart/view.html:56
-msgid "⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili prima di procedere al pagamento."
-msgstr "⚠ Some services have expired (past the purchase deadline). Remove them before proceeding to payment."
+msgid ""
+"⚠ Alcuni servizi sono scaduti (oltre la data limite di acquisto). Rimuovili "
+"prima di procedere al pagamento."
+msgstr ""
+"⚠ Some services have expired (past the purchase deadline). Remove them "
+"before proceeding to payment."
 
 #: portal/templates/portal/cart/view.html:65
 #: portal/templates/portal/catalog/service_detail.html:121
@@ -451,8 +470,12 @@ msgid "Servizi disponibili"
 msgstr "Available services"
 
 #: portal/templates/portal/catalog/list.html:11
-msgid "Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali e altro."
-msgstr "Add extra services to your events: workshops, hostesses, promotional spaces and more."
+msgid ""
+"Aggiungi servizi extra ai tuoi eventi: workshop, hostess, spazi promozionali"
+" e altro."
+msgstr ""
+"Add extra services to your events: workshops, hostesses, promotional spaces "
+"and more."
 
 #: portal/templates/portal/catalog/list.html:31
 msgid "Vedi tutti →"
@@ -465,11 +488,16 @@ msgstr "See the other %(n)s services →"
 
 #: portal/templates/portal/catalog/list.html:113
 msgid "Al momento non ci sono servizi acquistabili per i tuoi eventi."
-msgstr "There are currently no services available to purchase for your events."
+msgstr ""
+"There are currently no services available to purchase for your events."
 
 #: portal/templates/portal/catalog/list.html:116
-msgid "Per acquistare servizi devi avere almeno una domanda di ammissione attiva per un evento futuro."
-msgstr "To purchase services you need at least one active admission request for an upcoming event."
+msgid ""
+"Per acquistare servizi devi avere almeno una domanda di ammissione attiva "
+"per un evento futuro."
+msgstr ""
+"To purchase services you need at least one active admission request for an "
+"upcoming event."
 
 #: portal/templates/portal/catalog/list.html:120
 msgid "Vedi le tue domande di ammissione →"
@@ -530,8 +558,12 @@ msgid "Acquisto online"
 msgstr "Online purchase"
 
 #: portal/templates/portal/contract/detail.html:22
-msgid "Pagamento immediato: non serve confermare un preventivo. L'acquisto è valido al momento del pagamento (PayPal, carta o bonifico)."
-msgstr "Instant payment: no quote confirmation needed. The purchase is valid once paid (PayPal, card or bank transfer)."
+msgid ""
+"Pagamento immediato: non serve confermare un preventivo. L'acquisto è valido"
+" al momento del pagamento (PayPal, carta o bonifico)."
+msgstr ""
+"Instant payment: no quote confirmation needed. The purchase is valid once "
+"paid (PayPal, card or bank transfer)."
 
 #: portal/templates/portal/contract/detail.html:43
 #: portal/templates/portal/dashboard/contracts_list.html:70
@@ -552,8 +584,15 @@ msgstr "Your sponsorship proposal"
 
 #: portal/templates/portal/contract/detail.html:78
 #, python-format
-msgid "Grazie per l'interesse verso %(evento)s. Abbiamo preparato per voi una proposta dedicata: di seguito gli spazi e i servizi selezionati. Confermando il preventivo riservate la vostra presenza e diamo avvio alla pratica di partecipazione."
-msgstr "Thank you for your interest in %(evento)s. We have prepared a dedicated proposal for you: below are the selected spaces and services. By confirming the quote you reserve your presence and we start the participation process."
+msgid ""
+"Grazie per l'interesse verso %(evento)s. Abbiamo preparato per voi una "
+"proposta dedicata: di seguito gli spazi e i servizi selezionati. Confermando"
+" il preventivo riservate la vostra presenza e diamo avvio alla pratica di "
+"partecipazione."
+msgstr ""
+"Thank you for your interest in %(evento)s. We have prepared a dedicated "
+"proposal for you: below are the selected spaces and services. By confirming "
+"the quote you reserve your presence and we start the participation process."
 
 #: portal/templates/portal/contract/detail.html:84
 #, python-format
@@ -590,8 +629,10 @@ msgid "Scadenze operative"
 msgstr "Operational deadlines"
 
 #: portal/templates/portal/contract/detail.html:172
-msgid "Materiali e attività richieste per il corretto svolgimento dello sponsorship"
-msgstr "Materials and activities required for the proper running of the sponsorship"
+msgid ""
+"Materiali e attività richieste per il corretto svolgimento dello sponsorship"
+msgstr ""
+"Materials and activities required for the proper running of the sponsorship"
 
 #: portal/templates/portal/contract/detail.html:208
 msgid "Ricevuto"
@@ -625,8 +666,12 @@ msgstr "Add more services"
 
 #: portal/templates/portal/contract/detail.html:236
 #, python-format
-msgid "Sono disponibili %(n)s servizi acquistabili per questo evento. Workshop, hostess, spazi promozionali extra e molto altro."
-msgstr "There are %(n)s services available to purchase for this event. Workshops, hostesses, extra promotional spaces and much more."
+msgid ""
+"Sono disponibili %(n)s servizi acquistabili per questo evento. Workshop, "
+"hostess, spazi promozionali extra e molto altro."
+msgstr ""
+"There are %(n)s services available to purchase for this event. Workshops, "
+"hostesses, extra promotional spaces and much more."
 
 #: portal/templates/portal/contract/detail.html:241
 #: portal/templates/portal/contract/detail.html:245
@@ -635,7 +680,9 @@ msgstr "Explore the catalog"
 
 #: portal/templates/portal/contract/detail.html:247
 #: portal/templates/portal/events/dashboard.html:38
-msgid "I servizi potranno essere acquistati a seguito della conferma della domanda di ammissione."
+msgid ""
+"I servizi potranno essere acquistati a seguito della conferma della domanda "
+"di ammissione."
 msgstr "Services can be purchased after the admission request is confirmed."
 
 #: portal/templates/portal/contract/detail.html:260
@@ -695,12 +742,20 @@ msgid "opzione valida fino al %(d)s"
 msgstr "option valid until %(d)s"
 
 #: portal/templates/portal/contract/quote_confirm.html:20
-msgid "Con il click su «Accetta preventivo», il fornitore ricevera' la conferma dell'ordine e saranno automaticamente generate le scadenze tecnico-amministrative."
-msgstr "By clicking «Accept quote», the supplier will receive the order confirmation and the technical-administrative deadlines will be generated automatically."
+msgid ""
+"Con il click su «Accetta preventivo», il fornitore ricevera' la conferma "
+"dell'ordine e saranno automaticamente generate le scadenze tecnico-"
+"amministrative."
+msgstr ""
+"By clicking «Accept quote», the supplier will receive the order confirmation"
+" and the technical-administrative deadlines will be generated automatically."
 
 #: portal/templates/portal/contract/quote_confirm.html:21
-msgid "Per qualsiasi ulteriore informazione potete contattare la segreteria organizzativa"
-msgstr "For any further information you can contact the organizing secretariat"
+msgid ""
+"Per qualsiasi ulteriore informazione potete contattare la segreteria "
+"organizzativa"
+msgstr ""
+"For any further information you can contact the organizing secretariat"
 
 #: portal/templates/portal/contract/quote_confirm.html:25
 #: portal/templates/portal/profile/edit.html:79
@@ -867,8 +922,12 @@ msgid "Nessuna scadenza tecnica in sospeso."
 msgstr "No pending technical deadlines."
 
 #: portal/templates/portal/events/archived.html:11
-msgid "Eventi conclusi e archiviati. Sono in sola consultazione: non è più possibile acquistare servizi."
-msgstr "Concluded and archived events. View only: purchasing services is no longer possible."
+msgid ""
+"Eventi conclusi e archiviati. Sono in sola consultazione: non è più "
+"possibile acquistare servizi."
+msgstr ""
+"Concluded and archived events. View only: purchasing services is no longer "
+"possible."
 
 #: portal/templates/portal/events/archived.html:21
 #: portal/templates/portal/events/archived_detail.html:18
@@ -896,8 +955,12 @@ msgid "Archivio"
 msgstr "Archive"
 
 #: portal/templates/portal/events/archived_detail.html:24
-msgid "Sola consultazione: l'evento è archiviato, non è più possibile modificare o acquistare."
-msgstr "View only: the event is archived, editing or purchasing is no longer possible."
+msgid ""
+"Sola consultazione: l'evento è archiviato, non è più possibile modificare o "
+"acquistare."
+msgstr ""
+"View only: the event is archived, editing or purchasing is no longer "
+"possible."
 
 #: portal/templates/portal/events/archived_detail.html:73
 msgid "Scadenze"
@@ -921,16 +984,23 @@ msgid "Acquista servizi per questo evento"
 msgstr "Buy services for this event"
 
 #: portal/templates/portal/events/dashboard.html:41
-msgid "Per acquistare servizi serve una domanda di ammissione attiva per questo evento."
-msgstr "An active admission request for this event is required to purchase services."
+msgid ""
+"Per acquistare servizi serve una domanda di ammissione attiva per questo "
+"evento."
+msgstr ""
+"An active admission request for this event is required to purchase services."
 
 #: portal/templates/portal/events/dashboard.html:43
 msgid "Al momento non ci sono servizi acquistabili per questo evento."
 msgstr "There are currently no services to purchase for this event."
 
 #: portal/templates/portal/events/list.html:11
-msgid "Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i materiali richiesti per quell'evento."
-msgstr "The events you take part in. Open an event to see its deadlines and required materials."
+msgid ""
+"Gli eventi a cui partecipi. Entra in un evento per vedere le scadenze e i "
+"materiali richiesti per quell'evento."
+msgstr ""
+"The events you take part in. Open an event to see its deadlines and required"
+" materials."
 
 #: portal/templates/portal/events/list.html:26
 msgid "da fare"
@@ -952,7 +1022,9 @@ msgid "Informativa privacy"
 msgstr "Privacy policy"
 
 #: portal/templates/portal/legal/privacy_consent.html:10
-msgid "Per usare il portale, prendi visione dell'informativa sul trattamento dei dati."
+msgid ""
+"Per usare il portale, prendi visione dell'informativa sul trattamento dei "
+"dati."
 msgstr "To use the portal, please review the data processing notice."
 
 #: portal/templates/portal/legal/privacy_consent.html:21
@@ -968,8 +1040,12 @@ msgid " (obbligatorio)."
 msgstr " (required)."
 
 #: portal/templates/portal/legal/privacy_consent.html:28
-msgid "Acconsento a ricevere comunicazioni marketing e promozionali (facoltativo, revocabile)."
-msgstr "I consent to receiving marketing and promotional communications (optional, revocable)."
+msgid ""
+"Acconsento a ricevere comunicazioni marketing e promozionali (facoltativo, "
+"revocabile)."
+msgstr ""
+"I consent to receiving marketing and promotional communications (optional, "
+"revocable)."
 
 #: portal/templates/portal/legal/privacy_consent.html:32
 msgid "Conferma e prosegui"
@@ -1015,16 +1091,30 @@ msgid "⚠️ Manca un soggetto operativo"
 msgstr "⚠️ An operational contact is missing"
 
 #: portal/templates/portal/profile/edit.html:13
-msgid "Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale."
-msgstr "You must specify <strong>at least one contact classified as OPERATIONAL</strong>, to whom the platform will send the operational information for the congress and the deadlines. Add it below (contacts section) by ticking the <strong>Operational</strong> role: without it, you cannot proceed to the other sections of the portal."
+msgid ""
+"Devi indicare <strong>almeno un soggetto classificato come "
+"OPERATIVO</strong>, al quale la piattaforma invierà le informazioni "
+"operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione "
+"contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi "
+"proseguire nelle altre sezioni del portale."
+msgstr ""
+"You must specify <strong>at least one contact classified as "
+"OPERATIONAL</strong>, to whom the platform will send the operational "
+"information for the congress and the deadlines. Add it below (contacts "
+"section) by ticking the <strong>Operational</strong> role: without it, you "
+"cannot proceed to the other sections of the portal."
 
 #: portal/templates/portal/profile/edit.html:16
 msgid "Cambia password"
 msgstr "Change password"
 
 #: portal/templates/portal/profile/edit.html:17
-msgid "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche vengono salvate subito."
-msgstr "Check and update your company and contact details. Changes are saved immediately."
+msgid ""
+"Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche "
+"vengono salvate subito."
+msgstr ""
+"Check and update your company and contact details. Changes are saved "
+"immediately."
 
 #: portal/templates/portal/profile/edit.html:31
 msgid "Logo aziendale"
@@ -1039,8 +1129,12 @@ msgid "Carica un nuovo logo"
 msgstr "Upload a new logo"
 
 #: portal/templates/portal/profile/edit.html:46
-msgid "L'immagine viene ridimensionata e compressa automaticamente. In alternativa puoi indicare un URL qui sotto."
-msgstr "The image is automatically resized and compressed. Alternatively, you can provide a URL below."
+msgid ""
+"L'immagine viene ridimensionata e compressa automaticamente. In alternativa "
+"puoi indicare un URL qui sotto."
+msgstr ""
+"The image is automatically resized and compressed. Alternatively, you can "
+"provide a URL below."
 
 #: portal/templates/portal/profile/edit.html:52
 msgid "Dati azienda"
@@ -1251,6 +1345,44 @@ msgstr ""
 msgid "Ruolo"
 msgstr "Role"
 
+msgid "Portale di gestione eventi"
+msgstr "Event management portal"
+
+msgid "Benvenuto nel portale di gestione eventi"
+msgstr "Welcome to the event management portal"
+
+msgid ""
+"Da qui gestisci la tua partecipazione: preventivi, spazi espositivi, "
+"servizi, materiali e scadenze dell'evento. Tutto in un unico posto."
+msgstr ""
+"Here you manage your participation: quotes, exhibition spaces, services, "
+"materials and event deadlines. All in one place."
+
+msgid ""
+"Accesso riservato agli utenti abilitati. Se hai problemi con l'accesso "
+"contatta"
+msgstr ""
+"Access reserved for authorised users. If you have trouble logging in, "
+"contact"
+
+msgid "Area riservata"
+msgstr "Restricted area"
+
+msgid "Bentornato"
+msgstr "Welcome back"
+
+msgid "Accedi con le credenziali ricevute via email."
+msgstr "Sign in with the credentials you received by email."
+
+msgid "Verifica email e password, oppure"
+msgstr "Check your email and password, or"
+
+msgid "Accedi al portale"
+msgstr "Sign in to the portal"
+
+msgid "L'accesso è riservato agli sponsor invitati."
+msgstr "Access is reserved for invited sponsors."
+
 #~ msgid "Letto il"
 #~ msgstr "Read on"
 
@@ -1280,7 +1412,9 @@ msgstr "Role"
 #~ msgid "Bonifico bancario?"
 #~ msgstr "Bank transfer?"
 
-#~ msgid "Per importi superiori a € 1.000 puoi richiedere il pagamento tramite bonifico:"
+#~ msgid ""
+#~ "Per importi superiori a € 1.000 puoi richiedere il pagamento tramite "
+#~ "bonifico:"
 #~ msgstr "For amounts over € 1,000 you can request payment by bank transfer:"
 
 #~ msgid "contatta l'amministrazione"
