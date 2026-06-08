@@ -274,4 +274,5 @@ class EmailSettings(models.Model):
             host=self.host, port=self.port,
             username=self.username, password=self.password,
             use_tls=self.use_tls, use_ssl=self.use_ssl,
+            timeout=15,  # non lasciare appesa la richiesta se la porta e' bloccata
         )
