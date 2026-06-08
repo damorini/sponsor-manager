@@ -44,11 +44,13 @@
   .vt-d3 { animation-delay: .25s; } .vt-d4 { animation-delay: .35s; } .vt-d5 { animation-delay: .45s; }
 
   .vt-field input { transition: box-shadow .15s ease, border-color .15s ease, background .15s ease; }
+  /* Solo nel login: niente stacco chiaro tra il blocco e il footer */
+  body > div > footer { margin-top: 0 !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="grid lg:grid-cols-[1.05fr_1fr] lg:min-h-[calc(100vh-118px)]">
+<div class="grid lg:grid-cols-[1.05fr_1fr] lg:min-h-[calc(100vh-72px)]">
 
   <!-- ============ PANNELLO BRAND (sinistra) ============ -->
   <aside class="vt-panel hidden lg:flex flex-col justify-between text-white px-12 xl:px-16 py-10">
