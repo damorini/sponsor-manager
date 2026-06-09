@@ -211,8 +211,17 @@ BANK_TRANSFER_BIC = config('BANK_TRANSFER_BIC', default='')
 BRAND_LOGO_URL = config('BRAND_LOGO_URL', default='')
 BRAND_PRIMARY_COLOR = config('BRAND_PRIMARY_COLOR', default='#1d6534')
 
-SITE_URL = config('SITE_URL', default='http://localhost:8000')
-PORTAL_URL = config('PORTAL_URL', default='http://localhost:8000/portal/')
+# URL pubblico: se SITE_URL non e' impostato, lo deriva da SITE_ADDRESS (lo
+# stesso dominio usato da Caddy per l'HTTPS). Cosi' i link in email/PDF sono
+# assoluti e corretti; cambiando dominio basta cambiare SITE_ADDRESS.
+SITE_ADDRESS = config('SITE_ADDRESS', default='')
+_derived_site_url = (
+    f'https://{SITE_ADDRESS}'
+    if SITE_ADDRESS and SITE_ADDRESS not in ('localhost', '127.0.0.1')
+    else 'http://localhost:8000'
+)
+SITE_URL = config('SITE_URL', default='') or _derived_site_url
+PORTAL_URL = config('PORTAL_URL', default='') or (SITE_URL.rstrip('/') + '/portal/')
 SIGNATURE_PLACE = config('SIGNATURE_PLACE', default='Bologna')
 
 

@@ -12,6 +12,11 @@ x-app-env: &app-env
   DB_HOST: db
   DB_PORT: "5432"
   REDIS_URL: redis://redis:6379/0
+  # Dominio pubblico: da qui Django ricava SITE_URL/PORTAL_URL per i link
+  # assoluti in email e PDF (override opzionali con SITE_URL/PORTAL_URL).
+  SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+  SITE_URL: ${SITE_URL:-}
+  PORTAL_URL: ${PORTAL_URL:-}
   # Lascia True in produzione (HTTPS). Metti False solo se il TLS è gestito
   # da un proxy davanti o per collaudo locale in HTTP.
   SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
