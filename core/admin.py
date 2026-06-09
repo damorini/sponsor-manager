@@ -90,6 +90,41 @@ class OrganizerSettingsAdmin(admin.ModelAdmin):
         return redirect(url)
 
 
+# Email di PROVA: versione HTML grafica (tema "Houston/spazio", brand verde).
+_EMAIL_TEST_HTML = """\
+<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#eef2f0;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f0;padding:26px 0;">
+<tr><td align="center">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 34px rgba(13,51,24,.14);">
+    <tr><td style="background:linear-gradient(135deg,#1d6534 0%,#0d3318 100%);padding:44px 32px 38px;text-align:center;">
+      <div style="font-size:50px;line-height:1;">&#128640;</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;color:#ffffff;margin-top:14px;letter-spacing:.3px;">Houston, non abbiamo problemi.</div>
+      <div style="height:3px;width:64px;background:#e7cf9b;margin:18px auto 0;border-radius:2px;"></div>
+    </td></tr>
+    <tr><td style="padding:30px 38px 6px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:16px;line-height:1.65;">
+      <p style="margin:0 0 14px;">Questa e-mail conferma che il sistema di comunicazione del portale <strong style="color:#1d6534;">Sponsor Manager di VALET Conference</strong> funziona perfettamente.</p>
+      <p style="margin:0 0 16px;">Sei correttamente raggiungibile: da questo momento riceverai tutte le comunicazioni ufficiali relative alla tua area riservata.</p>
+      <p style="margin:0;font-size:19px;font-weight:700;color:#1d6534;">Benvenuto a bordo! &#127881;</p>
+      <p style="margin:6px 0 0;color:#6b7280;">Il team VALET CONFERENCE</p>
+    </td></tr>
+    <tr><td style="padding:6px 38px;"><hr style="border:none;border-top:1px solid #eef0f2;margin:20px 0 16px;"></td></tr>
+    <tr><td style="padding:0 38px 30px;font-family:Arial,Helvetica,sans-serif;color:#6b7280;font-size:14px;line-height:1.6;">
+      <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;color:#374151;">Houston, we have no problems.</p>
+      <p style="margin:0 0 12px;">This e-mail confirms that the communication system of the <strong>Sponsor Manager of VALET Conference</strong> portal is working perfectly. You are correctly reachable: from now on, you will receive all official communications related to your reserved area.</p>
+      <p style="margin:0;font-weight:700;color:#374151;">Welcome on board!</p>
+      <p style="margin:2px 0 0;">The VALET CONFERENCE Team</p>
+    </td></tr>
+    <tr><td style="background:#0d3318;padding:16px;text-align:center;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:rgba(255,255,255,.62);">
+      VALET Conference &middot; Bologna (ITALY) &middot; helpdesk@valet.it
+    </td></tr>
+  </table>
+</td></tr>
+</table>
+</body></html>"""
+
+
 @admin.register(EmailSettings)
 class EmailSettingsAdmin(admin.ModelAdmin):
     """Pannello (singleton) per configurare l'account SMTP di invio email."""
@@ -150,14 +185,30 @@ class EmailSettingsAdmin(admin.ModelAdmin):
                     "configurazione SMTP» e compila l'host, poi salva e riprova.",
                     level=messages.WARNING)
                 return
+            text_body = (
+                "Houston, non abbiamo problemi.\n\n"
+                "Questa e-mail conferma che il sistema di comunicazione del portale "
+                "Sponsor Manager di VALET Conference funziona perfettamente.\n"
+                "Sei correttamente raggiungibile: da questo momento riceverai tutte le "
+                "comunicazioni ufficiali relative alla tua area riservata.\n\n"
+                "Benvenuto a bordo!\nIl team VALET CONFERENCE\n\n"
+                "----------------------------------------\n\n"
+                "Houston, we have no problems.\n\n"
+                "This e-mail confirms that the communication system of the Sponsor Manager "
+                "of VALET Conference portal is working perfectly. You are correctly reachable: "
+                "from now on, you will receive all official communications related to your "
+                "reserved area.\n\nWelcome on board!\nThe VALET CONFERENCE Team"
+            )
+            html_body = _EMAIL_TEST_HTML
             try:
                 msg = EmailMultiAlternatives(
-                    subject="Email di prova · Sponsor Manager",
-                    body="Se leggi questo messaggio, la configurazione SMTP funziona. 👍",
+                    subject="🚀 Houston, non abbiamo problemi · VALET Conference",
+                    body=text_body,
                     from_email=s.from_full or s.username,
                     to=[dest],
                     connection=conn,
                 )
+                msg.attach_alternative(html_body, "text/html")
                 msg.send(fail_silently=False)
                 self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
                                   level=messages.SUCCESS)
