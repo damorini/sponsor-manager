@@ -1,5 +1,6 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "Accesso" %}{% endblock %}
 
@@ -57,10 +58,9 @@
     <!-- Logo VALET in pill chiara -->
     <div class="vt-up vt-d1">
       <span class="inline-flex items-center bg-white rounded-2xl px-4 py-2.5 shadow-lg">
-        <img src="{{ brand_logo_url|default:'/media/branding/valet_conference.png' }}"
+        <img src="{% if brand_logo_url %}{{ brand_logo_url }}{% else %}{% static 'branding/valet_logo.png' %}{% endif %}"
              alt="VALET Conference"
-             class="h-9 w-auto object-contain"
-             onerror="this.onerror=null;this.src='/media/organizer/LOGO_VALET.png';">
+             class="h-9 w-auto object-contain">
       </span>
     </div>
 
@@ -107,9 +107,8 @@
 
       <!-- Logo per mobile (pannello nascosto) -->
       <div class="vt-up vt-d1 lg:hidden mb-7 flex items-center gap-3">
-        <img src="{{ brand_logo_url|default:'/media/branding/valet_conference.png' }}"
-             alt="VALET Conference" class="h-10 w-auto object-contain"
-             onerror="this.onerror=null;this.src='/media/organizer/LOGO_VALET.png';">
+        <img src="{% if brand_logo_url %}{{ brand_logo_url }}{% else %}{% static 'branding/valet_logo.png' %}{% endif %}"
+             alt="VALET Conference" class="h-10 w-auto object-contain">
       </div>
 
       <header class="vt-up vt-d2 mb-7">

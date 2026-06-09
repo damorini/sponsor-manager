@@ -141,7 +141,7 @@
 
   <div class="border-t border-white/10 px-4 py-4">
     <div class="bg-white rounded-lg px-3 py-2 mb-3">
-      <img src="/media/branding/valet_conference.png" alt="{{ organizer_name }}"
+      <img src="{% static 'branding/valet_logo.png' %}" alt="{{ organizer_name }}"
            class="h-6 w-auto max-w-full object-contain mx-auto"
            onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
       <span style="display:none" class="block text-center text-brand-700 text-xs font-semibold">{{ organizer_name|default:"Sponsor Manager" }}</span>
