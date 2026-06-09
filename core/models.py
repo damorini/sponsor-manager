@@ -274,6 +274,11 @@ class EmailSettings(models.Model):
         max_length=120, blank=True, verbose_name="Nome mittente",
         help_text="Es. «Segreteria VALET». Opzionale.",
     )
+    test_recipient = models.EmailField(
+        blank=True, verbose_name="Email per il test",
+        help_text="Indirizzo a cui inviare l'email di PROVA. "
+                  "Vuoto = la tua email di accesso.",
+    )
 
     class Meta:
         verbose_name = "Configurazione email (SMTP)"

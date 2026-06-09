@@ -110,6 +110,11 @@ class EmailSettingsAdmin(admin.ModelAdmin):
         ("Mittente", {
             "fields": ("from_name", "from_email"),
         }),
+        ("Test invio", {
+            "fields": ("test_recipient",),
+            "description": "Indirizzo a cui mandare l'email di PROVA (azione qui sotto). "
+                           "Se vuoto, l'email di prova va al tuo indirizzo di accesso.",
+        }),
     )
     actions = ["invia_email_di_prova"]
 
@@ -119,15 +124,15 @@ class EmailSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    @admin.action(description="Invia un'email di PROVA al tuo indirizzo")
+    @admin.action(description="Invia un'email di PROVA")
     def invia_email_di_prova(self, request, queryset):
         from django.core.mail import EmailMultiAlternatives
         from django.contrib import messages
         s = EmailSettings.load()
-        dest = request.user.email
+        dest = (s.test_recipient or '').strip() or request.user.email
         if not dest:
-            self.message_user(request, "Il tuo utente non ha un'email impostata.",
-                              level=messages.ERROR)
+            self.message_user(request, "Indica un'«Email per il test» (o imposta "
+                              "un'email sul tuo utente).", level=messages.ERROR)
             return
         conn = s.get_connection()
         if conn is None:
