@@ -8,10 +8,12 @@ from django.db import transaction
 
 COLONNE_RICHIESTE = [
     "sponsor_partita_iva", "sponsor_ragione_sociale",
-    "nome_completo", "email", "telefono", "ruolo_aziendale",
+    "cognome", "nome", "email", "telefono", "ruolo_aziendale",
     "ruoli_funzionali", "principale", "consenso_marketing", "lingua", "note",
 ]
-COLONNE_OBBLIGATORIE = ["nome_completo", "email"]
+# Solo 'email' a livello header: il nome (cognome o nome_completo) si valida riga per riga,
+# cosi' funzionano sia i nuovi file (cognome/nome) sia i vecchi (nome_completo).
+COLONNE_OBBLIGATORIE = ["email"]
 
 ROLE_MAP = {
     "signer": "signer", "firmatario": "signer",
@@ -95,10 +97,13 @@ class Command(BaseCommand):
                 return ("" if v is None else str(v)).strip()
 
             try:
-                nome = G("nome_completo")
+                cognome = G("cognome")
+                nome_p = G("nome")
+                nome_completo = G("nome_completo")  # compat vecchi file
                 email = G("email")
-                if not nome or not email:
-                    raise ValueError("nome_completo ed email sono obbligatori")
+                nome = nome_completo or (nome_p + " " + cognome).strip()
+                if not (cognome or nome_completo) or not email:
+                    raise ValueError("cognome (o nome_completo) ed email sono obbligatori")
 
                 piva = G("sponsor_partita_iva")
                 rs = G("sponsor_ragione_sociale")
@@ -127,9 +132,16 @@ class Command(BaseCommand):
 
                 with transaction.atomic():
                     if contact is None:
-                        contact = Contact(sponsor=sponsor, email=email, full_name=nome)
-                    else:
-                        contact.full_name = nome
+                        contact = Contact(sponsor=sponsor, email=email)
+                    # Nome/Cognome separati (il full_name si ricompone al salvataggio);
+                    # se il file ha solo nome_completo, lo usiamo (verra' diviso).
+                    if cognome or nome_p:
+                        contact.last_name = cognome
+                        contact.first_name = nome_p
+                    elif nome_completo:
+                        contact.full_name = nome_completo
+                        contact.first_name = ''
+                        contact.last_name = ''
                     tel = G("telefono")
                     ruolo = G("ruolo_aziendale")
                     if tel:

@@ -426,7 +426,8 @@ def build_template_contatti_workbook():
     headers = [
         ("sponsor_partita_iva", "Consigliato. P.IVA dello sponsor a cui collegare il contatto."),
         ("sponsor_ragione_sociale", "Alternativa: ragione sociale dello sponsor (se non metti la P.IVA)."),
-        ("nome_completo", "OBBLIGATORIO. Nome e cognome del contatto."),
+        ("cognome", "OBBLIGATORIO. Cognome del contatto."),
+        ("nome", "Nome del contatto."),
         ("email", "OBBLIGATORIO. Email del contatto."),
         ("telefono", "Opzionale."),
         ("ruolo_aziendale", "Opzionale. Es. Responsabile marketing."),
@@ -446,16 +447,16 @@ def build_template_contatti_workbook():
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.comment = Comment(comment, "Sponsor Manager")
 
-    esempio1 = ["01234567890", "Rossi Pharma S.p.A.", "Maria Bianchi", "maria.bianchi@rossipharma.it",
+    esempio1 = ["01234567890", "Rossi Pharma S.p.A.", "Bianchi", "Maria", "maria.bianchi@rossipharma.it",
                 "051 123456", "Responsabile marketing", "marketing, cc", "s", "s", "it", ""]
-    esempio2 = ["", "Verdi Medical S.r.l.", "Luca Verdi", "luca.verdi@verdimedical.it",
+    esempio2 = ["", "Verdi Medical S.r.l.", "Verdi", "Luca", "luca.verdi@verdimedical.it",
                 "", "Amministrazione", "amministrazione, firmatario", "n", "n", "it", "Referente fatture"]
     for col, v in enumerate(esempio1, start=1):
         ws.cell(row=2, column=col, value=v)
     for col, v in enumerate(esempio2, start=1):
         ws.cell(row=3, column=col, value=v)
 
-    larghezze = [18, 26, 22, 30, 16, 24, 34, 12, 16, 10, 24]
+    larghezze = [18, 26, 18, 18, 30, 16, 24, 34, 12, 16, 10, 24]
     for i, w in enumerate(larghezze, start=1):
         ws.column_dimensions[chr(64 + i)].width = w
 
@@ -465,7 +466,7 @@ def build_template_contatti_workbook():
         "",
         "1. Le PRIME 2 RIGHE del foglio 'Contatti' sono esempi: cancellali o sovrascrivili.",
         "2. Compila una riga per ogni contatto da importare o aggiornare.",
-        "3. Colonne OBBLIGATORIE: nome_completo, email.",
+        "3. Colonne OBBLIGATORIE: cognome, email (il nome e' consigliato).",
         "4. COLLEGAMENTO ALLO SPONSOR: indica sponsor_partita_iva (consigliato) oppure",
         "   sponsor_ragione_sociale. Lo sponsor deve gia' esistere (importalo prima se serve).",
         "5. RICONOSCIMENTO: il contatto e' identificato da sponsor + email. Se esiste -> AGGIORNA,",
