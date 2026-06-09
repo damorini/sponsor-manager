@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div id="content-main">
+  <p>Invia un'email di prova per verificare la configurazione SMTP. Indica l'indirizzo del destinatario.</p>
+
+  <form method="post" action="">{% csrf_token %}
+    <div class="form-row" style="padding:14px 0;">
+      <label for="test_email" style="display:inline-block; min-width:140px; font-weight:600;">Invia a:</label>
+      <input type="email" name="test_email" id="test_email" value="{{ default_email }}"
+             required placeholder="nome@esempio.it"
+             style="width:340px; padding:6px 10px;">
+    </div>
+
+    {% for pk in selected %}<input type="hidden" name="{{ action_checkbox_name }}" value="{{ pk }}">{% endfor %}
+    <input type="hidden" name="action" value="invia_email_di_prova">
+    <input type="hidden" name="apply_test" value="1">
+
+    <div class="submit-row">
+      <input type="submit" value="Invia email di prova" class="default">
+      <a href="../" class="button cancel-link" style="margin-left:8px;">Annulla</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

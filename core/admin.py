@@ -128,30 +128,51 @@ class EmailSettingsAdmin(admin.ModelAdmin):
     def invia_email_di_prova(self, request, queryset):
         from django.core.mail import EmailMultiAlternatives
         from django.contrib import messages
+        from django.contrib.admin import helpers
+        from django.template.response import TemplateResponse
+        from django.core.validators import validate_email
+        from django.core.exceptions import ValidationError
         s = EmailSettings.load()
-        dest = (s.test_recipient or '').strip() or request.user.email
-        if not dest:
-            self.message_user(request, "Indica un'«Email per il test» (o imposta "
-                              "un'email sul tuo utente).", level=messages.ERROR)
-            return
-        conn = s.get_connection()
-        if conn is None:
-            self.message_user(
-                request,
-                "Configurazione SMTP non attiva o senza host: spunta «Usa questa "
-                "configurazione SMTP» e compila l'host, poi salva e riprova.",
-                level=messages.WARNING)
-            return
-        try:
-            msg = EmailMultiAlternatives(
-                subject="Email di prova · Sponsor Manager",
-                body="Se leggi questo messaggio, la configurazione SMTP funziona. 👍",
-                from_email=s.from_full or s.username,
-                to=[dest],
-                connection=conn,
-            )
-            msg.send(fail_silently=False)
-            self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
-                              level=messages.SUCCESS)
-        except Exception as e:
-            self.message_user(request, f"Invio fallito: {e}", level=messages.ERROR)
+
+        # Secondo passo: l'utente ha digitato l'indirizzo e confermato -> invio.
+        if request.POST.get('apply_test'):
+            dest = (request.POST.get('test_email') or '').strip()
+            try:
+                validate_email(dest)
+            except ValidationError:
+                self.message_user(request, "Indirizzo email non valido.", level=messages.ERROR)
+                return
+            conn = s.get_connection()
+            if conn is None:
+                self.message_user(
+                    request,
+                    "Configurazione SMTP non attiva o senza host: spunta «Usa questa "
+                    "configurazione SMTP» e compila l'host, poi salva e riprova.",
+                    level=messages.WARNING)
+                return
+            try:
+                msg = EmailMultiAlternatives(
+                    subject="Email di prova · Sponsor Manager",
+                    body="Se leggi questo messaggio, la configurazione SMTP funziona. 👍",
+                    from_email=s.from_full or s.username,
+                    to=[dest],
+                    connection=conn,
+                )
+                msg.send(fail_silently=False)
+                self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
+                                  level=messages.SUCCESS)
+            except Exception as e:
+                self.message_user(request, f"Invio fallito: {e}", level=messages.ERROR)
+            return  # torna alla lista
+
+        # Primo passo: chiedo a quale indirizzo inviare (paginetta al volo).
+        default = (s.test_recipient or '').strip() or (request.user.email or '')
+        ctx = {
+            **self.admin_site.each_context(request),
+            'title': "Invia un'email di prova",
+            'default_email': default,
+            'selected': list(queryset.values_list('pk', flat=True)),
+            'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            'opts': self.model._meta,
+        }
+        return TemplateResponse(request, 'admin/email_test_confirm.html', ctx)
