@@ -85,8 +85,8 @@ def invite_contact_to_portal(contact: Contact, send_email: bool = True):
                 username=contact.email,
                 email=contact.email,
                 password=temp_password,
-                first_name=_extract_first_name(contact.full_name),
-                last_name=_extract_last_name(contact.full_name),
+                first_name=contact.first_name or _extract_first_name(contact.full_name),
+                last_name=contact.last_name or _extract_last_name(contact.full_name),
                 role='sponsor',
                 is_active=True,
             )

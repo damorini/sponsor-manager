@@ -45,7 +45,7 @@ class ContactInline(admin.TabularInline):
     model = Contact
     extra = 1
     fields = (
-        'full_name', 'email', 'phone', 'job_title', 'roles',
+        'last_name', 'first_name', 'email', 'phone', 'job_title', 'roles',
         'is_primary', 'preferred_language', 'has_portal_access',
     )
     show_change_link = True
@@ -654,7 +654,7 @@ class ContactAdmin(admin.ModelAdmin):
         'is_primary', 'has_portal_access', 'preferred_language',
         'marketing_consent',
     )
-    search_fields = ('full_name', 'email', 'phone', 'sponsor__legal_name')
+    search_fields = ('first_name', 'last_name', 'full_name', 'email', 'phone', 'sponsor__legal_name')
 
     def get_search_results(self, request, queryset, search_term):
         queryset, may_dup = super().get_search_results(request, queryset, search_term)
@@ -670,14 +670,12 @@ class ContactAdmin(admin.ModelAdmin):
                        'marketing_consent_at')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
-        # Espressione autosufficiente: ordina per "cognome" ricavato da full_name,
-        # senza annotazioni. Cosi' funziona anche quando un altro admin (es. il
-        # Contratto) costruisce la tendina dei Contatti via get_field_queryset.
-        return (Lower(_Cognome('full_name')),)
+        # Ordina per Cognome, poi Nome (campi reali).
+        return (Lower('last_name'), Lower('first_name'))
 
     fieldsets = (
         ('Persona', {
-            'fields': ('sponsor', 'full_name', 'email', 'phone', 'job_title'),
+            'fields': ('sponsor', ('last_name', 'first_name'), 'email', 'phone', 'job_title'),
         }),
         ('Funzioni', {
             'fields': ('roles', 'is_primary', 'preferred_language'),
@@ -714,15 +712,13 @@ class ContactAdmin(admin.ModelAdmin):
         }),
     )
 
-    @admin.display(description='Cognome', ordering=Lower(_Cognome('full_name')))
+    @admin.display(description='Cognome', ordering='last_name')
     def col_cognome(self, obj):
-        parts = (obj.full_name or '').split()
-        return parts[-1] if parts else '—'
+        return obj.last_name or '—'
 
-    @admin.display(description='Nome')
+    @admin.display(description='Nome', ordering='first_name')
     def col_nome(self, obj):
-        parts = (obj.full_name or '').split()
-        return ' '.join(parts[:-1]) if len(parts) > 1 else (parts[0] if parts else '—')
+        return obj.first_name or '—'
 
     @admin.display(description='Cellulare', ordering='phone')
     def cellulare(self, obj):

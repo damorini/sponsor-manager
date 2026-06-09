@@ -63,7 +63,8 @@ SPONSOR_FIELDS = [
     ('business_description', _('Descrizione attività')),
 ]
 CONTACT_FIELDS = [
-    ('full_name', _('Nome e cognome')),
+    ('last_name', _('Cognome')),
+    ('first_name', _('Nome')),
     ('email', _('Email')),
     ('phone', _('Telefono')),
     ('job_title', _('Ruolo')),
@@ -133,8 +134,8 @@ def profile_view(request):
         for field, _label in CONTACT_FIELDS:
             if hasattr(contact, field):
                 val = request.POST.get(f'contact_{field}', '').strip()
-                # email/full_name non li svuotiamo se arrivano vuoti per errore
-                if field in ('email', 'full_name') and not val:
+                # email/cognome non li svuotiamo se arrivano vuoti per errore
+                if field in ('email', 'last_name') and not val:
                     continue
                 setattr(contact, field, val)
         # lingua preferita (scelta con le bandierine)

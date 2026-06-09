@@ -240,7 +240,11 @@ class Contact(SoftDeleteModel):
         verbose_name="Sponsor",
     )
 
-    full_name = models.CharField(max_length=255, verbose_name="Nome completo")
+    first_name = models.CharField(max_length=120, blank=True, verbose_name="Nome")
+    last_name = models.CharField(max_length=120, blank=True, verbose_name="Cognome")
+    full_name = models.CharField(
+        max_length=255, blank=True, verbose_name="Nome completo",
+        help_text="Compilato in automatico da Nome + Cognome.")
     email = models.EmailField(verbose_name="Email")
     phone = models.CharField(max_length=50, blank=True, verbose_name="Telefono")
     job_title = models.CharField(max_length=100, blank=True, verbose_name="Ruolo aziendale")
@@ -357,6 +361,17 @@ class Contact(SoftDeleteModel):
             (self.privacy_policy_version or '') == (versione_corrente or '')
 
     def save(self, *args, **kwargs):
+        # Tiene allineato il "Nome completo": se sono presenti Nome/Cognome lo
+        # ricompone; altrimenti (dati vecchi col solo nome completo) ricava
+        # Nome/Cognome (ultima parola = cognome).
+        fn = (self.first_name or '').strip()
+        ln = (self.last_name or '').strip()
+        if fn or ln:
+            self.full_name = (fn + ' ' + ln).strip()
+        elif (self.full_name or '').strip():
+            _p = self.full_name.split()
+            self.last_name = _p[-1]
+            self.first_name = ' '.join(_p[:-1])
         super().save(*args, **kwargs)
         # Login = email: se cambia l'email del contatto, allinea l'utenza collegata.
         if self.portal_user_id and self.email:
