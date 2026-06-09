@@ -31,7 +31,8 @@ def sponsor_required(view_func):
     def wrapper(request, *args, **kwargs):
         if not getattr(request.user, 'is_sponsor', False):
             return HttpResponseForbidden(
-                "Questa pagina è riservata agli sponsor."
+                "Questa pagina è riservata ad utenti con i privilegi di accesso. "
+                "Per ulteriori info contattare helpdesk@valet.it"
             )
 
         try:
