@@ -155,7 +155,7 @@ class Command(BaseCommand):
                 desc_it = str(G("descrizione_it") or "").strip()
                 desc_en = str(G("descrizione_en") or "").strip()
                 cat = str(G("categoria") or "").strip()
-                acc_cat = str(G("categoria_contabile") or "").strip() or "altro"
+                acc_cat = (str(G("categoria_contabile") or "").strip().lower() or "altro")
                 if acc_cat not in ACCOUNTING_VALIDI:
                     raise ValueError(
                         f"categoria_contabile '{acc_cat}' non valida. "
