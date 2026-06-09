@@ -121,6 +121,8 @@
 {% endif %}
 
 <style>
+  /* Nascondi i gruppi senza voci (es. nella pagina-indice di una singola app) */
+  .sm-group:not(:has(tr)) { display: none; }
   .sm-group caption .section { cursor: pointer; user-select: none; }
   .sm-group .sm-caret { display:inline-block; width:1em; transition: transform .15s ease; }
   .sm-group.sm-collapsed .sm-caret { transform: rotate(-90deg); }
