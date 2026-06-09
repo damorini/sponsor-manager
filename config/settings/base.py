@@ -119,7 +119,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LOGIN_URL = 'portal:login'
 LOGIN_REDIRECT_URL = '/'
-LOGOUT_REDIRECT_URL = 'portal:login'
+# Logout del backoffice -> pagina di login admin (NON il portale sponsor).
+# Il logout del portale ha un suo redirect dedicato (portal:login).
+LOGOUT_REDIRECT_URL = '/admin/login/'
+
+# La sessione termina alla chiusura del browser: chiudendo, l'utente esce
+# (evita che la sessione admin resti attiva e blocchi l'accesso al portale).
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 LANGUAGE_CODE = 'it'
 USE_THOUSAND_SEPARATOR = True
