@@ -1,0 +1,28 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 8px 0; font-size:22px;">Benvenuto nel portale sponsor</h2>
+<p style="margin:0 0 16px 0;">Gentile {{ contact.full_name }},<br>
+sei stato abilitato all'accesso al portale di <strong>{{ org_name|default:organizer_name }}</strong>. Da qui potrai gestire la tua partecipazione: preventivi, spazi espositivi, servizi, materiali e scadenze dell'evento.</p>
+
+<p style="margin:0 0 8px 0; font-weight:600;">Le tue credenziali di accesso:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6f4; border:1px solid #e5e7eb; border-radius:8px; margin:0 0 18px 0;">
+  <tr><td style="padding:14px 16px; font-size:15px;">
+    <div style="margin-bottom:6px;"><span class="text-muted">Email (nome utente):</span> <strong>{{ user.email }}</strong></div>
+    <div><span class="text-muted">Password temporanea:</span> <strong style="font-family:monospace;">{{ temp_password }}</strong></div>
+  </td></tr>
+</table>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;">
+  <tr><td align="center">
+    <a class="button" href="{{ site_url }}{% url 'portal:login' %}">Accedi al portale</a>
+  </td></tr>
+</table>
+
+<div class="alert-warning" style="margin:16px 0;">
+  <strong>Importante:</strong> per la tua sicurezza ti consigliamo di cambiare la password al primo accesso, dalla pagina «I miei dati» del portale.
+</div>
+
+<p class="text-muted" style="font-size:13px; margin:14px 0 0 0;">Per assistenza puoi contattare la segreteria organizzativa{% if support_email %} (<a href="mailto:{{ support_email }}" style="color:inherit;">{{ support_email }}</a>){% endif %}.</p>
+<p style="margin:18px 0 0 0;">Cordiali saluti,<br>{{ org_name|default:organizer_name }}</p>
+{% endblock %}
