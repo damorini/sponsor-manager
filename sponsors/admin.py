@@ -741,9 +741,9 @@ class ContactAdmin(admin.ModelAdmin):
         righe = []
         for contact in queryset:
             try:
-                user, pwd, created = invite_contact_to_portal(contact, send_email=False)
-                righe.append(f"{contact.full_name} ({user.email}) - password: {pwd}"
-                             + ("" if created else " (rigenerata)"))
+                user, pwd, created = invite_contact_to_portal(contact, send_email=True)
+                righe.append(f"{contact.full_name} ({user.email}) - email di accesso inviata · "
+                             f"password: {pwd}" + ("" if created else " (rigenerata)"))
                 if created:
                     ok_creati += 1
                 else:
