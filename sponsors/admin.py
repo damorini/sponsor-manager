@@ -646,9 +646,10 @@ class ContactAdmin(admin.ModelAdmin):
         css = {'all': ('admin/css/contact_changelist.css',)}
 
     list_display = (
-        'full_name', 'sponsor_link', 'email', 'cellulare', 'job_title',
+        'col_cognome', 'col_nome', 'sponsor_link', 'email', 'cellulare', 'job_title',
         'roles_display', 'col_principale', 'col_lingua', 'col_portale',
     )
+    list_display_links = ('col_cognome', 'col_nome')
     list_filter = (
         'is_primary', 'has_portal_access', 'preferred_language',
         'marketing_consent',
@@ -712,6 +713,16 @@ class ContactAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Cognome', ordering=Lower(_Cognome('full_name')))
+    def col_cognome(self, obj):
+        parts = (obj.full_name or '').split()
+        return parts[-1] if parts else '—'
+
+    @admin.display(description='Nome')
+    def col_nome(self, obj):
+        parts = (obj.full_name or '').split()
+        return ' '.join(parts[:-1]) if len(parts) > 1 else (parts[0] if parts else '—')
 
     @admin.display(description='Cellulare', ordering='phone')
     def cellulare(self, obj):

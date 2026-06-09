@@ -33,7 +33,7 @@ class ItAdminPasswordChangeForm(AdminPasswordChangeForm):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('nome_display', 'cognome_display', 'email', 'role_badge', 'is_active', 'last_login')
+    list_display = ('cognome_display', 'nome_display', 'email', 'role_badge', 'is_active', 'last_login')
     list_filter = ('role', 'is_active', 'is_staff', 'is_superuser')
     search_fields = ('email', 'first_name', 'last_name', 'username')
     ordering = ('last_name', 'first_name', 'email')
