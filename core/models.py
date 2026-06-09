@@ -126,8 +126,10 @@ class OrganizerSettings(models.Model):
     address = models.TextField(
         blank=True, verbose_name="Indirizzo",
     )
-    email = models.EmailField(
-        blank=True, verbose_name="Email",
+    email = models.CharField(
+        max_length=500, blank=True, verbose_name="Email",
+        validators=[_validate_email_list],
+        help_text="Uno o più indirizzi separati da ; (o ,).",
     )
     phone = models.CharField(
         max_length=50, blank=True, verbose_name="Telefono",
@@ -225,9 +227,12 @@ class OrganizerSettings(models.Model):
         dedicati = _split_emails(self.messages_notify_email)
         if dedicati:
             return dedicati
-        fallback = (self.email or getattr(settings, 'SUPPORT_EMAIL', '') or
-                    getattr(settings, 'DEFAULT_FROM_EMAIL', '') or '').strip()
-        return [fallback] if fallback else []
+        org = _split_emails(self.email)
+        if org:
+            return org
+        single = (getattr(settings, 'SUPPORT_EMAIL', '') or
+                  getattr(settings, 'DEFAULT_FROM_EMAIL', '') or '').strip()
+        return [single] if single else []
 
     @property
     def notify_recipient(self):
