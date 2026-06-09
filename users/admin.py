@@ -33,10 +33,10 @@ class ItAdminPasswordChangeForm(AdminPasswordChangeForm):
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    list_display = ('email', 'full_name_display', 'role_badge', 'is_active', 'last_login')
+    list_display = ('nome_display', 'cognome_display', 'email', 'role_badge', 'is_active', 'last_login')
     list_filter = ('role', 'is_active', 'is_staff', 'is_superuser')
     search_fields = ('email', 'first_name', 'last_name', 'username')
-    ordering = ('email',)
+    ordering = ('last_name', 'first_name', 'email')
     filter_horizontal = ('managed_events', 'groups', 'user_permissions')
     change_password_form = ItAdminPasswordChangeForm
     
@@ -70,6 +70,14 @@ class UserAdmin(BaseUserAdmin):
                        'role', 'password1', 'password2'),
         }),
     )
+
+    @admin.display(description='Nome', ordering='first_name')
+    def nome_display(self, obj):
+        return obj.first_name or '—'
+
+    @admin.display(description='Cognome', ordering='last_name')
+    def cognome_display(self, obj):
+        return obj.last_name or '—'
 
     @admin.display(description='Nome completo', ordering='last_name')
     def full_name_display(self, obj):
