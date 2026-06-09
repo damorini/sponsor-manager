@@ -98,9 +98,12 @@ _EMAIL_TEST_HTML = """\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f0;padding:26px 0;">
 <tr><td align="center">
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 34px rgba(13,51,24,.14);">
-    <tr><td style="background:linear-gradient(135deg,#1d6534 0%,#0d3318 100%);padding:44px 32px 38px;text-align:center;">
-      <div style="font-size:50px;line-height:1;">&#128640;</div>
-      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;color:#ffffff;margin-top:14px;letter-spacing:.3px;">Houston, non abbiamo problemi.</div>
+    <tr><td style="background:linear-gradient(135deg,#1d6534 0%,#0d3318 100%);padding:38px 32px 36px;text-align:center;">
+      <div style="display:inline-block;background:#ffffff;border-radius:14px;padding:10px 18px;">
+        <img src="cid:valetlogo" alt="VALET Conference" width="150" style="display:block;width:150px;max-width:150px;height:auto;border:0;">
+      </div>
+      <div style="font-size:42px;line-height:1;margin-top:22px;">&#128640;</div>
+      <div style="font-family:Georgia,'Times New Roman',serif;font-size:30px;font-weight:700;color:#ffffff;margin-top:12px;letter-spacing:.3px;">Houston, non abbiamo problemi.</div>
       <div style="height:3px;width:64px;background:#e7cf9b;margin:18px auto 0;border-radius:2px;"></div>
     </td></tr>
     <tr><td style="padding:30px 38px 6px;font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:16px;line-height:1.65;">
@@ -209,6 +212,21 @@ class EmailSettingsAdmin(admin.ModelAdmin):
                     connection=conn,
                 )
                 msg.attach_alternative(html_body, "text/html")
+                # Logo VALET incorporato (inline, sempre visibile)
+                try:
+                    import os
+                    from email.mime.image import MIMEImage
+                    from django.conf import settings as _st
+                    _logo = os.path.join(_st.BASE_DIR, 'core', 'static', 'branding', 'valet_logo.png')
+                    if os.path.exists(_logo):
+                        with open(_logo, 'rb') as _f:
+                            _img = MIMEImage(_f.read(), 'png')
+                        _img.add_header('Content-ID', '<valetlogo>')
+                        _img.add_header('Content-Disposition', 'inline', filename='valet_logo.png')
+                        msg.mixed_subtype = 'related'
+                        msg.attach(_img)
+                except Exception:
+                    pass  # se il logo manca, l'email parte comunque (senza immagine)
                 msg.send(fail_silently=False)
                 self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
                                   level=messages.SUCCESS)
