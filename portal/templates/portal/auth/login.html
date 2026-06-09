@@ -99,9 +99,9 @@
           {% csrf_token %}
           <input type="hidden" name="next" value="{{ request.path }}">
           <button type="submit" name="language" value="it"
-                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'it' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">🇮🇹 IT</button>
+                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'it' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}"><img src="{% static 'flags/it.svg' %}" alt="" class="inline-block w-4 rounded-[2px] align-[-2px] mr-1">IT</button>
           <button type="submit" name="language" value="en"
-                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'en' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}">🇬🇧 EN</button>
+                  class="text-xs font-bold rounded-lg px-3 py-1.5 transition {% if request.LANGUAGE_CODE == 'en' %}bg-brand-600 text-white shadow-sm{% else %}text-slate-500 hover:text-slate-800{% endif %}"><img src="{% static 'flags/gb.svg' %}" alt="" class="inline-block w-4 rounded-[2px] align-[-2px] mr-1">EN</button>
         </form>
       </div>
 

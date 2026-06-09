@@ -1,5 +1,6 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
+{% load static %}
 
 {% block title %}{% trans "I miei dati" %}{% endblock %}
 
@@ -81,11 +82,11 @@
         <div class="flex gap-4">
           <button type="button" data-lang="it"
                   class="lang-flag flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all {% if contact.preferred_language != 'en' %}border-brand-500 bg-brand-50 shadow-sm{% else %}border-gray-200 opacity-50 grayscale{% endif %}">
-            <span class="text-2xl">🇮🇹</span><span class="font-semibold text-gray-800">Italiano</span>
+            <img src="{% static 'flags/it.svg' %}" alt="" class="w-7 rounded-[3px] shadow-sm"><span class="font-semibold text-gray-800">Italiano</span>
           </button>
           <button type="button" data-lang="en"
                   class="lang-flag flex items-center gap-2 px-5 py-3 rounded-lg border-2 transition-all {% if contact.preferred_language == 'en' %}border-brand-500 bg-brand-50 shadow-sm{% else %}border-gray-200 opacity-50 grayscale{% endif %}">
-            <span class="text-2xl">🇬🇧</span><span class="font-semibold text-gray-800">English</span>
+            <img src="{% static 'flags/gb.svg' %}" alt="" class="w-7 rounded-[3px] shadow-sm"><span class="font-semibold text-gray-800">English</span>
           </button>
         </div>
       </div>

@@ -103,9 +103,9 @@
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.path }}">
       <button type="submit" name="language" value="it"
-              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇮🇹 IT</button>
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'it' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}"><img src="{% static 'flags/it.svg' %}" alt="" class="inline-block w-4 rounded-[2px] align-[-2px] mr-1">IT</button>
       <button type="submit" name="language" value="en"
-              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}">🇬🇧 EN</button>
+              class="flex-1 text-center text-xs font-semibold rounded-md px-2 py-1.5 {% if request.LANGUAGE_CODE == 'en' %}bg-white text-brand-700 shadow-soft{% else %}bg-white/10 text-white/70 hover:bg-white/20{% endif %}"><img src="{% static 'flags/gb.svg' %}" alt="" class="inline-block w-4 rounded-[2px] align-[-2px] mr-1">EN</button>
     </form>
   </div>
 
