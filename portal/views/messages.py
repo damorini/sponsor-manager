@@ -27,8 +27,8 @@ def _notifica_risposta_operatore(request, reply):
     from core.models import OrganizerSettings
 
     try:
-        to = OrganizerSettings.load().notify_recipient
-        if not to:
+        recipients = OrganizerSettings.load().notify_recipients()
+        if not recipients:
             return
         sponsor = reply.sponsor
         contact = getattr(request, 'contact', None)
@@ -44,7 +44,7 @@ def _notifica_risposta_operatore(request, reply):
             f"«{reply.body}»\n\n"
             f"Apri la conversazione nel backoffice:\n{admin_url}"
         )
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [to],
+        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients,
                   fail_silently=True)
     except Exception:
         logger.exception("Notifica risposta portale non inviata")
