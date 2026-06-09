@@ -16,6 +16,48 @@ from django.utils.html import format_html
 from .models import OrganizerSettings, EmailSettings
 
 
+# =============================================================================
+# Registro attività (LogEntry): tutte le modifiche del backoffice, per utente.
+# =============================================================================
+from django.contrib.admin.models import LogEntry
+
+
+@admin.register(LogEntry)
+class LogEntryAdmin(admin.ModelAdmin):
+    """Sola lettura: registro di tutte le azioni fatte nel backoffice."""
+    list_display = ('action_time', 'user', 'content_type', 'oggetto', 'azione', 'dettaglio')
+    list_filter = ('action_flag', 'content_type', 'user')
+    search_fields = ('object_repr', 'change_message', 'user__email')
+    date_hierarchy = 'action_time'
+    ordering = ('-action_time',)
+    list_select_related = ('user', 'content_type')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False  # sola consultazione
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description='Azione')
+    def azione(self, obj):
+        return {1: 'Creazione', 2: 'Modifica', 3: 'Cancellazione'}.get(
+            obj.action_flag, obj.action_flag)
+
+    @admin.display(description='Oggetto')
+    def oggetto(self, obj):
+        return (obj.object_repr or '')[:60]
+
+    @admin.display(description='Dettaglio')
+    def dettaglio(self, obj):
+        try:
+            return (obj.get_change_message() or '')[:90]
+        except Exception:
+            return (obj.change_message or '')[:90]
+
+
 class OrganizerSettingsForm(forms.ModelForm):
     """Editor visuale (TinyMCE) sui testi privacy: grassetto, corsivo, link…"""
     class Meta:
