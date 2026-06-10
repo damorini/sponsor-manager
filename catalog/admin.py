@@ -11,7 +11,7 @@ from core.admin_filters import evento_filter, nascondi_archiviati_filter
 from django.urls import reverse
 from django.utils.html import format_html
 
-from core.admin_widgets import TranslatableJSONField
+from core.admin_widgets import TranslatableJSONField, DatalistTextInput
 
 from .models import (CatalogService, CatalogServiceVariant, DeadlineFieldTemplate, DeadlineTemplate, PricingMode, Service, ServiceCategory, ServiceInclusion, ServiceVariant)
 
@@ -34,6 +34,16 @@ class ServiceAdminForm(forms.ModelForm):
         model = Service
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 'Categoria': tendina coi valori già usati (+ le categorie gestite del
+        # catalogo), per evitare errori di battitura; resta libero per nuovi.
+        if 'category' in self.fields:
+            usate = (Service.objects.exclude(category='')
+                     .order_by('category').values_list('category', flat=True).distinct())
+            gestite = ServiceCategory.objects.order_by('name').values_list('name', flat=True)
+            self.fields['category'].widget = DatalistTextInput(options=[*gestite, *usate])
+
 
 class DeadlineTemplateForm(forms.ModelForm):
     """'Ruoli da notificare' come caselle da spuntare (niente testo libero):
@@ -53,6 +63,15 @@ class DeadlineTemplateForm(forms.ModelForm):
     class Meta:
         model = DeadlineTemplate
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 'Tipo scadenza': suggerimenti coi tipi già usati + alcuni comuni.
+        if 'deadline_type' in self.fields:
+            usati = (DeadlineTemplate.objects.exclude(deadline_type='')
+                     .order_by('deadline_type').values_list('deadline_type', flat=True).distinct())
+            comuni = ['tecnica', 'materiali', 'documentazione', 'artwork', 'logo']
+            self.fields['deadline_type'].widget = DatalistTextInput(options=[*comuni, *usati])
 
 
 class DeadlineTemplateInline(admin.TabularInline):

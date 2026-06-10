@@ -8,7 +8,7 @@ incluso 'IN BLOCCO' per gli stand che fanno parte di un blocco.
 from django import forms
 from django.contrib import admin
 from core.admin_filters import evento_filter, nascondi_archiviati_filter
-from core.admin_widgets import TranslatableJSONField
+from core.admin_widgets import TranslatableJSONField, DatalistTextInput
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Q
 from django.urls import reverse
@@ -50,6 +50,11 @@ class StandBlockForm(forms.ModelForm):
                 .filter(Q(stand_block__isnull=True, status=StandStatus.AVAILABLE)
                         | Q(stand_block=inst))
                 .select_related('event').order_by('code'))
+        # 'Tipologia' (block_type): tendina coi valori già usati, resta libero.
+        if 'block_type' in self.fields:
+            usate = (StandBlock.objects.exclude(block_type='')
+                     .order_by('block_type').values_list('block_type', flat=True).distinct())
+            self.fields['block_type'].widget = DatalistTextInput(options=list(usate))
             f.initial = Stand.objects.filter(stand_block=inst)
         else:
             f.queryset = (Stand.objects
@@ -233,6 +238,14 @@ class StandAdminForm(forms.ModelForm):
     class Meta:
         model = Stand
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 'Tipologia' (stand_type): tendina coi valori già usati, resta libero.
+        if 'stand_type' in self.fields:
+            usate = (Stand.objects.exclude(stand_type='')
+                     .order_by('stand_type').values_list('stand_type', flat=True).distinct())
+            self.fields['stand_type'].widget = DatalistTextInput(options=list(usate))
 
 
 @admin.register(Stand)

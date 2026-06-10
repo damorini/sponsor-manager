@@ -19,8 +19,30 @@ Uso negli admin:
 import json
 
 from django import forms
+from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
+
+
+class DatalistTextInput(forms.TextInput):
+    """Input testo con tendina di SUGGERIMENTI (HTML <datalist>): mostra i
+    valori già esistenti per evitare errori di battitura, ma consente comunque
+    di scriverne di nuovi. Le opzioni vanno passate al momento del render
+    (di solito calcolate nel __init__ del form dai valori distinti a DB)."""
+
+    def __init__(self, options=None, attrs=None):
+        self.options = list(options or [])
+        super().__init__(attrs)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        list_id = f'dl_{name}'
+        attrs = {**(attrs or {}), 'list': list_id, 'autocomplete': 'off'}
+        base = super().render(name, value, attrs, renderer)
+        opts = ''.join(
+            f'<option value="{escape(o)}"></option>'
+            for o in dict.fromkeys(o for o in self.options if o)  # unici, non vuoti, ordine preservato
+        )
+        return mark_safe(f'{base}<datalist id="{list_id}">{opts}</datalist>')
 
 
 class TranslatableJSONWidget(forms.MultiWidget):
