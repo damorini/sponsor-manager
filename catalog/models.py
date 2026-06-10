@@ -495,6 +495,8 @@ class DeadlineTemplate(TimeStampedModel):
 
     days_before_event = models.IntegerField(
         verbose_name="Giorni prima dell'evento",
+        help_text="Quando cade la scadenza: tot giorni prima dell'inizio "
+                  "evento. Es. 30 = la scadenza è 30 giorni prima dell'evento.",
     )
 
     notify_roles = ArrayField(
@@ -506,7 +508,12 @@ class DeadlineTemplate(TimeStampedModel):
     reminder_days_before = ArrayField(
         models.IntegerField(),
         default=list,
-        verbose_name="Reminder a (giorni prima)",
+        blank=True,
+        verbose_name="Reminder a (giorni prima della scadenza)",
+        help_text="Quanti giorni PRIMA DELLA SCADENZA inviare i promemoria. "
+                  "Puoi metterne più di uno separati da virgola, es. 15, 7, 3 "
+                  "(tre promemoria, a 15-7-3 giorni dalla scadenza). "
+                  "Vuoto = nessun reminder automatico.",
     )
 
     # File "modello" che il cliente puo' scaricare per preparare cio' che deve
