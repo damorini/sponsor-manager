@@ -41,6 +41,16 @@
   </a>
   {% endif %}
 
+  {% if materiali_count %}
+  <a href="{{ materiali_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#e7f6ec;border-left:6px solid #1f7a3d;border-radius:10px;padding:14px 18px;color:#0f4d27;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>📎 Hai {{ materiali_count }} material{{ materiali_count|pluralize:"e,i" }} ricevut{{ materiali_count|pluralize:"o,i" }} da rivedere</strong>
+      {% if materiali_sponsors %}<span> — da: {{ materiali_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · clicca per vederli →</span>
+    </div>
+  </a>
+  {% endif %}
+
   <div class="cr-hero">
     <h1 class="cr-title">Cruscotto</h1>
     <p class="cr-sub">

@@ -10,6 +10,41 @@ from events.models import Event, EventStatus
 from core.event_scope import scope_by_event, scope_generic_by_event
 
 
+# Tipi di consegna che rappresentano un MATERIALE caricato dal cliente.
+_MATERIAL_SUBMISSIONS = ['file', 'content', 'both']
+
+
+def materiali_da_rivedere_qs():
+    """Scadenze-materiale RICEVUTE dal cliente e non ancora visionate
+    dall'operatore. Esclude pagamenti e opzioni. Un nuovo upload
+    (completed_at successivo a materials_reviewed_at) le fa ricomparire."""
+    from django.db.models import Q, F
+    from contracts.models import Deadline, DeadlineStatus
+    return (Deadline.objects
+            .filter(status=DeadlineStatus.RECEIVED,
+                    submission_kind__in=_MATERIAL_SUBMISSIONS)
+            .exclude(deadline_type__startswith='pagament')
+            .exclude(deadline_type='scadenza_opzione')
+            .filter(Q(materials_reviewed_at__isnull=True) |
+                    Q(materials_reviewed_at__lt=F('completed_at')))
+            .select_related('contract', 'contract__sponsor', 'contract__event'))
+
+
+def marca_materiale_rivisto(deadline):
+    """Segna che l'operatore ha visionato il materiale ricevuto (toglie
+    l'avviso dal cruscotto). No-op se la scadenza non e' ricevuta o se e'
+    gia' stata visionata dopo l'ultimo upload."""
+    from contracts.models import DeadlineStatus
+    if deadline.status != DeadlineStatus.RECEIVED:
+        return
+    rev = deadline.materials_reviewed_at
+    comp = deadline.completed_at
+    if rev is None or (comp and rev < comp):
+        from django.utils import timezone
+        deadline.materials_reviewed_at = timezone.now()
+        deadline.save(update_fields=['materials_reviewed_at', 'updated_at'])
+
+
 @staff_member_required
 def cruscotto_home(request):
     """Home cruscotto: card degli eventi attivi (SELLING + LIVE)."""
@@ -62,6 +97,16 @@ def cruscotto_home(request):
         if _n not in _bozze_sponsors:
             _bozze_sponsors.append(_n)
 
+    # Avviso: materiali ricevuti dal cliente e non ancora visionati dall'operatore
+    _materiali = scope_by_event(request, materiali_da_rivedere_qs(), 'contract__event')
+    _materiali_count = _materiali.count()
+    _materiali_sponsors = []
+    for _d in _materiali.order_by('-completed_at')[:10]:
+        _n = (_d.contract.sponsor.legal_name
+              if _d.contract and _d.contract.sponsor_id else '(senza cliente)')
+        if _n not in _materiali_sponsors:
+            _materiali_sponsors.append(_n)
+
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto',
@@ -73,6 +118,9 @@ def cruscotto_home(request):
         'bozze_count': _bozze_count,
         'bozze_sponsors': _bozze_sponsors,
         'bozze_url': _rev('admin:contracts_contract_changelist') + '?status__exact=draft',
+        'materiali_count': _materiali_count,
+        'materiali_sponsors': _materiali_sponsors,
+        'materiali_url': _rev('core:cruscotto_scadenze_cliente'),
     }
     return render(request, 'cruscotto/home.html', context)
 
@@ -825,6 +873,9 @@ def cruscotto_scadenza_dettaglio(request, deadline_id):
             'contract', 'contract__sponsor', 'contract__event',
             'completed_by_contact'), 'contract__event'),
         id=deadline_id)
+
+    # L'operatore sta visionando la scadenza: toglie l'avviso "materiali ricevuti".
+    marca_materiale_rivisto(d)
 
     schema = d.content_schema or []
     data = d.content_data or {}

@@ -1337,6 +1337,13 @@ class Deadline(TimeStampedModel):
         verbose_name="Completata da",
     )
 
+    # Materiale ricevuto dal cliente e gia' visionato dall'operatore: usato
+    # per l'avviso "materiali ricevuti" sul cruscotto (sparisce quando
+    # l'operatore apre il dettaglio). Un nuovo upload (completed_at piu'
+    # recente) lo fa ricomparire.
+    materials_reviewed_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Materiale visionato il")
+
     # Reminder tracking
     last_reminder_sent_at = models.DateTimeField(null=True, blank=True)
     reminder_count = models.IntegerField(default=0, verbose_name="N. reminder inviati")
