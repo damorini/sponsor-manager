@@ -3,8 +3,10 @@ from django.utils.translation import gettext as _
 
 register = template.Library()
 
+# NB: etichette dal punto di vista del CLIENTE (il portale è la sua vista).
+# 'sent' = il preventivo gli è stato inviato e attende la SUA conferma → "Da confermare".
 _STATUS = {
-    'draft': 'Bozza', 'sent': 'Inviato', 'pending_payment': 'In attesa pagamento',
+    'draft': 'Bozza', 'sent': 'Da confermare', 'pending_payment': 'In attesa pagamento',
     'signed': 'Firmato', 'active': 'Attivo', 'completed': 'Completato', 'cancelled': 'Annullato',
 }
 _KIND = {'main': 'Principale', 'addon': 'Addon ecommerce', 'addendum': 'Addendum'}

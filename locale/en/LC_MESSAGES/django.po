@@ -3327,6 +3327,9 @@ msgstr ""
 msgid "Unable to connect to qpid with SASL mechanism %s"
 msgstr ""
 
+msgid "Da confermare"
+msgstr "To confirm"
+
 #~ msgid "Accesso portale sponsor"
 #~ msgstr "Sponsor portal login"
 
