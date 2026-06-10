@@ -1,0 +1,27 @@
+{% load i18n static %}
+{% comment %}Pannello brand sinistro condiviso. Variabili: eyebrow, line1, line2 (oro), body (opz).{% endcomment %}
+<aside class="vt-panel hidden lg:flex flex-col justify-between text-white px-12 xl:px-16 py-10">
+  <div class="vt-up vt-d1 relative">
+    <span class="inline-flex items-center bg-white rounded-2xl px-4 py-2.5 shadow-lg">
+      <img src="{% if brand_logo_url %}{{ brand_logo_url }}{% else %}{% static 'branding/valet_logo.png' %}{% endif %}"
+           alt="VALET Conference" class="h-9 w-auto object-contain">
+    </span>
+  </div>
+
+  <div class="max-w-xl relative">
+    <div class="vt-up vt-d2 vt-hairline mb-6"></div>
+    <p class="vt-up vt-d2 text-[13px] uppercase tracking-[.25em] text-[#e7cf9b] font-semibold mb-4">{{ eyebrow }}</p>
+    <h1 class="vt-up vt-d3 vt-serif text-4xl xl:text-5xl font-semibold leading-[1.08] tracking-tight">
+      {{ line1 }}<span class="block text-[#e7cf9b] mt-1">{{ line2 }}</span>
+    </h1>
+    {% if body %}<p class="vt-up vt-d4 mt-6 text-white/75 text-lg leading-relaxed">{{ body }}</p>{% endif %}
+  </div>
+
+  <div class="vt-up vt-d5 flex items-start gap-3 text-white/60 text-sm relative">
+    <i class="ti ti-shield-check text-[#c8a04e] text-lg mt-0.5"></i>
+    <span>{% trans "Accesso riservato agli utenti abilitati. Problemi con l'accesso? Scrivi a" %}
+      <a href="mailto:helpdesk@valet.it" class="text-[#e7cf9b] font-medium hover:underline">helpdesk@valet.it</a></span>
+  </div>
+
+  <div class="vt-arcs"></div>
+</aside>

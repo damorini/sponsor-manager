@@ -3525,3 +3525,54 @@ msgstr "The password reset link is valid only once and for a limited time: this 
 
 msgid "Richiedi un nuovo link"
 msgstr "Request a new link"
+
+msgid "Recupero dell'accesso"
+msgstr "Account recovery"
+
+msgid "Recupera l'accesso"
+msgstr "Recover access"
+
+msgid "al tuo account"
+msgstr "to your account"
+
+msgid "Inserisci l'email del tuo account: ti invieremo un link sicuro per impostare una nuova password in pochi istanti."
+msgstr "Enter your account email: we'll send you a secure link to set a new password in moments."
+
+msgid "Password dimenticata"
+msgstr "Forgot password"
+
+msgid "Reimposta la password"
+msgstr "Reset your password"
+
+msgid "Inserisci la tua email: ti manderemo le istruzioni per reimpostarla."
+msgstr "Enter your email: we'll send you the instructions to reset it."
+
+msgid "Controlla la tua"
+msgstr "Check your"
+
+msgid "casella email"
+msgstr "email inbox"
+
+msgid "Ti abbiamo inviato le istruzioni per reimpostare la password. Il link è valido una sola volta e per un tempo limitato."
+msgstr "We've sent you the instructions to reset your password. The link is valid only once and for a limited time."
+
+msgid "Controlla la posta"
+msgstr "Check your mail"
+
+msgid "Non hai ricevuto l'email entro pochi minuti? Controlla la cartella spam o scrivi a"
+msgstr "Didn't receive the email within a few minutes? Check your spam folder or write to"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "aggiornata"
+msgstr "updated"
+
+msgid "La tua nuova password è attiva. Accedi al portale per gestire preventivi, spazi, materiali e scadenze del tuo evento."
+msgstr "Your new password is active. Sign in to the portal to manage quotes, spaces, materials and your event deadlines."
+
+msgid "Tutto pronto"
+msgstr "All set"
+
+msgid "Accesso riservato agli utenti abilitati. Problemi con l'accesso? Scrivi a"
+msgstr "Access restricted to authorised users. Trouble signing in? Write to"

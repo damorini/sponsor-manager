@@ -237,5 +237,37 @@
     if (el && el.type === 'number') { el.blur(); }
   }, { passive: true });
 </script>
+<script>
+  // Mostra/nascondi password: aggiunge un "occhietto" a ogni campo password.
+  (function () {
+    function enhance(inp) {
+      if (inp.dataset.pwEye) return;
+      inp.dataset.pwEye = '1';
+      var wrap = inp.parentElement;
+      if (!wrap) return;
+      if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+      inp.style.paddingRight = '2.75rem';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.tabIndex = -1;
+      btn.setAttribute('aria-label', 'Mostra o nascondi la password');
+      btn.style.cssText = 'position:absolute;right:.6rem;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;justify-content:center;width:1.9rem;height:1.9rem;border:0;background:transparent;color:#94a3b8;cursor:pointer;border-radius:.5rem;transition:color .15s ease;';
+      btn.innerHTML = '<i class="ti ti-eye" style="font-size:1.15rem;"></i>';
+      btn.addEventListener('mouseenter', function () { btn.style.color = '#475569'; });
+      btn.addEventListener('mouseleave', function () { btn.style.color = '#94a3b8'; });
+      btn.addEventListener('click', function () {
+        var show = inp.type === 'password';
+        inp.type = show ? 'text' : 'password';
+        btn.innerHTML = show
+          ? '<i class="ti ti-eye-off" style="font-size:1.15rem;"></i>'
+          : '<i class="ti ti-eye" style="font-size:1.15rem;"></i>';
+      });
+      wrap.appendChild(btn);
+    }
+    function run() { document.querySelectorAll('input[type="password"]').forEach(enhance); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+    else run();
+  })();
+</script>
 </body>
 </html>
