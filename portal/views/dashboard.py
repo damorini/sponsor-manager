@@ -379,6 +379,17 @@ def event_dashboard_view(request, event_id):
         status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE]
     ).exists()
 
+    # Se il cliente non ha ancora firmato, offriamo un link al preventivo
+    # (domanda di ammissione) da rivedere/confermare. Preferiamo quello inviato.
+    pending_contract = None
+    if not has_active_contract:
+        pending_contract = (
+            contracts.filter(status=ContractStatus.SENT).order_by('-created_at').first()
+            or contracts.filter(
+                status__in=[ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT]
+            ).order_by('-created_at').first()
+        )
+
     try:
         services = list(_get_purchasable_services(event, today))
     except Exception:
@@ -388,6 +399,7 @@ def event_dashboard_view(request, event_id):
         'event': event,
         'services': services,
         'has_active_contract': has_active_contract,
+        'pending_contract': pending_contract,
     })
 
 

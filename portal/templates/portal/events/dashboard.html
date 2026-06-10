@@ -35,7 +35,16 @@
     <a href="{% url 'portal:catalog_event' event.id %}" class="inline-block bg-brand-500 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:opacity-90">{% trans "Acquista servizi per questo evento" %}</a>
     {% else %}
     <span class="inline-block bg-gray-300 text-gray-500 text-sm font-medium px-5 py-2.5 rounded-lg cursor-not-allowed select-none">{% trans "Acquista servizi per questo evento" %}</span>
+    {% if pending_contract %}
+    <p class="text-gray-500 text-sm mt-3">
+      {% trans "I servizi potranno essere acquistati a seguito della conferma della domanda di ammissione." %}
+    </p>
+    <a href="{% url 'portal:contract_detail' pending_contract.id %}" class="inline-flex items-center gap-1 mt-3 text-brand-500 text-sm font-semibold hover:underline">
+      {% trans "Vai alla domanda di ammissione →" %}
+    </a>
+    {% else %}
     <p class="text-gray-500 text-sm mt-3">{% trans "I servizi potranno essere acquistati a seguito della conferma della domanda di ammissione." %}</p>
+    {% endif %}
     {% endif %}
     {% elif not has_active_contract %}
     <p class="text-gray-500 text-sm">{% trans "Per acquistare servizi serve una domanda di ammissione attiva per questo evento." %}</p>

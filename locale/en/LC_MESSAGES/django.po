@@ -978,6 +978,10 @@ msgstr "← My events"
 msgid "Scadenze di questo evento →"
 msgstr "Deadlines for this event →"
 
+#: portal/templates/portal/events/dashboard.html:44
+msgid "Vai alla domanda di ammissione →"
+msgstr "Go to admission request →"
+
 #: portal/templates/portal/events/dashboard.html:35
 #: portal/templates/portal/events/dashboard.html:37
 msgid "Acquista servizi per questo evento"
