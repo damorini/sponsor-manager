@@ -869,6 +869,13 @@ class Contract(SoftDeleteModel):
         """
         from datetime import timedelta
 
+        # Senza data evento non possiamo calcolare le scadenze: usciamo senza
+        # errori (i signal che chiamano questo metodo non devono mai far
+        # fallire un salvataggio).
+        event = getattr(self, 'event', None)
+        if not event or not event.start_date:
+            return
+
         for line in self.lines.select_related('service').all():
             service = line.service
             if not service.triggers_deadlines:
