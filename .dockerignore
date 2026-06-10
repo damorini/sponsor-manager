@@ -56,9 +56,11 @@ pytest.ini
 
 # Documentation
 docs/
-!docs/manuale_utente.html
 *.md
 LICENSE
+# Eccezioni: i manuali serviti a runtime nell'admin DEVONO finire nell'immagine
+!docs/manuale_utente.html
+!docs/MANUALE-OPERATIVO-COMPLETO.md
 
 # Misc
 .env
