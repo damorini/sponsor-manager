@@ -519,6 +519,12 @@ def _materials_from_deadlines(deadlines):
                 and not (d.deadline_type or '').startswith('pagamento')
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
+            'template_file_name': (
+                d.deadline_template.client_template_file.name.rsplit('/', 1)[-1]
+                if d.deadline_template and getattr(
+                    d.deadline_template, 'client_template_file', None)
+                else None
+            ),
         })
         # importo pagamento (vista evento)
         _ip, _ia, _il = _payment_info(d)
