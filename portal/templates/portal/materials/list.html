@@ -1,16 +1,17 @@
 {% extends "portal/base.html" %}
+{% load i18n %}
 
-{% block title %}{% if event_mode %}Scadenze · {{ event.get_name }}{% else %}Materiali · {{ contract.contract_number }}{% endif %}{% endblock %}
+{% block title %}{% if event_mode %}{% trans "Scadenze" %} · {{ event.get_name }}{% else %}{% trans "Materiali" %} · {{ contract.contract_number }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  
+
   <!-- Breadcrumb -->
   <nav class="text-sm text-gray-500 mb-4">
-    <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">In evidenza</a>
+    <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">{% trans "In evidenza" %}</a>
     <span class="mx-2">/</span>
     {% if event_mode %}
-    <a href="{% url 'portal:events' %}" class="hover:text-brand-500">I miei eventi</a>
+    <a href="{% url 'portal:events' %}" class="hover:text-brand-500">{% trans "I miei eventi" %}</a>
     <span class="mx-2">/</span>
     <span class="text-gray-700">{{ event.get_name }}</span>
     {% else %}
@@ -18,49 +19,47 @@
       {{ contract.contract_number }}
     </a>
     <span class="mx-2">/</span>
-    <span class="text-gray-700">Materiali</span>
+    <span class="text-gray-700">{% trans "Materiali" %}</span>
     {% endif %}
   </nav>
-  
-  <h1 class="text-3xl font-bold text-gray-900 mb-2">Materiali e scadenze</h1>
+
+  <h1 class="text-3xl font-bold text-gray-900 mb-2">{% trans "Materiali e scadenze" %}</h1>
   {% if event_mode %}
   <p class="text-gray-600 mb-2">
-    Scadenze e materiali per l'evento <strong>{{ event.get_name }}</strong>.
+    {% blocktrans with ev=event.get_name %}Scadenze e materiali per l'evento <strong>{{ ev }}</strong>.{% endblocktrans %}
   </p>
   {% if category_label %}
   <p class="text-sm text-gray-500 mb-6">
-    Filtro attivo: <strong>{{ category_label }}</strong> ·
-    <a href="{% url 'portal:event_materials' event.id %}" class="text-brand-500 hover:underline">Vedi tutte</a>
+    {% trans "Filtro attivo:" %} <strong>{{ category_label }}</strong> ·
+    <a href="{% url 'portal:event_materials' event.id %}" class="text-brand-500 hover:underline">{% trans "Vedi tutte" %}</a>
   </p>
   {% endif %}
   {% else %}
   <p class="text-gray-600 mb-6">
-    Carica i materiali richiesti per la domanda di ammissione
-    <strong>{{ contract.contract_number }}</strong>
-    ({{ contract.event.get_name }})
+    {% blocktrans with num=contract.contract_number ev=contract.event.get_name %}Carica i materiali richiesti per la domanda di ammissione <strong>{{ num }}</strong> ({{ ev }}){% endblocktrans %}
   </p>
   {% endif %}
-  
+
   <!-- KPI -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
     <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-brand-500">
-      <div class="text-sm text-gray-600">Totale scadenze</div>
+      <div class="text-sm text-gray-600">{% trans "Totale scadenze" %}</div>
       <div class="text-2xl font-bold text-gray-900 mt-1">{{ total_count }}</div>
     </div>
     <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
-      <div class="text-sm text-gray-600">Completate</div>
+      <div class="text-sm text-gray-600">{% trans "Completate" %}</div>
       <div class="text-2xl font-bold text-gray-900 mt-1">
         {{ completed_count }} / {{ total_count }}
       </div>
     </div>
     <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 {% if overdue_count > 0 %}border-red-500{% else %}border-gray-300{% endif %}">
-      <div class="text-sm text-gray-600">In ritardo</div>
+      <div class="text-sm text-gray-600">{% trans "In ritardo" %}</div>
       <div class="text-2xl font-bold {% if overdue_count > 0 %}text-red-600{% else %}text-gray-900{% endif %} mt-1">
         {{ overdue_count }}
       </div>
     </div>
   </div>
-  
+
   <style>
     details.card-deadline > summary { list-style: none; }
     details.card-deadline > summary::-webkit-details-marker { display: none; }
@@ -78,7 +77,7 @@
   {% if materials %}
   <div class="space-y-4">
     {% for m in materials %}
-    <details id="m-{{ m.deadline.id }}" class="card-deadline bg-white rounded-lg shadow-sm overflow-hidden 
+    <details id="m-{{ m.deadline.id }}" class="card-deadline bg-white rounded-lg shadow-sm overflow-hidden
                 {% if m.deadline.is_overdue and not m.is_completed %}border-l-4 border-red-500{% endif %}
                 {% if m.is_completed %}opacity-75{% endif %}"{% if not m.is_completed %} open{% endif %}>
 
@@ -106,7 +105,7 @@
             <a href="{% url 'portal:deadline_template_download' m.deadline.id %}"
                class="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline">
               <i class="ti ti-download"></i>
-              Scarica il modello da compilare
+              {% trans "Scarica il modello da compilare" %}
               <span class="text-gray-400">({{ m.template_file_name }})</span>
             </a>
           </p>
@@ -117,19 +116,19 @@
           <div class="text-gray-900">
             {{ m.deadline.due_date|date:"d/m/Y" }}
           </div>
-          <div class="text-xs mt-1 
+          <div class="text-xs mt-1
             {% if m.is_completed %}text-green-600
             {% elif m.deadline.is_overdue %}text-red-600 font-medium
             {% elif m.deadline.days_remaining <= 3 %}text-yellow-600 font-medium
             {% else %}text-gray-500{% endif %}">
             {% if m.deadline.status == 'received' %}
-              Ricevuto il {{ m.deadline.completed_at|date:"d/m/Y" }}
+              {% blocktrans with d=m.deadline.completed_at|date:"d/m/Y" %}Ricevuto il {{ d }}{% endblocktrans %}
             {% elif m.deadline.status == 'waived' %}
-              Esonerato
+              {% trans "Esonerato" %}
             {% elif m.deadline.is_overdue %}
-              {{ m.deadline.days_remaining }} gg in ritardo
+              {% blocktrans with n=m.deadline.days_remaining %}{{ n }} gg in ritardo{% endblocktrans %}
             {% else %}
-              tra {{ m.deadline.days_remaining }} gg
+              {% blocktrans with n=m.deadline.days_remaining %}tra {{ n }} gg{% endblocktrans %}
             {% endif %}
           </div>
         </div>
@@ -137,9 +136,9 @@
 
       {% if m.is_payment %}
       <div class="px-5 py-4 border-b border-gray-100 text-sm text-gray-700 space-y-1">
-        <div><span class="text-gray-500">Domanda di ammissione:</span> <span class="font-medium">{{ m.deadline.contract.contract_number }}</span></div>
+        <div><span class="text-gray-500">{% trans "Domanda di ammissione:" %}</span> <span class="font-medium">{{ m.deadline.contract.contract_number }}</span></div>
         <div><span class="text-gray-500">{{ m.payment_label }}:</span> <span class="font-semibold text-gray-900">&euro; {{ m.payment_amount|floatformat:2 }}</span></div>
-        <div class="text-xs text-gray-500">Totale domanda: &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
+        <div class="text-xs text-gray-500">{% trans "Totale domanda:" %} &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
       </div>
       {% endif %}
 
@@ -147,7 +146,7 @@
       {% if m.documents %}
       <div class="px-5 py-3 border-b border-gray-100">
         <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
-          File caricati ({{ m.documents|length }})
+          {% blocktrans with n=m.documents|length %}File caricati ({{ n }}){% endblocktrans %}
         </h4>
         <ul class="space-y-2">
           {% for doc in m.documents %}
@@ -157,7 +156,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              <a href="{% url 'portal:material_download' doc.id %}" 
+              <a href="{% url 'portal:material_download' doc.id %}"
                  class="text-sm text-brand-500 hover:underline truncate">
                 {{ doc.file_name }}
               </a>
@@ -175,7 +174,7 @@
       {% if m.is_completed %}
       <div class="px-5 py-3 border-t border-gray-100 text-sm flex items-center gap-2 {% if m.deadline.status == 'waived' %}text-gray-500{% else %}text-green-700{% endif %}">
         <i class="ti ti-lock"></i>
-        {% if m.deadline.status == 'waived' %}Esonerata dalla segreteria.{% else %}Inviato. Per modifiche, contatta la segreteria.{% endif %}
+        {% if m.deadline.status == 'waived' %}{% trans "Esonerata dalla segreteria." %}{% else %}{% trans "Inviato. Per modifiche, contatta la segreteria." %}{% endif %}
       </div>
       {% endif %}
 
@@ -183,10 +182,10 @@
       {% if m.deadline.status != 'waived' and m.needs_content %}
       <div class="px-5 py-4 bg-gray-50 border-t border-gray-100">
         <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-          Dati da compilare
+          {% trans "Dati da compilare" %}
         </h4>
         {% if m.content_locked or m.is_completed %}
-        {% if m.content_locked %}<p class="text-xs text-gray-500 mb-3">Scadenza passata: i dati non sono piu' modificabili.</p>{% endif %}
+        {% if m.content_locked %}<p class="text-xs text-gray-500 mb-3">{% trans "Scadenza passata: i dati non sono più modificabili." %}</p>{% endif %}
         {% for f in m.content_fields %}
         <div class="mb-2">
           <span class="text-sm font-medium text-gray-700">{{ f.label }}:</span>
@@ -219,10 +218,10 @@
       <!-- Form upload (solo file / entrambi) -->
       {% if m.deadline.status != 'waived' and m.needs_file and not m.is_completed %}
       <div class="px-5 pt-4 bg-gray-50">
-        <form id="upload-form-{{ m.deadline.id }}" method="post" action="{% url 'portal:material_upload' m.deadline.id %}" 
+        <form id="upload-form-{{ m.deadline.id }}" method="post" action="{% url 'portal:material_upload' m.deadline.id %}"
               enctype="multipart/form-data" class="upload-form">
           {% csrf_token %}
-          
+
           <!-- Drop zone -->
           <label class="block cursor-pointer">
             <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-brand-500 hover:bg-brand-50 transition-colors drop-zone">
@@ -231,11 +230,11 @@
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
               </svg>
               <div class="text-sm text-gray-600">
-                <span class="font-medium text-brand-500">Clicca per selezionare</span>
-                o trascina i file qui
+                <span class="font-medium text-brand-500">{% trans "Clicca per selezionare" %}</span>
+                {% trans "o trascina i file qui" %}
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                Max {{ max_upload_mb }} MB per file. Fino a 10 file per upload.
+                {% blocktrans with mb=max_upload_mb %}Max {{ mb }} MB per file. Fino a 10 file per upload.{% endblocktrans %}
               </p>
               <p class="text-xs text-gray-500 mt-1 file-list"></p>
             </div>
@@ -252,13 +251,13 @@
         {% if m.needs_file %}
         <button type="submit" form="upload-form-{{ m.deadline.id }}"
                 class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
-          Carica file
+          {% trans "Carica file" %}
         </button>
         {% endif %}
         {% if m.needs_content and not m.content_locked %}
         <button type="submit" form="content-form-{{ m.deadline.id }}"
                 class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
-          Salva i dati
+          {% trans "Salva i dati" %}
         </button>
         {% endif %}
       </div>
@@ -270,13 +269,13 @@
   </div>
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center text-gray-500">
-    <p>Nessuna scadenza operativa per questa domanda di ammissione.</p>
+    <p>{% trans "Nessuna scadenza operativa per questa domanda di ammissione." %}</p>
     <p class="text-sm mt-2">
-      Le scadenze vengono generate automaticamente alla conferma della domanda di ammissione.
+      {% trans "Le scadenze vengono generate automaticamente alla conferma della domanda di ammissione." %}
     </p>
   </div>
   {% endif %}
-  
+
 </div>
 
 <!-- Script: drag & drop + preview file -->
@@ -286,9 +285,9 @@
     const dropZone = form.querySelector('.drop-zone');
     const fileInput = form.querySelector('.file-input');
     const fileList = form.querySelector('.file-list');
-    
+
     if (!dropZone || !fileInput) return;
-    
+
     ['dragenter', 'dragover'].forEach(function(eventName) {
       dropZone.addEventListener(eventName, function(e) {
         e.preventDefault();
@@ -296,7 +295,7 @@
         dropZone.classList.add('border-brand-500', 'bg-brand-50');
       });
     });
-    
+
     ['dragleave', 'drop'].forEach(function(eventName) {
       dropZone.addEventListener(eventName, function(e) {
         e.preventDefault();
@@ -304,7 +303,7 @@
         dropZone.classList.remove('border-brand-500', 'bg-brand-50');
       });
     });
-    
+
     dropZone.addEventListener('drop', function(e) {
       e.preventDefault();
       const dt = e.dataTransfer;
@@ -313,9 +312,9 @@
         updateFileList();
       }
     });
-    
+
     fileInput.addEventListener('change', updateFileList);
-    
+
     function updateFileList() {
       if (!fileInput.files || fileInput.files.length === 0) {
         fileList.textContent = '';
@@ -325,9 +324,9 @@
       for (let i = 0; i < fileInput.files.length && i < 5; i++) {
         names.push(fileInput.files[i].name);
       }
-      let text = 'Selezionati: ' + names.join(', ');
+      let text = '{% trans "Selezionati:" %} ' + names.join(', ');
       if (fileInput.files.length > 5) {
-        text += ' (+' + (fileInput.files.length - 5) + ' altri)';
+        text += ' (+' + (fileInput.files.length - 5) + ' ' + '{% trans "altri" %}' + ')';
       }
       fileList.textContent = text;
     }

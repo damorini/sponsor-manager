@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sponsor_manager\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-07 11:53+0200\n"
+"POT-Creation-Date: 2026-06-10 19:11+0200\n"
 "PO-Revision-Date: 2026-06-02 12:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: English\n"
@@ -13,7 +13,27 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: core/admin_widgets.py:141
+#: contracts/templates/admin/contracts/contract/change_form.html:8
+msgid "Genera il PDF del preventivo e aprilo, SENZA inviarlo"
+msgstr ""
+
+#: contracts/templates/admin/contracts/contract/change_form.html:9
+#, fuzzy
+#| msgid "Conferma preventivo"
+msgid "Anteprima preventivo"
+msgstr "Confirm quote"
+
+#: contracts/templates/admin/contracts/contract/change_form.html:14
+msgid "Genera e invia il preventivo scegliendo i destinatari"
+msgstr ""
+
+#: contracts/templates/admin/contracts/contract/change_form.html:15
+#, fuzzy
+#| msgid "Conferma il preventivo"
+msgid "Genera e invia preventivo"
+msgstr "Confirm the quote"
+
+#: core/admin_widgets.py:163
 #, python-format
 msgid "La traduzione in %(language)s è obbligatoria."
 msgstr "Translation in %(language)s is required."
@@ -38,6 +58,7 @@ msgstr ""
 #: core/templates/admin/app_list.html:58 core/templates/admin/app_list.html:76
 #: core/templates/admin/app_list.html:94
 #: core/templates/admin/app_list.html:112
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:463
 msgid "Change"
 msgstr ""
 
@@ -49,7 +70,7 @@ msgstr ""
 msgid "Django site admin"
 msgstr ""
 
-#: core/templates/admin/base_site.html:325
+#: core/templates/admin/base_site.html:485
 #: core/templates/cruscotto/evento.html:12
 #: core/templates/cruscotto/home.html:11
 #: core/templates/cruscotto/scadenza_dettaglio.html:11
@@ -65,64 +86,189 @@ msgstr "Administration"
 msgid "Per evento"
 msgstr "By event"
 
-#: portal/templates/portal/auth/login.html:4
+#: portal/templates/portal/auth/login.html:5
 msgid "Accesso"
 msgstr "Login"
 
-#: portal/templates/portal/auth/login.html:32
-msgid "Accesso portale sponsor"
-msgstr "Sponsor portal login"
+#: portal/templates/portal/auth/login.html:71
+msgid "Portale di gestione eventi"
+msgstr "Event management portal"
 
-#: portal/templates/portal/auth/login.html:47
+#: portal/templates/portal/auth/login.html:74
+msgid "Benvenuto nel portale di gestione eventi"
+msgstr "Welcome to the event management portal"
+
+#: portal/templates/portal/auth/login.html:78
+msgid ""
+"Da qui gestisci la tua partecipazione: preventivi, spazi espositivi, "
+"servizi, materiali e scadenze dell'evento. Tutto in un unico posto."
+msgstr ""
+"Here you manage your participation: quotes, exhibition spaces, services, "
+"materials and event deadlines. All in one place."
+
+#: portal/templates/portal/auth/login.html:85
+msgid ""
+"Accesso riservato agli utenti abilitati. Se hai problemi con l'accesso "
+"contatta"
+msgstr ""
+"Access reserved for authorised users. If you have trouble logging in, "
+"contact"
+
+#: portal/templates/portal/auth/login.html:115
+msgid "Area riservata"
+msgstr "Restricted area"
+
+#: portal/templates/portal/auth/login.html:116
+msgid "Bentornato"
+msgstr "Welcome back"
+
+#: portal/templates/portal/auth/login.html:117
+msgid "Accedi con le credenziali ricevute via email."
+msgstr "Sign in with the credentials you received by email."
+
+#: portal/templates/portal/auth/login.html:124
 msgid "Credenziali non valide"
 msgstr "Invalid credentials"
 
-#: portal/templates/portal/auth/login.html:49
-msgid "Verifica email e password. Se hai dimenticato la password,"
-msgstr "Check your email and password. If you forgot your password,"
+#: portal/templates/portal/auth/login.html:125
+msgid "Verifica email e password, oppure"
+msgstr "Check your email and password, or"
 
-#: portal/templates/portal/auth/login.html:51
+#: portal/templates/portal/auth/login.html:126
 msgid "richiedi un nuovo accesso"
 msgstr "request new access"
 
-#: portal/templates/portal/auth/login.html:78
-msgid "Accedi"
-msgstr "Log in"
+#: portal/templates/portal/auth/login.html:158
+msgid "Accedi al portale"
+msgstr "Sign in to the portal"
 
-#: portal/templates/portal/auth/login.html:84
+#: portal/templates/portal/auth/login.html:164
 msgid "Hai dimenticato la password?"
 msgstr "Forgot your password?"
 
-#: portal/templates/portal/auth/login.html:93
-msgid ""
-"Non hai ancora un account? L'accesso al portale è riservato agli sponsor "
-"invitati. Contatta"
-msgstr ""
-"Don't have an account yet? Portal access is reserved for invited sponsors. "
-"Contact"
+#: portal/templates/portal/auth/password_change.html:3
+#: portal/templates/portal/auth/password_change.html:6
+#: portal/templates/portal/profile/edit.html:17
+msgid "Cambia password"
+msgstr "Change password"
 
-#: portal/templates/portal/auth/login.html:97
-msgid "per richiedere l'invito."
-msgstr "to request an invitation."
+#: portal/templates/portal/auth/password_change.html:20
+msgid "Aggiorna password"
+msgstr "Update password"
+
+#: portal/templates/portal/auth/password_change.html:21
+#: portal/templates/portal/contract/quote_confirm.html:25
+#: portal/templates/portal/profile/edit.html:97
+msgid "Annulla"
+msgstr "Cancel"
+
+#: portal/templates/portal/auth/password_reset.html:4
+#: portal/templates/portal/auth/password_reset.html:11
+msgid "Reimposta password"
+msgstr "Reset password"
+
+#: portal/templates/portal/auth/password_reset.html:13
+msgid ""
+"Inserisci la tua email, ti manderemo le istruzioni per reimpostare la "
+"password."
+msgstr ""
+"Enter your email and we will send you the instructions to reset your "
+"password."
+
+#: portal/templates/portal/auth/password_reset.html:23
+#: portal/views/profile.py:68
+msgid "Email"
+msgstr ""
+
+#: portal/templates/portal/auth/password_reset.html:32
+msgid "Invia istruzioni"
+msgstr "Send instructions"
+
+#: portal/templates/portal/auth/password_reset.html:38
+#: portal/templates/portal/auth/password_reset_done.html:30
+msgid "← Torna al login"
+msgstr "← Back to login"
+
+#: portal/templates/portal/auth/password_reset_complete.html:4
+#: portal/templates/portal/auth/password_reset_complete.html:17
+msgid "Password aggiornata"
+msgstr "Password updated"
+
+#: portal/templates/portal/auth/password_reset_complete.html:19
+msgid ""
+"La tua password è stata aggiornata con successo. Ora puoi accedere con le "
+"nuove credenziali."
+msgstr ""
+"Your password has been updated successfully. You can now log in with your "
+"new credentials."
+
+#: portal/templates/portal/auth/password_reset_complete.html:24
+msgid "Vai al login"
+msgstr "Go to login"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:4
+#: portal/templates/portal/auth/password_reset_confirm.html:28
+msgid "Nuova password"
+msgstr "New password"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:11
+msgid "Imposta nuova password"
+msgstr "Set new password"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:34
+msgid "Minimo 10 caratteri. Evita password troppo comuni."
+msgstr "Minimum 10 characters. Avoid common passwords."
+
+#: portal/templates/portal/auth/password_reset_confirm.html:40
+msgid "Ripeti password"
+msgstr "Repeat password"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:50
+msgid "Imposta password"
+msgstr "Set password"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:55
+msgid "Link non valido"
+msgstr "Invalid link"
+
+#: portal/templates/portal/auth/password_reset_confirm.html:57
+msgid "Il link per il reset password è scaduto o già utilizzato."
+msgstr "The password reset link has expired or has already been used."
+
+#: portal/templates/portal/auth/password_reset_confirm.html:59
+msgid "Richiedi un nuovo reset"
+msgstr "Request a new reset"
+
+#: portal/templates/portal/auth/password_reset_done.html:4
+#: portal/templates/portal/auth/password_reset_done.html:18
+msgid "Email inviata"
+msgstr "Email sent"
+
+#: portal/templates/portal/auth/password_reset_done.html:20
+msgid ""
+"Se l'email è registrata nel nostro sistema, riceverai a breve un messaggio "
+"con le istruzioni per reimpostare la password."
+msgstr ""
+"If the email is registered in our system, you will shortly receive a message"
+" with the instructions to reset your password."
+
+#: portal/templates/portal/auth/password_reset_done.html:24
+msgid ""
+"Non hai ricevuto l'email entro pochi minuti? Controlla la cartella spam o "
+"contatta"
+msgstr ""
+"Did not receive the email within a few minutes? Check your spam folder or "
+"contact"
 
 #: portal/templates/portal/base.html:6
 msgid "Portale Sponsor"
 msgstr "Sponsor Portal"
 
-#: portal/templates/portal/base.html:113
-msgid "Menu"
-msgstr ""
-
-#: portal/templates/portal/base.html:115
+#: portal/templates/portal/base.html:114
 #: portal/templates/portal/dashboard/dashboard.html:5
+#: portal/templates/portal/materials/list.html:11
 msgid "In evidenza"
 msgstr "Overview"
-
-#: portal/templates/portal/base.html:117
-#: portal/templates/portal/events/list.html:4
-#: portal/templates/portal/events/list.html:9
-msgid "I miei eventi"
-msgstr "My events"
 
 #: portal/templates/portal/base.html:119
 #: portal/templates/portal/events/archived.html:4
@@ -150,8 +296,8 @@ msgid "Archivio messaggi"
 msgstr "Message archive"
 
 #: portal/templates/portal/base.html:127
-#: portal/templates/portal/profile/edit.html:4
-#: portal/templates/portal/profile/edit.html:8
+#: portal/templates/portal/profile/edit.html:5
+#: portal/templates/portal/profile/edit.html:9
 msgid "I miei dati"
 msgstr "My details"
 
@@ -160,7 +306,7 @@ msgstr "My details"
 msgid "Acquista servizi"
 msgstr "Buy services"
 
-#: portal/templates/portal/base.html:136 portal/templates/portal/base.html:163
+#: portal/templates/portal/base.html:136 portal/templates/portal/base.html:166
 #: portal/templates/portal/cart/checkout.html:10
 #: portal/templates/portal/cart/view.html:4
 #: portal/templates/portal/cart/view.html:9
@@ -168,23 +314,27 @@ msgstr "Buy services"
 msgid "Carrello"
 msgstr "Cart"
 
-#: portal/templates/portal/base.html:152
+#: portal/templates/portal/base.html:153
 msgid "Esci"
 msgstr "Log out"
 
-#: portal/templates/portal/base.html:159
+#: portal/templates/portal/base.html:155
+msgid "Privacy"
+msgstr "Privacy"
+
+#: portal/templates/portal/base.html:162
 msgid "Apri menu"
 msgstr "Open menu"
 
-#: portal/templates/portal/base.html:185
+#: portal/templates/portal/base.html:188
 msgid "Stai navigando come cliente:"
 msgstr "You are browsing as client:"
 
-#: portal/templates/portal/base.html:186
+#: portal/templates/portal/base.html:189
 msgid "Torna all'amministrazione"
 msgstr "Back to administration"
 
-#: portal/templates/portal/base.html:195
+#: portal/templates/portal/base.html:198
 msgid "Per assistenza:"
 msgstr "For support:"
 
@@ -219,6 +369,8 @@ msgstr "Service"
 #: portal/templates/portal/cart/checkout.html:41
 #: portal/templates/portal/contract/detail.html:118
 #: portal/templates/portal/events/archived_detail.html:54
+#: portal/templates/portal/purchases/list.html:32
+#: portal/templates/portal/purchases/list.html:101
 msgid "Q.tà"
 msgstr "Qty"
 
@@ -230,7 +382,6 @@ msgstr "Price"
 
 #: portal/templates/portal/cart/checkout.html:43
 #: portal/templates/portal/cart/view.html:67
-#: portal/templates/portal/contract/detail.html:120
 #: portal/templates/portal/events/archived_detail.html:55
 msgid "Totale"
 msgstr "Total"
@@ -302,22 +453,22 @@ msgstr ""
 "below. We will register your purchase once the transfer is received."
 
 #: portal/templates/portal/cart/checkout.html:162
-#: portal/templates/portal/purchases/list.html:37
+#: portal/templates/portal/purchases/list.html:63
 msgid "Intestatario:"
 msgstr "Account holder:"
 
 #: portal/templates/portal/cart/checkout.html:163
-#: portal/templates/portal/purchases/list.html:38
+#: portal/templates/portal/purchases/list.html:64
 msgid "Banca:"
 msgstr "Bank:"
 
 #: portal/templates/portal/cart/checkout.html:166
-#: portal/templates/portal/purchases/list.html:41
+#: portal/templates/portal/purchases/list.html:67
 msgid "Causale:"
 msgstr "Reference:"
 
 #: portal/templates/portal/cart/checkout.html:166
-#: portal/templates/portal/purchases/list.html:41
+#: portal/templates/portal/purchases/list.html:67
 #, python-format
 msgid "Ordine %(num)s"
 msgstr "Order %(num)s"
@@ -360,7 +511,7 @@ msgstr ""
 "before proceeding to payment."
 
 #: portal/templates/portal/cart/view.html:65
-#: portal/templates/portal/catalog/service_detail.html:121
+#: portal/templates/portal/catalog/service_detail.html:126
 msgid "Quantità"
 msgstr "Quantity"
 
@@ -378,7 +529,7 @@ msgid "incluso"
 msgstr "included"
 
 #: portal/templates/portal/cart/view.html:118
-#: portal/templates/portal/profile/edit.html:114
+#: portal/templates/portal/profile/edit.html:149
 msgid "Rimuovi"
 msgstr "Remove"
 
@@ -388,7 +539,9 @@ msgid "Totale:"
 msgstr "Total:"
 
 #: portal/templates/portal/cart/view.html:154
-msgid "← Continua acquisti per questo evento"
+#, fuzzy
+#| msgid "← Continua acquisti per questo evento"
+msgid "Continua acquisti per questo evento"
 msgstr "← Continue shopping for this event"
 
 #: portal/templates/portal/cart/view.html:160
@@ -422,7 +575,9 @@ msgstr "%(n)s days left"
 
 #: portal/templates/portal/catalog/event.html:60
 #: portal/templates/portal/catalog/list.html:68
-#: portal/templates/portal/catalog/service_detail.html:78
+#: portal/templates/portal/catalog/service_detail.html:83
+#: portal/templates/portal/purchases/list.html:52
+#: portal/templates/portal/purchases/list.html:121
 #: portal/templates/portal/wishlist/list.html:47
 msgid "IVA"
 msgstr "VAT"
@@ -431,15 +586,15 @@ msgstr "VAT"
 #: portal/templates/portal/catalog/event.html:73
 #: portal/templates/portal/catalog/list.html:71
 #: portal/templates/portal/catalog/list.html:81
-#: portal/templates/portal/catalog/service_detail.html:81
-#: portal/templates/portal/catalog/service_detail.html:87
-#: portal/templates/portal/catalog/service_detail.html:107
+#: portal/templates/portal/catalog/service_detail.html:86
+#: portal/templates/portal/catalog/service_detail.html:92
+#: portal/templates/portal/catalog/service_detail.html:112
 msgid "Esaurito"
 msgstr "Sold out"
 
 #: portal/templates/portal/catalog/event.html:65
 #: portal/templates/portal/catalog/list.html:73
-#: portal/templates/portal/catalog/service_detail.html:83
+#: portal/templates/portal/catalog/service_detail.html:88
 #, python-format
 msgid "Ne rimangono solo %(n)s"
 msgstr "Only %(n)s left"
@@ -451,8 +606,8 @@ msgstr "View details"
 
 #: portal/templates/portal/catalog/event.html:83
 #: portal/templates/portal/catalog/list.html:91
-#: portal/templates/portal/catalog/service_detail.html:32
-#: portal/templates/portal/catalog/service_detail.html:141
+#: portal/templates/portal/catalog/service_detail.html:37
+#: portal/templates/portal/catalog/service_detail.html:146
 msgid "Non più acquistabile"
 msgstr "No longer available"
 
@@ -503,47 +658,55 @@ msgstr ""
 msgid "Vedi le tue domande di ammissione →"
 msgstr "View your admission requests →"
 
-#: portal/templates/portal/catalog/service_detail.html:27
+#: portal/templates/portal/catalog/service_detail.html:21
+#, fuzzy
+#| msgid "Vai al catalogo"
+msgid "Torna al catalogo"
+msgstr "Go to catalog"
+
+#: portal/templates/portal/catalog/service_detail.html:32
 msgid "Per:"
 msgstr "For:"
 
-#: portal/templates/portal/catalog/service_detail.html:47
+#: portal/templates/portal/catalog/service_detail.html:52
 #: portal/templates/portal/contract/detail.html:117
+#: portal/templates/portal/purchases/list.html:30
+#: portal/templates/portal/purchases/list.html:99
 msgid "Descrizione"
 msgstr "Description"
 
-#: portal/templates/portal/catalog/service_detail.html:61
+#: portal/templates/portal/catalog/service_detail.html:66
 msgid "Termine acquisto:"
 msgstr "Purchase deadline:"
 
-#: portal/templates/portal/catalog/service_detail.html:63
+#: portal/templates/portal/catalog/service_detail.html:68
 #, python-format
 msgid "Ancora %(n)s giorni (entro %(d)s giorni dall'evento)."
 msgstr "%(n)s days left (up to %(d)s days before the event)."
 
-#: portal/templates/portal/catalog/service_detail.html:65
+#: portal/templates/portal/catalog/service_detail.html:70
 #, python-format
 msgid "Scaduto (%(d)s giorni prima dell'evento)."
 msgstr "Expired (%(d)s days before the event)."
 
-#: portal/templates/portal/catalog/service_detail.html:89
+#: portal/templates/portal/catalog/service_detail.html:94
 msgid "Tutte le opzioni sono esaurite"
 msgstr "All options are sold out"
 
-#: portal/templates/portal/catalog/service_detail.html:97
+#: portal/templates/portal/catalog/service_detail.html:102
 msgid "Scegli un'opzione"
 msgstr "Choose an option"
 
-#: portal/templates/portal/catalog/service_detail.html:111
+#: portal/templates/portal/catalog/service_detail.html:116
 #, python-format
 msgid "restano %(n)s"
 msgstr "%(n)s left"
 
-#: portal/templates/portal/catalog/service_detail.html:131
+#: portal/templates/portal/catalog/service_detail.html:136
 msgid "Aggiungi al carrello"
 msgstr "Add to cart"
 
-#: portal/templates/portal/catalog/service_detail.html:144
+#: portal/templates/portal/catalog/service_detail.html:149
 msgid "Il termine per acquistare questo servizio è scaduto."
 msgstr "The deadline to purchase this service has passed."
 
@@ -616,6 +779,14 @@ msgstr "Confirm the quote"
 msgid "Servizi inclusi"
 msgstr "Included services"
 
+#: portal/templates/portal/contract/detail.html:120
+#: portal/templates/portal/purchases/list.html:33
+#: portal/templates/portal/purchases/list.html:102
+#, fuzzy
+#| msgid "Totale proposta (IVA inclusa)"
+msgid "Totale (IVA escl.)"
+msgstr "Proposal total (VAT included)"
+
 #: portal/templates/portal/contract/detail.html:138
 msgid "Incluso"
 msgstr "Included"
@@ -639,15 +810,18 @@ msgid "Ricevuto"
 msgstr "Received"
 
 #: portal/templates/portal/contract/detail.html:210
+#: portal/templates/portal/materials/list.html:127
 msgid "Esonerato"
 msgstr "Waived"
 
 #: portal/templates/portal/contract/detail.html:212
+#: portal/templates/portal/materials/list.html:129
 #, python-format
 msgid "%(n)s gg in ritardo"
 msgstr "%(n)s days overdue"
 
 #: portal/templates/portal/contract/detail.html:214
+#: portal/templates/portal/materials/list.html:131
 #, python-format
 msgid "tra %(n)s gg"
 msgstr "in %(n)s days"
@@ -679,7 +853,8 @@ msgid "Esplora il catalogo"
 msgstr "Explore the catalog"
 
 #: portal/templates/portal/contract/detail.html:247
-#: portal/templates/portal/events/dashboard.html:38
+#: portal/templates/portal/events/dashboard.html:40
+#: portal/templates/portal/events/dashboard.html:46
 msgid ""
 "I servizi potranno essere acquistati a seguito della conferma della domanda "
 "di ammissione."
@@ -756,11 +931,6 @@ msgid ""
 "organizzativa"
 msgstr ""
 "For any further information you can contact the organizing secretariat"
-
-#: portal/templates/portal/contract/quote_confirm.html:25
-#: portal/templates/portal/profile/edit.html:79
-msgid "Annulla"
-msgstr "Cancel"
 
 #: portal/templates/portal/contract/quote_confirm.html:28
 msgid "Accetta preventivo"
@@ -963,6 +1133,7 @@ msgstr ""
 "possible."
 
 #: portal/templates/portal/events/archived_detail.html:73
+#: portal/templates/portal/materials/list.html:4
 msgid "Scadenze"
 msgstr "Deadlines"
 
@@ -978,25 +1149,31 @@ msgstr "← My events"
 msgid "Scadenze di questo evento →"
 msgstr "Deadlines for this event →"
 
-#: portal/templates/portal/events/dashboard.html:44
-msgid "Vai alla domanda di ammissione →"
-msgstr "Go to admission request →"
-
 #: portal/templates/portal/events/dashboard.html:35
 #: portal/templates/portal/events/dashboard.html:37
 msgid "Acquista servizi per questo evento"
 msgstr "Buy services for this event"
 
-#: portal/templates/portal/events/dashboard.html:41
+#: portal/templates/portal/events/dashboard.html:43
+msgid "Vai alla domanda di ammissione →"
+msgstr "Go to admission request →"
+
+#: portal/templates/portal/events/dashboard.html:50
 msgid ""
 "Per acquistare servizi serve una domanda di ammissione attiva per questo "
 "evento."
 msgstr ""
 "An active admission request for this event is required to purchase services."
 
-#: portal/templates/portal/events/dashboard.html:43
+#: portal/templates/portal/events/dashboard.html:52
 msgid "Al momento non ci sono servizi acquistabili per questo evento."
 msgstr "There are currently no services to purchase for this event."
+
+#: portal/templates/portal/events/list.html:4
+#: portal/templates/portal/events/list.html:9
+#: portal/templates/portal/materials/list.html:14
+msgid "I miei eventi"
+msgstr "My events"
 
 #: portal/templates/portal/events/list.html:11
 msgid ""
@@ -1019,31 +1196,33 @@ msgid "Apri evento →"
 msgstr "Open event →"
 
 #: portal/templates/portal/legal/privacy_consent.html:4
-#: portal/templates/portal/legal/privacy_consent.html:9
+#: portal/templates/portal/legal/privacy_consent.html:17
 #: portal/templates/portal/legal/privacy_policy.html:4
 #: portal/templates/portal/legal/privacy_policy.html:8
 msgid "Informativa privacy"
 msgstr "Privacy policy"
 
-#: portal/templates/portal/legal/privacy_consent.html:10
-msgid ""
-"Per usare il portale, prendi visione dell'informativa sul trattamento dei "
-"dati."
-msgstr "To use the portal, please review the data processing notice."
+#: portal/templates/portal/legal/privacy_consent.html:18
+msgid "Per usare il portale, prendi visione dell'"
+msgstr "To use the portal, please review the "
 
-#: portal/templates/portal/legal/privacy_consent.html:21
+#: portal/templates/portal/legal/privacy_consent.html:18
+msgid "informativa sul trattamento dei dati"
+msgstr "personal data processing notice"
+
+#: portal/templates/portal/legal/privacy_consent.html:31
 msgid "Dichiaro di aver letto l'"
 msgstr "I declare that I have read the "
 
-#: portal/templates/portal/legal/privacy_consent.html:21
+#: portal/templates/portal/legal/privacy_consent.html:31
 msgid "informativa privacy"
 msgstr "privacy policy"
 
-#: portal/templates/portal/legal/privacy_consent.html:21
+#: portal/templates/portal/legal/privacy_consent.html:31
 msgid " (obbligatorio)."
 msgstr " (required)."
 
-#: portal/templates/portal/legal/privacy_consent.html:28
+#: portal/templates/portal/legal/privacy_consent.html:38
 msgid ""
 "Acconsento a ricevere comunicazioni marketing e promozionali (facoltativo, "
 "revocabile)."
@@ -1051,13 +1230,135 @@ msgstr ""
 "I consent to receiving marketing and promotional communications (optional, "
 "revocable)."
 
-#: portal/templates/portal/legal/privacy_consent.html:32
+#: portal/templates/portal/legal/privacy_consent.html:42
 msgid "Conferma e prosegui"
 msgstr "Confirm and continue"
 
 #: portal/templates/portal/legal/privacy_policy.html:9
 msgid "Versione"
 msgstr "Version"
+
+#: portal/templates/portal/materials/list.html:4
+#: portal/templates/portal/materials/list.html:22
+msgid "Materiali"
+msgstr "Materials"
+
+#: portal/templates/portal/materials/list.html:26
+msgid "Materiali e scadenze"
+msgstr "Materials and deadlines"
+
+#: portal/templates/portal/materials/list.html:29
+#, python-format
+msgid "Scadenze e materiali per l'evento <strong>%(ev)s</strong>."
+msgstr "Deadlines and materials for the event <strong>%(ev)s</strong>."
+
+#: portal/templates/portal/materials/list.html:33
+msgid "Filtro attivo:"
+msgstr "Active filter:"
+
+#: portal/templates/portal/materials/list.html:34
+msgid "Vedi tutte"
+msgstr "View all"
+
+#: portal/templates/portal/materials/list.html:39
+#, python-format
+msgid ""
+"Carica i materiali richiesti per la domanda di ammissione "
+"<strong>%(num)s</strong> (%(ev)s)"
+msgstr ""
+"Upload the materials required for admission request <strong>%(num)s</strong>"
+" (%(ev)s)"
+
+#: portal/templates/portal/materials/list.html:46
+msgid "Totale scadenze"
+msgstr "Total deadlines"
+
+#: portal/templates/portal/materials/list.html:50
+msgid "Completate"
+msgstr "Completed"
+
+#: portal/templates/portal/materials/list.html:56
+msgid "In ritardo"
+msgstr "Overdue"
+
+#: portal/templates/portal/materials/list.html:108
+msgid "Scarica il modello da compilare"
+msgstr "Download the template to fill in"
+
+#: portal/templates/portal/materials/list.html:125
+#, python-format
+msgid "Ricevuto il %(d)s"
+msgstr "Received on %(d)s"
+
+#: portal/templates/portal/materials/list.html:139
+msgid "Domanda di ammissione:"
+msgstr "Admission request:"
+
+#: portal/templates/portal/materials/list.html:141
+msgid "Totale domanda:"
+msgstr "Request total:"
+
+#: portal/templates/portal/materials/list.html:149
+#, python-format
+msgid "File caricati (%(n)s)"
+msgstr "Uploaded files (%(n)s)"
+
+#: portal/templates/portal/materials/list.html:177
+msgid "Esonerata dalla segreteria."
+msgstr "Waived by the secretariat."
+
+#: portal/templates/portal/materials/list.html:177
+msgid "Inviato. Per modifiche, contatta la segreteria."
+msgstr "Submitted. For changes, contact the secretariat."
+
+#: portal/templates/portal/materials/list.html:185
+msgid "Dati da compilare"
+msgstr "Information to fill in"
+
+#: portal/templates/portal/materials/list.html:188
+msgid "Scadenza passata: i dati non sono più modificabili."
+msgstr "Deadline passed: the data can no longer be edited."
+
+#: portal/templates/portal/materials/list.html:233
+msgid "Clicca per selezionare"
+msgstr "Click to select"
+
+#: portal/templates/portal/materials/list.html:234
+msgid "o trascina i file qui"
+msgstr "or drag the files here"
+
+#: portal/templates/portal/materials/list.html:237
+#, python-format
+msgid "Max %(mb)s MB per file. Fino a 10 file per upload."
+msgstr "Max %(mb)s MB per file. Up to 10 files per upload."
+
+#: portal/templates/portal/materials/list.html:254
+msgid "Carica file"
+msgstr "Upload file"
+
+#: portal/templates/portal/materials/list.html:260
+msgid "Salva i dati"
+msgstr "Save data"
+
+#: portal/templates/portal/materials/list.html:272
+msgid "Nessuna scadenza operativa per questa domanda di ammissione."
+msgstr "No operational deadlines for this admission request."
+
+#: portal/templates/portal/materials/list.html:274
+msgid ""
+"Le scadenze vengono generate automaticamente alla conferma della domanda di "
+"ammissione."
+msgstr ""
+"Deadlines are generated automatically when the admission request is "
+"confirmed."
+
+#: portal/templates/portal/materials/list.html:327
+msgid "Selezionati:"
+msgstr "Selected:"
+
+#: portal/templates/portal/materials/list.html:329
+msgid "altri"
+msgstr "others"
 
 #: portal/templates/portal/messages/list.html:13
 #, python-format
@@ -1090,11 +1391,11 @@ msgstr "Send"
 msgid "Nessun messaggio."
 msgstr "No messages."
 
-#: portal/templates/portal/profile/edit.html:12
+#: portal/templates/portal/profile/edit.html:13
 msgid "⚠️ Manca un soggetto operativo"
 msgstr "⚠️ An operational contact is missing"
 
-#: portal/templates/portal/profile/edit.html:13
+#: portal/templates/portal/profile/edit.html:14
 msgid ""
 "Devi indicare <strong>almeno un soggetto classificato come "
 "OPERATIVO</strong>, al quale la piattaforma invierà le informazioni "
@@ -1108,11 +1409,7 @@ msgstr ""
 "section) by ticking the <strong>Operational</strong> role: without it, you "
 "cannot proceed to the other sections of the portal."
 
-#: portal/templates/portal/profile/edit.html:16
-msgid "Cambia password"
-msgstr "Change password"
-
-#: portal/templates/portal/profile/edit.html:17
+#: portal/templates/portal/profile/edit.html:18
 msgid ""
 "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche "
 "vengono salvate subito."
@@ -1120,19 +1417,19 @@ msgstr ""
 "Check and update your company and contact details. Changes are saved "
 "immediately."
 
-#: portal/templates/portal/profile/edit.html:31
+#: portal/templates/portal/profile/edit.html:32
 msgid "Logo aziendale"
 msgstr "Company logo"
 
-#: portal/templates/portal/profile/edit.html:40
+#: portal/templates/portal/profile/edit.html:41
 msgid "Nessun logo caricato"
 msgstr "No logo uploaded"
 
-#: portal/templates/portal/profile/edit.html:43
+#: portal/templates/portal/profile/edit.html:44
 msgid "Carica un nuovo logo"
 msgstr "Upload a new logo"
 
-#: portal/templates/portal/profile/edit.html:46
+#: portal/templates/portal/profile/edit.html:47
 msgid ""
 "L'immagine viene ridimensionata e compressa automaticamente. In alternativa "
 "puoi indicare un URL qui sotto."
@@ -1140,72 +1437,88 @@ msgstr ""
 "The image is automatically resized and compressed. Alternatively, you can "
 "provide a URL below."
 
-#: portal/templates/portal/profile/edit.html:52
+#: portal/templates/portal/profile/edit.html:53
 msgid "Dati azienda"
 msgstr "Company details"
 
-#: portal/templates/portal/profile/edit.html:65
+#: portal/templates/portal/profile/edit.html:57
+#, fuzzy
+#| msgid " (obbligatorio)."
+msgid "Campo obbligatorio"
+msgstr " (required)."
+
+#: portal/templates/portal/profile/edit.html:67
 msgid "Contatto di riferimento"
 msgstr "Main contact"
 
-#: portal/templates/portal/profile/edit.html:82
+#: portal/templates/portal/profile/edit.html:79
+#: portal/templates/portal/profile/edit.html:188
+msgid "Lingua preferita"
+msgstr ""
+
+#: portal/templates/portal/profile/edit.html:80
+msgid ""
+"Usata per il portale e per le email (es. il preventivo). Clicca la bandiera."
+msgstr ""
+
+#: portal/templates/portal/profile/edit.html:100
 msgid "Salva modifiche"
 msgstr "Save changes"
 
-#: portal/templates/portal/profile/edit.html:89
+#: portal/templates/portal/profile/edit.html:107
 msgid "Altri contatti aziendali"
 msgstr "Other company contacts"
 
-#: portal/templates/portal/profile/edit.html:114
-msgid "Lingua"
-msgstr "Language"
-
-#: portal/templates/portal/profile/edit.html:95
+#: portal/templates/portal/profile/edit.html:113 portal/views/profile.py:67
 msgid "Nome"
 msgstr "Name"
 
-#: portal/templates/portal/profile/edit.html:96
-#: portal/templates/portal/profile/edit.html:142 portal/views/profile.py:68
+#: portal/templates/portal/profile/edit.html:114
+#: portal/templates/portal/profile/edit.html:177 portal/views/profile.py:69
 msgid "Telefono"
 msgstr "Phone"
 
-#: portal/templates/portal/profile/edit.html:96
+#: portal/templates/portal/profile/edit.html:114
 msgid "Ruoli"
 msgstr "Roles"
 
-#: portal/templates/portal/profile/edit.html:96
+#: portal/templates/portal/profile/edit.html:115
+msgid "Lingua"
+msgstr "Language"
+
+#: portal/templates/portal/profile/edit.html:115
 msgid "Azioni"
 msgstr "Actions"
 
-#: portal/templates/portal/profile/edit.html:108
+#: portal/templates/portal/profile/edit.html:143
 msgid "tu"
 msgstr "you"
 
-#: portal/templates/portal/profile/edit.html:123
+#: portal/templates/portal/profile/edit.html:158
 msgid "Nessun altro contatto registrato."
 msgstr "No other contacts registered."
 
-#: portal/templates/portal/profile/edit.html:126
+#: portal/templates/portal/profile/edit.html:161
 msgid "Aggiungi un contatto"
 msgstr "Add a contact"
 
-#: portal/templates/portal/profile/edit.html:132
+#: portal/templates/portal/profile/edit.html:167
 msgid "Nome e cognome *"
 msgstr "Full name *"
 
-#: portal/templates/portal/profile/edit.html:147
+#: portal/templates/portal/profile/edit.html:182
 msgid "Ruolo aziendale"
 msgstr "Company role"
 
-#: portal/templates/portal/profile/edit.html:148
+#: portal/templates/portal/profile/edit.html:183
 msgid "es. Responsabile marketing"
 msgstr "e.g. Marketing manager"
 
-#: portal/templates/portal/profile/edit.html:153
+#: portal/templates/portal/profile/edit.html:202
 msgid "Ruoli funzionali (chi riceve quali comunicazioni)"
 msgstr "Functional roles (who receives which communications)"
 
-#: portal/templates/portal/profile/edit.html:167
+#: portal/templates/portal/profile/edit.html:216
 msgid "Aggiungi contatto"
 msgstr "Add contact"
 
@@ -1217,24 +1530,41 @@ msgstr "Awaiting payment"
 msgid "Da pagare · Bonifico"
 msgstr "To pay · Bank transfer"
 
-#: portal/templates/portal/purchases/list.html:36
+#: portal/templates/portal/purchases/list.html:31
+#: portal/templates/portal/purchases/list.html:100
+msgid "Pr. unit."
+msgstr ""
+
+#: portal/templates/portal/purchases/list.html:48
+#: portal/templates/portal/purchases/list.html:117
+msgid "Totale imponibile"
+msgstr ""
+
+#: portal/templates/portal/purchases/list.html:56
+#: portal/templates/portal/purchases/list.html:125
+#, fuzzy
+#| msgid "Totale proposta (IVA inclusa)"
+msgid "Totale (IVA inclusa)"
+msgstr "Proposal total (VAT included)"
+
+#: portal/templates/portal/purchases/list.html:62
 msgid "Effettua il bonifico con questi dati:"
 msgstr "Make the bank transfer using these details:"
 
-#: portal/templates/portal/purchases/list.html:43
+#: portal/templates/portal/purchases/list.html:69
 msgid "Alla ricezione del bonifico registreremo il tuo acquisto."
 msgstr "We will register your purchase once the transfer is received."
 
-#: portal/templates/portal/purchases/list.html:52
+#: portal/templates/portal/purchases/list.html:78
 msgid "Non hai ancora effettuato acquisti."
 msgstr "You haven't made any purchases yet."
 
-#: portal/templates/portal/purchases/list.html:62
+#: portal/templates/portal/purchases/list.html:88
 #, python-format
 msgid "Acquistato il %(d)s"
 msgstr "Purchased on %(d)s"
 
-#: portal/templates/portal/purchases/list.html:67
+#: portal/templates/portal/purchases/list.html:93
 msgid "IVA inclusa"
 msgstr "VAT included"
 
@@ -1342,63 +1672,1707 @@ msgid "Descrizione attività"
 msgstr "Business description"
 
 #: portal/views/profile.py:66
-msgid "Nome e cognome"
-msgstr "Full name"
-
-#: portal/views/profile.py:67
-msgid "Email"
+msgid "Cognome"
 msgstr ""
 
-#: portal/views/profile.py:69
+#: portal/views/profile.py:70
 msgid "Ruolo"
 msgstr "Role"
 
-msgid "Portale di gestione eventi"
-msgstr "Event management portal"
-
-msgid "Benvenuto nel portale di gestione eventi"
-msgstr "Welcome to the event management portal"
-
+#: portal/views/profile.py:190
 msgid ""
-"Da qui gestisci la tua partecipazione: preventivi, spazi espositivi, "
-"servizi, materiali e scadenze dell'evento. Tutto in un unico posto."
+"Indicare se produttore o distributore e la tipologia generica di prodotti "
+"trattati."
 msgstr ""
-"Here you manage your participation: quotes, exhibition spaces, services, "
-"materials and event deadlines. All in one place."
 
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:445
+msgid "open('foo"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:449
+msgid "open(\"foo"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:453
+#, python-format
+msgid "%ls foo"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:615
+msgid "a[0]."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:622
+msgid "a[0].r"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:630
+msgid "a[0].from_"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:637
+msgid "assert str.star"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:644
+msgid "d['a b'].str"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:651
+msgid "a.app"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1611
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1633
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1636
+msgid "do not suppress"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1612
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1624
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1627
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1630
+msgid "suppress all"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1613
+msgid "suppress all but a"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1614
+msgid "suppress all but c"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1662
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1665
+msgid "---"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/IPython/core/tests/test_completer.py:1668
+msgid "--"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/_pytest/config/argparsing.py:474
+#, python-format
+msgid "ambiguous option: %(option)s could match %(matches)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/_termui_impl.py:191
+msgid "d"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/_termui_impl.py:693
+#, python-brace-format
+msgid "{editor}: Editing failed"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/_termui_impl.py:697
+#, python-brace-format
+msgid "{editor}: Editing failed: {e}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/_winconsole.py:156
+#: venv/lib/python3.12/site-packages/click/_winconsole.py:173
+#, python-brace-format
+msgid "Windows error: {error}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:98
+msgid "deprecated"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1209
+msgid "Options"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1284
+#, python-brace-format
+msgid "Got unexpected extra argument ({args})"
+msgid_plural "Got unexpected extra arguments ({args})"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1300
+msgid "DeprecationWarning: The command {name!r} is deprecated.{extra_message}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1487
+msgid "Aborted!"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1861
+msgid "Commands"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:1892
+msgid "Missing command."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:2404
+msgid "Value must be an iterable."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:2427
+#, python-brace-format
+msgid "Takes {nargs} values but 1 was given."
+msgid_plural "Takes {nargs} values but {len} were given."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/core.py:2624
 msgid ""
-"Accesso riservato agli utenti abilitati. Se hai problemi con l'accesso "
-"contatta"
+"DeprecationWarning: The {param_type} {name!r} is deprecated.{extra_message}"
 msgstr ""
-"Access reserved for authorised users. If you have trouble logging in, "
-"contact"
 
-msgid "Area riservata"
-msgstr "Restricted area"
+#: venv/lib/python3.12/site-packages/click/core.py:3025
+#, python-brace-format
+msgid "Name '{name}' defined twice"
+msgstr ""
 
-msgid "Bentornato"
-msgstr "Welcome back"
+#: venv/lib/python3.12/site-packages/click/core.py:3041
+msgid "Boolean option {decl!r} cannot use the same flag for true/false."
+msgstr ""
 
-msgid "Accedi con le credenziali ricevute via email."
-msgstr "Sign in with the credentials you received by email."
+#: venv/lib/python3.12/site-packages/click/core.py:3060
+msgid "Could not determine name for option with declarations {decls!r}"
+msgstr ""
 
-msgid "Verifica email e password, oppure"
-msgstr "Check your email and password, or"
+#: venv/lib/python3.12/site-packages/click/core.py:3067
+#, python-brace-format
+msgid ""
+"No options defined but a name was passed ({name}). Did you mean to declare "
+"an argument instead? Did you mean to pass '--{name}'?"
+msgstr ""
 
-msgid "Accedi al portale"
-msgstr "Sign in to the portal"
+#: venv/lib/python3.12/site-packages/click/core.py:3144
+#, python-brace-format
+msgid "env var: {var}"
+msgstr ""
 
-msgid "L'accesso è riservato agli sponsor invitati."
-msgstr "Access is reserved for invited sponsors."
+#: venv/lib/python3.12/site-packages/click/core.py:3147
+#, python-brace-format
+msgid "default: {default}"
+msgstr ""
 
-msgid "Privacy"
-msgstr "Privacy"
+#: venv/lib/python3.12/site-packages/click/core.py:3211
+msgid "(dynamic)"
+msgstr ""
 
-msgid "Per usare il portale, prendi visione dell'"
-msgstr "To use the portal, please review the "
+#: venv/lib/python3.12/site-packages/click/core.py:3503
+#, python-brace-format
+msgid ""
+"Arguments take exactly one parameter declaration, got {length}: {decls}."
+msgstr ""
 
-msgid "informativa sul trattamento dei dati"
-msgstr "personal data processing notice"
+#: venv/lib/python3.12/site-packages/click/decorators.py:399
+msgid "Do you want to continue?"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/decorators.py:400
+msgid "Confirm the action without prompting."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/decorators.py:465
+#, python-format
+msgid "%(prog)s, version %(version)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/decorators.py:522
+msgid "Show the version and exit."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/decorators.py:548
+msgid "Show this message and exit."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:29
+#, python-brace-format
+msgid "Did you mean {possibility}?"
+msgid_plural "(Did you mean one of: {possibilities}?)"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:59
+#: venv/lib/python3.12/site-packages/click/exceptions.py:102
+#: venv/lib/python3.12/site-packages/click/termui.py:228
+#, python-brace-format
+msgid "Error: {message}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:93
+#, python-brace-format
+msgid "Try '{command} {option}' for help."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:143
+#, python-brace-format
+msgid "Invalid value: {message}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:145
+#, python-brace-format
+msgid "Invalid value for {param_hint}: {message}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:203
+msgid "Missing argument"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:205
+msgid "Missing option"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:207
+msgid "Missing parameter"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:209
+#, python-brace-format
+msgid "Missing {param_type}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:216
+#, python-brace-format
+msgid "Missing parameter: {param_name}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:235
+msgid "No such option {name!r}."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:265
+msgid "No such command {name!r}."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:321
+msgid "unknown error"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/exceptions.py:328
+msgid "Could not open file {filename!r}: {message}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/formatting.py:162
+msgid "Usage:"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/parser.py:145
+#, python-brace-format
+msgid "Invalid start character for option ({option})"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/parser.py:203
+msgid "Argument {name!r} takes {nargs} values."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/parser.py:382
+msgid "Option {name!r} does not take a value."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/parser.py:445
+msgid "Option {name!r} requires an argument."
+msgid_plural "Option {name!r} requires {nargs} arguments."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/shell_completion.py:337
+msgid "Shell completion is not supported for Bash versions older than 4.4."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/shell_completion.py:344
+msgid "Couldn't detect Bash version, shell completion is not supported."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/termui.py:212
+msgid "Repeat for confirmation"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/termui.py:239
+msgid "Error: The two entered values do not match."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/termui.py:293
+msgid "Error: invalid input"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/termui.py:675
+#: venv/lib/python3.12/site-packages/click/termui.py:681
+msgid "Unknown color {colour!r}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/termui.py:930
+msgid "Press any key to continue..."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:364
+#, python-brace-format
+msgid ""
+"Choose from:\n"
+"\t{choices}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:401
+msgid "{value!r} is not {choice}."
+msgid_plural "{value!r} is not one of {choices}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:407
+#, python-brace-format
+msgid "Choice({choices})"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:493
+msgid "{value!r} does not match the format {format}."
+msgid_plural "{value!r} does not match the formats {formats}."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:515
+msgid "{value!r} is not a valid {number_type}."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:580
+#, python-brace-format
+msgid "{value} is not in the range {range}."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:762
+msgid "{value!r} is not a valid boolean. Recognized values: {states}"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:788
+msgid "{value!r} is not a valid UUID."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:998
+msgid "file"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1000
+msgid "directory"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1002
+msgid "path"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1048
+msgid "{name} {filename!r} does not exist."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1057
+msgid "{name} {filename!r} is a file."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1065
+msgid "{name} {filename!r} is a directory."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1074
+msgid "{name} {filename!r} is not readable."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1083
+msgid "{name} {filename!r} is not writable."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1092
+msgid "{name} {filename!r} is not executable."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/click/types.py:1164
+#, python-brace-format
+msgid "{len_type} values are required, but {len_value} was given."
+msgid_plural "{len_type} values are required, but {len_value} were given."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/click/utils.py:345
+#: venv/lib/python3.12/site-packages/click/utils.py:366
+#, python-brace-format
+msgid "Unknown standard stream '{name}'"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/contrib/messages/apps.py:16
+msgid "Messages"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/contrib/sitemaps/apps.py:8
+msgid "Site Maps"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/contrib/staticfiles/apps.py:9
+msgid "Static Files"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/contrib/syndication/apps.py:7
+msgid "Syndication"
+msgstr ""
+
+#. Translators: String used to replace omitted page numbers in elided page
+#. range generated by paginators, e.g. [1, 2, '…', 5, 6, 7, '…', 9, 10].
+#: venv/lib/python3.12/site-packages/django/core/paginator.py:30
+msgid "…"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/paginator.py:32
+msgid "That page number is not an integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/paginator.py:33
+msgid "That page number is less than 1"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/paginator.py:34
+msgid "That page contains no results"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:22
+msgid "Enter a valid value."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:70
+msgid "Enter a valid domain name."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:155
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:768
+msgid "Enter a valid URL."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:216
+msgid "Enter a valid integer."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:227
+msgid "Enter a valid email address."
+msgstr ""
+
+#. Translators: "letters" means latin letters: a-z and A-Z.
+#: venv/lib/python3.12/site-packages/django/core/validators.py:310
+msgid ""
+"Enter a valid “slug” consisting of letters, numbers, underscores or hyphens."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:318
+msgid ""
+"Enter a valid “slug” consisting of Unicode letters, numbers, underscores, or"
+" hyphens."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:330
+#: venv/lib/python3.12/site-packages/django/core/validators.py:339
+#: venv/lib/python3.12/site-packages/django/core/validators.py:353
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2215
+#, python-format
+msgid "Enter a valid %(protocol)s address."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:332
+msgid "IPv4"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:341
+#: venv/lib/python3.12/site-packages/django/utils/ipv6.py:30
+msgid "IPv6"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:355
+msgid "IPv4 or IPv6"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:396
+msgid "Enter only digits separated by commas."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:402
+#, python-format
+msgid "Ensure this value is %(limit_value)s (it is %(show_value)s)."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:437
+#, python-format
+msgid "Ensure this value is less than or equal to %(limit_value)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:446
+#, python-format
+msgid "Ensure this value is greater than or equal to %(limit_value)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:455
+#, python-format
+msgid "Ensure this value is a multiple of step size %(limit_value)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:462
+#, python-format
+msgid ""
+"Ensure this value is a multiple of step size %(limit_value)s, starting from "
+"%(offset)s, e.g. %(offset)s, %(valid_value1)s, %(valid_value2)s, and so on."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:494
+#, python-format
+msgid ""
+"Ensure this value has at least %(limit_value)d character (it has "
+"%(show_value)d)."
+msgid_plural ""
+"Ensure this value has at least %(limit_value)d characters (it has "
+"%(show_value)d)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:512
+#, python-format
+msgid ""
+"Ensure this value has at most %(limit_value)d character (it has "
+"%(show_value)d)."
+msgid_plural ""
+"Ensure this value has at most %(limit_value)d characters (it has "
+"%(show_value)d)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:535
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:359
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:398
+msgid "Enter a number."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:537
+#, python-format
+msgid "Ensure that there are no more than %(max)s digit in total."
+msgid_plural "Ensure that there are no more than %(max)s digits in total."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:542
+#, python-format
+msgid "Ensure that there are no more than %(max)s decimal place."
+msgid_plural "Ensure that there are no more than %(max)s decimal places."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:547
+#, python-format
+msgid ""
+"Ensure that there are no more than %(max)s digit before the decimal point."
+msgid_plural ""
+"Ensure that there are no more than %(max)s digits before the decimal point."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:618
+#, python-format
+msgid ""
+"File extension “%(extension)s” is not allowed. Allowed extensions are: "
+"%(allowed_extensions)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/core/validators.py:680
+msgid "Null characters are not allowed."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/base.py:1572
+#: venv/lib/python3.12/site-packages/django/forms/models.py:908
+msgid "and"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/base.py:1574
+#, python-format
+msgid "%(model_name)s with this %(field_labels)s already exists."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/constraints.py:22
+#, python-format
+msgid "Constraint “%(name)s” is violated."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:134
+#, python-format
+msgid "Value %(value)r is not a valid choice."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:135
+msgid "This field cannot be null."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:136
+msgid "This field cannot be blank."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:137
+#, python-format
+msgid "%(model_name)s with this %(field_label)s already exists."
+msgstr ""
+
+#. Translators: The 'lookup_type' is one of 'date', 'year' or
+#. 'month'. Eg: "Title must be unique for pub_date year"
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:141
+#, python-format
+msgid ""
+"%(field_label)s must be unique for %(date_field_label)s %(lookup_type)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:180
+#, python-format
+msgid "Field of type: %(field_type)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1156
+#, python-format
+msgid "“%(value)s” value must be either True or False."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1157
+#, python-format
+msgid "“%(value)s” value must be either True, False, or None."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1159
+msgid "Boolean (Either True or False)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1209
+#, python-format
+msgid "String (up to %(max_length)s)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1211
+msgid "String (unlimited)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1320
+msgid "Comma-separated integers"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1421
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid date format. It must be in YYYY-MM-DD "
+"format."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1425
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1560
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (YYYY-MM-DD) but it is an invalid "
+"date."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1429
+msgid "Date (without time)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1556
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in YYYY-MM-DD "
+"HH:MM[:ss[.uuuuuu]][TZ] format."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1564
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (YYYY-MM-DD "
+"HH:MM[:ss[.uuuuuu]][TZ]) but it is an invalid date/time."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1569
+msgid "Date (with time)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1696
+#, python-format
+msgid "“%(value)s” value must be a decimal number."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1698
+msgid "Decimal number"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1859
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in [DD] "
+"[[HH:]MM:]ss[.uuuuuu] format."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1863
+msgid "Duration"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1915
+msgid "Email address"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:1940
+msgid "File path"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2018
+#, python-format
+msgid "“%(value)s” value must be a float."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2020
+msgid "Floating point number"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2060
+#, python-format
+msgid "“%(value)s” value must be an integer."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2062
+msgid "Integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2158
+msgid "Big (8 byte) integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2175
+msgid "Small integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2183
+msgid "IPv4 address"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2214
+msgid "IP address"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2305
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2306
+#, python-format
+msgid "“%(value)s” value must be either None, True or False."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2308
+msgid "Boolean (Either True, False or None)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2359
+msgid "Positive big integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2374
+msgid "Positive integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2389
+msgid "Positive small integer"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2405
+#, python-format
+msgid "Slug (up to %(max_length)s)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2441
+msgid "Text"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2521
+#, python-format
+msgid ""
+"“%(value)s” value has an invalid format. It must be in HH:MM[:ss[.uuuuuu]] "
+"format."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2525
+#, python-format
+msgid ""
+"“%(value)s” value has the correct format (HH:MM[:ss[.uuuuuu]]) but it is an "
+"invalid time."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2529
+msgid "Time"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2637
+msgid "URL"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2661
+msgid "Raw binary data"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2726
+#, python-format
+msgid "“%(value)s” is not a valid UUID."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/__init__.py:2728
+msgid "Universally unique identifier"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/files.py:244
+msgid "File"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/files.py:420
+msgid "Image"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/json.py:24
+msgid "A JSON object"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/json.py:26
+msgid "Value must be valid JSON."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:932
+#, python-format
+msgid "%(model)s instance with %(field)s %(value)r does not exist."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:934
+msgid "Foreign Key (type determined by related field)"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:1228
+msgid "One-to-one relationship"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:1285
+#, python-format
+msgid "%(from)s-%(to)s relationship"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:1287
+#, python-format
+msgid "%(from)s-%(to)s relationships"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/db/models/fields/related.py:1335
+msgid "Many-to-many relationship"
+msgstr ""
+
+#. Translators: If found as last label character, these punctuation
+#. characters will prevent the default label_suffix to be appended to the
+#. label
+#: venv/lib/python3.12/site-packages/django/forms/boundfield.py:185
+msgid ":?.!"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:95
+msgid "This field is required."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:308
+msgid "Enter a whole number."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:479
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1260
+msgid "Enter a valid date."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:502
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1261
+msgid "Enter a valid time."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:529
+msgid "Enter a valid date/time."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:563
+msgid "Enter a valid duration."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:564
+#, python-brace-format
+msgid "The number of days must be between {min_days} and {max_days}."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:633
+msgid "No file was submitted. Check the encoding type on the form."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:634
+msgid "No file was submitted."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:635
+msgid "The submitted file is empty."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:637
+#, python-format
+msgid ""
+"Ensure this filename has at most %(max)d character (it has %(length)d)."
+msgid_plural ""
+"Ensure this filename has at most %(max)d characters (it has %(length)d)."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:642
+msgid "Please either submit a file or check the clear checkbox, not both."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:710
+msgid ""
+"Upload a valid image. The file you uploaded was either not an image or a "
+"corrupted image."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:882
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:968
+#: venv/lib/python3.12/site-packages/django/forms/models.py:1592
+#, python-format
+msgid "Select a valid choice. %(value)s is not one of the available choices."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:970
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1089
+#: venv/lib/python3.12/site-packages/django/forms/models.py:1590
+msgid "Enter a list of values."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1090
+#, fuzzy
+#| msgid "da completare"
+msgid "Enter a complete value."
+msgstr "to complete"
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1329
+msgid "Enter a valid UUID."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/fields.py:1359
+msgid "Enter a valid JSON."
+msgstr ""
+
+#. Translators: This is the default suffix added to form field labels
+#: venv/lib/python3.12/site-packages/django/forms/forms.py:94
+msgid ":"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/forms.py:230
+#, python-format
+msgid "(Hidden field %(name)s) %(error)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:61
+#, python-format
+msgid ""
+"ManagementForm data is missing or has been tampered with. Missing fields: "
+"%(field_names)s. You may need to file a bug report if the issue persists."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:65
+#, python-format
+msgid "Please submit at most %(num)d form."
+msgid_plural "Please submit at most %(num)d forms."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:70
+#, python-format
+msgid "Please submit at least %(num)d form."
+msgid_plural "Please submit at least %(num)d forms."
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:484
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:491
+msgid "Order"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/formsets.py:499
+msgid "Delete"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:901
+#, python-format
+msgid "Please correct the duplicate data for %(field)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:906
+#, python-format
+msgid "Please correct the duplicate data for %(field)s, which must be unique."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:913
+#, python-format
+msgid ""
+"Please correct the duplicate data for %(field_name)s which must be unique "
+"for the %(lookup)s in %(date_field)s."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:922
+msgid "Please correct the duplicate values below."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:1359
+msgid "The inline value did not match the parent instance."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:1450
+msgid ""
+"Select a valid choice. That choice is not one of the available choices."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/models.py:1594
+#, python-format
+msgid "“%(pk)s” is not a valid value."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/utils.py:227
+#, python-format
+msgid ""
+"%(datetime)s couldn’t be interpreted in time zone %(current_timezone)s; it "
+"may be ambiguous or it may not exist."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:461
+msgid "Clear"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:462
+msgid "Currently"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:800
+msgid "Unknown"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:801
+msgid "Yes"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/forms/widgets.py:802
+#, fuzzy
+#| msgid "Nome"
+msgid "No"
+msgstr "Name"
+
+#. Translators: Please do not add spaces around commas.
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:873
+msgid "yes,no,maybe"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:903
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:920
+#, python-format
+msgid "%(size)d byte"
+msgid_plural "%(size)d bytes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:922
+#, python-format
+msgid "%s KB"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:924
+#, python-format
+msgid "%s MB"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:926
+#, python-format
+msgid "%s GB"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:928
+#, python-format
+msgid "%s TB"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/template/defaultfilters.py:930
+#, python-format
+msgid "%s PB"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:74
+msgid "p.m."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:75
+msgid "a.m."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:80
+msgid "PM"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:81
+msgid "AM"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:153
+msgid "midnight"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dateformat.py:155
+msgid "noon"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:7
+msgid "Monday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:8
+msgid "Tuesday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:9
+msgid "Wednesday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:10
+msgid "Thursday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:11
+msgid "Friday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:12
+msgid "Saturday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:13
+msgid "Sunday"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:16
+msgid "Mon"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:17
+#, fuzzy
+#| msgid "Tu"
+msgid "Tue"
+msgstr "You"
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:18
+msgid "Wed"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:19
+#, fuzzy
+#| msgid "Tu"
+msgid "Thu"
+msgstr "You"
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:20
+msgid "Fri"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:21
+#, fuzzy
+#| msgid "Stato"
+msgid "Sat"
+msgstr "Status"
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:22
+msgid "Sun"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:25
+msgid "January"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:26
+msgid "February"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:27
+msgid "March"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:28
+msgid "April"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:29
+msgid "May"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:30
+msgid "June"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:31
+msgid "July"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:32
+msgid "August"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:33
+msgid "September"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:34
+msgid "October"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:35
+msgid "November"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:36
+msgid "December"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:39
+msgid "jan"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:40
+msgid "feb"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:41
+msgid "mar"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:42
+msgid "apr"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:43
+msgid "may"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:44
+msgid "jun"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:45
+msgid "jul"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:46
+msgid "aug"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:47
+msgid "sep"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:48
+msgid "oct"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:49
+msgid "nov"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:50
+msgid "dec"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:53
+msgctxt "abbrev. month"
+msgid "Jan."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:54
+msgctxt "abbrev. month"
+msgid "Feb."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:55
+msgctxt "abbrev. month"
+msgid "March"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:56
+msgctxt "abbrev. month"
+msgid "April"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:57
+msgctxt "abbrev. month"
+msgid "May"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:58
+msgctxt "abbrev. month"
+msgid "June"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:59
+msgctxt "abbrev. month"
+msgid "July"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:60
+msgctxt "abbrev. month"
+msgid "Aug."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:61
+msgctxt "abbrev. month"
+msgid "Sept."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:62
+msgctxt "abbrev. month"
+msgid "Oct."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:63
+msgctxt "abbrev. month"
+msgid "Nov."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:64
+msgctxt "abbrev. month"
+msgid "Dec."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:67
+msgctxt "alt. month"
+msgid "January"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:68
+msgctxt "alt. month"
+msgid "February"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:69
+msgctxt "alt. month"
+msgid "March"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:70
+msgctxt "alt. month"
+msgid "April"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:71
+msgctxt "alt. month"
+msgid "May"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:72
+msgctxt "alt. month"
+msgid "June"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:73
+msgctxt "alt. month"
+msgid "July"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:74
+msgctxt "alt. month"
+msgid "August"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:75
+msgctxt "alt. month"
+msgid "September"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:76
+msgctxt "alt. month"
+msgid "October"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:77
+msgctxt "alt. month"
+msgid "November"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/dates.py:78
+msgctxt "alt. month"
+msgid "December"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/ipv6.py:8
+msgid "This is not a valid IPv6 address."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/text.py:75
+#, python-format
+msgctxt "String to return when truncating text"
+msgid "%(truncated_text)s…"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/text.py:286
+msgid "or"
+msgstr ""
+
+#. Translators: This string is used as a separator between list elements
+#: venv/lib/python3.12/site-packages/django/utils/text.py:305
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:135
+msgid ", "
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:8
+#, python-format
+msgid "%(num)d year"
+msgid_plural "%(num)d years"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:9
+#, python-format
+msgid "%(num)d month"
+msgid_plural "%(num)d months"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:10
+#, python-format
+msgid "%(num)d week"
+msgid_plural "%(num)d weeks"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:11
+#, python-format
+msgid "%(num)d day"
+msgid_plural "%(num)d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:12
+#, python-format
+msgid "%(num)d hour"
+msgid_plural "%(num)d hours"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/utils/timesince.py:13
+#, python-format
+msgid "%(num)d minute"
+msgid_plural "%(num)d minutes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:29
+msgid "Forbidden"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:30
+msgid "CSRF verification failed. Request aborted."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:34
+msgid ""
+"You are seeing this message because this HTTPS site requires a “Referer "
+"header” to be sent by your web browser, but none was sent. This header is "
+"required for security reasons, to ensure that your browser is not being "
+"hijacked by third parties."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:40
+msgid ""
+"If you have configured your browser to disable “Referer” headers, please re-"
+"enable them, at least for this site, or for HTTPS connections, or for “same-"
+"origin” requests."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:45
+msgid ""
+"If you are using the <meta name=\"referrer\" content=\"no-referrer\"> tag or"
+" including the “Referrer-Policy: no-referrer” header, please remove them. "
+"The CSRF protection requires the “Referer” header to do strict referer "
+"checking. If you’re concerned about privacy, use alternatives like <a "
+"rel=\"noreferrer\" …> for links to third-party sites."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:54
+msgid ""
+"You are seeing this message because this site requires a CSRF cookie when "
+"submitting forms. This cookie is required for security reasons, to ensure "
+"that your browser is not being hijacked by third parties."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:60
+msgid ""
+"If you have configured your browser to disable cookies, please re-enable "
+"them, at least for this site, or for “same-origin” requests."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/csrf.py:66
+msgid "More information is available with DEBUG=True."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:44
+msgid "No year specified"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:64
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:115
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:214
+msgid "Date out of range"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:94
+msgid "No month specified"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:147
+msgid "No day specified"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:194
+msgid "No week specified"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:349
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:380
+#, python-format
+msgid "No %(verbose_name_plural)s available"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:652
+#, python-format
+msgid ""
+"Future %(verbose_name_plural)s not available because "
+"%(class_name)s.allow_future is False."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/dates.py:692
+#, python-format
+msgid "Invalid date string “%(datestr)s” given format “%(format)s”"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/detail.py:56
+#, python-format
+msgid "No %(verbose_name)s found matching the query"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/list.py:70
+msgid "Page is not “last”, nor can it be converted to an int."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/list.py:77
+#, python-format
+msgid "Invalid page (%(page_number)s): %(message)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/generic/list.py:169
+#, python-format
+msgid "Empty list and “%(class_name)s.allow_empty” is False."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/static.py:49
+msgid "Directory indexes are not allowed here."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/static.py:51
+#, python-format
+msgid "“%(path)s” does not exist"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/static.py:68
+#: venv/lib/python3.12/site-packages/django/views/templates/directory_index.html:8
+#: venv/lib/python3.12/site-packages/django/views/templates/directory_index.html:11
+#, python-format
+msgid "Index of %(directory)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:7
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:204
+msgid "The install worked successfully! Congratulations!"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:206
+#, python-format
+msgid ""
+"View <a href=\"https://docs.djangoproject.com/en/%(version)s/releases/\" "
+"target=\"_blank\" rel=\"noopener\">release notes</a> for Django %(version)s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:208
+#, python-format
+msgid ""
+"You are seeing this page because <a "
+"href=\"https://docs.djangoproject.com/en/%(version)s/ref/settings/#debug\" "
+"target=\"_blank\" rel=\"noopener\">DEBUG=True</a> is in your settings file "
+"and you have not configured any URLs."
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:217
+#, fuzzy
+#| msgid "Amministrazione"
+msgid "Django Documentation"
+msgstr "Administration"
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:218
+msgid "Topics, references, &amp; how-to’s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:226
+msgid "Tutorial: A Polling App"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:227
+msgid "Get started with Django"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:235
+msgid "Django Community"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/django/views/templates/default_urlconf.html:236
+msgid "Connect, get help, or contribute"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/kombu/transport/qpid.py:1311
+#, python-format
+msgid "Attempting to connect to qpid with SASL mechanism %s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/kombu/transport/qpid.py:1316
+#, python-format
+msgid "Connected to qpid with SASL mechanism %s"
+msgstr ""
+
+#: venv/lib/python3.12/site-packages/kombu/transport/qpid.py:1334
+#, python-format
+msgid "Unable to connect to qpid with SASL mechanism %s"
+msgstr ""
+
+#~ msgid "Accesso portale sponsor"
+#~ msgstr "Sponsor portal login"
+
+#~ msgid "Verifica email e password. Se hai dimenticato la password,"
+#~ msgstr "Check your email and password. If you forgot your password,"
+
+#~ msgid "Accedi"
+#~ msgstr "Log in"
+
+#~ msgid ""
+#~ "Non hai ancora un account? L'accesso al portale è riservato agli sponsor "
+#~ "invitati. Contatta"
+#~ msgstr ""
+#~ "Don't have an account yet? Portal access is reserved for invited sponsors. "
+#~ "Contact"
+
+#~ msgid "per richiedere l'invito."
+#~ msgstr "to request an invitation."
+
+#~ msgid ""
+#~ "Per usare il portale, prendi visione dell'informativa sul trattamento dei "
+#~ "dati."
+#~ msgstr "To use the portal, please review the data processing notice."
+
+#~ msgid "Nome e cognome"
+#~ msgstr "Full name"
+
+#~ msgid "L'accesso è riservato agli sponsor invitati."
+#~ msgstr "Access is reserved for invited sponsors."
 
 #~ msgid "Letto il"
 #~ msgstr "Read on"
