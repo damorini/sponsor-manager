@@ -3489,3 +3489,39 @@ msgstr "Paid on %(d)s"
 
 msgid "Inviato il %(d)s"
 msgstr "Sent on %(d)s"
+
+msgid "Sicurezza dell'account"
+msgstr "Account security"
+
+msgid "Imposta la tua"
+msgstr "Set your"
+
+msgid "nuova password"
+msgstr "new password"
+
+msgid "Scegli una password robusta: ti servirà per accedere al portale e gestire preventivi, spazi, materiali e scadenze del tuo evento."
+msgstr "Choose a strong password: you'll use it to access the portal and manage quotes, spaces, materials and your event deadlines."
+
+msgid "Per la tua sicurezza il link è monouso e a tempo. Problemi con l'accesso? Scrivi a"
+msgstr "For your security the link is single-use and time-limited. Trouble signing in? Write to"
+
+msgid "Crea una password sicura per il tuo accesso al portale."
+msgstr "Create a secure password for your portal access."
+
+msgid "Controlla i campi"
+msgstr "Check the fields"
+
+msgid "Torna all'accesso"
+msgstr "Back to sign in"
+
+msgid "Link non più valido"
+msgstr "Link no longer valid"
+
+msgid "Questo link è scaduto"
+msgstr "This link has expired"
+
+msgid "Il link per reimpostare la password è valido una sola volta e per un tempo limitato: questo risulta già usato o scaduto. Nessun problema, puoi richiederne uno nuovo in un istante."
+msgstr "The password reset link is valid only once and for a limited time: this one has already been used or has expired. No problem, you can request a new one in an instant."
+
+msgid "Richiedi un nuovo link"
+msgstr "Request a new link"
