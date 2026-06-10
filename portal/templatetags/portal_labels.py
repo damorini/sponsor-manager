@@ -37,3 +37,25 @@ def paystatus_label(value):
 def deadline_label(value):
     """Traduce i titoli di scadenza noti (set fisso); il resto resta invariato."""
     return _(value or '')
+
+
+@register.filter
+def deadline_status_label(deadline):
+    """Stato di una scadenza DAL PUNTO DI VISTA DEL CLIENTE (speculare all'admin).
+
+    Il portale e' la vista del cliente: cio' che il fornitore "riceve" dal
+    cliente, per il cliente e' "inviato"; le scadenze di pagamento usano i
+    verbi del pagamento. Lato admin restano i termini del fornitore (Ricevuto).
+    """
+    status = getattr(deadline, 'status', '') or ''
+    dtype = (getattr(deadline, 'deadline_type', '') or '').lower()
+    is_payment = dtype.startswith('pagament')
+    done = 'Pagato' if is_payment else 'Inviato'
+    todo = 'Da pagare' if is_payment else 'Da inviare'
+    return _({
+        'pending': todo,
+        'reminder_sent': todo,
+        'overdue': todo + ' (in ritardo)',
+        'received': done,
+        'waived': 'Esonerato',
+    }.get(status, todo))

@@ -122,7 +122,7 @@
             {% elif m.deadline.days_remaining <= 3 %}text-yellow-600 font-medium
             {% else %}text-gray-500{% endif %}">
             {% if m.deadline.status == 'received' %}
-              {% blocktrans with d=m.deadline.completed_at|date:"d/m/Y" %}Ricevuto il {{ d }}{% endblocktrans %}
+              {% if m.is_payment %}{% blocktrans with d=m.deadline.completed_at|date:"d/m/Y" %}Pagato il {{ d }}{% endblocktrans %}{% else %}{% blocktrans with d=m.deadline.completed_at|date:"d/m/Y" %}Inviato il {{ d }}{% endblocktrans %}{% endif %}
             {% elif m.deadline.status == 'waived' %}
               {% trans "Esonerato" %}
             {% elif m.deadline.is_overdue %}
@@ -174,7 +174,7 @@
       {% if m.is_completed %}
       <div class="px-5 py-3 border-t border-gray-100 text-sm flex items-center gap-2 {% if m.deadline.status == 'waived' %}text-gray-500{% else %}text-green-700{% endif %}">
         <i class="ti ti-lock"></i>
-        {% if m.deadline.status == 'waived' %}{% trans "Esonerata dalla segreteria." %}{% else %}{% trans "Inviato. Per modifiche, contatta la segreteria." %}{% endif %}
+        {% if m.deadline.status == 'waived' %}{% trans "Esonerata dalla segreteria." %}{% elif m.is_payment %}{% trans "Pagato. Per modifiche, contatta la segreteria." %}{% else %}{% trans "Inviato. Per modifiche, contatta la segreteria." %}{% endif %}
       </div>
       {% endif %}
 

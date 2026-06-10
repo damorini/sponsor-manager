@@ -205,7 +205,7 @@
                   {% elif d.days_remaining <= 3 %}text-yellow-600 font-medium
                   {% else %}text-gray-500{% endif %}">
                   {% if d.status == 'received' %}
-                    {% trans "Ricevuto" %}
+                    {{ d|deadline_status_label }}
                   {% elif d.status == 'waived' %}
                     {% trans "Esonerato" %}
                   {% elif d.is_overdue %}

@@ -78,7 +78,7 @@
           <span class="text-xs px-2 py-0.5 rounded
             {% if d.status == 'received' %}bg-green-100 text-green-800
             {% elif d.status == 'waived' %}bg-gray-100 text-gray-500
-            {% else %}bg-amber-100 text-amber-800{% endif %}">{{ d.get_status_display }}</span>
+            {% else %}bg-amber-100 text-amber-800{% endif %}">{{ d|deadline_status_label }}</span>
         </li>
         {% endfor %}
       </ul>
