@@ -225,13 +225,16 @@ class Communication(TimeStampedModel):
     """
     Log di tutte le comunicazioni: email inviate, telefonate, meeting, note.
     Polymorphic come Document, può essere agganciata a qualsiasi entità.
+    Le email di sistema (es. reset password) non hanno entità: GFK nullable.
     """
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         verbose_name="Tipo entità",
     )
-    object_id = models.UUIDField(verbose_name="ID entità")
+    object_id = models.UUIDField(null=True, blank=True, verbose_name="ID entità")
     entity = GenericForeignKey('content_type', 'object_id')
 
     channel = models.CharField(

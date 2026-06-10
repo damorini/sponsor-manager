@@ -3444,3 +3444,48 @@ msgstr "To confirm"
 
 #~ msgid "Scadenza saldo"
 #~ msgstr "Balance deadline"
+
+msgid "Scadenze di acconto e saldo dei tuoi documenti."
+msgstr "Deposit and balance due dates for your documents."
+
+msgid "Totale da pagare"
+msgstr "Total to pay"
+
+msgid "Scadenza"
+msgstr "Due date"
+
+msgid "Da firmare"
+msgstr "To sign"
+
+msgid "Pagato"
+msgstr "Paid"
+
+msgid "Da pagare"
+msgstr "To pay"
+
+msgid "Da inviare"
+msgstr "To send"
+
+msgid "Inviato"
+msgstr "Sent"
+
+msgid "Nessuna scadenza di pagamento."
+msgstr "No payment due dates."
+
+msgid "Qui vedrai acconti e saldi quando avrai documenti firmati con un piano di pagamento."
+msgstr "Here you will see deposits and balances once you have signed documents with a payment plan."
+
+msgid "Pagato. Per modifiche, contatta la segreteria."
+msgstr "Paid. To make changes, contact the secretariat."
+
+msgid "Da pagare (in ritardo)"
+msgstr "To pay (overdue)"
+
+msgid "Da inviare (in ritardo)"
+msgstr "To send (overdue)"
+
+msgid "Pagato il %(d)s"
+msgstr "Paid on %(d)s"
+
+msgid "Inviato il %(d)s"
+msgstr "Sent on %(d)s"

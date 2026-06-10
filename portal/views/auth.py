@@ -184,6 +184,10 @@ def _send_password_reset_email(request, user):
     })
     reset_url = request.build_absolute_uri(reset_path)
 
+    lang = getattr(getattr(user, 'contact_profile', None), 'preferred_language', 'it') or 'it'
+    subject = ("Reset your password · Sponsor portal" if lang == 'en'
+               else "Reimposta la password · Portale sponsor")
+
     try:
         send_email(
             template_name='password_reset',
@@ -192,8 +196,8 @@ def _send_password_reset_email(request, user):
                 'reset_url': reset_url,
             },
             to=[user.email],
-            subject="Reset password · Portale sponsor",
-            language=getattr(user.contact_profile, 'preferred_language', 'it'),
+            subject=subject,
+            language=lang,
             related_to=None,
             communication_type='manual',
             is_automated=True,
