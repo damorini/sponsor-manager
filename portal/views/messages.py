@@ -21,10 +21,9 @@ def _notifica_risposta_operatore(request, reply):
     """Avvisa via email l'operatore quando un cliente risponde nel portale.
     Destinatario configurabile in Impostazioni segreteria. Non blocca mai
     la risposta in caso di errore."""
-    from django.conf import settings
-    from django.core.mail import send_mail
     from django.urls import reverse
     from core.models import OrganizerSettings
+    from contracts.services.email_sender import send_plain_email
 
     try:
         recipients = OrganizerSettings.load().notify_recipients()
@@ -44,8 +43,7 @@ def _notifica_risposta_operatore(request, reply):
             f"«{reply.body}»\n\n"
             f"Apri la conversazione nel backoffice:\n{admin_url}"
         )
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients,
-                  fail_silently=True)
+        send_plain_email(subject, body, recipients)
     except Exception:
         logger.exception("Notifica risposta portale non inviata")
 

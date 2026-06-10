@@ -130,6 +130,32 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
 # Invio email
 # ============================================================================
 
+def send_plain_email(subject, body, recipients, fail_silently=True):
+    """Invia un'email di TESTO SEMPLICE usando la connessione SMTP configurata
+    dal pannello (core.models.EmailSettings) — la stessa di tutte le altre
+    email dell'app. Se il pannello non e' configurato, ricade sul backend di
+    default (console in produzione). Ritorna il numero di email inviate.
+
+    Da usare al posto del send_mail nudo di Django per le notifiche interne:
+    quello bypassa il pannello e in prod non recapita nulla."""
+    from django.conf import settings
+    from django.core.mail import send_mail
+    if not recipients:
+        return 0
+    conn = None
+    from_email = settings.DEFAULT_FROM_EMAIL
+    try:
+        from core.models import EmailSettings
+        es = EmailSettings.load()
+        conn = es.get_connection()  # None se il pannello non e' abilitato
+        if conn is not None and es.from_full:
+            from_email = es.from_full
+    except Exception:
+        conn = None
+    return send_mail(subject, body, from_email, recipients,
+                     connection=conn, fail_silently=fail_silently)
+
+
 def send_email(
     template_name: str,
     context: dict,

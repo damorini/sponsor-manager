@@ -446,9 +446,9 @@ def send_wishlist_reminder(self, wishlist_id):
     Se ci sono articoli a disponibilita' limitata, aggiunge un invito a non
     perdere l'occasione. Aggiorna last_reminder_sent_at."""
     from django.conf import settings
-    from django.core.mail import send_mail
     from django.urls import reverse
     from portal.models import Wishlist
+    from contracts.services.email_sender import send_plain_email
 
     try:
         wl = Wishlist.objects.select_related('user').prefetch_related(
@@ -491,8 +491,7 @@ def send_wishlist_reminder(self, wishlist_id):
     body = "\n".join(righe)
 
     try:
-        send_mail('I tuoi articoli preferiti ti aspettano', body,
-                  settings.DEFAULT_FROM_EMAIL, [email], fail_silently=True)
+        send_plain_email('I tuoi articoli preferiti ti aspettano', body, [email])
         wl.last_reminder_sent_at = timezone.now()
         wl.save(update_fields=['last_reminder_sent_at', 'updated_at'])
     except Exception as e:

@@ -58,8 +58,8 @@ def _notifica_cliente_nuovo_messaggio(request, sponsor):
     """Avvisa via email i contatti col portale che la segreteria ha scritto.
     Mette un link diretto all'archivio messaggi del portale. Non blocca mai."""
     from django.conf import settings
-    from django.core.mail import send_mail
     from django.urls import reverse
+    from contracts.services.email_sender import send_plain_email
     try:
         recipients = list(
             sponsor.contacts.filter(has_portal_access=True)
@@ -77,8 +77,7 @@ def _notifica_cliente_nuovo_messaggio(request, sponsor):
             f"Vai a leggerlo qui: {url}\n\n"
             "A presto."
         )
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, recipients,
-                  fail_silently=True)
+        send_plain_email(subject, body, recipients)
     except Exception:
         import logging
         logging.getLogger(__name__).exception("Notifica messaggio al cliente non inviata")
