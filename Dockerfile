@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi8 \
     shared-mime-info \
     fonts-dejavu \
+    fonts-liberation \
+    fonts-crosextra-carlito \
     && rm -rf /var/lib/apt/lists/*
 
 # Crea user non-root PRIMA, poi copia i pacchetti nella SUA home.
