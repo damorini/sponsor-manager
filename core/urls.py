@@ -28,6 +28,7 @@ urlpatterns = [
     path('utility/importa-contatti/', views.importa_contatti_upload, name='cruscotto_importa_contatti'),
     path('traduci/', views.translate_view, name='translate'),
     path('manuale/', views.manuale, name='cruscotto_manuale'),
+    path('manuale-operativo/', views.manuale_operativo, name='cruscotto_manuale_operativo'),
     path('catalog-service/<uuid:pk>/dati/', views.catalog_service_data, name='catalog_service_data'),
     path('documento/<uuid:document_id>/apri/', views.documento_apri, name='documento_apri'),
 ]

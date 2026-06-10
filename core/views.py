@@ -461,6 +461,68 @@ def manuale(request):
 
 
 @staff_member_required
+def manuale_operativo(request):
+    """Serve il MANUALE OPERATIVO COMPLETO (Markdown) reso in HTML lato client
+    con marked.js (CDN). Nessuna dipendenza Python aggiuntiva."""
+    import os
+    from django.conf import settings
+    from django.http import HttpResponse, Http404
+    path = os.path.join(settings.BASE_DIR, 'docs', 'MANUALE-OPERATIVO-COMPLETO.md')
+    try:
+        with open(path, encoding='utf-8') as f:
+            md = f.read()
+    except FileNotFoundError:
+        raise Http404("Manuale operativo non trovato.")
+    # Embedding sicuro dentro <textarea>: spezzo eventuali sequenze di chiusura.
+    md_safe = md.replace('</textarea', '<\\/textarea')
+    html = """<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuale operativo — Sponsor Manager</title>
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root{ --ink:#1A1612; --terra:#7A3613; --oro:#C8A04E; --crema:#FBF7F0; }
+  body{ margin:0; background:var(--crema); color:var(--ink);
+        font:16px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap{ max-width:920px; margin:0 auto; padding:28px 22px 80px; }
+  .top{ position:sticky; top:0; background:var(--ink); color:#fff; margin:-28px -22px 24px;
+        padding:12px 22px; display:flex; gap:12px; align-items:center; }
+  .top a{ color:var(--oro); text-decoration:none; font-weight:600; font-size:14px; }
+  .top button{ margin-left:auto; background:var(--terra); color:#fff; border:0;
+        border-radius:8px; padding:7px 14px; font-weight:600; cursor:pointer; }
+  h1,h2,h3{ line-height:1.25; }
+  h1{ border-bottom:3px solid var(--oro); padding-bottom:8px; }
+  h2{ margin-top:2em; border-bottom:1px solid #e6ddcd; padding-bottom:6px; color:var(--terra); }
+  h3{ margin-top:1.6em; }
+  table{ border-collapse:collapse; width:100%; margin:14px 0; font-size:14px; }
+  th,td{ border:1px solid #ddd; padding:8px 10px; text-align:left; vertical-align:top; }
+  th{ background:#f3ece0; }
+  tr:nth-child(even) td{ background:#fbf8f2; }
+  code{ background:#efe9dd; padding:1px 5px; border-radius:4px; font-size:.92em; }
+  pre{ background:#1f1b16; color:#f4ecd8; padding:14px; border-radius:8px; overflow:auto; }
+  pre code{ background:none; color:inherit; padding:0; }
+  blockquote{ border-left:4px solid var(--oro); margin:14px 0; padding:6px 14px;
+        background:#fff7e6; color:#5b4a2a; }
+  a{ color:var(--terra); }
+  @media print{ .top{ display:none; } body{ background:#fff; } }
+</style></head><body>
+<div class="wrap">
+  <div class="top">
+    <a href="/admin/">← Backoffice</a>
+    <a href="/admin/cruscotto/manuale/">📖 Manuale d'uso</a>
+    <button onclick="window.print()">🖨️ Stampa / PDF</button>
+  </div>
+  <textarea id="md" hidden>__MD__</textarea>
+  <div id="content">Rendering…</div>
+</div>
+<script>
+  var src = document.getElementById('md').value;
+  document.getElementById('content').innerHTML = marked.parse(src);
+</script>
+</body></html>"""
+    return HttpResponse(html.replace('__MD__', md_safe))
+
+
+@staff_member_required
 def da_incassare_evento(request, pk):
     """Listato dei residui da incassare per i contratti confermati di un evento."""
     from datetime import date

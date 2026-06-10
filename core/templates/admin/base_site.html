@@ -346,6 +346,13 @@
     man.textContent = '📖 Manuale d\'uso';
     man.style.cssText = 'display:block;text-align:center;font-weight:600;background:#7A3613;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none;margin-top:8px;';
     wrap.appendChild(man);
+    var manOp = document.createElement('a');
+    manOp.href = '/admin/cruscotto/manuale-operativo/';
+    manOp.target = '_blank';
+    manOp.rel = 'noopener';
+    manOp.textContent = '📘 Manuale operativo';
+    manOp.style.cssText = 'display:block;text-align:center;font-weight:600;background:#5a4636;color:#fff;padding:8px 12px;border-radius:10px;text-decoration:none;margin-top:8px;';
+    wrap.appendChild(manOp);
     sb.insertBefore(wrap, sb.firstChild);
   });
 </script>
