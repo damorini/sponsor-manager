@@ -4,6 +4,16 @@
 {% block title %}{{ title }} | {{ site_title|default:_("Django site admin") }}{% endblock %}
 
 {% block extrastyle %}{{ block.super }}
+<script>
+  // Menu laterale admin: CHIUSO di default alla prima visita; poi ricorda la
+  // scelta dell'utente. Gira nel <head>, prima di nav_sidebar.js di Django
+  // (che, se la chiave è assente, lo aprirebbe).
+  try {
+    if (localStorage.getItem('django.admin.navSidebarIsOpen') === null) {
+      localStorage.setItem('django.admin.navSidebarIsOpen', 'false');
+    }
+  } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
