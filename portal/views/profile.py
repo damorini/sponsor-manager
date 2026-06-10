@@ -88,6 +88,8 @@ def profile_view(request):
             ruoli = request.POST.getlist('nuovo_roles')
             ruoli_validi = [r for r, _ in CONTACT_ROLE_CHOICES]
             ruoli = [r for r in ruoli if r in ruoli_validi]
+            _nl = (request.POST.get('nuovo_preferred_language') or '').strip()
+            nuovo_lang = _nl if _nl in ('it', 'en') else 'it'
             try:
                 Contact.objects.create(
                     sponsor=sponsor,
@@ -96,6 +98,7 @@ def profile_view(request):
                     phone=request.POST.get('nuovo_phone', '').strip(),
                     job_title=request.POST.get('nuovo_job_title', '').strip(),
                     roles=ruoli,
+                    preferred_language=nuovo_lang,
                     has_portal_access=False,
                 )
                 messages.success(request, f"Contatto '{nome}' aggiunto.")
@@ -103,6 +106,20 @@ def profile_view(request):
             except Exception as e:
                 logger.exception("Errore creazione contatto sponsor %s", sponsor.id)
                 messages.error(request, f"Errore nell'aggiunta del contatto: {e}")
+            return redirect('portal:profile')
+
+        # --- cambio lingua preferita di un contatto esistente (bandierina) ---
+        if request.POST.get('azione') == 'set_contact_language':
+            from sponsors.models import Contact
+            cid = (request.POST.get('contact_id') or '').strip()
+            _lang = (request.POST.get('preferred_language') or '').strip()
+            target = Contact.objects.filter(sponsor=sponsor, id=cid).first() if cid else None
+            if not target or _lang not in ('it', 'en'):
+                messages.error(request, "Impossibile aggiornare la lingua del contatto.")
+            else:
+                target.preferred_language = _lang
+                target.save(update_fields=['preferred_language'])
+                messages.success(request, "Lingua di '%s' aggiornata." % target.full_name)
             return redirect('portal:profile')
 
         # --- rimozione di un contatto aziendale (referente che ha lasciato l'azienda) ---
@@ -207,6 +224,7 @@ def profile_view(request):
             'phone': getattr(c, 'phone', '') or '',
             'job_title': getattr(c, 'job_title', '') or '',
             'ruoli': ruoli_txt,
+            'preferred_language': getattr(c, 'preferred_language', 'it') or 'it',
         })
 
     manca_operativo = not any('operational' in (c.roles or []) for c in contatti)

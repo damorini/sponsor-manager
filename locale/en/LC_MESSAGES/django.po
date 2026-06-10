@@ -1156,6 +1156,10 @@ msgstr "Save changes"
 msgid "Altri contatti aziendali"
 msgstr "Other company contacts"
 
+#: portal/templates/portal/profile/edit.html:114
+msgid "Lingua"
+msgstr "Language"
+
 #: portal/templates/portal/profile/edit.html:95
 msgid "Nome"
 msgstr "Name"
