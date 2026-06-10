@@ -35,6 +35,26 @@ class ServiceAdminForm(forms.ModelForm):
         fields = '__all__'
 
 
+class DeadlineTemplateForm(forms.ModelForm):
+    """'Ruoli da notificare' come caselle da spuntare (niente testo libero):
+    le scelte sono i ruoli funzionali dei contatti (ContactRole), così
+    coincidono con quelli assegnati alle anagrafiche dell'azienda."""
+    from sponsors.models import ContactRole as _ContactRole
+    notify_roles = forms.MultipleChoiceField(
+        choices=_ContactRole.choices,
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+        label="Ruoli da notificare",
+        help_text="Chi, tra i contatti dell'azienda, riceve il promemoria di "
+                  "questa scadenza. Puoi selezionarne più di uno. Se non ne "
+                  "scegli nessuno, l'avviso va al contatto principale.",
+    )
+
+    class Meta:
+        model = DeadlineTemplate
+        fields = '__all__'
+
+
 class DeadlineTemplateInline(admin.TabularInline):
     """Template scadenze associate a un servizio, editabili inline."""
     model = DeadlineTemplate
@@ -254,6 +274,7 @@ class DeadlineFieldTemplateInline(admin.TabularInline):
 @admin.register(DeadlineTemplate)
 class DeadlineTemplateAdmin(admin.ModelAdmin):
     """Admin separato per cercare template scadenze."""
+    form = DeadlineTemplateForm
     inlines = [DeadlineFieldTemplateInline]
     list_display = (
         'title', 'service_link', 'deadline_type',
