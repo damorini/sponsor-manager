@@ -43,6 +43,7 @@ urlpatterns = [
     path('impersona/<uuid:sponsor_id>/', auth.impersonate_start, name='impersonate_start'),
     path('smetti-impersona/', auth.impersonate_stop, name='impersonate_stop'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
+    path('pagamenti/', dashboard.payments_view, name='payments'),
     path('acquisti/', dashboard.purchases_view, name='purchases'),
     path('messaggi/', portal_messages.messages_list, name='messages'),
     path('messaggi/<uuid:message_id>/letto/', portal_messages.message_mark_read,

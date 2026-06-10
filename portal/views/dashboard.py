@@ -177,6 +177,84 @@ def dashboard_view(request):
 
 
 # ============================================================================
+# Pagamenti: una card per ogni scadenza di pagamento (importo + badge)
+# ============================================================================
+
+def build_payment_items(sponsor, today):
+    """Costruisce le card della pagina Pagamenti dello sponsor.
+
+    Una voce per ogni scadenza di pagamento ('pagament*') dei contratti non
+    bozza/annullati su eventi non archiviati. Ritorna (items, totale_da_pagare):
+    nel totale entrano solo le scadenze ancora aperte (non pagate/non esonerate).
+    """
+    from decimal import Decimal
+    from contracts.models import Contract, ContractStatus, Deadline, DeadlineStatus
+    from events.models import EventStatus
+
+    contracts = (Contract.objects
+                 .filter(sponsor=sponsor, deleted_at__isnull=True)
+                 .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
+                 .exclude(event__status=EventStatus.ARCHIVED)
+                 .select_related('event'))
+    by_id = {c.id: c for c in contracts}
+
+    firmato_states = {
+        ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED}
+
+    dls = (Deadline.objects
+           .filter(contract_id__in=list(by_id.keys()),
+                   deadline_type__startswith='pagament')
+           .order_by('due_date'))
+
+    items = []
+    totale_da_pagare = Decimal('0.00')
+    for d in dls:
+        c = by_id.get(d.contract_id)
+        if c is None:
+            continue
+        dtype = (d.deadline_type or '').lower()
+        if dtype == 'pagamento_acconto':
+            amount = c.deposit_amount
+        elif dtype == 'pagamento_saldo':
+            amount = c.balance_amount
+        else:
+            amount = c.total
+        pagato = d.status == DeadlineStatus.RECEIVED
+        esonerato = d.status == DeadlineStatus.WAIVED
+        aperta = not pagato and not esonerato
+        if aperta:
+            totale_da_pagare += (amount or Decimal('0.00'))
+        items.append({
+            'title': d.portal_title,
+            'event': c.event,
+            'event_id': c.event_id,
+            'contract_number': c.contract_number,
+            'amount': amount,
+            'due_date': d.due_date,
+            'overdue': bool(aperta and d.due_date and d.due_date < today),
+            'firmato': c.status in firmato_states,
+            'pagato': pagato,
+            'esonerato': esonerato,
+        })
+
+    # Aperte prima (per data scadenza), poi le pagate/esonerate.
+    items.sort(key=lambda x: (not (not x['pagato'] and not x['esonerato']),
+                              x['due_date'] or date.max))
+    return items, totale_da_pagare
+
+
+@sponsor_required
+def payments_view(request):
+    """Pagamenti: una card per ogni scadenza di pagamento (importo, data,
+    badge separati Firmato/Pagato)."""
+    items, totale = build_payment_items(request.sponsor, date.today())
+    return render(request, 'portal/payments/list.html', {
+        'payment_items': items,
+        'totale_da_pagare': totale,
+    })
+
+
+# ============================================================================
 # Lista contratti
 # ============================================================================
 

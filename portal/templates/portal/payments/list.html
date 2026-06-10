@@ -1,0 +1,73 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Pagamenti" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Intestazione + totale da pagare -->
+  <div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 leading-tight">{% trans "Pagamenti" %}</h1>
+      <p class="text-sm text-gray-500 mt-1">{% trans "Scadenze di acconto e saldo dei tuoi documenti." %}</p>
+    </div>
+    <div class="text-right">
+      <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Totale da pagare" %}</div>
+      <div class="text-2xl font-bold {% if totale_da_pagare %}text-gray-900{% else %}text-green-600{% endif %} leading-tight">&euro; {{ totale_da_pagare|floatformat:2 }}</div>
+    </div>
+  </div>
+
+  {% if payment_items %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    {% for p in payment_items %}
+    <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col gap-3 {% if p.pagato or p.esonerato %}opacity-90{% endif %}">
+
+      <!-- evento + tipo scadenza -->
+      <div class="min-w-0">
+        <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold truncate">{{ p.event.get_name }}</div>
+        <div class="text-base font-bold text-gray-900 leading-tight">{{ p.title }}</div>
+        {% if p.contract_number %}<div class="text-xs text-gray-400 mt-0.5">{{ p.contract_number }}</div>{% endif %}
+      </div>
+
+      <!-- importo + scadenza -->
+      <div class="flex items-end justify-between gap-3">
+        <div class="text-2xl font-bold text-gray-900 leading-none">&euro; {{ p.amount|floatformat:2 }}</div>
+        <div class="text-right">
+          <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Scadenza" %}</div>
+          <div class="text-sm font-medium {% if p.overdue %}text-red-600{% else %}text-gray-700{% endif %}">{{ p.due_date|date:"d/m/Y" }}{% if p.overdue %} &middot; {% trans "in ritardo" %}{% endif %}</div>
+        </div>
+      </div>
+
+      <!-- badge separati Firmato / Pagato -->
+      <div class="flex flex-wrap gap-2 pt-1 border-t border-gray-100">
+        {% if p.firmato %}
+        <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5"><i class="ti ti-writing-sign"></i>{% trans "Firmato" %}</span>
+        {% else %}
+        <span class="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2.5 py-0.5"><i class="ti ti-writing-sign-off"></i>{% trans "Da firmare" %}</span>
+        {% endif %}
+
+        {% if p.pagato %}
+        <span class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5"><i class="ti ti-circle-check"></i>{% trans "Pagato" %}</span>
+        {% elif p.esonerato %}
+        <span class="inline-flex items-center gap-1 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full px-2.5 py-0.5"><i class="ti ti-circle-minus"></i>{% trans "Esonerato" %}</span>
+        {% else %}
+        <span class="inline-flex items-center gap-1 text-xs font-semibold {% if p.overdue %}text-red-700 bg-red-100{% else %}text-amber-700 bg-amber-100{% endif %} rounded-full px-2.5 py-0.5"><i class="ti ti-clock-dollar"></i>{% trans "Da pagare" %}</span>
+        {% endif %}
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card p-12 text-center">
+    <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 text-green-600">
+      <i class="ti ti-cash text-3xl"></i>
+    </div>
+    <p class="text-slate-700 font-semibold">{% trans "Nessuna scadenza di pagamento." %}</p>
+    <p class="mt-1 text-sm text-slate-400">{% trans "Qui vedrai acconti e saldi quando avrai documenti firmati con un piano di pagamento." %}</p>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
