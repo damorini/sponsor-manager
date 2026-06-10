@@ -29,14 +29,14 @@
   .cta { text-align:center; margin:28px 0 10px; }
   .btn { background:{{ brand_color }}; color:#ffffff !important; text-decoration:none; padding:13px 30px; border-radius:6px; font-weight:700; font-size:13px; }
   .hdr { width:100%; max-height:95px; object-fit:contain; margin:0 0 16px; }
-  /* Footer organizzatore: elemento "running" -> stampato nel margine basso
-     di OGNI pagina (vero footer, non a meta' pagina). */
+  /* Footer segreterie: Organizzativa a sinistra, Scientifica a destra.
+     Elemento "running" -> stampato nel margine basso di OGNI pagina. */
   .pagefooter { position: running(pagefooter); padding-top:8px; border-top:2px solid {{ brand_color }}; }
-  .pagefooter table { width:100%; }
-  .pagefooter .logo-cell { width:140px; vertical-align:middle; text-align:left; padding-right:16px; }
-  .pagefooter .logo-cell img { max-width:140px; max-height:50px; object-fit:contain; }
-  /* Dati segreteria: a bandiera, allineati a destra, su due righe. */
-  .pagefooter .org-cell { vertical-align:middle; text-align:right; color:#6b7280; font-size:9px; line-height:1.45; }
+  .pagefooter table { width:100%; border-collapse:collapse; }
+  .pagefooter td { vertical-align:top; width:50%; color:#6b7280; font-size:9px; line-height:1.45; }
+  .pagefooter .sec-left { text-align:left; padding-right:14px; }
+  .pagefooter .sec-right { text-align:right; padding-left:14px; }
+  .pagefooter .sec-logo { max-width:140px; max-height:46px; object-fit:contain; margin-bottom:5px; }
   .pagefooter .org-name { color:#111827; font-weight:700; font-size:11px; }
   .pagefooter .org-ref { color:#9ca3af; font-size:8px; }
 </style></head><body>
@@ -70,13 +70,21 @@
 
   <div class="pagefooter">
     <table><tr>
-      {% if org.logo_url %}<td class="logo-cell"><img src="{{ org.logo_url }}"></td>{% endif %}
-      <td class="org-cell">
+      {# --- Segreteria ORGANIZZATIVA: in basso a sinistra (logo + dati) --- #}
+      <td class="sec-left">
+        {% if org.logo_url %}<img class="sec-logo" src="{{ org.logo_url }}"><br>{% endif %}
         {# Riga 1: nome segreteria + indirizzo (i newline dell'indirizzo diventano spazi) #}
         <span class="org-name">{{ org.name }}</span>{% if org.address %} &middot; {{ org.address }}{% endif %}<br>
         {# Riga 2: contatti, dati fiscali e riferimento preventivo #}
         {% if org.phone %}Tel: {{ org.phone }}{% endif %}{% if org.email %}{% if org.phone %} &middot; {% endif %}{{ org.email }}{% endif %}{% if org.website %} &middot; {{ org.website }}{% endif %}{% if org.vat %} &middot; P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}{% if contract.contract_number %} &middot; <span class="org-ref">{{ t.ref }} {{ contract.contract_number }}</span>{% endif %}
       </td>
+      {# --- Segreteria SCIENTIFICA: in basso a destra, solo se valorizzata --- #}
+      {% if sci %}
+      <td class="sec-right">
+        {% if sci.logo_url %}<img class="sec-logo" src="{{ sci.logo_url }}"><br>{% endif %}
+        {{ sci.text|linebreaksbr }}
+      </td>
+      {% endif %}
     </tr></table>
   </div>
 </body></html>

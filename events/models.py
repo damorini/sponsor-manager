@@ -154,6 +154,24 @@ class Event(TimeStampedModel):
         verbose_name="Luogo firma contratti",
     )
 
+    # Segreteria Scientifica: dati liberi + logo, stampati in basso a destra
+    # nel PDF del preventivo (la Segreteria Organizzativa va a sinistra).
+    scientific_secretariat = models.TextField(
+        blank=True,
+        verbose_name="Segreteria Scientifica (dati per il preventivo)",
+        help_text="Testo libero con tutti i dati della segreteria scientifica "
+                  "(nome, indirizzo, contatti...). Appare in basso a destra nel "
+                  "PDF del preventivo. Lascia vuoto per non mostrarla.",
+    )
+    scientific_secretariat_logo = models.FileField(
+        upload_to='events/scientific_secretariat/',
+        null=True,
+        blank=True,
+        verbose_name="Logo Segreteria Scientifica",
+        help_text="Logo mostrato accanto ai dati della segreteria scientifica "
+                  "nel PDF del preventivo (consigliato PNG/JPG).",
+    )
+
     notes = models.TextField(blank=True, verbose_name="Note interne")
 
     # Lingue supportate dall'evento

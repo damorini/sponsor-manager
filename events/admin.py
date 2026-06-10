@@ -104,6 +104,13 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location'),
             'classes': ('collapse',),
         }),
+        ('Segreteria Scientifica', {
+            'fields': ('scientific_secretariat', 'scientific_secretariat_logo'),
+            'classes': ('collapse',),
+            'description': "Dati e logo della Segreteria Scientifica. Se compilati, "
+                           "appaiono in basso a destra nel PDF del preventivo "
+                           "(la Segreteria Organizzativa resta in basso a sinistra).",
+        }),
         ("Servizi dell'evento (dal catalogo)", {
             'fields': ('catalog_services',),
             'description': "Spunta i servizi del catalogo da rendere disponibili. "

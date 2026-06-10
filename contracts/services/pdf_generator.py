@@ -1203,6 +1203,26 @@ def generate_admission_request_pdf(contract):
 # PREVENTIVO: PDF dalla grafica HTML (stessa della mail) con link cliccabile
 # ============================================================================
 
+def build_scientific_secretariat_context(event, site_url=''):
+    """Costruisce il dict {'text', 'logo_url'} della Segreteria Scientifica per
+    il footer del preventivo, dai campi Event.scientific_secretariat[_logo].
+
+    Ritorna None se non c'e' ne' testo ne' logo (cosi' il template non stampa
+    nulla a destra)."""
+    site_url = (site_url or '').rstrip('/')
+    text = (getattr(event, 'scientific_secretariat', '') or '').strip()
+    logo_url = ''
+    try:
+        logo = getattr(event, 'scientific_secretariat_logo', None)
+        if logo:
+            logo_url = (site_url + logo.url) if site_url else logo.url
+    except Exception:
+        logo_url = ''
+    if not text and not logo_url:
+        return None
+    return {'text': text, 'logo_url': logo_url}
+
+
 def generate_quote_pdf_html(contract):
     """Genera il PDF del preventivo dalla grafica HTML (come la mail), con
     pulsante cliccabile verso la pagina del portale. Richiede WeasyPrint."""
@@ -1262,6 +1282,9 @@ def generate_quote_pdf_html(contract):
         'rea': (_org.rea if _org else '') or '',
         'logo_url': org_logo_url,
     }
+
+    # Segreteria Scientifica (per-evento): footer in basso a destra. None se assente.
+    sci = build_scientific_secretariat_context(event, site_url)
 
     # ---- Testi del preventivo nella lingua del contratto (IT/EN) ----
     from django.utils.html import escape, mark_safe
@@ -1335,6 +1358,7 @@ def generate_quote_pdf_html(contract):
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'quote_valid_until': quote_valid_until,
         'org': org,
+        'sci': sci,
         't': t,
         'ev_name': ev_name,
     }
