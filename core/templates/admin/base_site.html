@@ -245,6 +245,48 @@
   body.vt-filtri-collassati #changelist-filter { display: none !important; }
   body.vt-filtri-collassati #changelist .results,
   body.vt-filtri-collassati #changelist-form { margin-right: 0 !important; }
+
+  /* ===== Menu laterale su MOBILE (hamburger) =====
+     Django sotto i 767px nasconde la nav-sidebar e il suo toggle: sul telefono
+     il menu diventa irraggiungibile. Aggiungiamo un hamburger che apre la
+     sidebar come pannello a scomparsa. */
+  #vt-mobile-nav-btn { display: none; }            /* nascosto su desktop */
+  #vt-mobile-nav-overlay { display: none; }
+  @media (max-width: 767px) {
+    #vt-mobile-nav-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      position: fixed; top: 9px; left: 10px; z-index: 10002;
+      width: 42px; height: 42px; border: none; border-radius: 10px;
+      background: var(--vt-sidebar-cap-bg, #1A1612); color: #fff;
+      font-size: 22px; line-height: 1; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,.35);
+    }
+    #nav-sidebar {
+      position: fixed !important; top: 0; left: 0; bottom: 0;
+      width: 84% !important; max-width: 330px;
+      z-index: 10001; overflow-y: auto;
+      background: var(--body-bg, #fff);
+      padding: 56px 12px 16px !important;
+      transform: translateX(-100%);
+      transition: transform .25s ease;
+      box-shadow: 2px 0 18px rgba(0,0,0,.4);
+    }
+    /* Django a <=767px imposta display:none sulla sidebar: da aperta la
+       riportiamo visibile e in posizione. */
+    body.vt-nav-open #nav-sidebar {
+      display: block !important;
+      transform: translateX(0) !important;
+    }
+    /* Django collassa la sidebar a larghezza 0: forziamo la visibilità */
+    #nav-sidebar, #nav-sidebar * { visibility: visible !important; }
+    #vt-mobile-nav-overlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(0,0,0,.45);
+    }
+    body.vt-nav-open #vt-mobile-nav-overlay { display: block; }
+    /* il toggle nativo di Django su mobile non serve */
+    #toggle-nav-sidebar { display: none !important; }
+  }
 </style>
 <script>
   // Neutralizza eventuali Service Worker "fantasma" su questo indirizzo
@@ -386,6 +428,39 @@
     aggiorna();
   });
 </script>
+<script>
+  // Hamburger per il menu laterale su MOBILE: apre/chiude la nav-sidebar
+  // (che Django nasconde sotto i 767px). Funziona come pannello a scomparsa.
+  document.addEventListener('DOMContentLoaded', function () {
+    var sb = document.getElementById('nav-sidebar');
+    if (!sb) return;  // alcune pagine (login) non hanno la sidebar
+
+    var overlay = document.createElement('div');
+    overlay.id = 'vt-mobile-nav-overlay';
+    document.body.appendChild(overlay);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'vt-mobile-nav-btn';
+    btn.setAttribute('aria-label', 'Apri menu');
+    btn.innerHTML = '☰';
+    document.body.appendChild(btn);
+
+    function chiudi() { document.body.classList.remove('vt-nav-open'); }
+    btn.addEventListener('click', function () {
+      document.body.classList.toggle('vt-nav-open');
+    });
+    overlay.addEventListener('click', chiudi);
+    // chiudi il menu dopo aver scelto una voce
+    sb.addEventListener('click', function (e) {
+      if (e.target.closest('a')) chiudi();
+    });
+    // chiudi con ESC
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') chiudi();
+    });
+  });
+</script>
 {% endblock %}
 
 {% block branding %}
@@ -396,12 +471,16 @@
 
 {% block nav-global %}{% endblock %}
 
-{# Avviso globale: preventivi creati ma non ancora inviati. Visibile su OGNI
-   pagina del backoffice (non solo nel Cruscotto). bozze_count/bozze_url
-   arrivano dal context processor core.context_processors.admin_badges. #}
+{% comment %}
+  Avviso globale: preventivi creati ma non ancora inviati. Visibile su OGNI
+  pagina del backoffice (non solo nel Cruscotto). bozze_count/bozze_url
+  arrivano dal context processor core.context_processors.admin_badges.
+{% endcomment %}
 {% block messages %}
-  {# Sulla home del Cruscotto c'e' gia' l'avviso esteso (con i nomi dei
-     clienti): evitiamo il doppione mostrando il banner globale altrove. #}
+  {% comment %}
+    Sulla home del Cruscotto c'e' gia' l'avviso esteso (con i nomi dei
+    clienti): evitiamo il doppione mostrando il banner globale altrove.
+  {% endcomment %}
   {% if bozze_count and request.resolver_match.url_name != 'cruscotto_home' %}
   <ul class="messagelist">
     <li class="warning" style="background-color:#fff7e6; border-left:4px solid #C8A04E;">
