@@ -4,9 +4,14 @@ Context processor per i badge dell'admin (es. messaggi clienti non letti).
 
 
 def admin_badges(request):
-    """Aggiunge il numero di risposte dei clienti non lette (per il badge nel
-    menu admin 'Messaggi portale'). Calcolato solo per utenti staff."""
+    """Badge per l'admin, calcolati solo per utenti staff:
+    - portal_unread_count: risposte clienti non lette;
+    - bozze_count / bozze_url: preventivi creati ma NON ancora inviati
+      (contratti principali in Bozza), mostrati come avviso su OGNI pagina.
+    """
     count = 0
+    bozze_count = 0
+    bozze_url = ''
     try:
         user = getattr(request, 'user', None)
         if user and user.is_authenticated and user.is_staff:
@@ -15,6 +20,21 @@ def admin_badges(request):
                 sender=MessageSender.SPONSOR, read_at__isnull=True, is_active=True,
                 archived_at__isnull=True,
             ).count()
+
+            from contracts.models import Contract, ContractStatus, ContractKind
+            bozze_count = Contract.objects.filter(
+                status=ContractStatus.DRAFT,
+                contract_kind=ContractKind.MAIN,
+                deleted_at__isnull=True,
+            ).count()
+            if bozze_count:
+                from django.urls import reverse
+                bozze_url = (reverse('admin:contracts_contract_changelist')
+                             + '?status__exact=draft')
     except Exception:
-        count = 0
-    return {'portal_unread_count': count}
+        pass
+    return {
+        'portal_unread_count': count,
+        'bozze_count': bozze_count,
+        'bozze_url': bozze_url,
+    }

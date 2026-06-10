@@ -395,3 +395,22 @@
 {% endblock %}
 
 {% block nav-global %}{% endblock %}
+
+{# Avviso globale: preventivi creati ma non ancora inviati. Visibile su OGNI
+   pagina del backoffice (non solo nel Cruscotto). bozze_count/bozze_url
+   arrivano dal context processor core.context_processors.admin_badges. #}
+{% block messages %}
+  {# Sulla home del Cruscotto c'e' gia' l'avviso esteso (con i nomi dei
+     clienti): evitiamo il doppione mostrando il banner globale altrove. #}
+  {% if bozze_count and request.resolver_match.url_name != 'cruscotto_home' %}
+  <ul class="messagelist">
+    <li class="warning" style="background-color:#fff7e6; border-left:4px solid #C8A04E;">
+      <a href="{{ bozze_url }}" style="color:inherit; text-decoration:none;">
+        ⚠ <strong>Hai {{ bozze_count }} preventivo/i creato/i ma ancora DA INVIARE.</strong>
+        Clicca qui per vederli e inviarli.
+      </a>
+    </li>
+  </ul>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
