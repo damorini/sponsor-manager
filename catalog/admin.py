@@ -80,8 +80,8 @@ class DeadlineTemplateInline(admin.TabularInline):
     extra = 0
     show_change_link = True
     fields = (
-        'deadline_type', 'title', 'submission_kind', 'days_before_event',
-        'reminder_days_before', 'is_active',
+        'deadline_type', 'title', 'submission_kind', 'client_template_file',
+        'days_before_event', 'reminder_days_before', 'is_active',
     )
 
 

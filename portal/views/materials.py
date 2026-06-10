@@ -111,6 +111,13 @@ def _get_materials_for_contract(contract):
                 and not (d.deadline_type or '').startswith('pagamento')
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
+            # File "modello" da scaricare (se l'operatore l'ha allegato al template)
+            'template_file_name': (
+                d.deadline_template.client_template_file.name.rsplit('/', 1)[-1]
+                if d.deadline_template and getattr(
+                    d.deadline_template, 'client_template_file', None)
+                else None
+            ),
         })
         # importo pagamento (vista contratto)
         _ip, _ia, _il = _payment_info(d)
@@ -320,6 +327,36 @@ def material_download_view(request, document_id):
         filename=document.file_name,
     )
     return response
+
+
+@sponsor_required
+def deadline_template_download_view(request, deadline_id):
+    """Download del file 'modello' allegato al Template scadenza: l'operatore lo
+    carica una volta e il cliente lo scarica come traccia (es. template grafico
+    alla misura giusta, o Excel con le colonne da compilare)."""
+    import os
+    from contracts.models import Deadline
+
+    deadline = get_object_or_404(
+        Deadline.objects.select_related('contract', 'deadline_template'),
+        id=deadline_id,
+    )
+    if deadline.contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Accesso negato.")
+
+    tpl = deadline.deadline_template
+    if not tpl or not getattr(tpl, 'client_template_file', None):
+        raise Http404("Nessun modello disponibile per questa scadenza.")
+
+    f = tpl.client_template_file
+    if not default_storage.exists(f.name):
+        raise Http404("File non trovato sul server.")
+
+    return FileResponse(
+        default_storage.open(f.name, 'rb'),
+        as_attachment=True,
+        filename=os.path.basename(f.name),
+    )
 
 
 # ============================================================================

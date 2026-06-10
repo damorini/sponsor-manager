@@ -83,6 +83,8 @@ urlpatterns = [
          name='material_content'),
     path('materials/download/<uuid:document_id>/', materials.material_download_view,
          name='material_download'),
+    path('materials/modello/<uuid:deadline_id>/', materials.deadline_template_download_view,
+         name='deadline_template_download'),
     path('materials/delete/<uuid:document_id>/', materials.material_delete_view,
          name='material_delete'),
     

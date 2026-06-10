@@ -509,6 +509,19 @@ class DeadlineTemplate(TimeStampedModel):
         verbose_name="Reminder a (giorni prima)",
     )
 
+    # File "modello" che il cliente puo' scaricare per preparare cio' che deve
+    # inviare (es. un template grafico nella misura giusta, o un Excel con le
+    # colonne da compilare). Opzionale.
+    client_template_file = models.FileField(
+        upload_to='deadline_templates/',
+        blank=True, null=True,
+        verbose_name="Modello da far scaricare al cliente",
+        help_text="Facoltativo. File di traccia che il cliente scarica per "
+                  "preparare il materiale richiesto: es. un template grafico "
+                  "alla misura giusta, oppure un Excel con le colonne/info da "
+                  "compilare.",
+    )
+
     is_active = models.BooleanField(default=True, verbose_name="Attivo")
     display_order = models.IntegerField(default=0, verbose_name="Ordine")
 
