@@ -33,11 +33,12 @@
      di OGNI pagina (vero footer, non a meta' pagina). */
   .pagefooter { position: running(pagefooter); padding-top:8px; border-top:2px solid {{ brand_color }}; }
   .pagefooter table { width:100%; }
-  .pagefooter .logo-cell { width:110px; vertical-align:middle; padding-right:14px; }
-  .pagefooter .logo-cell img { max-width:110px; max-height:46px; object-fit:contain; }
-  .pagefooter .org-cell { vertical-align:middle; color:#6b7280; font-size:9.5px; line-height:1.5; }
-  .pagefooter .org-name { color:#111827; font-weight:700; font-size:11px; margin-bottom:1px; }
-  .pagefooter .ref { color:#9ca3af; font-size:8.5px; text-align:right; vertical-align:middle; white-space:nowrap; padding-left:10px; }
+  .pagefooter .logo-cell { width:140px; vertical-align:middle; text-align:left; padding-right:16px; }
+  .pagefooter .logo-cell img { max-width:140px; max-height:50px; object-fit:contain; }
+  /* Dati segreteria: a bandiera, allineati a destra, su due righe. */
+  .pagefooter .org-cell { vertical-align:middle; text-align:right; color:#6b7280; font-size:9px; line-height:1.45; }
+  .pagefooter .org-name { color:#111827; font-weight:700; font-size:11px; }
+  .pagefooter .org-ref { color:#9ca3af; font-size:8px; }
 </style></head><body>
   {% if header_url %}<img class="hdr" src="{{ header_url }}">{% endif %}
   <div class="brandbar"></div>
@@ -71,12 +72,11 @@
     <table><tr>
       {% if org.logo_url %}<td class="logo-cell"><img src="{{ org.logo_url }}"></td>{% endif %}
       <td class="org-cell">
-        <div class="org-name">{{ org.name }}</div>
-        {% if org.address %}{{ org.address|linebreaksbr }}<br>{% endif %}
-        {% if org.phone %}Tel: {{ org.phone }}{% if org.email %} &middot; {% endif %}{% endif %}{% if org.email %}Email: {{ org.email }}{% endif %}{% if org.website %}<br>{{ org.website }}{% endif %}
-        {% if org.vat or org.rea %}<br>{% if org.vat %}P.IVA {{ org.vat }}{% endif %}{% if org.vat and org.rea %} &middot; {% endif %}{% if org.rea %}REA {{ org.rea }}{% endif %}{% endif %}
+        {# Riga 1: nome segreteria + indirizzo (i newline dell'indirizzo diventano spazi) #}
+        <span class="org-name">{{ org.name }}</span>{% if org.address %} &middot; {{ org.address }}{% endif %}<br>
+        {# Riga 2: contatti, dati fiscali e riferimento preventivo #}
+        {% if org.phone %}Tel: {{ org.phone }}{% endif %}{% if org.email %}{% if org.phone %} &middot; {% endif %}{{ org.email }}{% endif %}{% if org.website %} &middot; {{ org.website }}{% endif %}{% if org.vat %} &middot; P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}{% if contract.contract_number %} &middot; <span class="org-ref">{{ t.ref }} {{ contract.contract_number }}</span>{% endif %}
       </td>
-      <td class="ref">{{ t.ref }} {{ contract.contract_number }}</td>
     </tr></table>
   </div>
 </body></html>
