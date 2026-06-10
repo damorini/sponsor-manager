@@ -74,14 +74,17 @@ class DeadlineTemplateForm(forms.ModelForm):
             self.fields['deadline_type'].widget = DatalistTextInput(options=[*comuni, *usati])
 
 
-class DeadlineTemplateInline(admin.TabularInline):
-    """Template scadenze associate a un servizio, editabili inline."""
+class DeadlineTemplateInline(admin.StackedInline):
+    """Template scadenze associate a un servizio, editabili inline.
+    Layout verticale (stacked): con molti campi (incluso il file modello) la
+    versione tabellare andava fuori schermo a destra."""
     model = DeadlineTemplate
     extra = 0
     show_change_link = True
     fields = (
-        'deadline_type', 'title', 'submission_kind', 'client_template_file',
-        'days_before_event', 'reminder_days_before', 'is_active',
+        ('deadline_type', 'title'),
+        ('submission_kind', 'client_template_file'),
+        ('days_before_event', 'reminder_days_before', 'is_active'),
     )
 
 
