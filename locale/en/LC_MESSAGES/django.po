@@ -18,20 +18,16 @@ msgid "Genera il PDF del preventivo e aprilo, SENZA inviarlo"
 msgstr ""
 
 #: contracts/templates/admin/contracts/contract/change_form.html:9
-#, fuzzy
-#| msgid "Conferma preventivo"
 msgid "Anteprima preventivo"
-msgstr "Confirm quote"
+msgstr "Quote preview"
 
 #: contracts/templates/admin/contracts/contract/change_form.html:14
 msgid "Genera e invia il preventivo scegliendo i destinatari"
 msgstr ""
 
 #: contracts/templates/admin/contracts/contract/change_form.html:15
-#, fuzzy
-#| msgid "Conferma il preventivo"
 msgid "Genera e invia preventivo"
-msgstr "Confirm the quote"
+msgstr "Generate and send quote"
 
 #: core/admin_widgets.py:163
 #, python-format
@@ -430,11 +426,8 @@ msgid "Carta di credito/debito"
 msgstr "Credit/debit card"
 
 #: portal/templates/portal/cart/checkout.html:115
-#, fuzzy
-#| msgid ""
-#| "Visa, Mastercard, American Express o accesso PayPal. Pagamento immediato."
 msgid "Visa, Mastercard, American Express. Pagamento immediato."
-msgstr "Visa, Mastercard, American Express or PayPal login. Instant payment."
+msgstr "Visa, Mastercard, American Express. Immediate payment."
 
 #: portal/templates/portal/cart/checkout.html:130
 msgid "Login PayPal o pagamento come ospite. Redirect su paypal.com."
@@ -539,8 +532,6 @@ msgid "Totale:"
 msgstr "Total:"
 
 #: portal/templates/portal/cart/view.html:154
-#, fuzzy
-#| msgid "← Continua acquisti per questo evento"
 msgid "Continua acquisti per questo evento"
 msgstr "← Continue shopping for this event"
 
@@ -659,10 +650,8 @@ msgid "Vedi le tue domande di ammissione →"
 msgstr "View your admission requests →"
 
 #: portal/templates/portal/catalog/service_detail.html:21
-#, fuzzy
-#| msgid "Vai al catalogo"
 msgid "Torna al catalogo"
-msgstr "Go to catalog"
+msgstr "Back to catalog"
 
 #: portal/templates/portal/catalog/service_detail.html:32
 msgid "Per:"
@@ -782,10 +771,8 @@ msgstr "Included services"
 #: portal/templates/portal/contract/detail.html:120
 #: portal/templates/portal/purchases/list.html:33
 #: portal/templates/portal/purchases/list.html:102
-#, fuzzy
-#| msgid "Totale proposta (IVA inclusa)"
 msgid "Totale (IVA escl.)"
-msgstr "Proposal total (VAT included)"
+msgstr "Total (VAT excl.)"
 
 #: portal/templates/portal/contract/detail.html:138
 msgid "Incluso"
@@ -1442,10 +1429,8 @@ msgid "Dati azienda"
 msgstr "Company details"
 
 #: portal/templates/portal/profile/edit.html:57
-#, fuzzy
-#| msgid " (obbligatorio)."
 msgid "Campo obbligatorio"
-msgstr " (required)."
+msgstr "Required field"
 
 #: portal/templates/portal/profile/edit.html:67
 msgid "Contatto di riferimento"
@@ -1542,10 +1527,8 @@ msgstr ""
 
 #: portal/templates/portal/purchases/list.html:56
 #: portal/templates/portal/purchases/list.html:125
-#, fuzzy
-#| msgid "Totale proposta (IVA inclusa)"
 msgid "Totale (IVA inclusa)"
-msgstr "Proposal total (VAT included)"
+msgstr "Total (VAT incl.)"
 
 #: portal/templates/portal/purchases/list.html:62
 msgid "Effettua il bonifico con questi dati:"
