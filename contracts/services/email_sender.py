@@ -343,17 +343,32 @@ def get_signer_email(contract) -> Optional[str]:
 # ============================================================================
 
 def _pick_lang(raw, language):
-    """Estrae la lingua da un valore bilingue JSON {it,en}; se e' testo
+    """Estrae la lingua da un valore bilingue {it,en}. Accetta un dict (campo
+    JSONField), una stringa JSON, o una vecchia repr Python; se e' testo
     semplice lo restituisce cosi' com'e'."""
     if not raw:
         return ''
+
+    def _from_dict(data):
+        return (data.get(language) or data.get('it')
+                or next((v for v in data.values() if v), ''))
+
+    if isinstance(raw, dict):
+        return _from_dict(raw)
+    # stringhe legacy: prova JSON valido, poi repr Python ({'it': ...})
+    import json
     try:
-        import json
         data = json.loads(raw)
         if isinstance(data, dict):
-            return (data.get(language) or data.get('it')
-                    or next((v for v in data.values() if v), ''))
+            return _from_dict(data)
     except (ValueError, TypeError):
+        pass
+    try:
+        import ast
+        data = ast.literal_eval(raw)
+        if isinstance(data, dict):
+            return _from_dict(data)
+    except (ValueError, SyntaxError, TypeError):
         pass
     return raw
 

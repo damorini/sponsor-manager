@@ -167,12 +167,18 @@ class EmailTemplate(TimeStampedModel):
         verbose_name="Tipo comunicazione",
     )
 
-    subject_template = models.CharField(
-        max_length=500,
+    # Multilingua {it, en}: l'admin li edita con widget bilingue e li salva
+    # come dict JSON. (Prima erano Char/Text: il dict finiva serializzato come
+    # repr Python e i campi risultavano "vuoti" al reload.)
+    subject_template = models.JSONField(
+        default=dict,
+        blank=True,
         verbose_name="Oggetto (template)",
         help_text="Supporta placeholder {{ var }}",
     )
-    body_template = models.TextField(
+    body_template = models.JSONField(
+        default=dict,
+        blank=True,
         verbose_name="Corpo (template)",
         help_text="Supporta placeholder {{ var }}",
     )
