@@ -292,7 +292,11 @@ class StandAdmin(admin.ModelAdmin):
     list_select_related = ('event', 'stand_block')
     autocomplete_fields = ['event', 'stand_block']
     readonly_fields = ('created_at', 'updated_at', 'area_sqm_display')
-    ordering = ('event', 'code')
+
+    def get_ordering(self, request):
+        from django.db.models.functions import Length
+        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
+        return ['event__slug', Length('code').asc(), 'code']
 
     fieldsets = (
         (None, {

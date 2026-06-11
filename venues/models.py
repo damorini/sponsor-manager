@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from django.db import models
 from django.db.models import Q, Sum
+from django.db.models.functions import Length
 from django.utils import timezone
 
 from core.models import TimeStampedModel
@@ -94,7 +95,8 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
     class Meta:
         verbose_name = "Blocco stand"
         verbose_name_plural = "Blocchi stand"
-        ordering = ['event', 'code']
+        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
+        ordering = ['event', Length('code').asc(), 'code']
         constraints = [
             models.UniqueConstraint(
                 fields=['event', 'code'],
@@ -277,7 +279,8 @@ class Stand(TranslatableMixin, TimeStampedModel):
     class Meta:
         verbose_name = "Stand"
         verbose_name_plural = "Stand"
-        ordering = ['event', 'code']
+        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
+        ordering = ['event', Length('code').asc(), 'code']
         constraints = [
             models.UniqueConstraint(
                 fields=['event', 'code'],
