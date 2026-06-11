@@ -9,3 +9,6 @@ class CoreConfig(AppConfig):
     def ready(self):
         # Registra i segnali (auto-traduzione IT->EN al salvataggio)
         from . import signals  # noqa: F401
+        # Raggruppa il menu admin in sezioni logiche
+        from .admin_grouping import apply_admin_grouping
+        apply_admin_grouping()
