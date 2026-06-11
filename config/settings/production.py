@@ -43,6 +43,10 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Redirect HTTP->HTTPS attivo di default. Disattivabile (es. se il TLS lo
 # gestisce un proxy davanti, o per collaudo locale in HTTP).
 SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=True, cast=bool)
+# Esenta /health/ dal redirect HTTP->HTTPS: l'healthcheck interno del container
+# fa una GET http su localhost:8000/health/; senza esenzione verrebbe rediretta
+# a https sulla stessa porta (senza TLS) e andrebbe in timeout -> falso unhealthy.
+SECURE_REDIRECT_EXEMPT = [r'^health/?$']
 SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
