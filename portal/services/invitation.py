@@ -116,6 +116,11 @@ def _send_invitation_email(user, contact, temp_password):
 
     portal_url = getattr(settings, 'PORTAL_URL', '/portal/')
 
+    lang = contact.preferred_language or 'it'
+    subject = ("Welcome to the sponsor portal · your login credentials"
+               if lang == 'en'
+               else "Benvenuto nel portale sponsor · credenziali di accesso")
+
     try:
         send_email(
             template_name='portal_invitation',
@@ -126,8 +131,8 @@ def _send_invitation_email(user, contact, temp_password):
                 'portal_url': portal_url,
             },
             to=[contact.email],
-            subject="Benvenuto nel portale sponsor · credenziali di accesso",
-            language=contact.preferred_language or 'it',
+            subject=subject,
+            language=lang,
             related_to=contact,
             communication_type='manual',
             is_automated=False,

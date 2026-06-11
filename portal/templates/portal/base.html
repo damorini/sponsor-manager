@@ -269,5 +269,41 @@
     else run();
   })();
 </script>
+<style>@keyframes pwspin { to { transform: rotate(360deg); } }</style>
+<script>
+  // Anti doppio-submit: previene il secondo invio dello stesso form (doppio
+  // click / doppio Enter -> doppio addebito o doppia conferma) e mostra uno
+  // spinner sul bottone. NON disabilita il bottone (perderebbe il value nel
+  // POST). Auto-reset dopo 8s come rete di sicurezza (form AJAX o navigazione
+  // annullata). Opt-out: attributo data-no-guard sul <form>.
+  (function () {
+    document.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.hasAttribute('data-no-guard')) return;
+      if (form.dataset.submitting === '1') { e.preventDefault(); return; }
+      form.dataset.submitting = '1';
+      var btn = form.querySelector('button[type=submit], input[type=submit], button:not([type])');
+      if (btn && btn.tagName === 'BUTTON' && !btn.dataset.guarded) {
+        btn.dataset.guarded = '1';
+        btn.dataset.origHtml = btn.innerHTML;
+        btn.style.pointerEvents = 'none';
+        btn.style.opacity = '.75';
+        btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.5rem;">'
+          + '<span style="width:1rem;height:1rem;border:2px solid currentColor;border-right-color:transparent;border-radius:9999px;display:inline-block;animation:pwspin .6s linear infinite;"></span>'
+          + 'Attendere…</span>';
+      }
+      setTimeout(function () {
+        form.dataset.submitting = '';
+        if (btn && btn.dataset.guarded) {
+          btn.dataset.guarded = '';
+          btn.style.pointerEvents = '';
+          btn.style.opacity = '';
+          if (btn.dataset.origHtml != null) btn.innerHTML = btn.dataset.origHtml;
+        }
+      }, 8000);
+    }, true);
+  })();
+</script>
 </body>
 </html>
