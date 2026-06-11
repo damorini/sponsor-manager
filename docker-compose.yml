@@ -22,6 +22,11 @@ x-app-env: &app-env
   SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
   # Traduzione automatica IT->EN al salvataggio (auto-fill descrizioni preventivo).
   DEEPL_API_KEY: ${DEEPL_API_KEY:-}
+  # Dati bancari mostrati al cliente per il pagamento con bonifico.
+  BANK_TRANSFER_HOLDER: ${BANK_TRANSFER_HOLDER:-}
+  BANK_TRANSFER_BANK: ${BANK_TRANSFER_BANK:-}
+  BANK_TRANSFER_IBAN: ${BANK_TRANSFER_IBAN:-}
+  BANK_TRANSFER_BIC: ${BANK_TRANSFER_BIC:-}
 
 services:
   # PostgreSQL Database
