@@ -66,6 +66,6 @@ def test_stand_line_usa_prezzo_effettivo_del_blocco(evento, sponsor):
         contract_kind=ContractKind.MAIN, status=ContractStatus.DRAFT,
         contract_number='BK-26-001',
     )
-    prezzo, label, marker = _stand_price_and_label(contract)
+    prezzo, label, marker, _desc, _tipo = _stand_price_and_label(contract)
     assert prezzo == Decimal('2000.00')
     assert marker == f'block:{block.code}'

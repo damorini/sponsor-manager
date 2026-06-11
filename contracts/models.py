@@ -616,7 +616,7 @@ class Contract(SoftDeleteModel):
             marker_atteso = None
             if self.stand_id or self.stand_block_id:
                 try:
-                    _p, _l, marker_atteso = _stand_price_and_label(self)
+                    _p, _l, marker_atteso, _d, _t = _stand_price_and_label(self)
                 except ValueError:
                     marker_atteso = None
 
