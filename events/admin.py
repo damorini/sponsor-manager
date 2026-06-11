@@ -6,6 +6,7 @@ Usa il widget multilingua custom per name e description.
 from django import forms
 from catalog.models import CatalogService, Service
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Count, Sum, Q
 from django.utils.html import format_html
 from django.urls import reverse
@@ -32,9 +33,10 @@ class EventAdminForm(forms.ModelForm):
     catalog_services = forms.ModelMultipleChoiceField(
         queryset=CatalogService.objects.filter(is_active=True).order_by('display_order', 'code'),
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        widget=FilteredSelectMultiple("servizi del catalogo", is_stacked=False),
         label="Servizi disponibili (dal catalogo)",
-        help_text="Spunta i servizi del catalogo da offrire in questo evento.",
+        help_text="Sposta a destra i servizi del catalogo da offrire in questo evento "
+                  "(c'è una casella di ricerca). Al salvataggio vengono creati/disattivati.",
     )
 
     class Meta:
