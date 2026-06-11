@@ -1112,6 +1112,67 @@ def _addendum_title(contract):
     return titolo
 
 
+def _format_admission_services_table(docx_path):
+    """
+    Uniforma la tabella servizi della Domanda di Ammissione DOPO il render docxtpl
+    (il template resta intatto). Rende l'impaginazione professionale:
+      - font Arial 10pt su TUTTE le celle (uguale al resto del documento; le righe
+        dati nel template erano 9pt e con font ereditato, quindi "stonavano");
+      - numeri incolonnati a DESTRA (q.tà, Pr. Unit., Euro), descrizione a sinistra;
+      - intestazione centrata in grassetto con sfondo grigio chiaro.
+    Best-effort e idempotente: se la tabella non c'e', non fa nulla.
+    """
+    from docx import Document
+    from docx.shared import Pt
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+
+    BODY_FONT = 'Arial'
+    BODY_SIZE = Pt(10)
+
+    def _style_cell(cell, align, bold=None):
+        for para in cell.paragraphs:
+            para.alignment = align
+            for run in para.runs:
+                run.font.name = BODY_FONT
+                run.font.size = BODY_SIZE
+                if bold is not None:
+                    run.font.bold = bold
+
+    def _shade(cell, fill):
+        tcPr = cell._tc.get_or_add_tcPr()
+        for old in tcPr.findall(qn('w:shd')):
+            tcPr.remove(old)
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:val'), 'clear')
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:fill'), fill)
+        tcPr.append(shd)
+
+    doc = Document(str(docx_path))
+    for t in doc.tables:
+        header = ' '.join(c.text.strip().lower() for c in t.rows[0].cells)
+        if 'descrizione dei servizi' not in header and 'pr. unit' not in header:
+            continue
+        for ri, row in enumerate(t.rows):
+            qta = row.cells[0].text.strip()
+            row_text = ' '.join(c.text.strip().upper() for c in row.cells)
+            is_total = (not qta) and (('TOTALE' in row_text) or ('IVA' in row_text))
+            for ci, cell in enumerate(row.cells):
+                if ri == 0:
+                    _style_cell(cell, WD_ALIGN_PARAGRAPH.CENTER, bold=True)
+                    _shade(cell, 'D9D9D9')
+                elif is_total:
+                    _style_cell(cell, WD_ALIGN_PARAGRAPH.RIGHT, bold=True)
+                else:
+                    # riga dati: descrizione (col 1) a sinistra, numeri a destra
+                    align = WD_ALIGN_PARAGRAPH.LEFT if ci == 1 else WD_ALIGN_PARAGRAPH.RIGHT
+                    _style_cell(cell, align)
+        break
+    doc.save(str(docx_path))
+
+
 def generate_admission_request_pdf(contract):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
@@ -1163,6 +1224,14 @@ def generate_admission_request_pdf(contract):
     full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
     full_docx_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(full_docx_path))
+
+    # Impagina la tabella servizi in modo professionale (font uniforme,
+    # numeri a destra, intestazione evidenziata) sul docx generato.
+    try:
+        _format_admission_services_table(full_docx_path)
+    except Exception as e:
+        logger.warning("Formattazione tabella domanda non applicata per %s: %s",
+                       contract.contract_number, e)
 
     # Addendum: stesso modello, ma il titolo diventa "ADDENDUM AL CONTRATTO N° ...".
     if is_addendum:

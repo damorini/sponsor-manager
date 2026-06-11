@@ -23,6 +23,33 @@ class StandStatus(models.TextChoices):
     UNAVAILABLE = 'unavailable', 'Non disponibile'
 
 
+class StandType(TimeStampedModel):
+    """
+    Lista gestita (GLOBALE, condivisa tra i congressi) delle tipologie di stand.
+    Serve a popolare il menu a tendina del campo 'Tipologia' sullo Stand, così
+    si scelgono le tipologie standard invece di riscriverle (niente refusi).
+    Il campo Stand.stand_type resta comunque testo libero: per un singolo
+    congresso si può sempre digitare una tipologia su misura non presente in
+    lista. La tipologia (testo) continua a richiamare il pacchetto-servizio
+    'Spazio espositivo' della tipologia (vedi contracts/services/stand_line.py).
+    """
+    name = models.CharField(
+        max_length=50, unique=True, verbose_name="Tipologia",
+        help_text="Es. desk, stand, area nuda, premium. "
+                  "Compare nel menu a tendina degli stand.",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Attiva")
+    display_order = models.IntegerField(default=0, verbose_name="Ordine")
+
+    class Meta:
+        verbose_name = "Tipologia stand"
+        verbose_name_plural = "Tipologie stand"
+        ordering = ['display_order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
 class StandBlock(TranslatableMixin, TimeStampedModel):
     """
     Blocco logico di stand venduti come unico spazio.

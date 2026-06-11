@@ -14,7 +14,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Stand, StandBlock, StandStatus
+from .models import Stand, StandBlock, StandStatus, StandType
 
 
 class StandBlockForm(forms.ModelForm):
@@ -228,6 +228,15 @@ class StandBlockAdmin(admin.ModelAdmin):
         return _stand_status_badge(obj.status, obj.get_status_display())
 
 
+@admin.register(StandType)
+class StandTypeAdmin(admin.ModelAdmin):
+    """Lista gestita delle tipologie di stand (alimenta il menu a tendina)."""
+    list_display = ('name', 'is_active', 'display_order')
+    list_editable = ('is_active', 'display_order')
+    ordering = ('display_order', 'name')
+    search_fields = ('name',)
+
+
 class StandAdminForm(forms.ModelForm):
     """Form Stand con descrizione preventivo bilingue (IT/EN)."""
     quote_description = TranslatableJSONField(
@@ -241,11 +250,17 @@ class StandAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # 'Tipologia' (stand_type): tendina coi valori già usati, resta libero.
+        # 'Tipologia' (stand_type): menu a tendina dalla lista gestita GLOBALE
+        # (StandType) + eventuali valori liberi già usati. Resta testo libero,
+        # così per un singolo congresso si può digitare una tipologia su misura.
         if 'stand_type' in self.fields:
-            usate = (Stand.objects.exclude(stand_type='')
-                     .order_by('stand_type').values_list('stand_type', flat=True).distinct())
-            self.fields['stand_type'].widget = DatalistTextInput(options=list(usate))
+            gestite = list(StandType.objects.filter(is_active=True)
+                           .order_by('display_order', 'name')
+                           .values_list('name', flat=True))
+            usate = list(Stand.objects.exclude(stand_type='')
+                         .order_by('stand_type').values_list('stand_type', flat=True).distinct())
+            opzioni = list(dict.fromkeys(gestite + usate))  # unici, lista gestita prima
+            self.fields['stand_type'].widget = DatalistTextInput(options=opzioni)
 
 
 @admin.register(Stand)
