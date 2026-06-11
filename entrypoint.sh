@@ -23,17 +23,15 @@ python manage.py compilemessages -l en --ignore=venv --ignore=.venv
 echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Crea superuser se non esiste
-echo "👤 Creating superuser if needed..."
-python manage.py shell << PYTHON
-from django.contrib.auth import get_user_model
-User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
-    print("✅ Superuser created (admin/admin123)")
-else:
-    print("✅ Superuser already exists")
-PYTHON
+# Crea superuser SOLO se le credenziali sono fornite via ambiente
+# (DJANGO_SUPERUSER_USERNAME / _EMAIL / _PASSWORD nel .env). Nessuna
+# credenziale di default hardcoded: evita l'account admin/admin123.
+if [ -n "${DJANGO_SUPERUSER_USERNAME:-}" ] && [ -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]; then
+  echo "👤 Creating superuser from env if needed..."
+  python manage.py createsuperuser --noinput 2>/dev/null \
+    && echo "✅ Superuser created from env" \
+    || echo "✅ Superuser already exists (or not created)"
+fi
 
 echo "✅ Setup complete!"
 echo "🌐 Starting Gunicorn..."

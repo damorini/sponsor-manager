@@ -28,14 +28,11 @@ docker compose build web celery_worker celery_beat
 
 # 3. Avvia/aggiorna tutti i servizi. 'web' fa migrate+compilemessages+collectstatic
 #    all'avvio; db e redis restano up (zero downtime sul database).
+#    L'edge e' Caddy: serve gli statici dal volume condiviso, nessun reload da fare.
 echo "[$(date)] Avvio servizi..."
 docker compose up -d
 
-# 4. Reload nginx (per eventuali nuovi file statici)
-echo "[$(date)] Reload nginx..."
-docker compose exec -T nginx nginx -s reload || true
-
-# 5. Pulizia immagini Docker vecchie
+# 4. Pulizia immagini Docker vecchie
 echo "[$(date)] Pulizia immagini vecchie..."
 docker image prune -f
 
