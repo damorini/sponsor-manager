@@ -178,6 +178,35 @@ class EventoFilter(admin.SimpleListFilter):
         return queryset
 
 
+class TodoFilter(admin.SimpleListFilter):
+    """Scorciatoie operative: filtra i contratti per "cosa fare adesso"."""
+    title = "Cose da fare"
+    parameter_name = "todo"
+
+    def lookups(self, request, model_admin):
+        return (
+            ('da_inviare', 'Preventivi da inviare'),
+            ('in_attesa_firma', 'In attesa di firma'),
+            ('firmati_senza_scadenze', 'Firmati senza scadenze'),
+            ('carrelli', 'Carrelli abbandonati'),
+        )
+
+    def queryset(self, request, qs):
+        v = self.value()
+        if v == 'da_inviare':
+            return qs.filter(contract_kind=ContractKind.MAIN, status=ContractStatus.DRAFT)
+        if v == 'in_attesa_firma':
+            return qs.filter(status=ContractStatus.SENT)
+        if v == 'firmati_senza_scadenze':
+            return qs.filter(
+                status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
+                deadlines__isnull=True,
+            ).distinct()
+        if v == 'carrelli':
+            return qs.filter(contract_kind=ContractKind.ADDON, status=ContractStatus.DRAFT)
+        return qs
+
+
 @admin.register(Contract)
 class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.display(description="Numero contratto")
@@ -193,7 +222,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         'total_display', 'origin_badge', 'created_at_short',
     )
     list_filter = (
-        EventoFilter,
+        TodoFilter, EventoFilter,
         'status', 'contract_kind', 'origin', 'language',
         'vat_applicable', DeletedListFilter,
     )
@@ -247,6 +276,16 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     def get_queryset(self, request):
         from core.event_scope import scope_by_event
         return scope_by_event(request, super().get_queryset(request), 'event')
+
+    def get_changeform_initial_data(self, request):
+        """Pre-compila evento/sponsor da querystring (es. dal pulsante
+        '+ Nuovo contratto' di una lista filtrata o della scheda Sponsor)."""
+        initial = super().get_changeform_initial_data(request)
+        for k in ('event', 'sponsor'):
+            v = request.GET.get(k)
+            if v:
+                initial.setdefault(k, v)
+        return initial
 
     def get_search_results(self, request, queryset, search_term):
         queryset, may_dup = super().get_search_results(request, queryset, search_term)

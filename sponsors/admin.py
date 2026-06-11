@@ -630,10 +630,13 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             return '—'
 
         contracts_url = reverse('admin:contracts_contract_changelist') + f'?sponsor__id__exact={obj.pk}'
+        nuovo_url = reverse('admin:contracts_contract_add') + f'?sponsor={obj.pk}'
 
         return format_html(
-            '<a href="{}" class="button">Vedi tutti i contratti di questo sponsor</a>',
-            contracts_url
+            '<a href="{}" class="button">Vedi tutti i contratti di questo sponsor</a> '
+            '<a href="{}" class="button" style="background:#2e7d32;color:#fff;">'
+            '+ Nuovo contratto per questo sponsor</a>',
+            contracts_url, nuovo_url,
         )
 
 
