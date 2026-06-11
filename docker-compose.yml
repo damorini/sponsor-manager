@@ -20,6 +20,8 @@ x-app-env: &app-env
   # Lascia True in produzione (HTTPS). Metti False solo se il TLS è gestito
   # da un proxy davanti o per collaudo locale in HTTP.
   SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-True}
+  # Traduzione automatica IT->EN al salvataggio (auto-fill descrizioni preventivo).
+  DEEPL_API_KEY: ${DEEPL_API_KEY:-}
 
 services:
   # PostgreSQL Database
