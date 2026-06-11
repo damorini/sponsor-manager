@@ -11,6 +11,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from django.db.models import Count, Q, Func, CharField
 from django.db.models.functions import Lower
+from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
 from django.utils.html import format_html
 
@@ -165,7 +166,7 @@ class PortalMessageInline(admin.TabularInline):
 
 
 @admin.register(Sponsor)
-class SponsorAdmin(admin.ModelAdmin):
+class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'impersona_link',
         'legal_name', 'display_name_or_dash', 'vat_number',
@@ -174,7 +175,7 @@ class SponsorAdmin(admin.ModelAdmin):
     )
     list_display_links = ('legal_name',)
     list_filter = (
-        'industry', 'address_country',
+        'industry', 'address_country', DeletedListFilter,
     )
     search_fields = (
         'legal_name', 'display_name', 'vat_number', 'tax_code',
@@ -184,7 +185,7 @@ class SponsorAdmin(admin.ModelAdmin):
                        'logo_preview', 'conversazione_display')
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
-    actions = ['action_generate_client_summary', 'action_compose_email']
+    actions = ['action_generate_client_summary', 'action_compose_email', 'action_restore']
 
     def save_formset(self, request, form, formset, change):
         from django.utils import timezone

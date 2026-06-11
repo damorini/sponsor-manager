@@ -16,6 +16,7 @@ Azioni admin custom:
 from django import forms
 from django.contrib import admin, messages
 from core.admin_filters import evento_filter
+from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
@@ -178,7 +179,7 @@ class EventoFilter(admin.SimpleListFilter):
 
 
 @admin.register(Contract)
-class ContractAdmin(admin.ModelAdmin):
+class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.display(description="Numero contratto")
     def contract_number_display(self, obj):
         # Mostra il numero; sui nuovi (non salvati) avvisa che e automatico
@@ -194,7 +195,7 @@ class ContractAdmin(admin.ModelAdmin):
     list_filter = (
         EventoFilter,
         'status', 'contract_kind', 'origin', 'language',
-        'vat_applicable',
+        'vat_applicable', DeletedListFilter,
     )
     search_fields = (
         'contract_number', 'sponsor__legal_name', 'sponsor__vat_number',
@@ -349,7 +350,7 @@ class ContractAdmin(admin.ModelAdmin):
                'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
                'action_registra_bonifico',
-               'action_genera_domanda_ammissione']
+               'action_genera_domanda_ammissione', 'action_restore']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):
