@@ -219,15 +219,15 @@ def send_operator_alerts():
         logger.info("send_operator_alerts: nulla di urgente, skip email")
         return
 
-    # Trova destinatari (admin del sistema)
+    # Destinatari: admin E operatori del sistema (chi lavora le pratiche).
     User = get_user_model()
     admins = list(User.objects.filter(
-        role='admin',
+        role__in=['admin', 'operator'],
         is_active=True,
     ).exclude(email=''))
 
     if not admins:
-        logger.warning("Nessun admin attivo, alert non inviato")
+        logger.warning("Nessun admin/operatore attivo, alert non inviato")
         return
 
     recipients = [u.email for u in admins]

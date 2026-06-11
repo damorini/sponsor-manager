@@ -24,10 +24,18 @@ DEBUG = False
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
 
-# Default: https://<ciascun host ammesso>. Sovrascrivibile via env.
+# Aggiungi sempre il loopback: l'healthcheck del container fa una GET su
+# http://localhost:8000/health/ e Django risponderebbe 400 (DisallowedHost)
+# se 'localhost' non e' tra gli host ammessi -> container falso-"unhealthy".
+for _h in ('127.0.0.1', 'localhost'):
+    if _h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(_h)
+
+# CSRF: solo gli host pubblici "veri" come origin https (NON il loopback).
+_csrf_hosts = [h for h in ALLOWED_HOSTS if h not in ('127.0.0.1', 'localhost')]
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default=','.join(f'https://{h}' for h in ALLOWED_HOSTS),
+    default=','.join(f'https://{h}' for h in _csrf_hosts),
     cast=Csv(),
 )
 
