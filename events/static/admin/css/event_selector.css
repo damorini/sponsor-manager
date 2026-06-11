@@ -1,0 +1,16 @@
+/* Form Evento: selettore servizi del catalogo (FilteredSelectMultiple). */
+
+/* Nasconde l'etichetta ridondante del campo: il widget a due finestre ha
+   gia' i suoi titoli ("disponibili" / "scelti"). */
+.field-catalog_services > div > label[for="id_catalog_services"],
+.form-row.field-catalog_services label[for="id_catalog_services"] {
+    display: none;
+}
+
+/* Finestre piu' alte, cosi' si vedono piu' servizi senza scrollare. */
+.selector select,
+.selector-available select,
+.selector-chosen select {
+    height: 30em;
+    min-height: 30em;
+}

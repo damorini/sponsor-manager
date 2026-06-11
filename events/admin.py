@@ -59,6 +59,9 @@ class EventAdminForm(forms.ModelForm):
 class EventAdmin(admin.ModelAdmin):
     form = EventAdminForm
 
+    class Media:
+        css = {'all': ('admin/css/event_selector.css',)}
+
     list_display = (
         'name_display', 'event_type', 'start_date', 'status_badge',
         'sponsors_count', 'revenue_display', 'languages_display',
