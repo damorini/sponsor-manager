@@ -132,11 +132,10 @@
                 {% endif %}
                 <td valign="top" style="color:#6b7280; font-size:12px; line-height:1.6;">
                   {% if org_name %}<strong style="color:#374151;">{{ org_name }}</strong><br>{% endif %}
-                  {% if org_address %}{{ org_address|linebreaksbr }}<br>{% endif %}
-                  {% if org_phone %}Tel: {{ org_phone }}<br>{% endif %}
-                  {% if org_email %}Email: <a href="mailto:{{ org_email }}" style="color:#1d6534;">{{ org_email }}</a><br>{% endif %}
-                  {% if org_website %}<a href="{{ org_website }}" style="color:#1d6534;">{{ org_website }}</a><br>{% endif %}
-                  {% if org_vat %}P.IVA {{ org_vat }}{% if org_rea %} · REA {{ org_rea }}{% endif %}{% elif org_rea %}REA {{ org_rea }}{% endif %}
+                  {% if org_address_compact %}{{ org_address_compact }}<br>{% elif org_address %}{{ org_address|linebreaksbr }}<br>{% endif %}
+                  {% if org_phone %}{{ org_phone }}<br>{% endif %}
+                  {% if org_email %}Email: <a href="mailto:{{ org_email }}" style="color:#1d6534;">{{ org_email }}</a>{% endif %}{% if org_website %}{% if org_email %} &middot; {% endif %}<a href="{% if 'http' in org_website %}{{ org_website }}{% else %}https://{{ org_website }}{% endif %}" style="color:#1d6534;">{{ org_website }}</a>{% endif %}{% if org_email or org_website %}<br>{% endif %}
+                  {% if org_vat %}P.IVA {{ org_vat }}{% if org_rea %} &middot; REA {{ org_rea }}{% endif %}{% elif org_rea %}REA {{ org_rea }}{% endif %}
                 </td>
               </tr>
             </table>

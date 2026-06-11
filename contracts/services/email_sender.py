@@ -97,6 +97,33 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
     except Exception:
         _org = None
 
+    _site = getattr(settings, 'SITE_URL', '').rstrip('/')
+
+    # Logo footer: quello caricato in OrganizerSettings, altrimenti il logo
+    # brand VALET dagli static (cosi' la logo c'e' anche senza upload).
+    if _org and _org.logo:
+        _org_logo_url = _site + _org.logo.url
+    else:
+        try:
+            from django.templatetags.static import static as _static
+            _org_logo_url = _site + _static('branding/valet_logo.png')
+        except Exception:
+            _org_logo_url = ''
+
+    # Indirizzo segreteria compattato su una riga (le righe diventano " · ").
+    _org_addr_raw = (_org.address if _org else '') or ''
+    _org_addr_compact = ' · '.join(
+        ' '.join(line.split()) for line in _org_addr_raw.splitlines() if line.strip())
+
+    # Email di contatto segreteria: primo indirizzo del campo OrganizerSettings
+    # (gestisce "a@x; b@y"), con fallback ai settings. Single source of truth.
+    _org_email = (_org.email if _org else '') or ''
+    _first_email = (_org_email.replace(';', ',').split(',')[0].strip()
+                    if _org_email else '')
+    _support_email = (_first_email
+                      or getattr(settings, 'SUPPORT_EMAIL', '')
+                      or settings.DEFAULT_FROM_EMAIL)
+
     common = {
         'language': language,
         'organizer_name': getattr(
@@ -104,16 +131,17 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
             getattr(settings, 'DEFAULT_ORGANIZER_LEGAL_NAME', 'Sponsor Manager')
         ),
         'organizer_address': getattr(settings, 'ORGANIZER_ADDRESS', ''),
-        'support_email': getattr(settings, 'SUPPORT_EMAIL', settings.DEFAULT_FROM_EMAIL),
-        'site_url': getattr(settings, 'SITE_URL', '').rstrip('/'),
+        'support_email': _support_email,
+        'site_url': _site,
         'org_name': (_org.name if _org and _org.name else None) or getattr(settings, 'ORGANIZER_DISPLAY_NAME', ''),
-        'org_address': (_org.address if _org else '') ,
-        'org_email': (_org.email if _org else '') ,
+        'org_address': _org_addr_raw,
+        'org_address_compact': _org_addr_compact,
+        'org_email': _first_email or _org_email,
         'org_phone': (_org.phone if _org else '') ,
         'org_website': (_org.website if _org else '') ,
         'org_vat': (_org.vat_number if _org else '') ,
         'org_rea': (_org.rea if _org else '') ,
-        'org_logo_url': ((getattr(settings, 'SITE_URL', '').rstrip('/') + _org.logo.url) if (_org and _org.logo) else ''),
+        'org_logo_url': _org_logo_url,
         'brand_logo_url': getattr(settings, 'BRAND_LOGO_URL', ''),
         'brand_primary_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'portal_url': getattr(settings, 'PORTAL_URL', '/portal/'),
