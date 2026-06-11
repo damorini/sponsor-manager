@@ -7,10 +7,16 @@
     display: none;
 }
 
-/* Finestre piu' alte, cosi' si vedono piu' servizi senza scrollare. */
+/* Finestre piu' alte, cosi' si vedono piu' servizi senza scrollare.
+   NB: Django 5.1 imposta l'altezza con regole ad alta specificita'
+   (.selector select = 17.2em e .selector .selector-chosen--with-filtered
+   select = 14em sulla finestra "scelti", che ha il filtro). Servono quindi
+   sia i selettori specifici sia !important, altrimenti l'override non vince.
+   min(...,72vh) evita di sforare su schermi bassi. */
 .selector select,
-.selector-available select,
-.selector-chosen select {
-    height: 30em;
-    min-height: 30em;
+.selector .selector-available select,
+.selector .selector-chosen select,
+.selector .selector-chosen--with-filtered select {
+    height: min(40em, 72vh) !important;
+    min-height: 30em !important;
 }
