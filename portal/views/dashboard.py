@@ -51,7 +51,7 @@ def sponsor_required(view_func):
 
         # PRIVACY: al primo accesso (o se cambia la versione) serve la presa
         # visione dell'informativa. Non vale durante l'impersonazione dell'operatore.
-        _allow_privacy = {'privacy_consent', 'privacy_policy', 'logout', 'impersonate_stop'}
+        _allow_privacy = {'privacy_consent', 'privacy_policy', 'logout', 'impersonate_stop', 'guida'}
         if _name not in _allow_privacy and not _impersonando:
             from core.models import OrganizerSettings
             versione = OrganizerSettings.load().privacy_policy_version or '1.0'
@@ -60,7 +60,7 @@ def sponsor_required(view_func):
 
         # Serve almeno un contatto OPERATIVO. Senza, manda a "I miei dati".
         _allow = {'profile', 'logout', 'impersonate_stop',
-                  'privacy_consent', 'privacy_policy'}
+                  'privacy_consent', 'privacy_policy', 'guida'}
         if _name not in _allow:
             _has_op = contact.sponsor.contacts.filter(
                 roles__contains=['operational']).exists()
@@ -252,6 +252,18 @@ def payments_view(request):
         'payment_items': items,
         'totale_da_pagare': totale,
     })
+
+
+# ============================================================================
+# Guida rapida (consultazione veloce per lo sponsor)
+# ============================================================================
+
+@sponsor_required
+def guida_view(request):
+    """Guida rapida del portale: istruzioni a schemi per le operazioni tipiche.
+    Raggiungibile sempre (whitelist nei gate del decorator), utile anche al
+    primo accesso quando l'anagrafica non e' ancora completa."""
+    return render(request, 'portal/guida.html', {})
 
 
 # ============================================================================

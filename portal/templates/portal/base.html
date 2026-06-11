@@ -139,6 +139,9 @@
       <span class="bg-white text-brand-700 text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
       {% endif %}
     </a>
+    <div class="my-1.5 border-t border-white/10"></div>
+    <a href="{% url 'portal:guida' %}"
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'guida' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-help-circle text-base shrink-0"></i>{% trans "Guida rapida" %}</a>
   </nav>
 
   <div class="border-t border-white/10 px-4 py-4">

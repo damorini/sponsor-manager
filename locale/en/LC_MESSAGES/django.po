@@ -3576,3 +3576,138 @@ msgstr "All set"
 
 msgid "Accesso riservato agli utenti abilitati. Problemi con l'accesso? Scrivi a"
 msgstr "Access restricted to authorised users. Trouble signing in? Write to"
+
+msgid "Guida rapida"
+msgstr "Quick guide"
+
+msgid "Tutto quello che puoi fare nel portale, in pochi passi. Cerca l'operazione che ti serve qui sotto."
+msgstr "Everything you can do in the portal, in a few steps. Find the task you need below."
+
+msgid "Il tuo percorso, in breve"
+msgstr "Your journey, in short"
+
+msgid "Conferma la domanda di ammissione"
+msgstr "Confirm the admission request"
+
+msgid "Carica i materiali delle scadenze"
+msgstr "Upload the materials for the deadlines"
+
+msgid "Paga acconto e saldo"
+msgstr "Pay deposit and balance"
+
+msgid "Acquista servizi extra"
+msgstr "Buy extra services"
+
+msgid "facoltativo"
+msgstr "optional"
+
+msgid "Come si fa"
+msgstr "How to"
+
+msgid "Caricare i file delle scadenze"
+msgstr "Upload the deadline files"
+
+msgid "Vai a I miei documenti"
+msgstr "Go to My documents"
+
+msgid "Vedere e gestire i pagamenti"
+msgstr "View and manage payments"
+
+msgid "Vedi importo e data di ogni rata (acconto e saldo)."
+msgstr "See the amount and date of each instalment (deposit and balance)."
+
+msgid "Vai a Pagamenti"
+msgstr "Go to Payments"
+
+msgid "Acquistare servizi"
+msgstr "Buy services"
+
+msgid "Vai al Carrello"
+msgstr "Go to the Cart"
+
+msgid "Confermare la domanda di ammissione"
+msgstr "Confirm the admission request"
+
+msgid "Confermato: diventa la tua domanda di ammissione."
+msgstr "Confirmed: it becomes your admission request."
+
+msgid "Scrivere alla segreteria"
+msgstr "Write to the secretariat"
+
+msgid "Scrivi o rispondi: ti avvisiamo via email."
+msgstr "Write or reply: we notify you by email."
+
+msgid "Vai ai Messaggi"
+msgstr "Go to Messages"
+
+msgid "Completare i tuoi dati"
+msgstr "Complete your details"
+
+msgid "Scegli la lingua e cambia la password al primo accesso (icona occhio per vederla)."
+msgstr "Choose the language and change your password on first login (eye icon to reveal it)."
+
+msgid "Vai a I miei dati"
+msgstr "Go to My details"
+
+msgid "Cosa significano i badge"
+msgstr "What the badges mean"
+
+msgid "Materiali / scadenze"
+msgstr "Materials / deadlines"
+
+msgid "ancora da caricare"
+msgstr "still to upload"
+
+msgid "ricevuto da noi"
+msgstr "received by us"
+
+msgid "rata in attesa"
+msgstr "instalment pending"
+
+msgid "incassato"
+msgstr "collected"
+
+msgid "confermata"
+msgstr "confirmed"
+
+msgid "Serve aiuto?"
+msgstr "Need help?"
+
+msgid "Apri <strong>I miei documenti</strong> e scegli l'evento."
+msgstr "Open <strong>My documents</strong> and choose the event."
+
+msgid "Apri la scadenza e premi <strong>Carica file</strong> (PDF o immagini)."
+msgstr "Open the deadline and press <strong>Upload file</strong> (PDF or images)."
+
+msgid "Fatto: la scadenza diventa <strong>Inviato</strong>."
+msgstr "Done: the deadline becomes <strong>Sent</strong>."
+
+msgid "Apri <strong>Pagamenti</strong> dal menu."
+msgstr "Open <strong>Payments</strong> from the menu."
+
+msgid "I badge indicano se è <strong>Firmato</strong> e se è <strong>Pagato</strong>."
+msgstr "The badges show whether it is <strong>Signed</strong> and whether it is <strong>Paid</strong>."
+
+msgid "Apri <strong>Acquista servizi</strong> e scegli quello che ti serve."
+msgstr "Open <strong>Buy services</strong> and choose the one you need."
+
+msgid "Premi <strong>Aggiungi al carrello</strong>."
+msgstr "Press <strong>Add to cart</strong>."
+
+msgid "Vai al <strong>Carrello</strong> e paga (PayPal, carta o bonifico)."
+msgstr "Go to the <strong>Cart</strong> and pay (PayPal, card or bank transfer)."
+
+msgid "Ricevi il preventivo via email o in <strong>I miei documenti</strong>."
+msgstr "You receive the quote by email or in <strong>My documents</strong>."
+
+msgid "Aprilo e premi <strong>Vedi e conferma</strong>."
+msgstr "Open it and press <strong>View and confirm</strong>."
+
+msgid "Apri <strong>Archivio messaggi</strong>."
+msgstr "Open <strong>Message archive</strong>."
+
+msgid "Apri <strong>I miei dati</strong> e compila l'anagrafica (serve per i documenti)."
+msgstr "Open <strong>My details</strong> and fill in your company data (needed for the documents)."
+
+msgid "Scrivi alla segreteria dal menu <strong>Archivio messaggi</strong>, oppure contattaci all'indirizzo"
+msgstr "Write to the secretariat from the <strong>Message archive</strong> menu, or contact us at"

@@ -1,0 +1,155 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Guida rapida" %}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+  <!-- Intestazione -->
+  <div class="mb-8">
+    <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 mb-4"><i class="ti ti-help-circle text-2xl"></i></span>
+    <h1 class="text-3xl font-bold text-gray-900 leading-tight">{% trans "Guida rapida" %}</h1>
+    <p class="mt-2 text-gray-500">{% trans "Tutto quello che puoi fare nel portale, in pochi passi. Cerca l'operazione che ti serve qui sotto." %}</p>
+  </div>
+
+  <!-- IL PERCORSO IN 4 PASSI -->
+  <h2 class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-3">{% trans "Il tuo percorso, in breve" %}</h2>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">1</span><i class="ti ti-file-check text-brand-600 text-xl"></i></div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Conferma la domanda di ammissione" %}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">2</span><i class="ti ti-paperclip text-brand-600 text-xl"></i></div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Carica i materiali delle scadenze" %}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">3</span><i class="ti ti-cash text-brand-600 text-xl"></i></div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Paga acconto e saldo" %}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-400 text-white text-sm font-bold">4</span><i class="ti ti-building-store text-brand-600 text-xl"></i></div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Acquista servizi extra" %} <span class="text-gray-400 font-normal">({% trans "facoltativo" %})</span></div>
+    </div>
+  </div>
+
+  <!-- COME SI FA -->
+  <h2 class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-3">{% trans "Come si fa" %}</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-10">
+
+    <!-- Caricare file scadenze -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-upload text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Caricare i file delle scadenze" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>I miei documenti</strong> e scegli l'evento.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Apri la scadenza e premi <strong>Carica file</strong> (PDF o immagini).{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}Fatto: la scadenza diventa <strong>Inviato</strong>.{% endblocktrans %}</span></li>
+      </ol>
+      <a href="{% url 'portal:contracts_list' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai a I miei documenti" %}<i class="ti ti-arrow-right"></i></a>
+    </div>
+
+    <!-- Pagamenti -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-cash text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Vedere e gestire i pagamenti" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>Pagamenti</strong> dal menu.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% trans "Vedi importo e data di ogni rata (acconto e saldo)." %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}I badge indicano se è <strong>Firmato</strong> e se è <strong>Pagato</strong>.{% endblocktrans %}</span></li>
+      </ol>
+      <a href="{% url 'portal:payments' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai a Pagamenti" %}<i class="ti ti-arrow-right"></i></a>
+    </div>
+
+    <!-- Acquistare servizi -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-building-store text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Acquistare servizi" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>Acquista servizi</strong> e scegli quello che ti serve.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Premi <strong>Aggiungi al carrello</strong>.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}Vai al <strong>Carrello</strong> e paga (PayPal, carta o bonifico).{% endblocktrans %}</span></li>
+      </ol>
+      <a href="{% url 'portal:cart_view' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai al Carrello" %}<i class="ti ti-arrow-right"></i></a>
+    </div>
+
+    <!-- Confermare domanda di ammissione -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-file-check text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Confermare la domanda di ammissione" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Ricevi il preventivo via email o in <strong>I miei documenti</strong>.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Aprilo e premi <strong>Vedi e conferma</strong>.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% trans "Confermato: diventa la tua domanda di ammissione." %}</span></li>
+      </ol>
+    </div>
+
+    <!-- Messaggi -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-mail text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Scrivere alla segreteria" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>Archivio messaggi</strong>.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% trans "Scrivi o rispondi: ti avvisiamo via email." %}</span></li>
+      </ol>
+      <a href="{% url 'portal:messages' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai ai Messaggi" %}<i class="ti ti-arrow-right"></i></a>
+    </div>
+
+    <!-- I miei dati -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-user text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Completare i tuoi dati" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>I miei dati</strong> e compila l'anagrafica (serve per i documenti).{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% trans "Scegli la lingua e cambia la password al primo accesso (icona occhio per vederla)." %}</span></li>
+      </ol>
+      <a href="{% url 'portal:profile' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai a I miei dati" %}<i class="ti ti-arrow-right"></i></a>
+    </div>
+
+  </div>
+
+  <!-- LEGENDA BADGE -->
+  <h2 class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-3">{% trans "Cosa significano i badge" %}</h2>
+  <div class="bg-white rounded-xl shadow-sm p-6 mb-10">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
+      <div>
+        <div class="font-semibold text-gray-900 mb-2">{% trans "Materiali / scadenze" %}</div>
+        <div class="flex items-center gap-2 mb-1.5"><span class="text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2.5 py-0.5">{% trans "Da inviare" %}</span><span class="text-gray-500">{% trans "ancora da caricare" %}</span></div>
+        <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Inviato" %}</span><span class="text-gray-500">{% trans "ricevuto da noi" %}</span></div>
+      </div>
+      <div>
+        <div class="font-semibold text-gray-900 mb-2">{% trans "Pagamenti" %}</div>
+        <div class="flex items-center gap-2 mb-1.5"><span class="text-xs font-semibold text-amber-700 bg-amber-100 rounded-full px-2.5 py-0.5">{% trans "Da pagare" %}</span><span class="text-gray-500">{% trans "rata in attesa" %}</span></div>
+        <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Pagato" %}</span><span class="text-gray-500">{% trans "incassato" %}</span></div>
+      </div>
+      <div>
+        <div class="font-semibold text-gray-900 mb-2">{% trans "Domanda di ammissione" %}</div>
+        <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Firmato" %}</span><span class="text-gray-500">{% trans "confermata" %}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AIUTO -->
+  <div class="bg-brand-50 rounded-xl p-6 flex items-start gap-4">
+    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-brand-600"><i class="ti ti-lifebuoy text-xl"></i></span>
+    <div>
+      <h3 class="text-base font-bold text-gray-900">{% trans "Serve aiuto?" %}</h3>
+      <p class="text-sm text-gray-600 mt-1">{% blocktrans %}Scrivi alla segreteria dal menu <strong>Archivio messaggi</strong>, oppure contattaci all'indirizzo{% endblocktrans %} <a href="mailto:helpdesk@valet.it" class="font-semibold text-brand-700 hover:underline">helpdesk@valet.it</a>.</p>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
