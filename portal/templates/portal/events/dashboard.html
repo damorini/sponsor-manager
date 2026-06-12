@@ -6,7 +6,10 @@
 {% block content %}
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-  <a href="{% url 'portal:events' %}" class="text-brand-500 text-sm font-medium">{% trans "← I miei eventi" %}</a>
+  <div class="flex items-center justify-between gap-3">
+    <a href="{% url 'portal:events' %}" class="text-brand-500 text-sm font-medium">{% trans "← I miei eventi" %}</a>
+    <a href="{% url 'portal:contracts_list' %}" class="text-brand-500 text-sm font-semibold">{% trans "I miei documenti →" %}</a>
+  </div>
 
   <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ event.get_name }}</h1>
   <p class="text-gray-500 mb-4">

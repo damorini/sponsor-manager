@@ -51,7 +51,9 @@
   <h2 class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-3">{% trans "Prossimi eventi" %}</h2>
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
     {% for ev in prossimi_eventi %}
-    <a href="{% url 'portal:event_dashboard' ev.id %}"
+    {# Il click sull'evento porta a "I miei documenti" (hub eventi del cliente),
+       non alla pagina servizi: da li il cliente sceglie l'evento e prosegue. #}
+    <a href="{% url 'portal:contracts_list' %}"
        class="group bg-white rounded-xl shadow-sm p-5 flex items-center gap-4 hover:shadow-md transition-shadow">
       <span class="flex items-center justify-center h-11 w-11 rounded-lg bg-brand-50 text-brand-600 shrink-0"><i class="ti ti-calendar-event text-2xl"></i></span>
       <div class="min-w-0 flex-1">

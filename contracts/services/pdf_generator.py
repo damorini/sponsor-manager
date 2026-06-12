@@ -1338,6 +1338,19 @@ def generate_quote_pdf_html(contract):
     try:
         if _org and _org.logo:
             org_logo_url = (site_url + _org.logo.url) if site_url else _org.logo.url
+        else:
+            # Nessun logo caricato in OrganizerSettings: usa il logo brand VALET
+            # dagli static (come fa il footer delle email). Per WeasyPrint
+            # preferiamo il path su disco (file://), cosi' compare SEMPRE nel PDF
+            # senza dipendere dalla raggiungibilita' di rete; in fallback l'URL
+            # statico assoluto.
+            from django.contrib.staticfiles import finders as _finders
+            _logo_fs = _finders.find('branding/valet_logo.png')
+            if _logo_fs:
+                org_logo_url = Path(_logo_fs).as_uri()
+            else:
+                from django.templatetags.static import static as _static
+                org_logo_url = (site_url + _static('branding/valet_logo.png')) if site_url else _static('branding/valet_logo.png')
     except Exception:
         org_logo_url = ''
     org = {
