@@ -38,6 +38,7 @@
           <th class="num">Incassato</th>
           <th class="num">Residuo</th>
           <th>Prossima scadenza</th>
+          <th></th>
         </tr></thead>
         <tbody>
           {% for r in righe %}
@@ -54,6 +55,13 @@
                   {{ r.scadenza|date:"d/m/Y" }}{% if r.scadenza < oggi %} (scaduta){% endif %}
                 </span>
               {% else %}<span style="color: var(--ink-mute);">—</span>{% endif %}
+            </td>
+            <td>
+              <a href="{% url 'core:cruscotto_registra_incasso' r.contract.id %}"
+                 class="cr-btn cr-btn--sm"
+                 style="white-space:nowrap; font-size:12px; padding:4px 10px;">
+                + Registra incasso
+              </a>
             </td>
           </tr>
           {% endfor %}

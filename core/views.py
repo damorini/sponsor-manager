@@ -1,7 +1,7 @@
 """View del cruscotto: home con eventi in programmazione."""
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.views.decorators import staff_member_required
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -183,7 +183,7 @@ def evento_dettaglio(request, pk):
     n_stand_totali = Stand.objects.filter(event=ev).count()
 
     # ---- Incassi (sui contratti confermati) ----
-    from contracts.payments import PaymentStatus
+    from contracts.payments import PaymentStatus, PaymentMethodChoice
     confermati_qs = contratti_ev.filter(status__in=CONFIRMED)
     tot_confermato = Decimal('0.00')
     incassato = Decimal('0.00')
@@ -192,10 +192,33 @@ def evento_dettaglio(request, pk):
         for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
             incassato += (p.amount_gross or Decimal('0.00'))
     da_incassare = tot_confermato - incassato
+
+    # Bonifici in attesa di conferma (PENDING + method=bank_transfer)
+    from contracts.payments import Payment as _Payment
+    bonifici_in_attesa = _Payment.objects.filter(
+        contract__event=ev,
+        status=PaymentStatus.PENDING,
+        payment_method=PaymentMethodChoice.BANK_TRANSFER,
+    ).count()
+
+    # Email fallite collegate ai contratti dell'evento
+    from shared.models import Communication, CommunicationStatus
+    from django.contrib.contenttypes.models import ContentType
+    from contracts.models import Contract as _Contract
+    _ct = ContentType.objects.get_for_model(_Contract)
+    _contract_ids = list(contratti_ev.values_list('id', flat=True))
+    email_fallite = Communication.objects.filter(
+        content_type=_ct,
+        object_id__in=_contract_ids,
+        status=CommunicationStatus.FAILED,
+    ).count()
+
     incassi = {
         'incassato': incassato,
         'da_incassare': da_incassare,
         'tot_confermato': tot_confermato,
+        'bonifici_in_attesa': bonifici_in_attesa,
+        'email_fallite': email_fallite,
     }
 
     try:
@@ -633,6 +656,76 @@ def da_incassare_evento(request, pk):
         'oggi': date.today(),
     }
     return render(request, 'cruscotto/da_incassare.html', context)
+
+
+@staff_member_required
+def registra_incasso(request, pk):
+    """Registra manualmente un incasso (bonifico o altro) su un contratto."""
+    from decimal import Decimal, InvalidOperation
+    from django.http import Http404
+    from django.contrib import messages
+    from django.utils import timezone
+    from contracts.models import Contract, ContractStatus
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+
+    try:
+        c = Contract.objects.select_related('sponsor', 'event').get(pk=pk)
+    except Contract.DoesNotExist:
+        raise Http404("Contratto non trovato")
+
+    CONFIRMED = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+    if c.status not in CONFIRMED:
+        messages.error(request, "Il contratto non è in uno stato confermato.")
+        return redirect('core:cruscotto_da_incassare', pk=c.event_id)
+
+    error = None
+    if request.method == 'POST':
+        try:
+            amount = Decimal(request.POST.get('amount_gross', '').replace(',', '.'))
+            if amount <= 0:
+                raise ValueError("Importo non valido")
+        except (InvalidOperation, ValueError):
+            error = "Inserisci un importo valido (es. 300.00)."
+        else:
+            method = request.POST.get('payment_method', PaymentMethodChoice.BANK_TRANSFER)
+            reference = request.POST.get('bank_transfer_reference', '')
+            notes = request.POST.get('notes', '')
+            payment = Payment(
+                contract=c,
+                payment_method=method,
+                amount_gross=amount,
+                status=PaymentStatus.SUCCEEDED,
+                completed_at=timezone.now(),
+                notes=notes,
+            )
+            if reference:
+                payment.bank_transfer_reference = reference
+                payment.bank_transfer_received_at = timezone.now().date()
+            payment.save()  # triggera reconcile_payment_deadlines() in Payment.save()
+            messages.success(
+                request,
+                f"Incasso di € {amount:.2f} registrato per {c.contract_number}."
+            )
+            return redirect('core:cruscotto_da_incassare', pk=c.event_id)
+
+    try:
+        nome_ev = c.event.get_name() if hasattr(c.event, 'get_name') else str(c.event)
+    except Exception:
+        nome_ev = str(c.event)
+
+    method_choices = [
+        (PaymentMethodChoice.BANK_TRANSFER, 'Bonifico bancario'),
+        (PaymentMethodChoice.MANUAL, 'Manuale / altro'),
+    ]
+    context = {
+        **admin_site.each_context(request),
+        'title': f'Registra incasso · {c.contract_number}',
+        'contratto': c,
+        'nome_evento': nome_ev,
+        'method_choices': method_choices,
+        'error': error,
+    }
+    return render(request, 'cruscotto/registra_incasso.html', context)
 
 
 def _esegui_import_excel(request, comando, redirect_name):

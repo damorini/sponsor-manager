@@ -45,6 +45,18 @@
         <div class="cr-value">€ {{ incassi.da_incassare|floatformat:2|intcomma }}</div>
         <div class="cr-hint"><span class="cr-arrow">Clicca per il dettaglio →</span></div>
       </a>
+      <div class="cr-card{% if incassi.bonifici_in_attesa %} cr-card--blue{% endif %}"
+           style="{% if not incassi.bonifici_in_attesa %}opacity:.7{% endif %}">
+        <div class="cr-label">Bonifici in attesa</div>
+        <div class="cr-value">{{ incassi.bonifici_in_attesa }}</div>
+        <div class="cr-hint">da confermare</div>
+      </div>
+      <div class="cr-card{% if incassi.email_fallite %} cr-card--red{% endif %}"
+           style="{% if not incassi.email_fallite %}opacity:.7{% endif %}">
+        <div class="cr-label">Email fallite</div>
+        <div class="cr-value">{{ incassi.email_fallite }}</div>
+        <div class="cr-hint">comunicazioni non inviate</div>
+      </div>
     </div>
   </div>
 

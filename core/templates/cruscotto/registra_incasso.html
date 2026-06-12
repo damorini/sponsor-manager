@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_evento' contratto.event_id %}">{{ nome_evento }}</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_da_incassare' contratto.event_id %}">Da incassare</a>
+    &rsaquo; Registra incasso
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="cr-content" style="max-width:560px;">
+  <div class="cr-hero">
+    <h1 class="cr-title">Registra incasso</h1>
+    <p class="cr-sub">
+      Contratto <strong>{{ contratto.contract_number }}</strong>
+      &mdash; {{ contratto.sponsor.legal_name }}
+    </p>
+  </div>
+
+  <div class="cr-section">
+    {% if error %}
+    <div style="background:#fff3e0; border-left:4px solid #e65100; padding:12px 16px;
+                border-radius:6px; margin-bottom:16px; color:#bf360c; font-size:14px;">
+      {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">
+          Importo lordo (€) *
+        </label>
+        <input type="number" name="amount_gross" step="0.01" min="0.01" required
+               style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;
+                      font-size:15px; font-family:inherit;"
+               placeholder="Es. 300.00">
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">
+          Metodo di pagamento *
+        </label>
+        <select name="payment_method"
+                style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;
+                       font-size:15px; font-family:inherit; background:#fff;">
+          {% for value, label in method_choices %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">
+          Riferimento bonifico
+        </label>
+        <input type="text" name="bank_transfer_reference"
+               style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;
+                      font-size:15px; font-family:inherit;"
+               placeholder="Es. BON-2026-001 o causale">
+      </div>
+
+      <div style="margin-bottom:24px;">
+        <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">
+          Note
+        </label>
+        <textarea name="notes" rows="3"
+                  style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;
+                         font-size:14px; font-family:inherit; resize:vertical;"
+                  placeholder="Note facoltative sull'incasso"></textarea>
+      </div>
+
+      <div style="display:flex; gap:12px; align-items:center;">
+        <button type="submit"
+                style="background:var(--terra-acc, #6d4c41); color:#fff; border:none;
+                       border-radius:6px; padding:10px 24px; font-size:14px;
+                       font-family:inherit; cursor:pointer; font-weight:600;">
+          Registra incasso
+        </button>
+        <a href="{% url 'core:cruscotto_da_incassare' contratto.event_id %}"
+           class="cr-btn cr-btn--ghost">Annulla</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

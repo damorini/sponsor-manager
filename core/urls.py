@@ -13,6 +13,7 @@ urlpatterns = [
     path('evento/<uuid:pk>/', views.evento_dettaglio, name='cruscotto_evento'),
     path('evento/<uuid:pk>/servizio/<uuid:service_pk>/', views.servizio_dettaglio, name='cruscotto_servizio'),
     path('evento/<uuid:pk>/da-incassare/', views.da_incassare_evento, name='cruscotto_da_incassare'),
+    path('contratto/<uuid:pk>/registra-incasso/', views.registra_incasso, name='cruscotto_registra_incasso'),
     path('utility/', views.utility_home, name='cruscotto_utility'),
     path('utility/template-catalogo/', views.download_template_catalogo, name='cruscotto_download_template_catalogo'),
     path('utility/importa-catalogo/', views.importa_catalogo_upload, name='cruscotto_importa_catalogo'),
