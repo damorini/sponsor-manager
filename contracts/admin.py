@@ -15,6 +15,7 @@ Azioni admin custom:
 """
 from django import forms
 from django.contrib import admin, messages
+from django.contrib.admin import helpers
 from core.admin_filters import evento_filter
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
@@ -1005,10 +1006,31 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     @admin.action(description='Marca come FIRMATO')
     def action_mark_as_signed(self, request, queryset):
+        from datetime import date as _date
+
+        # Pagina intermedia: chiede la data firma prima di procedere.
+        if '_firma_confermata' not in request.POST:
+            return render(request, 'admin/contracts/contract/action_firma_data.html', {
+                **self.admin_site.each_context(request),
+                'title': 'Conferma firma contratti',
+                'queryset': queryset,
+                'action': 'action_mark_as_signed',
+                'oggi': _date.today().isoformat(),
+                'opts': self.model._meta,
+                'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            })
+
+        # Parsing data firma dal POST; fallback a oggi.
+        raw = request.POST.get('signed_date', '').strip()
+        try:
+            signed_date = _date.fromisoformat(raw) if raw else _date.today()
+        except ValueError:
+            signed_date = _date.today()
+
         ok = err = 0
         for contract in queryset:
             try:
-                contract.mark_as_signed()
+                contract.mark_as_signed(signed_date=signed_date)
                 ok += 1
             except Exception as e:
                 err += 1
@@ -1020,8 +1042,8 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         if ok:
             self.message_user(
                 request,
-                f"{ok} contratti marcati come firmati. Scadenze generate, "
-                f"stand assegnati.",
+                f"{ok} contratti marcati come firmati (data firma: "
+                f"{signed_date.strftime('%d/%m/%Y')}). Scadenze generate, stand assegnati.",
                 level=messages.SUCCESS,
             )
 
