@@ -54,7 +54,7 @@
     <!-- Bottoni azione (paga / acquista altri servizi) -->
     {% if is_payable %}
     <div class="flex gap-2">
-      <a href="{% url 'portal:checkout_card' contract.id %}" 
+      <a href="{% url 'portal:checkout_card' contract.id %}"
          class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
         {% trans "Paga ora" %}
       </a>
@@ -66,6 +66,14 @@
         </button>
       </form>
       {% endif %}
+    </div>
+    {% elif payment_due %}
+    <div class="flex gap-2">
+      <a href="{% url 'portal:paga_scadenza' contract.id %}"
+         class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2.5 rounded-md transition-colors">
+        {% if payment_due.type == 'acconto' %}{% trans "Paga acconto" %}{% else %}{% trans "Paga saldo" %}{% endif %}
+        &nbsp;€ {{ payment_due.amount|floatformat:2 }}
+      </a>
     </div>
     {% endif %}
   </div>

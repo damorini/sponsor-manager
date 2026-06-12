@@ -92,6 +92,12 @@ def contract_detail_view(request, contract_id):
         ContractStatus.PENDING_PAYMENT,
     ]
 
+    # Per contratti SIGNED/ACTIVE MAIN, mostra bottone di pagamento acconto/saldo
+    payment_due = None
+    if (contract.status in [ContractStatus.SIGNED, ContractStatus.ACTIVE]
+            and contract.contract_kind == 'main'):
+        payment_due = _compute_payment_due(contract)
+
     # Servizi acquistabili per questo evento (per CTA "Aggiungi servizi")
     from catalog.models import Service
     purchasable_services_count = Service.objects.filter(
@@ -108,6 +114,7 @@ def contract_detail_view(request, contract_id):
         'documents': documents,
         'communications': communications,
         'is_payable': is_payable,
+        'payment_due': payment_due,
         'purchasable_services_count': purchasable_services_count,
     })
 
@@ -141,6 +148,84 @@ def quote_confirm_view(request, contract_id):
 
     messages.success(request, "Preventivo confermato. Trovi la domanda di partecipazione e le scadenze qui sotto.")
     return redirect('portal:contract_detail', contract_id=contract.id)
+
+
+def _compute_payment_due(contract):
+    """Calcola l'importo ancora dovuto (acconto o saldo) per un contratto MAIN.
+    Ritorna dict con keys: type ('acconto'|'saldo'|None), amount (Decimal), due_date.
+    """
+    from decimal import Decimal
+    from django.db.models import Sum
+    from contracts.payments import Payment, PaymentStatus
+
+    total_paid = (
+        Payment.objects
+        .filter(contract=contract, status=PaymentStatus.SUCCEEDED)
+        .aggregate(s=Sum('amount_gross'))['s'] or Decimal('0')
+    )
+
+    if contract.has_deposit and total_paid < contract.deposit_amount:
+        return {
+            'type': 'acconto',
+            'amount': contract.deposit_amount - total_paid,
+            'due_date': contract.deposit_due_date,
+        }
+    if total_paid < contract.total:
+        return {
+            'type': 'saldo',
+            'amount': contract.total - total_paid,
+            'due_date': contract.balance_due_date,
+        }
+    return None
+
+
+@sponsor_required
+def paga_scadenza_view(request, contract_id):
+    """Pagina di selezione metodo di pagamento per acconto/saldo su contratto SIGNED/ACTIVE."""
+    from contracts.models import Contract, ContractStatus, ContractKind
+
+    contract = get_object_or_404(
+        Contract.objects.select_related('event', 'sponsor'),
+        id=contract_id,
+        deleted_at__isnull=True,
+    )
+    if contract.sponsor_id != request.sponsor.id:
+        return HttpResponseForbidden("Non hai accesso a questo contratto.")
+
+    if contract.status not in [ContractStatus.SIGNED, ContractStatus.ACTIVE]:
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
+    if contract.contract_kind != ContractKind.MAIN:
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
+    payment_due = _compute_payment_due(contract)
+    if payment_due is None:
+        messages.info(request, "Il contratto risulta interamente saldato.")
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
+    if request.method == 'POST' and request.POST.get('metodo') == 'bonifico':
+        from contracts.payments import Payment, PaymentMethodChoice, PaymentStatus
+        payment, _ = Payment.objects.get_or_create(
+            contract=contract,
+            status=PaymentStatus.PENDING,
+            payment_method=PaymentMethodChoice.BANK_TRANSFER,
+            defaults={
+                'amount_gross': payment_due['amount'],
+                'currency': 'EUR',
+            },
+        )
+        messages.success(
+            request,
+            f"Registrato bonifico in attesa di € {payment_due['amount']:.2f}. "
+            "Effettua il bonifico usando i dati qui sotto: alla conferma dell'accredito "
+            "aggiorneremo lo stato del contratto."
+        )
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
+    return render(request, 'portal/contract/paga_scadenza.html', {
+        'contract': contract,
+        'payment_due': payment_due,
+    })
 
 
 @sponsor_required

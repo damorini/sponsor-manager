@@ -53,6 +53,8 @@ urlpatterns = [
          name='message_reply'),
     path('contracts/<uuid:contract_id>/', contract.contract_detail_view,
          name='contract_detail'),
+    path('contracts/<uuid:contract_id>/paga/', contract.paga_scadenza_view,
+         name='paga_scadenza'),
     path('contracts/<uuid:contract_id>/conferma/anteprima/', contract.quote_confirm_page_view,
          name='quote_confirm_page'),
     path('contracts/<uuid:contract_id>/conferma/', contract.quote_confirm_view,

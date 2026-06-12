@@ -54,7 +54,11 @@ def start_paypal_checkout(request, contract_id):
         return HttpResponse('Forbidden', status=403)
 
     # Il contratto deve essere in stato pagabile
-    if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT]:
+    _payable_statuses = [
+        ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT,
+        ContractStatus.SIGNED, ContractStatus.ACTIVE,
+    ]
+    if contract.status not in _payable_statuses:
         messages.error(request, "Questo contratto non è più pagabile.")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
@@ -62,13 +66,17 @@ def start_paypal_checkout(request, contract_id):
     if contract.status == ContractStatus.DRAFT:
         contract.mark_as_pending_payment()
 
+    # Determina importo: per SIGNED/ACTIVE calcola acconto/saldo; altrimenti totale
+    from contracts.views._payment_helpers import compute_due_amount
+    amount_gross = compute_due_amount(contract)
+
     # Crea Payment in pending (o riusa esistente non scaduto)
     payment, created = Payment.objects.get_or_create(
         contract=contract,
         status=PaymentStatus.PENDING,
         payment_method=PaymentMethodChoice.PAYPAL,
         defaults={
-            'amount_gross': contract.total,
+            'amount_gross': amount_gross,
             'currency': 'EUR',
         },
     )
@@ -190,7 +198,11 @@ def card_checkout_page(request, contract_id):
     if not _user_owns_contract(request.user, contract):
         return HttpResponse('Forbidden', status=403)
 
-    if contract.status not in [ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT]:
+    _payable_statuses = [
+        ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT,
+        ContractStatus.SIGNED, ContractStatus.ACTIVE,
+    ]
+    if contract.status not in _payable_statuses:
         messages.error(request, "Contratto non più pagabile.")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
@@ -198,13 +210,17 @@ def card_checkout_page(request, contract_id):
     if contract.status == ContractStatus.DRAFT:
         contract.mark_as_pending_payment()
 
+    # Determina importo corretto
+    from contracts.views._payment_helpers import compute_due_amount
+    amount_gross = compute_due_amount(contract)
+
     # Crea Payment + ordine PayPal (per ottenere order_id da passare al JS SDK)
     payment, _ = Payment.objects.get_or_create(
         contract=contract,
         status=PaymentStatus.PENDING,
         payment_method=PaymentMethodChoice.PAYPAL,
         defaults={
-            'amount_gross': contract.total,
+            'amount_gross': amount_gross,
             'currency': 'EUR',
         },
     )
@@ -222,7 +238,7 @@ def card_checkout_page(request, contract_id):
         'payment': payment,
         'paypal_client_id': settings.PAYPAL_CLIENT_ID,
         'paypal_order_id': payment.paypal_order_id,
-        'amount': contract.total,
+        'amount': amount_gross,
         'currency': 'EUR',
     })
 
