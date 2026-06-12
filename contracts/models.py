@@ -1374,6 +1374,11 @@ class Deadline(TimeStampedModel):
     @property
     def portal_title(self):
         """Titolo mostrato al cliente nel portale. Lato admin resta 'title'."""
+        if self.status == DeadlineStatus.RECEIVED:
+            return {
+                'pagamento_acconto': 'Acconto regolarizzato',
+                'pagamento_saldo': 'Saldo regolarizzato',
+            }.get(self.deadline_type, self.title)
         return {
             'pagamento_saldo': 'Saldo da pagare',
             'pagamento_acconto': 'Acconto da pagare',

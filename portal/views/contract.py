@@ -152,30 +152,68 @@ def quote_confirm_view(request, contract_id):
 
 def _compute_payment_due(contract):
     """Calcola l'importo ancora dovuto (acconto o saldo) per un contratto MAIN.
-    Ritorna dict con keys: type ('acconto'|'saldo'|None), amount (Decimal), due_date.
+
+    Usa lo stato delle scadenze di pagamento come sorgente di verità principale:
+    se la deadline 'pagamento_acconto' è RECEIVED l'acconto è saldato,
+    stessa logica per il saldo. In assenza di deadline, fallback all'aritmetica
+    sugli importi dei Payment SUCCEEDED.
+
+    Ritorna dict con keys: type, amount (Decimal), due_date — oppure None.
     """
     from decimal import Decimal
     from django.db.models import Sum
+    from contracts.models import DeadlineStatus
     from contracts.payments import Payment, PaymentStatus
 
-    total_paid = (
-        Payment.objects
-        .filter(contract=contract, status=PaymentStatus.SUCCEEDED)
-        .aggregate(s=Sum('amount_gross'))['s'] or Decimal('0')
-    )
+    def _total_paid():
+        return (
+            Payment.objects
+            .filter(contract=contract, status=PaymentStatus.SUCCEEDED)
+            .aggregate(s=Sum('amount_gross'))['s'] or Decimal('0')
+        )
 
-    if contract.has_deposit and total_paid < contract.deposit_amount:
-        return {
-            'type': 'acconto',
-            'amount': contract.deposit_amount - total_paid,
-            'due_date': contract.deposit_due_date,
-        }
-    if total_paid < contract.total:
-        return {
-            'type': 'saldo',
-            'amount': contract.total - total_paid,
-            'due_date': contract.balance_due_date,
-        }
+    # --- acconto ---
+    if contract.has_deposit:
+        acc_dl = contract.deadlines.filter(deadline_type='pagamento_acconto').first()
+        if acc_dl:
+            if acc_dl.status != DeadlineStatus.RECEIVED:
+                paid = _total_paid()
+                return {
+                    'type': 'acconto',
+                    'amount': max(contract.deposit_amount - paid, Decimal('0')),
+                    'due_date': contract.deposit_due_date,
+                }
+            # acconto RECEIVED → passa a controllo saldo
+        else:
+            # nessuna deadline: usa matematica
+            paid = _total_paid()
+            if paid < contract.deposit_amount:
+                return {
+                    'type': 'acconto',
+                    'amount': contract.deposit_amount - paid,
+                    'due_date': contract.deposit_due_date,
+                }
+
+    # --- saldo ---
+    sal_dl = contract.deadlines.filter(deadline_type='pagamento_saldo').first()
+    if sal_dl:
+        if sal_dl.status != DeadlineStatus.RECEIVED:
+            paid = _total_paid()
+            return {
+                'type': 'saldo',
+                'amount': max(contract.total - paid, Decimal('0')),
+                'due_date': contract.balance_due_date,
+            }
+        return None  # saldo RECEIVED → tutto pagato
+    else:
+        # nessuna deadline saldo: usa matematica
+        paid = _total_paid()
+        if paid < contract.total:
+            return {
+                'type': 'saldo',
+                'amount': contract.total - paid,
+                'due_date': contract.balance_due_date,
+            }
     return None
 
 
