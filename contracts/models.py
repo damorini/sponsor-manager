@@ -488,6 +488,8 @@ class Contract(SoftDeleteModel):
                 with transaction.atomic():
                     super().save(*args, **kwargs)
                 self._sync_option_venue(kwargs.get('update_fields'))
+                self._sync_option_deadline(kwargs.get('update_fields'))
+                self._sync_stand_line(kwargs.get('update_fields'))
                 return
             except IntegrityError as e:
                 if 'contract_number' not in str(e).lower():
@@ -496,8 +498,6 @@ class Contract(SoftDeleteModel):
                 self.contract_number = ''  # forza una nuova generazione
         # Esauriti i tentativi: rilancia l'ultimo errore.
         raise last_err
-        self._sync_option_deadline(kwargs.get('update_fields'))
-        self._sync_stand_line(kwargs.get('update_fields'))
 
     def _sync_option_venue(self, update_fields=None):
         """
