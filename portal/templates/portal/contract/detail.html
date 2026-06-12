@@ -292,7 +292,7 @@
             <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Stand assegnato" %}</dt>
             <dd class="text-gray-900">
               <strong>{{ contract.stand.code }}</strong>
-              ({{ contract.stand.area_sqm }} m²)
+              ({{ contract.stand.area_sqm|floatformat:2 }} m²)
             </dd>
           </div>
           {% elif contract.stand_block %}

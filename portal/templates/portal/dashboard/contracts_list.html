@@ -86,7 +86,7 @@
               <!-- Stand assegnato -->
               {% if c.stand %}
               <div class="text-xs text-gray-600 mt-1">
-                📍 Stand {{ c.stand.code }} ({{ c.stand.area_sqm }} m²)
+                📍 Stand {{ c.stand.code }} ({{ c.stand.area_sqm|floatformat:2 }} m²)
               </div>
               {% elif c.stand_block %}
               <div class="text-xs text-gray-600 mt-1">

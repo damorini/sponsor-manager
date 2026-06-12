@@ -41,7 +41,7 @@
 
     <div class="px-5 py-4">
       {% if c.stand %}
-      <div class="text-sm text-gray-600 mb-3">📍 Stand {{ c.stand.code }}{% if c.stand.area_sqm %} ({{ c.stand.area_sqm }} m²){% endif %}</div>
+      <div class="text-sm text-gray-600 mb-3">📍 Stand {{ c.stand.code }}{% if c.stand.area_sqm %} ({{ c.stand.area_sqm|floatformat:2 }} m²){% endif %}</div>
       {% elif c.stand_block %}
       <div class="text-sm text-gray-600 mb-3">📍 {% trans "Blocco" %} {{ c.stand_block.code }}</div>
       {% endif %}
