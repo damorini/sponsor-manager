@@ -600,6 +600,14 @@ def _add_header_footer_to_docx(docx_path, contract):
                     logo_path = _lp
             except Exception:
                 logo_path = None
+        if logo_path is None:
+            try:
+                from django.contrib.staticfiles import finders as _finders
+                _static_logo = _finders.find('branding/valet_logo.png')
+                if _static_logo:
+                    logo_path = _Path(_static_logo)
+            except Exception:
+                pass
 
         # costruisco le righe di testo (telefono+email+sito sulla stessa riga)
         righe = []

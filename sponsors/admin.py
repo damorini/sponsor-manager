@@ -60,7 +60,7 @@ def _notifica_cliente_nuovo_messaggio(request, sponsor):
     Mette un link diretto all'archivio messaggi del portale. Non blocca mai."""
     from django.conf import settings
     from django.urls import reverse
-    from contracts.services.email_sender import send_plain_email
+    from contracts.services.email_sender import send_email
     try:
         recipients = list(
             sponsor.contacts.filter(has_portal_access=True)
@@ -68,17 +68,24 @@ def _notifica_cliente_nuovo_messaggio(request, sponsor):
         if not recipients:
             return
         try:
-            url = request.build_absolute_uri(reverse('portal:messages'))
+            messages_url = request.build_absolute_uri(reverse('portal:messages'))
         except Exception:
-            url = (getattr(settings, 'PORTAL_URL', '') or '').rstrip('/')
-        subject = "La segreteria ha risposto al tuo messaggio"
-        body = (
-            "Ciao,\n\nla segreteria organizzativa ha pubblicato un messaggio per te "
-            "nel portale.\n\n"
-            f"Vai a leggerlo qui: {url}\n\n"
-            "A presto."
+            messages_url = (getattr(settings, 'PORTAL_URL', '') or '').rstrip('/') + '/messaggi/'
+        contact_name = (
+            sponsor.contacts.filter(has_portal_access=True).first().full_name
+            if sponsor.contacts.filter(has_portal_access=True).exists() else ''
         )
-        send_plain_email(subject, body, recipients)
+        send_email(
+            template_name='portal_message_notification',
+            context={
+                'contact_name': contact_name,
+                'messages_url': messages_url,
+            },
+            to=recipients,
+            subject="Hai un nuovo messaggio dalla segreteria",
+            related_to=sponsor,
+            communication_type='manual',
+        )
     except Exception:
         import logging
         logging.getLogger(__name__).exception("Notifica messaggio al cliente non inviata")
