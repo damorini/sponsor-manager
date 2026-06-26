@@ -60,12 +60,27 @@ class DeadlineTemplateForm(forms.ModelForm):
                   "scegli nessuno, l'avviso va al contatto principale.",
     )
 
+    event = forms.ModelChoiceField(
+        queryset=None,
+        required=False,
+        label="Evento (filtro)",
+        help_text="Scegli prima il congresso: la lista dei servizi si restringe a quelli di quell'evento.",
+    )
+
     class Meta:
         model = DeadlineTemplate
         fields = '__all__'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        from events.models import Event
+        self.fields['event'].queryset = Event.objects.order_by('-start_date')
+        # Pre-popola evento se record già salvato
+        if self.instance and self.instance.pk and self.instance.service_id:
+            try:
+                self.initial['event'] = self.instance.service.event_id
+            except Exception:
+                pass
         # 'Tipo scadenza': suggerimenti coi tipi già usati + alcuni comuni.
         if 'deadline_type' in self.fields:
             usati = (DeadlineTemplate.objects.exclude(deadline_type='')
@@ -311,6 +326,26 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
     list_select_related = ('service', 'service__event')
     autocomplete_fields = ['service']
     ordering = ('service', 'display_order')
+
+    fieldsets = (
+        ('Selezione evento e servizio', {
+            'fields': ('event', 'service'),
+            'description': "Scegli prima il congresso per restringere la lista dei servizi.",
+        }),
+        ('Scadenza', {
+            'fields': ('deadline_type', 'title', 'description', 'submission_kind',
+                       'client_template_file', 'days_before_event', 'display_order'),
+        }),
+        ('Notifiche', {
+            'fields': ('notify_roles', 'reminder_days_before'),
+        }),
+        ('Stato', {
+            'fields': ('is_active',),
+        }),
+    )
+
+    class Media:
+        js = ('admin/js/deadline_event_filter.js',)
 
     @admin.display(description='Servizio', ordering='service__name')
     def service_link(self, obj):
