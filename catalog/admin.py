@@ -170,6 +170,16 @@ class ServiceAdmin(admin.ModelAdmin):
         comm = obj.quantity_committed()
         return f'{av} liberi / {obj.total_available} tot ({comm} assegnati)'
 
+    @admin.display(description='Img')
+    def image_badge(self, obj):
+        from django.utils.html import format_html
+        if obj.image:
+            return format_html(
+                '<span style="color:#2e7d32;font-size:16px" title="{}">&#9989;</span>',
+                obj.image.name.rsplit('/', 1)[-1],
+            )
+        return format_html('<span style="color:#bbb;font-size:16px" title="Nessuna immagine">&#9711;</span>')
+
     @admin.display(description='Scadenze')
     def scadenze_badge(self, obj):
         from django.utils.html import format_html
@@ -202,7 +212,7 @@ class ServiceAdmin(admin.ModelAdmin):
     form = ServiceAdminForm
 
     list_display = (
-        'code', 'display_order', 'name_display', 'scadenze_badge', 'event_link', 'category',
+        'code', 'display_order', 'name_display', 'image_badge', 'scadenze_badge', 'event_link', 'category',
         'pricing_display', 'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
     )
     # "Ordine" modificabile direttamente dalla lista: cosi' si riordina come
