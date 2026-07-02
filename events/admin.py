@@ -106,7 +106,7 @@ class EventAdmin(admin.ModelAdmin):
                            "La lingua di default è obbligatoria nei campi multilingua.",
         }),
         ('Dati per contratti', {
-            'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location'),
+            'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location', 'cancellation_penalty_percent'),
             'classes': ('collapse',),
         }),
         ('Segreteria Scientifica', {

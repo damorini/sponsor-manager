@@ -228,6 +228,7 @@ def generate_contract_pdf(contract):
             (f"{int(contract.vat_rate)}%" if contract.vat_rate == int(contract.vat_rate)
              else f"{contract.vat_rate}%") if contract.vat_rate else ''
         ),
+        'cancellation_penalty_percent': getattr(event, 'cancellation_penalty_percent', 50),
         # Piano pagamento (acconto/saldo), IVA inclusa
         'has_deposit': contract.has_deposit,
         'deposit_percent': contract.deposit_percent,

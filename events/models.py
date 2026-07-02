@@ -106,6 +106,12 @@ class Event(TimeStampedModel):
         verbose_name="Indirizzo completo sede",
         help_text="Indirizzo completo della venue (es. 'Centro Congressi, Via Roma 1, Bologna')",
     )
+    cancellation_penalty_percent = models.PositiveSmallIntegerField(
+        default=50,
+        verbose_name="Penale cancellazione (%)",
+        help_text="Percentuale dell'importo totale trattenuta come penale in caso di rinuncia entro 30 gg. "
+                  "Appare nei Termini di cancellazione del contratto.",
+    )
 
     status = models.CharField(
         max_length=20,
