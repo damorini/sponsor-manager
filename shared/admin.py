@@ -533,17 +533,6 @@ class AuditLogAdmin(admin.ModelAdmin):
 
 
 
-@admin.register(LetterTemplate)
-class LetterTemplateAdmin(admin.ModelAdmin):
-    list_display = ('name', 'language', 'is_active', 'updated_at')
-    list_filter = ('is_active', 'language')
-    search_fields = ('name', 'body_template')
-    ordering = ('name',)
-    readonly_fields = ('created_at', 'updated_at')
-    fieldsets = (
-        (None, {'fields': ('name', 'language', 'is_active')}),
-        ('Contenuto', {'fields': ('body_template',),
-            'description': "Segnaposti: {{ azienda }}, {{ evento }}, {{ date_evento }}, "
-                           "{{ luogo_evento }}, {{ numero }}, {{ totale }}, {{ stand }}, {{ servizi }}"}),
-        ('Sistema', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
-    )
+# LetterTemplate NON registrato nell'admin: la "lettera preventivo" non e' usata
+# dal preventivo grafico attualmente inviato (funzione dormiente). Il modello resta
+# nel DB, ma non compare nel menu. Per riattivarlo, ri-registrare qui l'admin.

@@ -420,12 +420,6 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             'fields': ('template_used', 'special_clauses', 'requires_aifa', 'requires_svc_medtech'),
             'classes': ('collapse',),
         }),
-        ('Preventivo', {
-            'fields': ('letter_template', 'quote_intro_text',),
-            'description': "Scegli un template lettera: la lettera di preventivo "
-                           "verra' generata al volo compilando i segnaposti coi dati "
-                           "di questo contratto. (quote_intro_text e' un testo libero opzionale.)",
-        }),
         ('Note interne', {
             'fields': ('internal_notes',),
             'classes': ('collapse',),

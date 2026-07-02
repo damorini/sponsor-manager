@@ -189,14 +189,12 @@ Cuore operativo. Per un contratto:
 ### 4.8 Scadenze cliente (Cruscotto)
 `/admin/cruscotto/scadenze-cliente/`: elenco di tutte le scadenze tecniche generate dai template, con stato (da fare / in ritardo / completata) e chi/quando ha consegnato. Filtrabile per evento.
 
-### 4.9 Template Email e Template Lettera
-Due cose **diverse**:
+### 4.9 Template Email
 - **Template email** (`Template email`): oggetto + corpo dell'**email** (bilingue IT/EN, editor WYSIWYG). È il messaggio che il cliente legge in posta. Segnaposti: `{{ contact.full_name }}`, `{{ event.name }}`, `{{ contract.contract_number }}`.
   - La lista contiene **una riga per ogni punto d'invio × tipo evento**: **12 punti** (invito portale, preventivo, conferma, contratto sponsor, conferma pagamento, reminder e sollecito scadenze, reminder opzione, recupero carrello, alert operatore, reset password, notifica messaggio) × **ECM / Non-ECM** = 24 modelli.
   - Ogni riga ha **Punto di invio**, **Tipo evento**, **Attivo** e l'editor oggetto/corpo. **Finché una riga non è "Attivo", parte l'email standard di sistema.** Quando la attivi, sostituisce l'email standard **solo per quel tipo di evento**. Vedi Schema C.
-- **Template lettera** (`Template lettera`): il **corpo della lettera dentro il PDF** del preventivo. Segnaposti: `{{ azienda }}`, `{{ numero }}`, `{{ totale }}`, `{{ stand }}`, `{{ servizi }}`, `{{ luogo_evento }}`. È collegato al contratto ("Template lettera preventivo").
-> In sintesi: **email = la busta** che arriva; **lettera = il foglio di offerta dentro la busta (PDF)**.
 > ⚠️ Creare un **servizio** o un **evento** non aggiunge righe ai Template email: i 12 punti sono fissi (sono i momenti in cui il sistema manda email).
+> *Nota: il "Template lettera" è stato rimosso dal menu — non era usato dal preventivo grafico attuale.*
 
 ### 4.10 Impostazioni segreteria, SMTP, Utenti
 - **Impostazioni segreteria** (`OrganizerSettings`): dati azienda organizzatrice (nome, indirizzo, email, P.IVA, REA, **logo** mostrato nel footer dei documenti/email), giorni acconto/saldo, testi privacy.
@@ -352,8 +350,6 @@ Riferimento completo con esempi: `.env.prod.example`.
 **I prezzi cambiano nei contratti già firmati se aggiorno il listino?** No: i prezzi sono congelati (snapshot) nelle righe del contratto.
 
 **Lo sponsor sceglie lo stand dal portale?** No: lo assegna l'operatore; lo sponsor lo vede nel dettaglio contratto.
-
-**Differenza Template email vs Template lettera?** Email = il messaggio di posta; Lettera = il testo dell'offerta dentro il PDF allegato.
 
 **Come tolgo dalla lista i contratti annullati?** Comando `elimina_contratti_annullati` (anteprima, poi `--conferma`; reversibile, salvo `--hard`).
 

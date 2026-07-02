@@ -12,7 +12,7 @@ GROUPS = [
     ("\U0001F3E2 Sponsor & Contatti", ["Sponsor", "Contact", "PortalMessage", "Wishlist", "WishlistItem"]),
     ("\U0001F4C4 Contratti & Scadenze", ["Contract", "ContractLine", "Deadline", "Payment", "CartSession"]),
     ("\U0001F6CD Catalogo & Servizi", ["CatalogService", "ServiceCategory", "Service", "ServiceVariant", "DeadlineTemplate"]),
-    ("✉ Documenti & Comunicazioni", ["Communication", "Document", "EmailTemplate", "LetterTemplate", "InvoiceExport", "AuditLog"]),
+    ("✉ Documenti & Comunicazioni", ["Communication", "Document", "EmailTemplate", "InvoiceExport", "AuditLog"]),
     ("⚙ Configurazione", ["OrganizerSettings", "EmailSettings", "User", "Group", "LogEntry"]),
 ]
 
