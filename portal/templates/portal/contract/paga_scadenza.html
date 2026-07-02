@@ -63,20 +63,9 @@
         </form>
       </div>
 
-      <!-- PayPal / Carta -->
-      <div class="border border-gray-200 rounded-lg p-5">
-        <div class="flex items-start gap-3 mb-4">
-          <i class="ti ti-credit-card text-2xl text-gray-600 shrink-0 mt-0.5"></i>
-          <div>
-            <div class="font-medium text-gray-900">{% trans "Carta di credito / PayPal" %}</div>
-            <div class="text-sm text-gray-500 mt-1">{% trans "Pagamento immediato tramite PayPal Hosted Fields." %}</div>
-          </div>
-        </div>
-        <a href="{% url 'portal:checkout_card' contract.id %}"
-           class="block w-full text-center border border-brand-500 text-brand-700 hover:bg-brand-50 font-medium px-5 py-2.5 rounded-md transition-colors">
-          <i class="ti ti-brand-paypal mr-1"></i>{% trans "Paga con carta / PayPal" %}
-        </a>
-      </div>
+      <p class="text-xs text-gray-400 text-center">
+        {% trans "Il contratto principale si salda esclusivamente tramite bonifico bancario." %}
+      </p>
     </div>
   </div>
 </div>

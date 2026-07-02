@@ -85,12 +85,17 @@ def contract_detail_view(request, contract_id):
         object_id=contract.id,
     ).order_by('-created_at')[:10]
 
-    # Determina se il contratto è pagabile e quali bottoni mostrare
-    is_payable = contract.status in [
-        ContractStatus.DRAFT,
-        ContractStatus.SENT,
-        ContractStatus.PENDING_PAYMENT,
-    ]
+    # Determina se il contratto è pagabile ONLINE e quali bottoni mostrare.
+    # Il pagamento online (carta/PayPal) è riservato agli acquisti ecommerce
+    # (contratti ADDON). Il contratto principale (MAIN) si paga SOLO con bonifico.
+    is_payable = (
+        contract.contract_kind == 'addon'
+        and contract.status in [
+            ContractStatus.DRAFT,
+            ContractStatus.SENT,
+            ContractStatus.PENDING_PAYMENT,
+        ]
+    )
 
     # Per contratti SIGNED/ACTIVE MAIN, mostra bottone di pagamento acconto/saldo
     payment_due = None

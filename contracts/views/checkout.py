@@ -53,6 +53,17 @@ def start_paypal_checkout(request, contract_id):
     if not _user_owns_contract(request.user, contract):
         return HttpResponse('Forbidden', status=403)
 
+    # Il pagamento online è riservato agli acquisti ecommerce (ADDON).
+    # Il contratto principale si paga esclusivamente tramite bonifico.
+    from contracts.models import ContractKind
+    if contract.contract_kind != ContractKind.ADDON:
+        messages.error(
+            request,
+            "Il contratto principale si paga esclusivamente tramite bonifico bancario. "
+            "Il pagamento online (carta/PayPal) è disponibile solo per i servizi acquistati online."
+        )
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
     # Il contratto deve essere in stato pagabile
     _payable_statuses = [
         ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT,
@@ -197,6 +208,17 @@ def card_checkout_page(request, contract_id):
 
     if not _user_owns_contract(request.user, contract):
         return HttpResponse('Forbidden', status=403)
+
+    # Pagamento online riservato agli acquisti ecommerce (ADDON): il contratto
+    # principale si paga solo con bonifico.
+    from contracts.models import ContractKind
+    if contract.contract_kind != ContractKind.ADDON:
+        messages.error(
+            request,
+            "Il contratto principale si paga esclusivamente tramite bonifico bancario. "
+            "Il pagamento online (carta/PayPal) è disponibile solo per i servizi acquistati online."
+        )
+        return redirect('portal:contract_detail', contract_id=contract.id)
 
     _payable_statuses = [
         ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT,
