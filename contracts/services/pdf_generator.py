@@ -1222,6 +1222,7 @@ def generate_admission_request_pdf(contract):
         'iva': format_currency_filter(contract.vat_amount),
         'totale': format_currency_filter(contract.total),
         'cancellation_penalty_percent': event.cancellation_penalty_percent or 50,
+        'deposit_percent': contract.deposit_percent,
     }
 
     doc = DocxTemplate(str(template_path))
