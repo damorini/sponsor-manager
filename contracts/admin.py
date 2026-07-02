@@ -375,12 +375,15 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             ),
         }),
         ('Spazio espositivo', {
-            'fields': ('stand', 'stand_block'),
+            'fields': ('stand', 'stand_block', 'option_until'),
             'description': (
                 'Scegli stand singolo OPPURE blocco, non entrambi. '
                 'IMPORTANTE: nella tendina digita il nome (o slug) dell\'evento '
                 'di questo contratto per vedere solo gli stand/blocchi di '
-                'quell\'evento. Selezionare uno spazio di un altro evento dara\' errore al salvataggio.'
+                'quell\'evento. Selezionare uno spazio di un altro evento dara\' errore al salvataggio. '
+                '«Spazio opzionato fino al»: finche\' questa data non e\' passata, lo stand/blocco '
+                'resta RISERVATO per questo sponsor anche se il preventivo e\' ancora in bozza; '
+                'oltre la data lo spazio torna disponibile per altri.'
             ),
         }),
         ('Stato', {
