@@ -169,11 +169,41 @@ class ServiceAdmin(admin.ModelAdmin):
         comm = obj.quantity_committed()
         return f'{av} liberi / {obj.total_available} tot ({comm} assegnati)'
 
+    @admin.display(description='Scadenze')
+    def scadenze_badge(self, obj):
+        from django.utils.html import format_html
+        n = getattr(obj, '_n_deadlines', obj.deadline_templates.filter(is_active=True).count())
+        if n == 0:
+            return format_html('<span style="color:#999">—</span>')
+        # Usa il prefetch (se disponibile) per evitare query aggiuntive
+        try:
+            templates = [t for t in obj.deadline_templates.all() if t.is_active]
+            titoli = ', '.join(
+                t.title for t in sorted(templates, key=lambda t: t.days_before_event)
+            )
+        except Exception:
+            titoli = ''
+        return format_html(
+            '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 7px;'
+            'border-radius:10px;font-size:11px;white-space:nowrap" title="{}">'
+            '✓ {} scad.</span>',
+            titoli, n,
+        )
+
+    def get_queryset(self, request):
+        from django.db.models import Count
+        qs = super().get_queryset(request)
+        qs = qs.annotate(_n_deadlines=Count(
+            'deadline_templates', filter=models.Q(deadline_templates__is_active=True)
+        ))
+        return qs.prefetch_related('deadline_templates')
+
     form = ServiceAdminForm
 
     list_display = (
         'code', 'display_order', 'name_display', 'event_link', 'category', 'pricing_display',
         'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
+        'scadenze_badge',
     )
     # "Ordine" modificabile direttamente dalla lista: cosi' si riordina come
     # appare nell'ecommerce/portale senza aprire ogni servizio (la lista e'
