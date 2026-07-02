@@ -155,6 +155,7 @@ TEXTS = {
                   '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Importo da versare:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)</div>{% endif %}' +
                   '<p>Vi preghiamo di provvedere al più presto dall\'area riservata. Per difficoltà a rispettare la scadenza, contattateci.</p>' +
                   btn('{{ portal_url }}', 'Regolarizza ora') +
+                  '<p style="color:#6b7280; font-size:13px;">Se nel frattempo avete già provveduto, vi ringraziamo: potete considerare questa comunicazione come non inviata.</p>' +
                   SIGN_IT,
             'en': H('Reminder · deadline passed', '#dc2626') +
                   '<p>Hello {{ contact.full_name }},</p>' +
@@ -162,6 +163,7 @@ TEXTS = {
                   '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Amount due:</strong> € {{ importo_scadenza|floatformat:2 }} (VAT incl.)</div>{% endif %}' +
                   '<p>Please take care of it as soon as possible from your area. If you have any difficulty, contact us.</p>' +
                   btn('{{ portal_url }}', 'Resolve now') +
+                  '<p style="color:#6b7280; font-size:13px;">If you have already taken care of this, thank you — please disregard this message.</p>' +
                   SIGN_EN,
         },
     },
