@@ -303,9 +303,37 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         return queryset, may_dup
 
     def save_model(self, request, obj, form, change):
+        # Legge lo stato attuale nel DB prima di sovrascriverlo.
+        old_status = None
+        if change:
+            old_status = (
+                Contract.all_objects
+                .filter(pk=obj.pk)
+                .values_list('status', flat=True)
+                .first()
+            )
+
         super().save_model(request, obj, form, change)
+
+        # Se il form ha portato il contratto a CANCELLED (bypassing cancel()),
+        # eseguiamo la stessa cascata: libera stand/blocco e azzera scadenze aperte.
+        if (change
+                and obj.status == ContractStatus.CANCELLED
+                and old_status
+                and old_status != ContractStatus.CANCELLED):
+            obj._update_venue_status()
+            from .models import DeadlineStatus
+            obj.deadlines.filter(
+                status__in=[
+                    DeadlineStatus.PENDING,
+                    DeadlineStatus.REMINDER_SENT,
+                    DeadlineStatus.OVERDUE,
+                ]
+            ).update(status=DeadlineStatus.WAIVED)
+
         # Genera automaticamente la riga stand/blocco se non ancora presente.
-        if obj.stand_id or obj.stand_block_id:
+        # Solo per contratti non annullati (evita righe fantasma su contratti cancellati).
+        if obj.status != ContractStatus.CANCELLED and (obj.stand_id or obj.stand_block_id):
             from .services.stand_line import genera_riga_da_stand, has_stand_line
             if not has_stand_line(obj):
                 esito, msg = genera_riga_da_stand(obj)

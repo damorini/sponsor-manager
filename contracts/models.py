@@ -471,25 +471,10 @@ class Contract(SoftDeleteModel):
             except Exception:
                 pass
 
-        # Rileva cambio di stato verso CANCELLED dal form admin (senza passare
-        # da cancel()). cancel() usa update_fields esplicito e gestisce la
-        # cascata da solo; qui intercettiamo solo i save() completi dal form.
-        _prev_status = None
-        _update_fields = kwargs.get('update_fields')
-        if not self._state.adding and _update_fields is None and self.status == ContractStatus.CANCELLED:
-            try:
-                _prev_status = Contract.objects.filter(pk=self.pk).values_list(
-                    'status', flat=True
-                ).first()
-            except Exception:
-                pass
-
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
             super().save(*args, **kwargs)
             self._sync_option_venue(kwargs.get('update_fields'))
-            if _prev_status and _prev_status != ContractStatus.CANCELLED:
-                self._update_venue_status()
             return
 
         # Numero assente: genera in automatico (vale anche per ADDON/ADDENDUM).
