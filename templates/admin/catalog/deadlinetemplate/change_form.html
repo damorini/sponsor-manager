@@ -1,0 +1,28 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+(function () {
+  function toggleShipping() {
+    var sel = document.getElementById('id_submission_kind');
+    if (!sel) return;
+    /* cerca la riga del campo in tutti i modi possibili */
+    var row = document.querySelector('.field-shipping_instructions');
+    if (!row) {
+      /* fallback: cerca per id del textarea/input */
+      var field = document.getElementById('id_shipping_instructions');
+      if (field) row = field.closest('div.form-row') || field.parentNode.parentNode;
+    }
+    if (!row) return;
+    row.style.display = (sel.value === 'physical') ? '' : 'none';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    toggleShipping();
+    var sel = document.getElementById('id_submission_kind');
+    if (sel) sel.addEventListener('change', toggleShipping);
+  });
+})();
+</script>
+{% endblock %}
