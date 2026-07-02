@@ -1220,6 +1220,49 @@ class ContractLine(TimeStampedModel):
                 f"Servizio «{self.service.translated('name', 'it')}» non disponibile "
                 f"in quantità sufficiente: richiesti {self.quantity}, disponibili {avail}."})
 
+    @property
+    def prezzo_listino(self):
+        """Prezzo di listino (pieno) della riga × quantità: dal catalogo
+        (variante o servizio) se disponibile, altrimenti dal prezzo unitario
+        della riga. Non è mai inferiore al prezzo unitario impostato sulla riga."""
+        unit = None
+        try:
+            if self.service_variant_id and self.service_variant and self.service_variant.base_price:
+                unit = self.service_variant.base_price
+            elif self.service_id and self.service and self.service.base_price:
+                unit = self.service.base_price
+        except Exception:
+            unit = None
+        if not unit or unit <= 0:
+            unit = self.unit_price or Decimal('0')
+        unit = max(unit, self.unit_price or Decimal('0'))
+        return (unit * (self.quantity or 1)).quantize(Decimal('0.01'))
+
+    @property
+    def prezzo_riservato(self):
+        """Prezzo finale netto (imponibile) della riga, dopo sconti/override."""
+        return self.line_subtotal
+
+    @property
+    def is_prezzo_revisionato(self):
+        """True se il prezzo riservato è inferiore al listino (sconto o override).
+        Esclude i servizi INCLUSI (a €0: vanno mostrati come 'Incluso', non scontati)."""
+        try:
+            if self.is_incluso:
+                return False
+            riservato = self.prezzo_riservato or Decimal('0')
+            if riservato <= 0:
+                return False
+            return riservato < (self.prezzo_listino or Decimal('0'))
+        except Exception:
+            return False
+
+    @property
+    def sconto_eur(self):
+        """Valore dello sconto in euro (listino − riservato), 0 se non revisionato."""
+        d = (self.prezzo_listino or Decimal('0')) - (self.prezzo_riservato or Decimal('0'))
+        return d if d > 0 else Decimal('0.00')
+
     def calculate_totals(self):
         """Calcola line_subtotal, line_vat, line_total dai dati base."""
         gross = self.unit_price * self.quantity

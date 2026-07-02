@@ -53,7 +53,7 @@
   <p class="section-title">{{ t.section_title }}</p>
   <table class="svc">
     {% for line in lines %}
-    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_total %}&euro; {{ line.line_total|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
+    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}{% if line.is_prezzo_revisionato %}<div class="desc" style="margin-top:2px;">Listino <span style="text-decoration:line-through;">&euro; {{ line.prezzo_listino|floatformat:2 }}</span> &middot; <strong style="color:#065f46;">Prezzo riservato &euro; {{ line.prezzo_riservato|floatformat:2 }}</strong></div>{% endif %}</td><td class="price">{% if line.line_subtotal %}&euro; {{ line.prezzo_riservato|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
     {% empty %}
     <tr><td colspan="2" class="desc">{{ t.empty }}</td></tr>
     {% endfor %}
