@@ -342,6 +342,18 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 elif esito == 'no_prezzo':
                     self.message_user(request, f"Attenzione: {msg}", level=messages.WARNING)
 
+    def delete_model(self, request, obj):
+        """Cancellazione singola: usa Contract.delete() (soft-delete) che
+        libera anche lo stand/blocco assegnato."""
+        obj.delete()
+
+    def delete_queryset(self, request, queryset):
+        """Cancellazione multipla ('Elimina selezionati'): itera per-record
+        cosi' scatta Contract.delete() (soft-delete + liberazione stand),
+        invece del bulk queryset.delete() che salterebbe la logica."""
+        for obj in queryset:
+            obj.delete()
+
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',)

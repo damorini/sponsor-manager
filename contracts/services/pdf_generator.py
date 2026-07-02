@@ -1212,6 +1212,22 @@ def generate_admission_request_pdf(contract):
     lines_by_category = _group_lines_by_category(contract, event_type)
     lines = [ln for _cat, items in lines_by_category for ln in items]
 
+    # Percentuali "pulite" (40 anziche' 40.00) per il testo del contratto.
+    def _pct(v):
+        try:
+            d = Decimal(str(v))
+        except Exception:
+            return str(v)
+        return str(int(d)) if d == d.to_integral_value() else str(d.normalize())
+
+    has_deposit = bool(contract.has_deposit)
+    # Penale cancellazione: se c'e' caparra (acconto+saldo) e' pari alla caparra;
+    # se il pagamento e' unico/differito e' la % impostata sull'evento (default 50).
+    if has_deposit and contract.deposit_percent:
+        _penale = contract.deposit_percent
+    else:
+        _penale = event.cancellation_penalty_percent or 50
+
     context = {
         'contract': contract,
         'sponsor': sponsor,
@@ -1221,8 +1237,10 @@ def generate_admission_request_pdf(contract):
         'imponibile': format_currency_filter(contract.subtotal),
         'iva': format_currency_filter(contract.vat_amount),
         'totale': format_currency_filter(contract.total),
-        'cancellation_penalty_percent': event.cancellation_penalty_percent or 50,
-        'deposit_percent': contract.deposit_percent,
+        'has_deposit': has_deposit,
+        'cancellation_penalty_percent': _pct(event.cancellation_penalty_percent or 50),
+        'penale_percent': _pct(_penale),
+        'deposit_percent': _pct(contract.deposit_percent or 0),
     }
 
     doc = DocxTemplate(str(template_path))

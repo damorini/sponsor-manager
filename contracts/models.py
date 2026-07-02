@@ -850,6 +850,24 @@ class Contract(SoftDeleteModel):
             deleted_at__isnull=True,
         ).update(deleted_at=timezone.now())
 
+    def delete(self, using=None, keep_parents=False, hard=False):
+        """Soft-delete del contratto. Oltre a nasconderlo, LIBERA lo stand/blocco
+        assegnato: la rivalutazione (update_status_from_contract) esclude i
+        contratti con deleted_at valorizzato, quindi lo spazio torna disponibile.
+        Cosi' cancellare un preventivo libera lo stand esattamente come annullarlo.
+        I servizi a numero limitato si liberano da soli (quantity_committed
+        ignora i contratti cancellati/soft-deleted)."""
+        stand = self.stand
+        block = self.stand_block
+        super().delete(using=using, keep_parents=keep_parents, hard=hard)
+        try:
+            if stand:
+                stand.update_status_from_contract()
+            elif block:
+                block.update_status_from_contract()
+        except Exception:
+            pass
+
     # ---------------------------------------------------------------------
     # Helper privati
     # ---------------------------------------------------------------------
