@@ -111,6 +111,12 @@ def _get_materials_for_contract(contract):
                 and not (d.deadline_type or '').startswith('pagamento')
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
+            'is_physical': getattr(d, 'submission_kind', '') == 'physical',
+            'shipping_instructions': (
+                d.deadline_template.shipping_instructions
+                if d.deadline_template and getattr(d.deadline_template, 'shipping_instructions', None)
+                else ''
+            ),
             # File "modello" da scaricare (se l'operatore l'ha allegato al template)
             'template_file_name': (
                 d.deadline_template.client_template_file.name.rsplit('/', 1)[-1]

@@ -364,6 +364,7 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
         }),
         ('Scadenza', {
             'fields': ('deadline_type', 'title', 'description', 'submission_kind',
+                       'shipping_instructions',
                        'client_template_file', 'days_before_event', 'display_order'),
         }),
         ('Notifiche', {
@@ -375,7 +376,7 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
     )
 
     class Media:
-        js = ('admin/js/deadline_event_filter.js',)
+        js = ('admin/js/deadline_event_filter.js', 'admin/js/deadline_shipping.js')
 
     @admin.display(description='Servizio', ordering='service__name')
     def service_link(self, obj):

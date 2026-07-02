@@ -459,6 +459,7 @@ class SubmissionKind(models.TextChoices):
     FILE = 'file', 'Solo file'
     CONTENT = 'content', 'Solo campi da compilare'
     BOTH = 'both', 'File + campi da compilare'
+    PHYSICAL = 'physical', 'Materiale fisico (spedizione postale)'
 
 
 class FieldType(models.TextChoices):
@@ -491,6 +492,13 @@ class DeadlineTemplate(TimeStampedModel):
         default=SubmissionKind.FILE,
         verbose_name="Cosa deve fornire il cliente",
         help_text="File, campi da compilare, oppure entrambi.",
+    )
+
+    shipping_instructions = models.TextField(
+        blank=True,
+        verbose_name="Istruzioni di spedizione",
+        help_text="Visibile al cliente nel portale quando il tipo è 'Materiale fisico'. "
+                  "Indica indirizzo di spedizione, imballo, riferimento da riportare, ecc.",
     )
 
     days_before_event = models.IntegerField(

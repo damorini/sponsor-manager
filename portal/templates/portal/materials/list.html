@@ -178,6 +178,23 @@
       </div>
       {% endif %}
 
+      <!-- Materiale fisico: istruzioni di spedizione -->
+      {% if m.is_physical and not m.is_completed %}
+      <div class="px-5 py-4 bg-amber-50 border-t border-amber-200">
+        <div class="flex items-start gap-3">
+          <span class="text-amber-500 text-xl mt-0.5">📦</span>
+          <div>
+            <h4 class="text-sm font-semibold text-amber-900 mb-1">{% trans "Materiale fisico da spedire" %}</h4>
+            {% if m.shipping_instructions %}
+            <div class="text-sm text-amber-800 whitespace-pre-line">{{ m.shipping_instructions }}</div>
+            {% else %}
+            <p class="text-sm text-amber-700">{% trans "Contatta la segreteria per ricevere le istruzioni di spedizione." %}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
       <!-- Form campi da compilare (campi / entrambi) -->
       {% if m.deadline.status != 'waived' and m.needs_content %}
       <div class="px-5 py-4 bg-gray-50 border-t border-gray-100">
