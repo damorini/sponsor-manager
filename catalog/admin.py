@@ -201,9 +201,8 @@ class ServiceAdmin(admin.ModelAdmin):
     form = ServiceAdminForm
 
     list_display = (
-        'code', 'display_order', 'name_display', 'event_link', 'category', 'pricing_display',
-        'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
-        'scadenze_badge',
+        'code', 'display_order', 'name_display', 'scadenze_badge', 'event_link', 'category',
+        'pricing_display', 'ecommerce_badge', 'cutoff_display', 'is_active', 'availability_display',
     )
     # "Ordine" modificabile direttamente dalla lista: cosi' si riordina come
     # appare nell'ecommerce/portale senza aprire ogni servizio (la lista e'
