@@ -475,6 +475,10 @@ class Contract(SoftDeleteModel):
         if self.contract_number:
             super().save(*args, **kwargs)
             self._sync_option_venue(kwargs.get('update_fields'))
+            # Sincronizza la scadenza-opzione anche sui contratti esistenti:
+            # quando il preventivo viene confermato (status -> SIGNED) o l'opzione
+            # viene rimossa, la Deadline 'scadenza_opzione' pending viene eliminata.
+            self._sync_option_deadline(kwargs.get('update_fields'))
             return
 
         # Numero assente: genera in automatico (vale anche per ADDON/ADDENDUM).
