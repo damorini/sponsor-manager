@@ -1226,13 +1226,25 @@ class ContractLine(TimeStampedModel):
         (variante o servizio) se disponibile, altrimenti dal prezzo unitario
         della riga. Non è mai inferiore al prezzo unitario impostato sulla riga."""
         unit = None
+        notes = self.notes or ''
+        # Riga stand/blocco: il listino è il prezzo base dello spazio assegnato.
         try:
-            if self.service_variant_id and self.service_variant and self.service_variant.base_price:
-                unit = self.service_variant.base_price
-            elif self.service_id and self.service and self.service.base_price:
-                unit = self.service.base_price
+            if notes.startswith('stand:') and self.contract.stand_id and self.contract.stand.base_price:
+                unit = self.contract.stand.base_price
+            elif notes.startswith('block:') and self.contract.stand_block_id:
+                bp = getattr(self.contract.stand_block, 'effective_price', None)
+                if bp:
+                    unit = bp
         except Exception:
             unit = None
+        if unit is None:
+            try:
+                if self.service_variant_id and self.service_variant and self.service_variant.base_price:
+                    unit = self.service_variant.base_price
+                elif self.service_id and self.service and self.service.base_price:
+                    unit = self.service.base_price
+            except Exception:
+                unit = None
         if not unit or unit <= 0:
             unit = self.unit_price or Decimal('0')
         unit = max(unit, self.unit_price or Decimal('0'))
@@ -1259,7 +1271,10 @@ class ContractLine(TimeStampedModel):
 
     @property
     def sconto_eur(self):
-        """Valore dello sconto in euro (listino − riservato), 0 se non revisionato."""
+        """Valore dello sconto in euro (listino − riservato), 0 se non revisionato
+        o se è un servizio incluso (a €0)."""
+        if not self.is_prezzo_revisionato:
+            return Decimal('0.00')
         d = (self.prezzo_listino or Decimal('0')) - (self.prezzo_riservato or Decimal('0'))
         return d if d > 0 else Decimal('0.00')
 

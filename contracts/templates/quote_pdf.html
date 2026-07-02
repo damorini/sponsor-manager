@@ -59,6 +59,7 @@
     {% endfor %}
   </table>
   <table class="tot">
+    {% if sconto_totale and sconto_totale > 0 %}<tr><td class="lbl" style="color:#065f46;">{{ t.sconto }}</td><td class="val" style="color:#065f46;">&minus; &euro; {{ sconto_totale|floatformat:2 }}</td></tr>{% endif %}
     <tr><td class="lbl">{{ t.imponibile }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
     <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
     <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
@@ -76,7 +77,7 @@
         {# Riga 1: nome segreteria + indirizzo (i newline dell'indirizzo diventano spazi) #}
         <span class="org-name">{{ org.name }}</span>{% if org.address %} &middot; {{ org.address }}{% endif %}<br>
         {# Riga 2: contatti, dati fiscali e riferimento preventivo #}
-        {% if org.phone %}Tel: {{ org.phone }}{% endif %}{% if org.email %}{% if org.phone %} &middot; {% endif %}{{ org.email }}{% endif %}{% if org.website %} &middot; {{ org.website }}{% endif %}{% if org.vat %} &middot; P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}{% if contract.contract_number %} &middot; <span class="org-ref">{{ t.ref }} {{ contract.contract_number }}</span>{% endif %}
+        {% if org.phone %}Tel: {{ org.phone }}{% endif %}{% if org.website %}{% if org.phone %} &middot; {% endif %}{{ org.website }}{% endif %}{% if org.email %}<br>Email: {{ org.email }}{% endif %}{% if org.vat %} &middot; P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}{% if contract.contract_number %} &middot; <span class="org-ref">{{ t.ref }} {{ contract.contract_number }}</span>{% endif %}
       </td>
       {# --- Segreteria SCIENTIFICA: in basso a destra, solo se valorizzata --- #}
       {% if sci %}

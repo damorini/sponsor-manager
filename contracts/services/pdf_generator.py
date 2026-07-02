@@ -670,6 +670,7 @@ def _add_header_footer_to_docx(docx_path, contract):
             pp.paragraph_format.line_spacing = 1.0
             rr = pp.add_run(testo)
             rr.bold = grassetto
+            rr.font.name = 'Arial'
             rr.font.size = Pt(7.5)
             rr.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
         if righe or logo:
@@ -1139,7 +1140,7 @@ def _format_admission_services_table(docx_path):
     from docx.oxml import OxmlElement
 
     BODY_FONT = 'Arial'
-    BODY_SIZE = Pt(10)
+    BODY_SIZE = Pt(8)
 
     def _style_cell(cell, align, bold=None):
         for para in cell.paragraphs:
@@ -1549,12 +1550,13 @@ def generate_quote_pdf_html(contract):
             'eyebrow': 'Sponsorship proposal', 'intro': intro, 'attn': attn,
             'section_title': 'Summary of spaces and services on option',
             'empty': 'No items selected.', 'incl': 'Included',
+            'sconto': 'Unconditional discount',
             'imponibile': 'Net amount', 'iva': 'VAT', 'totale': 'Total (VAT included)',
             'validity': validity, 'cta': 'View and confirm the quote', 'ref': 'Quote',
         }
     else:
         intro = mark_safe(
-            f"Gentile <strong>{_sp}</strong>,<br>a seguito delle preferenze da voi indicate, siamo "
+            f"Spett.le <strong>{_sp}</strong>,<br>a seguito delle preferenze da voi indicate, siamo "
             f"lieti di sottoporvi l'offerta relativa alla presenza della vostra azienda nell'ambito "
             f"di <strong>{_ev}</strong>"
             + (f", che si terrà a {_lu}" if luogo else "")
@@ -1571,15 +1573,19 @@ def generate_quote_pdf_html(contract):
             'eyebrow': 'Proposta di sponsorizzazione', 'intro': intro, 'attn': attn,
             'section_title': 'Riepilogo spazi e servizi in opzione',
             'empty': 'Nessuna voce selezionata.', 'incl': 'Incluso',
+            'sconto': 'Sconto incondizionato',
             'imponibile': 'Imponibile', 'iva': 'IVA', 'totale': 'Totale (IVA inclusa)',
             'validity': validity, 'cta': 'Vedi e conferma il preventivo', 'ref': 'Preventivo',
         }
 
+    from decimal import Decimal as _Dec
+    sconto_totale = sum((getattr(l, 'sconto_eur', _Dec('0')) or _Dec('0')) for l in lines)
     ctx = {
         'contract': contract,
         'sponsor': sponsor,
         'event': _event_for_template(event),
         'lines': lines,
+        'sconto_totale': sconto_totale,
         'confirm_url': (site_url + portal_path) if site_url else portal_path,
         'header_url': header_url,
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
