@@ -174,7 +174,7 @@ def _invia_contratto_sponsor(contract, language, event_name):
             'event_name': event_name,
         },
         to=[to_email],
-        cc=['amministrazione@valet.it', 'elisa.fantini@valet.it'],
+        cc=['amministrazione@valet.it', 'morini@valet.it'],
         subject=subject,
         language=language,
         attachments=[attachment],
