@@ -6,6 +6,7 @@ DeadlineTemplate inline dentro Service.
 """
 from django import forms
 from django.contrib import admin
+from django.db import models
 from django.contrib.admin.widgets import AutocompleteSelect
 from core.admin_filters import evento_filter, nascondi_archiviati_filter
 from django.urls import reverse
