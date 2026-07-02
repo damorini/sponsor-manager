@@ -620,12 +620,13 @@ def _add_header_footer_to_docx(docx_path, contract):
         contatti = []
         if org.phone:
             contatti.append("Tel: " + org.phone)
-        if org.email:
-            contatti.append("Email: " + org.email)
         if org.website:
             contatti.append(org.website)
         if contatti:
             righe.append(("   ".join(contatti), False))
+        # Email su una riga propria (etichetta + indirizzo insieme, mai spezzati)
+        if org.email:
+            righe.append(("Email: " + org.email, False))
         fisc = []
         if org.vat_number:
             fisc.append("P.IVA " + org.vat_number)
