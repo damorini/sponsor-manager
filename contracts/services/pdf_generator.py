@@ -1184,10 +1184,14 @@ def _format_admission_services_table(docx_path):
     doc.save(str(docx_path))
 
 
-def generate_admission_request_pdf(contract):
+def generate_admission_request_pdf(contract, as_allegato=False):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
     riusando lo stesso contesto e lo stesso header/footer del contratto.
+
+    as_allegato=True: versione da allegare al contratto di sponsorizzazione,
+    con l'intestazione "ALLEGATO 1 – parte integrante dell'accordo" in cima
+    (filename e document_type dedicati, così non sovrascrive la domanda standalone).
 
     Returns:
         Document creato (instance).
@@ -1243,13 +1247,21 @@ def generate_admission_request_pdf(contract):
         'cancellation_penalty_percent': _pct(event.cancellation_penalty_percent or 50),
         'penale_percent': _pct(_penale),
         'deposit_percent': _pct(contract.deposit_percent or 0),
+        'as_allegato': as_allegato,
     }
 
     doc = DocxTemplate(str(template_path))
     doc.render(context, jinja_env=get_jinja_env())
 
-    file_prefix = 'addendum' if is_addendum else 'domanda_ammissione'
-    document_type = 'addendum' if is_addendum else 'admission_request'
+    if as_allegato:
+        file_prefix = 'allegato1_domanda'
+        document_type = 'admission_allegato'
+    elif is_addendum:
+        file_prefix = 'addendum'
+        document_type = 'addendum'
+    else:
+        file_prefix = 'domanda_ammissione'
+        document_type = 'admission_request'
     docx_filename = f"{file_prefix}_{contract.contract_number}_{event.id}.docx"
     relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
     full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
@@ -1368,14 +1380,8 @@ def generate_sponsor_contract_pdf(contract):
     # ALLEGATO 1: la Domanda di ammissione (riusa quella gia' generata, se c'e')
     domanda_pdf = None
     try:
-        from shared.models import Document
-        ct = ContentType.objects.get_for_model(contract.__class__)
-        adm = (Document.objects
-               .filter(content_type=ct, object_id=contract.id,
-                       document_type='admission_request', deleted_at__isnull=True)
-               .order_by('-created_at').first())
-        if not (adm and str(adm.storage_url).endswith('.pdf')):
-            adm = generate_admission_request_pdf(contract)
+        # versione della domanda intitolata "ALLEGATO 1" (parte integrante)
+        adm = generate_admission_request_pdf(contract, as_allegato=True)
         if adm and str(adm.storage_url).endswith('.pdf'):
             rel = adm.storage_url.replace(settings.MEDIA_URL, '', 1)
             p = Path(settings.MEDIA_ROOT) / rel
