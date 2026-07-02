@@ -126,6 +126,11 @@ def genera_riga_da_stand(contract):
                 f"{label}: manca il prezzo base sullo stand/blocco. "
                 "Imposta il prezzo e riprova.")
 
+    # 3-bis) override prezzo/sconto dal contratto (impostati in fase di creazione)
+    price_eff = price
+    if getattr(contract, 'stand_price_override', None) is not None:
+        price_eff = contract.stand_price_override
+
     # 4) crea la riga col servizio della tipologia (il save() ricalcola i totali
     #    e l'espansione dei servizi inclusi del pacchetto)
     service = get_or_create_stand_service(contract.event, stand_type)
@@ -135,8 +140,44 @@ def genera_riga_da_stand(contract):
         service_name_snapshot=label,
         service_description_snapshot=descrizione,
         quantity=1,
-        unit_price=price,
+        unit_price=price_eff,
+        discount_percent=contract.stand_discount_percent or Decimal('0'),
+        discount_amount=contract.stand_discount_amount or Decimal('0'),
         notes=marker,  # marcatore per idempotenza
     )
     line.save()
-    return ("creata", f"Riga creata: {label} - prezzo {price}. Totale aggiornato.")
+    return ("creata", f"Riga creata: {label} - prezzo {price_eff}. Totale aggiornato.")
+
+
+def applica_override_stand(contract):
+    """Applica gli override di prezzo/sconto del contratto alla riga STAND gia'
+    esistente. Da chiamare al salvataggio del contratto: cosi' cambiando i campi
+    'Prezzo stand (override)' / 'Sconto stand %' / 'Sconto stand €' la riga si
+    aggiorna. Se NESSUN override e' impostato, non tocca la riga (resta il prezzo
+    base, modificabile a mano). Ritorna True se ha aggiornato la riga.
+    """
+    from contracts.models import ContractLine  # noqa: F401
+    has_override = (
+        getattr(contract, 'stand_price_override', None) is not None
+        or getattr(contract, 'stand_discount_percent', None) is not None
+        or getattr(contract, 'stand_discount_amount', None) is not None
+    )
+    if not has_override:
+        return False
+    try:
+        _p, _l, marker, _d, _t = _stand_price_and_label(contract)
+    except ValueError:
+        return False
+    line = contract.lines.filter(notes__contains=marker).first()
+    if not line:
+        return False
+    base_price, *_ = _stand_price_and_label(contract)
+    line.unit_price = (
+        contract.stand_price_override
+        if contract.stand_price_override is not None
+        else (base_price if base_price is not None else line.unit_price)
+    )
+    line.discount_percent = contract.stand_discount_percent or Decimal('0')
+    line.discount_amount = contract.stand_discount_amount or Decimal('0')
+    line.save()  # ContractLine.save ricalcola riga + totali contratto
+    return True

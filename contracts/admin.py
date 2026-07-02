@@ -334,13 +334,19 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         # Genera automaticamente la riga stand/blocco se non ancora presente.
         # Solo per contratti non annullati (evita righe fantasma su contratti cancellati).
         if obj.status != ContractStatus.CANCELLED and (obj.stand_id or obj.stand_block_id):
-            from .services.stand_line import genera_riga_da_stand, has_stand_line
+            from .services.stand_line import (
+                genera_riga_da_stand, has_stand_line, applica_override_stand,
+            )
             if not has_stand_line(obj):
                 esito, msg = genera_riga_da_stand(obj)
                 if esito == 'creata':
                     self.message_user(request, f"Riga stand aggiunta automaticamente: {msg}")
                 elif esito == 'no_prezzo':
                     self.message_user(request, f"Attenzione: {msg}", level=messages.WARNING)
+            # Applica/aggiorna prezzo e sconto stand impostati sul contratto.
+            if applica_override_stand(obj):
+                self.message_user(
+                    request, "Prezzo/sconto stand applicati alla riga.")
 
     def delete_model(self, request, obj):
         """Cancellazione singola: usa Contract.delete() (soft-delete) che
@@ -375,7 +381,8 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             ),
         }),
         ('Spazio espositivo', {
-            'fields': ('stand', 'stand_block', 'option_until'),
+            'fields': ('stand', 'stand_block', 'option_until',
+                       ('stand_price_override', 'stand_discount_percent', 'stand_discount_amount')),
             'description': (
                 'Scegli stand singolo OPPURE blocco, non entrambi. '
                 'IMPORTANTE: nella tendina digita il nome (o slug) dell\'evento '

@@ -267,6 +267,24 @@ class Contract(SoftDeleteModel):
         help_text="Se compilata, sostituisce la descrizione dello stand nel preventivo di questo contratto. Vuota = usa la descrizione dello stand/blocco.",
     )
 
+    # Override prezzo/sconto della riga STAND per questo contratto. Vuoti =
+    # prezzo base dello stand/blocco senza sconto (la riga resta modificabile a mano).
+    stand_price_override = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Prezzo stand (override)",
+        help_text="Se valorizzato, sostituisce il prezzo base dello stand/blocco nella riga del contratto.",
+    )
+    stand_discount_percent = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True,
+        verbose_name="Sconto stand (%)",
+        help_text="Sconto percentuale (0-100) applicato alla riga stand.",
+    )
+    stand_discount_amount = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Sconto stand (€)",
+        help_text="Sconto in valore applicato alla riga stand.",
+    )
+
     # Compliance regolatoria (dipende da evento+sponsor, quindi per-contratto)
     requires_aifa = models.BooleanField(
         default=False,
