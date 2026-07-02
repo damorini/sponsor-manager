@@ -7,15 +7,6 @@
   Sponsor <strong>{{ contract.sponsor.legal_name }}</strong>
 </p>
 
-{% if not contract.letter_template %}
-<p style="color:#ba2121;">
-  <strong>Attenzione:</strong> nessun "Template lettera preventivo" selezionato
-  su questo contratto. Selezionane uno e salva prima di inviare.
-</p>
-{% else %}
-<p>Template lettera: <strong>{{ contract.letter_template.name }}</strong>.
-   Verra' generato un PDF e allegato all'email.</p>
-
 <form method="post">
   {% csrf_token %}
   <fieldset class="module aligned">
@@ -51,5 +42,4 @@
     <a href="../" class="button cancel-link">Annulla</a>
   </div>
 </form>
-{% endif %}
 {% endblock %}
