@@ -93,6 +93,17 @@ class EventAdmin(admin.ModelAdmin):
         n = queryset.update(status=EventStatus.SELLING)
         self.message_user(request, f"{n} evento/i riattivato/i (stato: Vendita aperta).")
 
+    def get_search_results(self, request, queryset, search_term):
+        """Nei menu a tendina (autocomplete) di contratti, servizi, stand, ecc.
+        mostra SOLO gli eventi attivi: gli archiviati restano nell'elenco eventi
+        ma spariscono dai selettori. La validazione dei record gia' salvati non
+        e' toccata (il campo mantiene il queryset completo)."""
+        queryset, may_dup = super().get_search_results(request, queryset, search_term)
+        if "/autocomplete/" in request.path:
+            from events.models import EventStatus
+            queryset = queryset.exclude(status=EventStatus.ARCHIVED)
+        return queryset, may_dup
+
     fieldsets = (
         (None, {
             'fields': ('slug', 'code', 'email_header_image', 'name', 'description', 'event_type', 'status'),

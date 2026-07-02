@@ -74,8 +74,10 @@ class DeadlineTemplateForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from events.models import Event
-        self.fields['event'].queryset = Event.objects.order_by('-start_date')
+        from events.models import Event, EventStatus
+        self.fields['event'].queryset = (
+            Event.objects.exclude(status=EventStatus.ARCHIVED).order_by('-start_date')
+        )
         # Pre-popola evento se record già salvato
         if self.instance and self.instance.pk and self.instance.service_id:
             try:
@@ -233,6 +235,9 @@ class ServiceAdmin(admin.ModelAdmin):
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
+            # Servizi di eventi ARCHIVIATI: fuori dai menu a tendina.
+            from events.models import EventStatus
+            queryset = queryset.exclude(event__status=EventStatus.ARCHIVED)
             # Nasconde dall'autocomplete i servizi ESAURITI con la STESSA logica del
             # portale (proprieta' is_sold_out): se il portale lo grigia, qui sparisce.
             _sold = [s.pk for s in queryset if getattr(s, 'is_sold_out', False)]
