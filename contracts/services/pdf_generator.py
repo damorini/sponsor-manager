@@ -1298,6 +1298,121 @@ def generate_admission_request_pdf(contract):
 
 
 # ============================================================================
+# CONTRATTO DI SPONSORIZZAZIONE (non-ECM) con Domanda di ammissione = Allegato 1
+# ============================================================================
+
+SPONSOR_CONTRACT_TEMPLATE = 'template_contratto_sponsor_non_ecm_it.docx'
+
+
+def _get_operational_contact(contract):
+    """Contatto OPERATIVO dello sponsor (destinatario del contratto).
+    Fallback: referente/primary (via _get_referente_contact) e poi firmatario."""
+    ref = _get_referente_contact(contract)
+    return ref or _get_signer_contact(contract)
+
+
+def generate_sponsor_contract_pdf(contract):
+    """Genera il CONTRATTO DI SPONSORIZZAZIONE (non-ECM) in PDF, compilato coi
+    dati di sponsor/firmatario/evento, con la DOMANDA DI AMMISSIONE allegata
+    come ALLEGATO 1 (ultime pagine) in un unico PDF.
+
+    Ritorna il Document creato (document_type='sponsor_contract').
+    """
+    template_path = TEMPLATES_DIR / SPONSOR_CONTRACT_TEMPLATE
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template contratto sponsor non trovato: {template_path}")
+
+    sponsor = contract.sponsor
+    event = contract.event
+    signer = _get_signer_contact(contract)
+    if not signer:
+        raise ValueError(
+            f"Contract {contract.contract_number}: manca il firmatario, "
+            "impossibile generare il contratto di sponsorizzazione."
+        )
+    ref = _get_operational_contact(contract)
+    operational_email = (getattr(ref, 'email', '') or getattr(signer, 'email', '') or '')
+
+    context = {
+        'contract': contract,
+        'sponsor': sponsor,
+        'signer': signer,
+        'event': _event_for_template(event),
+        'operational_email': operational_email,
+    }
+    doc = DocxTemplate(str(template_path))
+    doc.render(context, jinja_env=get_jinja_env())
+
+    docx_filename = f"contratto_sponsor_{contract.contract_number}_{event.id}.docx"
+    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(full_docx_path))
+
+    try:
+        _add_header_footer_to_docx(full_docx_path, contract)
+    except Exception as e:
+        logger.warning("Header/footer contratto sponsor non applicati per %s: %s",
+                       contract.contract_number, e)
+
+    contract_pdf = _convert_docx_to_pdf(full_docx_path)
+    if not contract_pdf:
+        return _create_document_record(
+            contract, full_docx_path, relative_docx_path, file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='sponsor_contract',
+        )
+
+    # ALLEGATO 1: la Domanda di ammissione (riusa quella gia' generata, se c'e')
+    domanda_pdf = None
+    try:
+        from shared.models import Document
+        ct = ContentType.objects.get_for_model(contract.__class__)
+        adm = (Document.objects
+               .filter(content_type=ct, object_id=contract.id,
+                       document_type='admission_request', deleted_at__isnull=True)
+               .order_by('-created_at').first())
+        if not (adm and str(adm.storage_url).endswith('.pdf')):
+            adm = generate_admission_request_pdf(contract)
+        if adm and str(adm.storage_url).endswith('.pdf'):
+            rel = adm.storage_url.replace(settings.MEDIA_URL, '', 1)
+            p = Path(settings.MEDIA_ROOT) / rel
+            if p.exists():
+                domanda_pdf = p
+    except Exception as e:
+        logger.warning("Domanda (Allegato 1) non disponibile per %s: %s",
+                       contract.contract_number, e)
+
+    final_pdf = contract_pdf
+    final_name = contract_pdf.name
+    if domanda_pdf:
+        try:
+            from pypdf import PdfWriter
+            merged_name = f"contratto_sponsor_completo_{contract.contract_number}_{event.id}.pdf"
+            merged_path = full_docx_path.parent / merged_name
+            writer = PdfWriter()
+            writer.append(str(contract_pdf))
+            writer.append(str(domanda_pdf))
+            with open(merged_path, 'wb') as fh:
+                writer.write(fh)
+            writer.close()
+            final_pdf = merged_path
+            final_name = merged_name
+        except Exception as e:
+            logger.warning("Merge contratto+domanda (Allegato 1) fallito per %s: %s",
+                           contract.contract_number, e)
+
+    relative_pdf_path = f"documents/contracts/{contract.id}/{final_name}"
+    document = _create_document_record(
+        contract, final_pdf, relative_pdf_path, file_name=final_name,
+        mime='application/pdf', document_type='sponsor_contract',
+    )
+    logger.info("Contract %s: contratto sponsor generato (Document id=%s)",
+                contract.contract_number, document.id)
+    return document
+
+
+# ============================================================================
 # PREVENTIVO: PDF dalla grafica HTML (stessa della mail) con link cliccabile
 # ============================================================================
 

@@ -1,0 +1,14 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 4px 0; font-size:22px;">Sponsorship agreement</h2>
+<p style="margin:0 0 2px 0; font-size:18px; font-weight:600; color:#111827;">{{ event_name }}</p>
+<p class="text-muted" style="margin:0 0 18px 0; font-size:14px;">{{ contract.contract_number }}</p>
+
+<p style="margin:0 0 16px 0;">Dear {{ sponsor.legal_name }},<br>
+following your confirmation of the proposal, please find attached the <strong>sponsorship agreement</strong> for <strong>{{ event_name }}</strong>, including the <strong>admission request (Annex 1)</strong>.</p>
+
+<p style="margin:0 0 16px 0;">Please review the details, sign the agreement and return it to us. The organising secretariat remains at your disposal for any need.</p>
+
+<p style="margin:18px 0 0 0;">Kind regards,<br>{{ org_name|default:organizer_name }}</p>
+{% endblock %}

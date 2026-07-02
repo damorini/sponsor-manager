@@ -1,0 +1,14 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 class="text-primary" style="margin:0 0 4px 0; font-size:22px;">Contratto di sponsorizzazione</h2>
+<p style="margin:0 0 2px 0; font-size:18px; font-weight:600; color:#111827;">{{ event_name }}</p>
+<p class="text-muted" style="margin:0 0 18px 0; font-size:14px;">{{ contract.contract_number }}</p>
+
+<p style="margin:0 0 16px 0;">Gentile {{ sponsor.legal_name }},<br>
+a seguito della conferma del preventivo, in allegato trovate il <strong>contratto di sponsorizzazione</strong> relativo a <strong>{{ event_name }}</strong>, completo della <strong>domanda di ammissione (Allegato 1)</strong>.</p>
+
+<p style="margin:0 0 16px 0;">Vi chiediamo di verificare i dati riportati, firmare il contratto e restituircelo. Per qualsiasi necessità la segreteria organizzativa resta a vostra disposizione.</p>
+
+<p style="margin:18px 0 0 0;">Cordiali saluti,<br>{{ org_name|default:organizer_name }}</p>
+{% endblock %}

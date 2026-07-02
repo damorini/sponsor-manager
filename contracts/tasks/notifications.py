@@ -123,6 +123,68 @@ def send_contract_signed_notification(self, contract_id):
         logger.exception("Errore invio notifica contratto firmato %s", contract_id)
         raise self.retry(exc=e)
 
+    # --- Contratto di sponsorizzazione (solo MAIN non-ECM): genera e invia ---
+    # Wrappato: un errore qui NON deve far ritentare l'intera notifica.
+    try:
+        from contracts.models import ContractKind
+        from events.models import EventType
+        if (contract.contract_kind == ContractKind.MAIN
+                and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
+            _invia_contratto_sponsor(contract, language, event_name)
+    except Exception:
+        logger.exception(
+            "Generazione/invio contratto di sponsorizzazione fallito per %s",
+            contract.contract_number,
+        )
+
+
+def _invia_contratto_sponsor(contract, language, event_name):
+    """Genera il contratto di sponsorizzazione (con Domanda di ammissione come
+    Allegato 1) e lo invia al contatto OPERATIVO dello sponsor, in CC ad
+    amministrazione@valet.it ed elisa.fantini@valet.it."""
+    from django.conf import settings
+    from pathlib import Path
+    from contracts.services.pdf_generator import (
+        generate_sponsor_contract_pdf, _get_operational_contact,
+    )
+    from contracts.services.email_sender import send_email
+
+    document = generate_sponsor_contract_pdf(contract)
+    rel = document.storage_url.replace(settings.MEDIA_URL, '')
+    pdf_path = Path(settings.MEDIA_ROOT) / rel
+    if not pdf_path.exists():
+        logger.warning("PDF contratto sponsor mancante per %s", contract.contract_number)
+        return
+    attachment = (document.file_name, pdf_path.read_bytes(), 'application/pdf')
+
+    op = _get_operational_contact(contract)
+    to_email = getattr(op, 'email', None)
+    if not to_email:
+        logger.warning("Nessuna email (contatto operativo) per contratto sponsor %s",
+                       contract.contract_number)
+        return
+
+    subject = f"Contratto di sponsorizzazione {contract.contract_number} · {event_name}"
+    send_email(
+        template_name='sponsor_contract_email',
+        context={
+            'contract': contract,
+            'sponsor': contract.sponsor,
+            'event': contract.event,
+            'event_name': event_name,
+        },
+        to=[to_email],
+        cc=['amministrazione@valet.it', 'elisa.fantini@valet.it'],
+        subject=subject,
+        language=language,
+        attachments=[attachment],
+        related_to=contract,
+        communication_type='initial_send',
+        is_automated=True,
+    )
+    logger.info("Contratto sponsor %s inviato a %s (CC amministrazione, elisa.fantini)",
+                contract.contract_number, to_email)
+
 
 # ============================================================================
 # Conferma pagamento ricevuto
