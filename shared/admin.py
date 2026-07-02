@@ -206,7 +206,29 @@ class DocumentAdmin(admin.ModelAdmin):
 # EMAIL TEMPLATE (con widget multilingua)
 # =============================================================================
 
+# Punti di invio email dell'applicazione (code = nome template file/DB).
+EMAIL_POINTS = [
+    ('portal_invitation', 'Invito al portale'),
+    ('quote_email', 'Invio preventivo'),
+    ('contract_signed', 'Conferma preventivo — domanda di ammissione'),
+    ('sponsor_contract_email', 'Conferma preventivo — contratto di sponsorizzazione'),
+    ('payment_confirmation', 'Conferma pagamento ricevuto'),
+    ('deadline_reminder', 'Reminder scadenza (T-10 / T-3 / T-0)'),
+    ('deadline_overdue', 'Sollecito scadenza scaduta'),
+    ('option_reminder', 'Reminder opzione spazio'),
+    ('cart_recovery', 'Recupero carrello abbandonato'),
+    ('operator_alert', 'Alert operatore (interno)'),
+    ('password_reset', 'Reset password'),
+    ('portal_message_notification', 'Notifica nuovo messaggio nel portale'),
+]
+
+
 class EmailTemplateForm(forms.ModelForm):
+    code = forms.ChoiceField(
+        choices=EMAIL_POINTS,
+        label='Punto di invio',
+        help_text="Quando parte questa email nel gestionale.",
+    )
     subject_template = TranslatableJSONField(
         languages=['it', 'en'],
         required_languages=['it'],
@@ -234,15 +256,26 @@ class EmailTemplateForm(forms.ModelForm):
 class EmailTemplateAdmin(admin.ModelAdmin):
     form = EmailTemplateForm
 
-    list_display = ('code', 'name', 'communication_type', 'is_active')
-    list_filter = ('is_active', 'communication_type')
+    list_display = ('punto_display', 'event_type_display', 'name', 'is_active')
+    list_filter = ('event_type', 'is_active', 'code')
     search_fields = ('code', 'name', 'description')
-    ordering = ('code',)
+    ordering = ('code', 'event_type')
     readonly_fields = ('created_at', 'updated_at')
+
+    @admin.display(description='Punto di invio', ordering='code')
+    def punto_display(self, obj):
+        return dict(EMAIL_POINTS).get(obj.code, obj.code)
+
+    @admin.display(description='Tipo evento', ordering='event_type')
+    def event_type_display(self, obj):
+        from shared.models import EmailTemplate
+        return dict(EmailTemplate.EVENT_TYPE_CHOICES).get(obj.event_type, obj.event_type) or 'Tutti'
 
     fieldsets = (
         (None, {
-            'fields': ('code', 'name', 'description', 'communication_type', 'is_active'),
+            'fields': ('code', 'event_type', 'name', 'description', 'communication_type', 'is_active'),
+            'description': "Attiva il modello per farlo usare al posto dell'email predefinita. "
+                           "Se non attivo (o assente), viene usato il testo standard di sistema.",
         }),
         ('Contenuto', {
             'fields': ('subject_template', 'body_template'),

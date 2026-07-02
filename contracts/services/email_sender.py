@@ -233,8 +233,19 @@ def send_email(
     if custom_body_html is not None:
         body_html = _render_custom_body(custom_body_html, full_context)
     else:
+        # Ricava il tipo evento (ECM/NON_ECM) dal contesto per scegliere il
+        # modello giusto: da 'event' diretto o da 'contract.event'.
+        _evt_type = None
+        try:
+            _ev = context.get('event') if isinstance(context, dict) else None
+            if _ev is None:
+                _ct = context.get('contract') if isinstance(context, dict) else None
+                _ev = getattr(_ct, 'event', None) if _ct is not None else None
+            _evt_type = getattr(_ev, 'event_type', None)
+        except Exception:
+            _evt_type = None
         body_html, subject_override = _render_email_body(
-            template_name, language, full_context
+            template_name, language, full_context, event_type=_evt_type
         )
         if subject_override:
             subject = subject_override
@@ -427,20 +438,30 @@ def _pick_lang(raw, language):
     return raw
 
 
-def _render_email_body(template_name, language, context):
+def _render_email_body(template_name, language, context, event_type=None):
     """
     Ritorna (body_html, subject_override).
     Se esiste un EmailTemplate attivo con code == template_name, usa il testo
     dall'admin avvolto nel layout grafico email_base.html. Altrimenti (o in caso
     di errore) ripiega sul file su disco. subject_override e' None se non
     sovrascritto dall'admin.
+
+    Risoluzione per tipo evento: prima cerca il modello attivo specifico per
+    l'event_type dell'evento (ECM/NON_ECM), poi quello 'Tutti gli eventi'
+    (event_type=''), infine un qualsiasi modello attivo per quel codice.
     """
     tpl = None
     try:
         from shared.models import EmailTemplate
-        tpl = EmailTemplate.objects.filter(
-            code=template_name, is_active=True
-        ).first()
+        qs = EmailTemplate.objects.filter(code=template_name, is_active=True)
+        if event_type:
+            # tipo noto: SOLO modello specifico per il tipo, poi 'Tutti gli eventi'.
+            # Mai un modello di un tipo evento diverso -> altrimenti file di sistema.
+            tpl = (qs.filter(event_type=event_type).first()
+                   or qs.filter(event_type='').first())
+        else:
+            # tipo sconosciuto: 'Tutti gli eventi', poi un qualsiasi attivo.
+            tpl = qs.filter(event_type='').first() or qs.first()
     except Exception:
         tpl = None
 

@@ -152,11 +152,26 @@ class EmailTemplate(TimeStampedModel):
     Template email modificabili dal backoffice senza touchare il codice.
     Placeholder Django/Jinja2: {{ sponsor.legal_name }}, {{ event.name }}, etc.
     """
+    EVENT_TYPE_CHOICES = [
+        ('', 'Tutti gli eventi'),
+        ('ECM', 'ECM'),
+        ('NON_ECM', 'Non ECM'),
+    ]
+
     code = models.CharField(
         max_length=50,
-        unique=True,
-        verbose_name="Codice",
-        help_text="Es. 'contract_initial_send', 'deadline_reminder_t10'",
+        verbose_name="Punto di invio",
+        help_text="Identifica QUANDO parte l'email (es. 'deadline_reminder').",
+    )
+    event_type = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        choices=EVENT_TYPE_CHOICES,
+        verbose_name="Tipo evento",
+        help_text="A quale tipo di evento si applica questo modello. "
+                  "'Tutti gli eventi' = usato come default quando non c'e' un "
+                  "modello specifico per ECM o Non ECM.",
     )
     name = models.CharField(max_length=255, verbose_name="Nome")
     description = models.TextField(blank=True, verbose_name="Descrizione")
@@ -193,10 +208,17 @@ class EmailTemplate(TimeStampedModel):
     class Meta:
         verbose_name = "Template email"
         verbose_name_plural = "Template email"
-        ordering = ['code']
+        ordering = ['code', 'event_type']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['code', 'event_type'],
+                name='uniq_emailtemplate_code_eventtype',
+            ),
+        ]
 
     def __str__(self):
-        return self.name
+        et = dict(self.EVENT_TYPE_CHOICES).get(self.event_type, self.event_type)
+        return f"{self.name} · {et}" if self.event_type else self.name
 
 
 # =============================================================================
