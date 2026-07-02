@@ -4,7 +4,7 @@
 >
 > Questo è il **manuale operativo di sistema** (backoffice + portale + manutenzione). Per la guida rapida utente esiste anche `docs/manuale_utente.html` (apribile nel browser). In caso di dubbio, questo documento è la fonte completa.
 >
-> *Ultimo aggiornamento: giugno 2026.*
+> *Ultimo aggiornamento: luglio 2026.*
 
 ---
 
@@ -12,6 +12,7 @@
 1. Panoramica e architettura
 2. Ambienti e accesso
 3. Concetti chiave (glossario operativo)
+3-bis. **Schemi pratici (i flussi in un colpo d'occhio)**
 4. Backoffice — guida sezione per sezione
 5. Portale sponsor (lato cliente)
 6. Flussi operativi completi (passo-passo)
@@ -77,6 +78,63 @@
 
 ---
 
+## 3-BIS. SCHEMI PRATICI (i flussi in un colpo d'occhio)
+
+### Schema A — Ciclo di vita: dal preventivo alla firma
+
+```
+ CREO IL CONTRATTO         INVIO IL PREVENTIVO        IL CLIENTE CONFERMA
+ (bozza)                   (azione admin)             (dal portale)
+ • sponsor + evento   ──>  • stato: INVIATO      ──>  • stato: FIRMATO
+ • stand / blocco          • stand: RISERVATO         • stand: ASSEGNATO
+ • righe servizio          • PDF preventivo            • si generano le SCADENZE
+ • (opz.) opzione          • email al cliente          • l'OPZIONE sparisce
+                                                        │
+                                                        └─> GENERATI IN AUTOMATICO:
+                                                            1) Domanda di ammissione (PDF)
+                                                            2) Contratto di sponsorizzazione (non-ECM)
+                                                               con la domanda come ALLEGATO 1
+                                                               → email al contatto OPERATIVO
+                                                                 in CC: amministrazione@valet.it
+                                                                        elisa.fantini@valet.it
+```
+
+### Schema B — Chi paga come (IMPORTANTE)
+
+```
+ CONTRATTO PRINCIPALE                    SERVIZI ACQUISTATI ONLINE
+ (domanda di ammissione)                 (carrello / addon ecommerce)
+        │                                        │
+        └──> SOLO BONIFICO                       └──> CARTA / PAYPAL / BONIFICO
+             acconto + saldo                          pagamento immediato
+             l'operatore registra l'incasso           il contratto si firma all'incasso
+```
+> Il pagamento **online (carta/PayPal)** è riservato agli **acquisti ecommerce**. Il **contratto principale si salda solo con bonifico**.
+
+### Schema C — Quale email parte (template per tipo evento)
+
+```
+ Il sistema deve mandare un'email (es. "Reminder scadenza")
+        │
+        ├─ c'è un modello ATTIVO per il TIPO EVENTO (ECM / Non-ECM)? ──> usa QUELLO
+        ├─ altrimenti un modello ATTIVO "Tutti gli eventi"?          ──> usa QUELLO
+        └─ altrimenti                                                ──> email STANDARD di sistema
+```
+> I modelli si gestiscono in **Template email**: 12 punti d'invio × ECM/Non-ECM. Finché un modello non è **Attivo**, parte l'email standard.
+
+### Schema D — Stati (automatici)
+
+```
+ STAND:      disponibile ──> riservato ──> assegnato
+                             (preventivo    (contratto
+                              inviato o       firmato)
+                              opzione attiva)
+ CONTRATTO:  Bozza → Inviato → Firmato → Attivo → Completato      ( → Annullato in qualsiasi momento)
+```
+> Annullare **o cancellare** un contratto **libera** subito lo stand/blocco e i servizi a numero limitato.
+
+---
+
 ## 4. BACKOFFICE — GUIDA SEZIONE PER SEZIONE
 
 ### 4.1 Eventi
@@ -96,6 +154,8 @@ Voci vendibili in un evento specifico. Si possono creare **da zero** o **dal cat
 - **Servizi inclusi**: servizi aggiunti automaticamente a €0 quando si vende il servizio padre (con quantità).
 - **Scadenze automatiche**: spunta **"Genera scadenze"** (`triggers_deadlines`) + uno o più **Template scadenze** sotto. ⚠️ **Servono entrambi**: la spunta da sola non basta.
 - Immagini: rinominate automaticamente in nome neutro (anti adblock) e ottimizzate.
+- **Colonne utili nella lista servizi**: **Img** (✓ verde = immagine caricata, ○ grigio = mancante) e **Scadenze** (badge verde con quante scadenze programmate ha il servizio). Servono a capire a colpo d'occhio cosa manca.
+- **Tipo di consegna della scadenza** (`submission_kind` nel Template scadenza): *File*, *Contenuto*, *Entrambi* oppure **"Materiale fisico (spedizione postale)"**. Scegliendo *Materiale fisico* si attiva il campo **Istruzioni di spedizione** che compili tu e il cliente vede nel portale (indirizzo, imballo, riferimento, ecc.).
 
 ### 4.4 Stand e Blocchi
 - **Stand**: codice (unico per evento), dimensioni (larghezza/profondità → area calcolata), tipologia, dotazioni (elettrico/acqua/internet/altezza), prezzo base, **descrizione preventivo IT/EN** (mostrata solo nel preventivo), stato.
@@ -112,16 +172,18 @@ Voci vendibili in un evento specifico. Si possono creare **da zero** o **dal cat
 Cuore operativo. Per un contratto:
 1. Scegli **sponsor** + **evento**; assegna **stand** o **blocco** (opzionale).
 2. Aggiungi **righe servizio** (con quantità/variante). I servizi inclusi si aggiungono da soli a €0. I prezzi sono **congelati** (snapshot) alla creazione della riga.
-3. (Opzionale) imposta un'**opzione** (`option_until`): lo spazio resta riservato fino a quella data senza pagamento.
+3. (Opzionale) imposta un'**opzione**: nella sezione **Spazio espositivo**, campo **"Spazio opzionato fino al"** (`option_until`). Finché quella data non è passata lo spazio resta *riservato* per lo sponsor anche a preventivo in bozza; oltre la data torna disponibile. Puoi modificare/togliere questa data quando vuoi.
 4. **Invia preventivo** (azione "Genera e invia PREVENTIVO"): stato → *Inviato*, stand → *riservato*, genera il PDF e invia l'email allo sponsor.
-5. **Firma** (lo sponsor conferma dal portale, o l'operatore con l'azione "Marca come FIRMATO", o automaticamente all'incasso): stato → *Firmato*, stand → *assegnato*, **genera le scadenze** (tecniche + acconto/saldo) e invia notifica.
-6. **Annulla** se serve: libera lo stand, le scadenze pendenti diventano "esonerate".
+5. **Firma** (lo sponsor conferma dal portale, o l'operatore con l'azione "Marca come FIRMATO", o automaticamente all'incasso): stato → *Firmato*, stand → *assegnato*, **genera le scadenze** (tecniche + acconto/saldo), **rimuove la scadenza-opzione** e invia notifica. Vedi anche il punto seguente.
+6. **Annulla o cancella** se serve: **libera subito lo stand/blocco** (torna disponibile) e i **servizi a numero limitato**; le scadenze pendenti diventano "esonerate".
+- **Generazione automatica alla conferma** (contratti principali di eventi **non-ECM**): oltre alla domanda di ammissione, il sistema genera il **contratto di sponsorizzazione** (con la domanda come *Allegato 1*) e lo invia via email al **contatto operativo** dello sponsor, in CC ad *amministrazione@valet.it* ed *elisa.fantini@valet.it*. Vedi Schema A.
 - **Numerazione** automatica `SIGLA-AA-NNN` (anti-collisione), anche per gli addon.
 - **Azione "Genera scadenze dai template"**: per contratti **già firmati** a cui hai aggiunto/modificato scadenze dopo la firma (vedi §11 e Troubleshooting).
+- **Termini di cancellazione / penale**: la percentuale di penale del contratto/domanda si imposta per evento in *Eventi → Dati per contratti → "Penale cancellazione (%)"* (default 50%). Nel PDF il testo si adatta alla forma di pagamento (con o senza acconto).
 
 ### 4.7 Pagamenti
-- I pagamenti dal portale (PayPal/carta) si registrano da soli; il contratto si firma all'incasso.
-- **Bonifico**: lo sponsor sceglie bonifico → il contratto va *In attesa pagamento*; l'operatore registra l'incasso con l'azione **"Registra pagamento bonifico ricevuto"** (o "Conferma bonifico").
+- **Contratto principale (domanda di ammissione) = solo bonifico.** Acconto e saldo si pagano con bonifico; l'operatore registra l'incasso con l'azione **"Registra pagamento bonifico ricevuto"**. Il pagamento online **non** è disponibile per il contratto principale.
+- **Pagamento online (carta/PayPal) = solo acquisti ecommerce** (servizi dal carrello, contratti *addon*): si registrano da soli e il contratto addon si firma all'incasso. Vedi Schema B.
 - I dati bancari mostrati al cliente vengono dalle variabili `.env` `BANK_TRANSFER_*` (vedi §14).
 
 ### 4.8 Scadenze cliente (Cruscotto)
@@ -129,9 +191,12 @@ Cuore operativo. Per un contratto:
 
 ### 4.9 Template Email e Template Lettera
 Due cose **diverse**:
-- **Template email** (`Template email`): oggetto + corpo dell'**email** (bilingue IT/EN). È il messaggio che il cliente legge in posta. Segnaposti: `{{ contact.full_name }}`, `{{ event.name }}`, `{{ contract.contract_number }}`.
+- **Template email** (`Template email`): oggetto + corpo dell'**email** (bilingue IT/EN, editor WYSIWYG). È il messaggio che il cliente legge in posta. Segnaposti: `{{ contact.full_name }}`, `{{ event.name }}`, `{{ contract.contract_number }}`.
+  - La lista contiene **una riga per ogni punto d'invio × tipo evento**: **12 punti** (invito portale, preventivo, conferma, contratto sponsor, conferma pagamento, reminder e sollecito scadenze, reminder opzione, recupero carrello, alert operatore, reset password, notifica messaggio) × **ECM / Non-ECM** = 24 modelli.
+  - Ogni riga ha **Punto di invio**, **Tipo evento**, **Attivo** e l'editor oggetto/corpo. **Finché una riga non è "Attivo", parte l'email standard di sistema.** Quando la attivi, sostituisce l'email standard **solo per quel tipo di evento**. Vedi Schema C.
 - **Template lettera** (`Template lettera`): il **corpo della lettera dentro il PDF** del preventivo. Segnaposti: `{{ azienda }}`, `{{ numero }}`, `{{ totale }}`, `{{ stand }}`, `{{ servizi }}`, `{{ luogo_evento }}`. È collegato al contratto ("Template lettera preventivo").
 > In sintesi: **email = la busta** che arriva; **lettera = il foglio di offerta dentro la busta (PDF)**.
+> ⚠️ Creare un **servizio** o un **evento** non aggiunge righe ai Template email: i 12 punti sono fissi (sono i momenti in cui il sistema manda email).
 
 ### 4.10 Impostazioni segreteria, SMTP, Utenti
 - **Impostazioni segreteria** (`OrganizerSettings`): dati azienda organizzatrice (nome, indirizzo, email, P.IVA, REA, **logo** mostrato nel footer dei documenti/email), giorni acconto/saldo, testi privacy.
@@ -208,8 +273,10 @@ File template scaricabili dal Cruscotto (Utility) per catalogo, servizi, stand.
 
 ## 10. PAGAMENTI
 
-- **PayPal / Carta**: tramite PayPal SDK; al ritorno/cattura il pagamento diventa *Succeeded* e il contratto si firma. Webhook PayPal idempotente.
-- **Bonifico**: lo sponsor sceglie bonifico → vede IBAN e causale (dai `.env` `BANK_TRANSFER_*`); l'operatore registra l'incasso manualmente.
+> **Regola generale**: contratto **principale** (domanda di ammissione) → **solo bonifico**; **servizi ecommerce** (carrello/addon) → carta/PayPal/bonifico. Il pulsante di pagamento online compare solo per i contratti *addon*.
+
+- **PayPal / Carta** (solo ecommerce/addon): tramite PayPal SDK; al ritorno/cattura il pagamento diventa *Succeeded* e il contratto addon si firma. Webhook PayPal idempotente.
+- **Bonifico** (principale e, se scelto, ecommerce): lo sponsor vede IBAN e causale (dai `.env` `BANK_TRANSFER_*`); l'operatore registra l'incasso manualmente.
 - All'incasso, le **scadenze di pagamento** (acconto/saldo) coperte vengono marcate come ricevute.
 - Configurazione PayPal in `.env` (`PAYPAL_MODE/CLIENT_ID/SECRET/WEBHOOK_ID`).
 
@@ -217,7 +284,7 @@ File template scaricabili dal Cruscotto (Utility) per catalogo, servizi, stand.
 
 ## 11. SCADENZE E REMINDER
 
-- **Tecniche**: generate **alla firma** dai *Template scadenze* dei servizi con "Genera scadenze" attivo. Data = inizio evento − giorni del template. Lo sponsor le soddisfa caricando file/compilando campi dal portale.
+- **Tecniche**: generate **alla firma** dai *Template scadenze* dei servizi con "Genera scadenze" attivo. Data = inizio evento − giorni del template. Lo sponsor le soddisfa caricando file/compilando campi dal portale. Se il tipo è **"Materiale fisico"**, invece dell'upload il cliente vede le tue **istruzioni di spedizione**.
 - **Pagamento**: acconto (firma + N giorni) e saldo (inizio evento − M giorni), da *Impostazioni segreteria*.
 - **Reminder/solleciti** automatici via Celery beat (giorni configurati nei template; solleciti per le scadute).
 - ⚠️ Le scadenze si generano **all'istante della firma**. Se aggiungi una scadenza **dopo** che il contratto è già firmato: usa l'azione **"Genera scadenze dai template"** sul contratto, oppure salva di nuovo il servizio (la rigenerazione automatica via signal è attiva).
@@ -291,6 +358,14 @@ Riferimento completo con esempi: `.env.prod.example`.
 **Come tolgo dalla lista i contratti annullati?** Comando `elimina_contratti_annullati` (anteprima, poi `--conferma`; reversibile, salvo `--hard`).
 
 **Dove ricarico il logo che appare sui PDF/email?** *Backoffice → Impostazioni segreteria → Logo*.
+
+**Perché il cliente non può pagare la domanda di ammissione con carta/PayPal?** È voluto: il **contratto principale si paga solo con bonifico**. Carta/PayPal restano per i **servizi acquistati online** (carrello/addon).
+
+**Il contratto di sponsorizzazione a chi arriva?** Alla conferma del preventivo (eventi **non-ECM**) parte in automatico al **contatto operativo** dello sponsor, in CC ad *amministrazione@valet.it* ed *elisa.fantini@valet.it*, con la domanda di ammissione come *Allegato 1*.
+
+**Ho creato un nuovo servizio: devo creare anche un template email?** No. I template email sono **12 punti fissi** (× ECM/Non-ECM). I servizi non aggiungono email.
+
+**Come personalizzo un'email solo per gli eventi ECM (o solo non-ECM)?** In *Template email* apri la riga del punto voluto per quel tipo evento, scrivi oggetto/corpo e mettila **Attivo**.
 
 ---
 
