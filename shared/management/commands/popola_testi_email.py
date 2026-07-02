@@ -196,7 +196,7 @@ TEXTS = {
                   '{% for line in cart_lines %}<tr><td style="padding:10px 12px; border-top:1px solid #f3f4f6;">{{ line.service_name_snapshot }}</td><td align="right" style="padding:10px 12px; border-top:1px solid #f3f4f6;">{{ line.quantity }}</td><td align="right" style="padding:10px 12px; border-top:1px solid #f3f4f6;">€ {{ line.line_total|floatformat:2 }}</td></tr>{% endfor %}'
                   '<tr style="background:#f9fafb;"><td colspan="2" align="right" style="padding:10px 12px; font-weight:700;">Totale</td><td align="right" style="padding:10px 12px; font-weight:700;">€ {{ cart_total|floatformat:2 }}</td></tr>'
                   '</table>' +
-                  '{% if days_until_cutoff <= 7 %}<div class="alert-warning"><strong>Attenzione:</strong> alcuni servizi potrebbero non essere più acquistabili a ridosso dell\'evento.</div>{% endif %}' +
+                  '<div class="alert-warning"><strong>Nota:</strong> alcuni servizi potrebbero non essere più acquistabili a ridosso dell\'evento: ti consigliamo di completare l\'ordine per tempo.</div>' +
                   btn('{{ checkout_url }}', 'Completa l\'acquisto') +
                   SIGN_IT,
             'en': H('You left something in your cart 🛒') +
@@ -206,7 +206,7 @@ TEXTS = {
                   '{% for line in cart_lines %}<tr><td style="padding:10px 12px; border-top:1px solid #f3f4f6;">{{ line.service_name_snapshot }}</td><td align="right" style="padding:10px 12px; border-top:1px solid #f3f4f6;">{{ line.quantity }}</td><td align="right" style="padding:10px 12px; border-top:1px solid #f3f4f6;">€ {{ line.line_total|floatformat:2 }}</td></tr>{% endfor %}'
                   '<tr style="background:#f9fafb;"><td colspan="2" align="right" style="padding:10px 12px; font-weight:700;">Total</td><td align="right" style="padding:10px 12px; font-weight:700;">€ {{ cart_total|floatformat:2 }}</td></tr>'
                   '</table>' +
-                  '{% if days_until_cutoff <= 7 %}<div class="alert-warning"><strong>Note:</strong> some services may no longer be available close to the event.</div>{% endif %}' +
+                  '<div class="alert-warning"><strong>Note:</strong> some services may no longer be available close to the event: we recommend completing your order in good time.</div>' +
                   btn('{{ checkout_url }}', 'Complete the purchase') +
                   SIGN_EN,
         },
