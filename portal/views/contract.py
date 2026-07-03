@@ -151,6 +151,20 @@ def quote_confirm_view(request, contract_id):
         messages.warning(request, "Preventivo confermato. La domanda di partecipazione sara' allegata a breve.")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
+    # Genera SUBITO anche il contratto di sponsorizzazione (MAIN non-ECM), così
+    # compare immediatamente in "I miei documenti" senza dover ricaricare. L'email
+    # al contatto operativo + CC parte comunque dal task Celery (mark_as_signed).
+    try:
+        from contracts.models import ContractKind
+        from events.models import EventType
+        if (contract.contract_kind == ContractKind.MAIN
+                and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
+            from contracts.services.pdf_generator import generate_sponsor_contract_pdf
+            generate_sponsor_contract_pdf(contract)
+    except Exception as e:
+        logger.warning("Contratto sponsor non generato subito per %s: %s",
+                       contract.contract_number, e)
+
     messages.success(request, "Preventivo confermato. Trovi la domanda di partecipazione e le scadenze qui sotto.")
     return redirect('portal:contract_detail', contract_id=contract.id)
 

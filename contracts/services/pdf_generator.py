@@ -460,7 +460,7 @@ def _convert_docx_to_pdf(docx_path):
 # Helper: crea record Document
 # ============================================================================
 
-def _create_document_record(contract, full_path, relative_path, file_name, mime, document_type='contract_pdf'):
+def _create_document_record(contract, full_path, relative_path, file_name, mime, document_type='contract_pdf', visible_to_sponsor=True):
     """Crea il record Document collegato al contract.
 
     Anti-doppioni: Soft-elimina i Document precedenti VIVI dello stesso tipo e
@@ -491,6 +491,7 @@ def _create_document_record(contract, full_path, relative_path, file_name, mime,
         mime_type=mime,
         storage_url=settings.MEDIA_URL + relative_path,
         document_type=document_type,
+        is_visible_to_sponsor=visible_to_sponsor,
     )
     return document
 
@@ -1290,6 +1291,9 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         logger.warning("Header/footer domanda non applicati per %s: %s",
                        contract.contract_number, e)
 
+    # La domanda-allegato (as_allegato) è intermedia: finisce dentro il contratto,
+    # quindi NON va mostrata a parte al cliente.
+    _visible = not as_allegato
     pdf_path = _convert_docx_to_pdf(full_docx_path)
     if not pdf_path:
         return _create_document_record(
@@ -1297,6 +1301,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
             file_name=docx_filename,
             mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             document_type=document_type,
+            visible_to_sponsor=_visible,
         )
 
     pdf_filename = pdf_path.name
@@ -1305,6 +1310,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         contract, pdf_path, relative_pdf_path,
         file_name=pdf_filename, mime='application/pdf',
         document_type=document_type,
+        visible_to_sponsor=_visible,
     )
     logger.info("Contract %s: documento %s generato (Document id=%s)",
                 contract.contract_number, document_type, document.id)
