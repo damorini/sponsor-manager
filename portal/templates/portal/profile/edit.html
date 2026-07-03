@@ -44,16 +44,11 @@
     <p class="text-sm leading-relaxed">{% blocktrans %}Devi indicare <strong>almeno un soggetto classificato come OPERATIVO</strong>, al quale la piattaforma invierà le informazioni operative per il congresso e le scadenze. Aggiungilo qui sotto (sezione contatti) spuntando il ruolo <strong>Operativo</strong>: senza, non puoi proseguire nelle altre sezioni del portale.{% endblocktrans %}</p>
   </div>
   {% endif %}
-  <a href="{% url 'portal:password_change' %}" class="inline-block mb-4 text-sm text-brand-500 hover:underline">&#128273; {% trans "Cambia password" %}</a>
+  <a href="{% url 'portal:password_change' %}"
+     class="inline-flex items-center gap-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-md shadow-sm mb-4">
+    &#128273; {% trans "Cambia password" %}
+  </a>
   <p class="text-gray-600 mb-6">{% trans "Controlla e aggiorna i dati della tua azienda e del contatto. Le modifiche vengono salvate subito." %}</p>
-
-  {% if messages %}
-    {% for message in messages %}
-      <div class="mb-4 px-4 py-3 rounded {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-        {{ message }}
-      </div>
-    {% endfor %}
-  {% endif %}
 
   <form method="post" class="space-y-8" enctype="multipart/form-data">
     {% csrf_token %}
