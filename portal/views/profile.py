@@ -77,6 +77,14 @@ def profile_view(request):
     contact = request.contact
 
     if request.method == 'POST':
+        # --- chiusura del messaggio di benvenuto (primo accesso) ---
+        if request.POST.get('azione') == 'dismiss_welcome':
+            if contact.welcome_seen_at is None:
+                from django.utils import timezone
+                contact.welcome_seen_at = timezone.now()
+                contact.save(update_fields=['welcome_seen_at', 'updated_at'])
+            return redirect('portal:profile')
+
         # --- aggiunta di un nuovo contatto aziendale ---
         if request.POST.get('azione') == 'add_contact':
             from sponsors.models import Contact
@@ -173,6 +181,11 @@ def profile_view(request):
                 logger.exception("Errore compressione logo sponsor %s", sponsor.id)
                 messages.error(request, f"Errore nel caricamento del logo: {e}")
                 return redirect('portal:profile')
+        # Al primo salvataggio l'utente ha completato l'onboarding: chiudo il
+        # messaggio di benvenuto se non l'ha gia' fatto col pulsante.
+        if contact.welcome_seen_at is None:
+            from django.utils import timezone
+            contact.welcome_seen_at = timezone.now()
         try:
             sponsor.save()
             contact.save()
@@ -237,4 +250,6 @@ def profile_view(request):
         'contatti': contatti_view,
         'role_choices': CONTACT_ROLE_CHOICES,
         'manca_operativo': manca_operativo,
+        # Benvenuto solo al primo accesso (finche' non l'ha visto/chiuso).
+        'show_welcome': contact.welcome_seen_at is None,
     })

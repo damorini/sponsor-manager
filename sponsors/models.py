@@ -342,6 +342,12 @@ class Contact(SoftDeleteModel):
     marketing_consent_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Consenso marketing il")
 
+    # --- Onboarding portale ---
+    # Valorizzato quando il referente vede (e chiude) il messaggio di benvenuto
+    # al primo accesso al portale. NULL = non l'ha ancora visto.
+    welcome_seen_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Benvenuto portale visto il")
+
     class Meta:
         verbose_name = "Anagrafica di riferimento"
         verbose_name_plural = "Anagrafica di riferimento"

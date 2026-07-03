@@ -6,6 +6,36 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto px-4 py-8">
+
+  {% if show_welcome %}
+  <div class="bg-gradient-to-br from-brand-50 to-white border border-brand-200 rounded-xl p-6 mb-6 shadow-sm">
+    <h2 class="text-xl font-bold text-gray-900 mb-1">{% trans "Benvenuto nella tua area riservata" %} 👋</h2>
+    <p class="text-base font-semibold text-brand-700 mb-3">{% trans "Controlla o completa i tuoi dati" %}</p>
+    <p class="text-sm text-gray-700 leading-relaxed mb-2">
+      {% blocktrans %}Prima di iniziare a navigare nel portale, ti chiediamo di verificare i dati inseriti e completare i campi mancanti. Dovrai farlo solo questa prima volta e non ti porterà via più di due minuti.{% endblocktrans %}
+    </p>
+    <p class="text-sm text-gray-700 leading-relaxed mb-3">
+      {% blocktrans %}Puoi anche aggiungere i riferimenti delle persone che desideri vengano informate nelle comunicazioni relative a questo evento.{% endblocktrans %}
+    </p>
+    <div class="bg-amber-50 border-l-4 border-amber-400 text-amber-800 rounded-md px-4 py-3 text-sm leading-relaxed">
+      {% blocktrans %}<strong>⚠️ Importante:</strong> la password che hai ricevuto è provvisoria. Ti invitiamo a impostarne una personale cliccando su «Modifica password».{% endblocktrans %}
+    </div>
+    <div class="flex flex-wrap items-center gap-3 mt-4">
+      <a href="{% url 'portal:password_change' %}"
+         class="inline-flex items-center gap-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-md shadow-sm">
+        &#128273; {% trans "Modifica password" %}
+      </a>
+      <form method="post" class="inline">
+        {% csrf_token %}
+        <input type="hidden" name="azione" value="dismiss_welcome">
+        <button type="submit" class="text-sm text-gray-500 hover:text-gray-700 underline">
+          {% trans "Ho capito, chiudi" %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
   <h1 class="text-2xl font-semibold text-gray-900 mb-2">{% trans "I miei dati" %}</h1>
 
   {% if manca_operativo %}
