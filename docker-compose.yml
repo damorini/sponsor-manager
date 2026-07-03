@@ -27,6 +27,12 @@ x-app-env: &app-env
   BANK_TRANSFER_BANK: ${BANK_TRANSFER_BANK:-}
   BANK_TRANSFER_IBAN: ${BANK_TRANSFER_IBAN:-}
   BANK_TRANSFER_BIC: ${BANK_TRANSFER_BIC:-}
+  # PayPal ecommerce (pagamento con PayPal o carta). sandbox = test, live = reale.
+  PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+  PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+  PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+  PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
+  PAYPAL_MERCHANT_ID: ${PAYPAL_MERCHANT_ID:-}
 
 services:
   # PostgreSQL Database
