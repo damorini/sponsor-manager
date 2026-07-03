@@ -303,7 +303,8 @@ def generate_contract_pdf(contract):
         contract, pdf_path, relative_pdf_path,
         file_name=pdf_filename, mime='application/pdf'
     )
-    
+    _register_word_copy(contract, full_docx_path, relative_docx_path, docx_filename, 'contract_pdf')
+
     logger.info(
         "Contract %s: PDF generato e salvato (Document id=%s)",
         contract.contract_number, document.id
@@ -510,6 +511,28 @@ def _create_document_record(contract, full_path, relative_path, file_name, mime,
         is_visible_to_sponsor=visible_to_sponsor,
     )
     return document
+
+
+def _register_word_copy(contract, docx_full_path, docx_relative_path, docx_filename, base_document_type):
+    """Registra anche il .docx (Word) come Documento backend-only, accanto al PDF.
+
+    Il file .docx e' gia' su disco (intermedio della conversione). Usa un
+    document_type dedicato '<base>_word' cosi' NON soft-elimina il PDF corrispondente.
+    """
+    try:
+        p = Path(str(docx_full_path))
+        if not p.exists():
+            return None
+        return _create_document_record(
+            contract, p, docx_relative_path,
+            file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type=base_document_type + '_word',
+            visible_to_sponsor=False,
+        )
+    except Exception as e:
+        logger.warning("Copia Word non registrata (%s): %s", base_document_type, e)
+        return None
 
 
 # ============================================================================
@@ -1330,6 +1353,8 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         document_type=document_type,
         visible_to_sponsor=_visible,
     )
+    if not as_allegato:
+        _register_word_copy(contract, full_docx_path, relative_docx_path, docx_filename, 'admission_request')
     logger.info("Contract %s: documento %s generato (Document id=%s)",
                 contract.contract_number, document_type, document.id)
     return document
@@ -1439,6 +1464,7 @@ def generate_sponsor_contract_pdf(contract):
         contract, final_pdf, relative_pdf_path, file_name=final_name,
         mime='application/pdf', document_type='sponsor_contract',
     )
+    _register_word_copy(contract, full_docx_path, relative_docx_path, docx_filename, 'sponsor_contract')
     logger.info("Contract %s: contratto sponsor generato (Document id=%s)",
                 contract.contract_number, document.id)
     return document

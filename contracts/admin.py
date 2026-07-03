@@ -104,13 +104,30 @@ class ContractLineInline(admin.TabularInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
+def _deadline_file_esempio(obj):
+    """Link di download del file di esempio (modello) della scadenza, se presente."""
+    tpl = getattr(obj, 'deadline_template', None)
+    f = getattr(tpl, 'client_template_file', None) if tpl else None
+    try:
+        url = f.url if f else None
+    except Exception:
+        url = None
+    if url:
+        return format_html('<a href="{}" target="_blank" rel="noopener">⬇ Scarica</a>', url)
+    return format_html('<span style="color:#999;">—</span>')
+
+
 class DeadlineInline(admin.TabularInline):
     """Scadenze viewable inline (sola lettura, perchè generate automatico)."""
     model = Deadline
     extra = 0
-    fields = ('title', 'due_date', 'status', 'completed_at', 'reminder_count')
-    readonly_fields = ('title', 'due_date', 'completed_at', 'reminder_count')
+    fields = ('title', 'due_date', 'status', 'completed_at', 'reminder_count', 'file_esempio')
+    readonly_fields = ('title', 'due_date', 'completed_at', 'reminder_count', 'file_esempio')
     can_delete = False
+
+    @admin.display(description='File di esempio')
+    def file_esempio(self, obj):
+        return _deadline_file_esempio(obj)
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -1158,18 +1175,23 @@ class DeadlineAdmin(admin.ModelAdmin):
 
     list_display = (
         'title', 'contract_link', 'cliente', 'due_date', 'status_badge',
-        'completata_da', 'days_until_due_display', 'reminder_count',
+        'completata_da', 'days_until_due_display', 'reminder_count', 'file_esempio',
     )
     list_filter = (evento_filter('contract__event'), 'status', 'deadline_type')
     search_fields = (
         'title', 'contract__contract_number',
         'contract__sponsor__legal_name',
     )
-    list_select_related = ('contract', 'contract__sponsor', 'contract__event')
+    list_select_related = ('contract', 'contract__sponsor', 'contract__event', 'deadline_template')
+
+    @admin.display(description='File di esempio')
+    def file_esempio(self, obj):
+        return _deadline_file_esempio(obj)
     autocomplete_fields = ['contract', 'contract_line', 'completed_by_contact']
     date_hierarchy = 'due_date'
     readonly_fields = ('created_at', 'updated_at', 'last_reminder_sent_at',
-                       'reminder_count', 'content_schema', 'submitted_content')
+                       'reminder_count', 'content_schema', 'submitted_content',
+                       'file_esempio')
     ordering = ('due_date',)
 
     actions = ['action_mark_as_received']

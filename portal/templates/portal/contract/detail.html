@@ -228,6 +228,14 @@
               </div>
             </div>
             </a>
+            {% if d.deadline_template.client_template_file %}
+            <div class="px-5 pb-3 -mt-1 ml-6">
+              <a href="{{ d.deadline_template.client_template_file.url }}" target="_blank" rel="noopener"
+                 class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">
+                ⬇ {% trans "Scarica il file di esempio" %}
+              </a>
+            </div>
+            {% endif %}
           </li>
           {% endfor %}
         </ul>
