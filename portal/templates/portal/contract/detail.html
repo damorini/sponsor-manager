@@ -140,9 +140,12 @@
                   {{ line.service_description_snapshot|truncatechars:100 }}
                 </div>
                 {% endif %}
+                {% if line.is_prezzo_revisionato %}
+                <div class="mt-1"><span class="inline-block text-xs px-2.5 py-0.5 rounded-full bg-green-100 text-green-800 font-semibold">{% if line.is_sconto_esplicito %}SCONTO A VOI RISERVATO € {{ line.sconto_eur|floatformat:2 }}{% else %}PREZZO A VOI RISERVATO € {{ line.prezzo_riservato|floatformat:2 }}{% endif %}</span></div>
+                {% endif %}
               </td>
               <td class="px-5 py-3 text-right">{{ line.quantity }}</td>
-              <td class="px-5 py-3 text-right whitespace-nowrap">€ {{ line.unit_price|floatformat:2 }}</td>
+              <td class="px-5 py-3 text-right whitespace-nowrap">{% if line.is_prezzo_revisionato %}<span class="line-through text-gray-400">€ {{ line.prezzo_listino_unit|floatformat:2 }}</span>{% else %}€ {{ line.unit_price|floatformat:2 }}{% endif %}</td>
               <td class="px-5 py-3 text-right whitespace-nowrap font-medium">{% if line.line_subtotal %}€ {{ line.line_subtotal|floatformat:2 }}{% else %}<span class="inline-block text-xs px-2 py-0.5 rounded bg-green-100 text-green-800 font-medium">{% trans "Incluso" %}</span>{% endif %}</td>
             </tr>
             {% endfor %}

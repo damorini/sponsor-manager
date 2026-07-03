@@ -1251,6 +1251,15 @@ class ContractLine(TimeStampedModel):
         return (unit * (self.quantity or 1)).quantize(Decimal('0.01'))
 
     @property
+    def prezzo_listino_unit(self):
+        """Prezzo di listino UNITARIO (per la colonna 'Prezzo'/'Pr. Unit.')."""
+        q = self.quantity or 1
+        try:
+            return (self.prezzo_listino / q).quantize(Decimal('0.01')) if q else self.prezzo_listino
+        except Exception:
+            return self.prezzo_listino
+
+    @property
     def prezzo_riservato(self):
         """Prezzo finale netto (imponibile) della riga, dopo sconti/override."""
         return self.line_subtotal
