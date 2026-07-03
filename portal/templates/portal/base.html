@@ -186,6 +186,15 @@
   </div>
   {% endif %}
 
+  {% if anagrafica_da_completare and request.resolver_match.url_name != 'profile' %}
+  <div class="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
+    <div class="bg-amber-50 border-l-4 border-amber-400 text-amber-800 rounded-md px-4 py-3 text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span><span class="font-semibold">Completa l'anagrafica</span> della tua azienda per poter acquistare servizi. Campi mancanti: {{ anagrafica_da_completare|join:", " }}.</span>
+      <a href="{% url 'portal:profile' %}" class="underline font-semibold whitespace-nowrap">{% trans "Vai a I miei dati" %} &rarr;</a>
+    </div>
+  </div>
+  {% endif %}
+
   <main class="flex-1">
     {% if request.session.impersonator_id %}
     <div style="background:#b45309;color:#fff;padding:10px 16px;text-align:center;font-size:14px;">

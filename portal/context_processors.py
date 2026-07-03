@@ -86,8 +86,21 @@ def cart_count(request):
     except Exception:
         unread_messages = 0
 
+    # Anagrafica incompleta: promemoria persistente (banner in base.html).
+    anagrafica_da_completare = []
+    try:
+        user = getattr(request, 'user', None)
+        if user and user.is_authenticated:
+            contact = getattr(user, 'contact_profile', None)
+            sponsor = getattr(contact, 'sponsor', None) if contact else None
+            if sponsor:
+                anagrafica_da_completare = sponsor.campi_anagrafica_mancanti()
+    except Exception:
+        anagrafica_da_completare = []
+
     return {
         'cart_count': count,
         'has_purchasable_services': has_purchasable,
         'unread_messages': unread_messages,
+        'anagrafica_da_completare': anagrafica_da_completare,
     }

@@ -58,25 +58,35 @@ def sponsor_required(view_func):
             if not contact.privacy_accettata(versione):
                 return redirect('portal:privacy_consent')
 
-        # Serve almeno un contatto OPERATIVO. Senza, manda a "I miei dati".
-        _allow = {'profile', 'logout', 'impersonate_stop',
-                  'privacy_consent', 'privacy_policy', 'guida'}
-        if _name not in _allow:
+        # Per ACQUISTARE servono: un contatto OPERATIVO (riceve le comunicazioni)
+        # e l'anagrafica di fatturazione completa. Senza, blocchiamo SOLO il
+        # flusso di acquisto/checkout rimandando a "I miei dati"; il resto del
+        # portale resta navigabile (con promemoria persistente, vedi base.html).
+        # Non vale durante l'impersonazione dell'operatore.
+        _purchase = {
+            'catalog', 'catalog_event', 'service_detail',
+            'cart_view', 'cart_add', 'cart_remove', 'cart_update_quantity',
+            'cart_checkout', 'checkout_start_paypal', 'checkout_return',
+            'checkout_cancel', 'checkout_card', 'checkout_card_capture',
+            'checkout_success', 'checkout_dev_mark_paid', 'checkout_bank_transfer',
+        }
+        if _name in _purchase and not _impersonando:
+            from django.contrib import messages
             _has_op = contact.sponsor.contacts.filter(
                 roles__contains=['operational']).exists()
             if not _has_op:
-                return redirect('portal:profile')
-
-        # Anagrafica azienda completa? Senza i dati obbligatori, manda a "I miei
-        # dati" con un avviso (non durante l'impersonazione dell'operatore).
-        if _name not in _allow and not _impersonando:
-            _mancanti = contact.sponsor.campi_anagrafica_mancanti()
-            if _mancanti:
-                from django.contrib import messages
                 messages.warning(
                     request,
-                    "Per usare il portale completa l'anagrafica della tua azienda. "
-                    "Campi ancora da compilare: " + ", ".join(_mancanti) + ".")
+                    "Per acquistare servizi indica prima almeno un contatto "
+                    "OPERATIVO nella tua anagrafica.")
+                return redirect('portal:profile')
+            _mancanti = contact.sponsor.campi_anagrafica_mancanti()
+            if _mancanti:
+                messages.warning(
+                    request,
+                    "Per acquistare servizi completa prima l'anagrafica della tua "
+                    "azienda (dati di fatturazione). Campi mancanti: "
+                    + ", ".join(_mancanti) + ".")
                 return redirect('portal:profile')
 
         return view_func(request, *args, **kwargs)
