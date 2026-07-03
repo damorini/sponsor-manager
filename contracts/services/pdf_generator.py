@@ -116,6 +116,18 @@ def get_jinja_env():
 # Generazione PDF principale
 # ============================================================================
 
+def _sede_completa(ev):
+    """Compone 'citta, sede, indirizzo' saltando i vuoti ed evitando duplicati."""
+    if ev is None:
+        return ''
+    parts = []
+    for v in (getattr(ev, 'location', ''), getattr(ev, 'venue_name', ''), getattr(ev, 'venue_address', '')):
+        v = " ".join(str(v or '').split()).strip()
+        if v and not any(v.lower() in p.lower() or p.lower() in v.lower() for p in parts):
+            parts.append(v)
+    return ', '.join(parts)
+
+
 class _EventForTemplate:
     """Proxy: espone i campi dell'evento ma con .name come stringa localizzata.
     Corregge il caso in cui event.name e' un campo multilingua (dizionario)."""
@@ -128,6 +140,10 @@ class _EventForTemplate:
             return self._ev.get_name() or ''
         except Exception:
             return getattr(self._ev, 'name', '')
+
+    @property
+    def sede_completa(self):
+        return _sede_completa(self._ev)
 
     def __getattr__(self, attr):
         return getattr(self._ev, attr)
@@ -632,7 +648,9 @@ def _add_header_footer_to_docx(docx_path, contract):
         if org.vat_number:
             fisc.append("P.IVA " + org.vat_number)
         if org.rea:
-            fisc.append("REA " + org.rea)
+            # spazi normalizzati + spazio/trattino non separabili -> resta su una riga
+            rea_clean = " ".join(str(org.rea).split()).replace("-", "‑")
+            fisc.append("REA " + rea_clean)
         if fisc:
             righe.append((" \u00b7 ".join(fisc), False))
 
@@ -1535,7 +1553,7 @@ def generate_quote_pdf_html(contract):
     except Exception:
         ev_name = str(event)
     sp_name = sponsor.legal_name if sponsor else ''
-    luogo = getattr(event, 'venue_name', '') or getattr(event, 'location', '') or ''
+    luogo = _sede_completa(event)
     data_ev = ''
     if getattr(event, 'start_date', None):
         data_ev = event.start_date.strftime('%d/%m/%Y')
