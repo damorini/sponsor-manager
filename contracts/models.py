@@ -1270,6 +1270,16 @@ class ContractLine(TimeStampedModel):
             return False
 
     @property
+    def is_sconto_esplicito(self):
+        """True se la revisione del prezzo deriva da uno SCONTO esplicito (% o valore);
+        False se deriva da un PREZZO OVERRIDE (prezzo unitario impostato sotto il listino)."""
+        try:
+            return bool((self.discount_percent or Decimal('0')) > 0
+                        or (self.discount_amount or Decimal('0')) > 0)
+        except Exception:
+            return False
+
+    @property
     def sconto_eur(self):
         """Valore dello sconto in euro (listino − riservato), 0 se non revisionato
         o se è un servizio incluso (a €0)."""
