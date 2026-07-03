@@ -18,18 +18,15 @@
       {% blocktrans %}Puoi anche aggiungere i riferimenti delle persone che desideri vengano informate nelle comunicazioni relative a questo evento.{% endblocktrans %}
     </p>
     <div class="bg-amber-50 border-l-4 border-amber-400 text-amber-800 rounded-md px-4 py-3 text-sm leading-relaxed">
-      {% blocktrans %}<strong>⚠️ Importante:</strong> la password che hai ricevuto è provvisoria. Ti invitiamo a impostarne una personale cliccando su «Modifica password».{% endblocktrans %}
+      {% blocktrans %}<strong>⚠️ Importante:</strong> la password che hai ricevuto è provvisoria. Ti invitiamo a impostarne una personale cliccando sul pulsante «Cambia password» qui sotto.{% endblocktrans %}
     </div>
-    <div class="flex flex-wrap items-center gap-3 mt-4">
-      <a href="{% url 'portal:password_change' %}"
-         class="inline-flex items-center gap-1 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-4 py-2 rounded-md shadow-sm">
-        &#128273; {% trans "Modifica password" %}
-      </a>
-      <form method="post" class="inline">
+    <div class="mt-5">
+      <form method="post">
         {% csrf_token %}
         <input type="hidden" name="azione" value="dismiss_welcome">
-        <button type="submit" class="text-sm text-gray-500 hover:text-gray-700 underline">
-          {% trans "Ho capito, chiudi" %}
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-base font-semibold px-6 py-3 rounded-lg shadow-sm">
+          &#10003; {% trans "Ho capito, chiudi la finestra" %}
         </button>
       </form>
     </div>
