@@ -60,7 +60,7 @@
   <table class="svc">
     <tr class="chead"><td></td><td class="price">{{ t.col_listino }}</td><td class="price">{{ t.col_riservato }}</td></tr>
     {% for line in lines %}
-    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_subtotal %}{% if line.is_prezzo_revisionato %}<span class="listino">&euro; {{ line.prezzo_listino|floatformat:2 }}</span>{% else %}&mdash;{% endif %}{% endif %}</td><td class="price">{% if line.line_subtotal %}&euro; {{ line.prezzo_riservato|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
+    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_subtotal %}<span class="{% if line.is_prezzo_revisionato %}listino{% endif %}">&euro; {{ line.prezzo_listino|floatformat:2 }}</span>{% endif %}</td><td class="price">{% if line.line_subtotal %}&euro; {{ line.prezzo_riservato|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
     {% empty %}
     <tr><td colspan="3" class="desc">{{ t.empty }}</td></tr>
     {% endfor %}

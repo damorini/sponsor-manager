@@ -94,6 +94,77 @@ class ContractDocumentInline(GenericTabularInline):
         return '—'
 
 
+class _DocEventoFilter(admin.SimpleListFilter):
+    """Filtra i documenti per Evento (risolve Contract/Deadline/Event collegati)."""
+    title = 'Evento'
+    parameter_name = 'evento'
+
+    def lookups(self, request, model_admin):
+        from events.models import Event
+        out = []
+        for e in Event.objects.order_by('-start_date')[:300]:
+            try:
+                label = e.get_name() or str(e)
+            except Exception:
+                label = str(e)
+            out.append((str(e.id), label))
+        return out
+
+    def queryset(self, request, queryset):
+        v = self.value()
+        if not v:
+            return queryset
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from contracts.models import Contract
+        from events.models import Event
+        ct_ev = ContentType.objects.get_for_model(Event)
+        ct_ct = ContentType.objects.get_for_model(Contract)
+        contract_ids = list(Contract.all_objects.filter(event_id=v).values_list('id', flat=True))
+        q = Q(content_type=ct_ev, object_id=v) | Q(content_type=ct_ct, object_id__in=contract_ids)
+        try:
+            from contracts.models import Deadline
+            ct_dl = ContentType.objects.get_for_model(Deadline)
+            dl_ids = list(Deadline.objects.filter(contract__event_id=v).values_list('id', flat=True))
+            if dl_ids:
+                q |= Q(content_type=ct_dl, object_id__in=dl_ids)
+        except Exception:
+            pass
+        return queryset.filter(q)
+
+
+class _DocClienteFilter(admin.SimpleListFilter):
+    """Filtra i documenti per Cliente/Sponsor (risolve Contract/Deadline/Sponsor collegati)."""
+    title = 'Cliente'
+    parameter_name = 'cliente'
+
+    def lookups(self, request, model_admin):
+        from sponsors.models import Sponsor
+        return [(str(s.id), s.legal_name) for s in Sponsor.objects.order_by('legal_name')[:500]]
+
+    def queryset(self, request, queryset):
+        v = self.value()
+        if not v:
+            return queryset
+        from django.contrib.contenttypes.models import ContentType
+        from django.db.models import Q
+        from contracts.models import Contract
+        from sponsors.models import Sponsor
+        ct_sp = ContentType.objects.get_for_model(Sponsor)
+        ct_ct = ContentType.objects.get_for_model(Contract)
+        contract_ids = list(Contract.all_objects.filter(sponsor_id=v).values_list('id', flat=True))
+        q = Q(content_type=ct_sp, object_id=v) | Q(content_type=ct_ct, object_id__in=contract_ids)
+        try:
+            from contracts.models import Deadline
+            ct_dl = ContentType.objects.get_for_model(Deadline)
+            dl_ids = list(Deadline.objects.filter(contract__sponsor_id=v).values_list('id', flat=True))
+            if dl_ids:
+                q |= Q(content_type=ct_dl, object_id__in=dl_ids)
+        except Exception:
+            pass
+        return queryset.filter(q)
+
+
 @admin.register(Document)
 class DocumentAdmin(admin.ModelAdmin):
     form = DocumentUploadForm
@@ -116,7 +187,7 @@ class DocumentAdmin(admin.ModelAdmin):
         'file_name', 'file_size_display', 'uploaded_by_display',
         'is_visible_to_sponsor', 'created_at_short', 'apri_file',
     )
-    list_filter = ('document_type', 'storage_provider', 'is_visible_to_sponsor')
+    list_filter = (_DocEventoFilter, _DocClienteFilter, 'document_type', 'is_visible_to_sponsor')
     search_fields = ('title', 'file_name', 'description')
     list_select_related = ('content_type', 'uploaded_by_user', 'uploaded_by_contact')
     readonly_fields = (
