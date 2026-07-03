@@ -77,6 +77,14 @@ def get_template_path(template_name: str, language: str = 'it') -> str:
 # Costruzione contesto comune
 # ============================================================================
 
+def _parse_email_list(s) -> list:
+    """Estrae gli indirizzi email da una stringa (separatori: virgola, ;, spazi, a capo)."""
+    if not s:
+        return []
+    import re as _re
+    return [p.strip() for p in _re.split(r'[\s,;]+', str(s)) if p.strip() and '@' in p]
+
+
 def build_common_context(extra_context: dict = None, language: str = 'it') -> dict:
     """
     Aggiunge al contesto le variabili comuni di branding/footer.
@@ -267,6 +275,27 @@ def send_email(
             subject = subject_override
             full_context['subject'] = subject
     body_text = strip_tags(body_html)  # versione testuale fallback
+
+    # 3-bis. Oggetto: anteponi il nome dell'azienda (sponsor) come prima cosa
+    _azienda = (full_context.get('azienda') or '').strip()
+    if _azienda and not subject.startswith(_azienda):
+        subject = f"{_azienda} – {subject}"
+        full_context['subject'] = subject
+
+    # 3-ter. Inoltro automatico: indirizzi fissi in copia definiti nell'anagrafica
+    #         dell'evento (Event.notification_cc_emails). In BCC per non esporli.
+    try:
+        _ev_fwd = None
+        if isinstance(context, dict):
+            _ev_fwd = context.get('event')
+            if _ev_fwd is None and context.get('contract') is not None:
+                _ev_fwd = getattr(context.get('contract'), 'event', None)
+        _fixed = _parse_email_list(getattr(_ev_fwd, 'notification_cc_emails', '') if _ev_fwd else '')
+        if _fixed:
+            _already = set(e.lower() for e in (list(to or []) + list(cc or []) + list(bcc or [])))
+            bcc = list(bcc or []) + [e for e in _fixed if e.lower() not in _already]
+    except Exception:
+        pass
 
     # 4. Crea record Communication PRIMA dell'invio (status='queued')
     communication = _create_communication(

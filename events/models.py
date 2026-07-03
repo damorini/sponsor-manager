@@ -160,6 +160,16 @@ class Event(TimeStampedModel):
         verbose_name="Luogo firma contratti",
     )
 
+    # Indirizzi in copia nascosta (BCC) a cui inoltrare AUTOMATICAMENTE ogni email
+    # inviata per questo evento (es. una casella interna di monitoraggio).
+    notification_cc_emails = models.TextField(
+        blank=True,
+        verbose_name="Email in copia (inoltro automatico)",
+        help_text="Indirizzi a cui inoltrare in copia (BCC) tutte le email inviate "
+                  "per questo evento. Uno per riga oppure separati da virgola. "
+                  "Lo sponsor non li vede.",
+    )
+
     # Segreteria Scientifica: dati liberi + logo, stampati in basso a destra
     # nel PDF del preventivo (la Segreteria Organizzativa va a sinistra).
     scientific_secretariat = models.TextField(

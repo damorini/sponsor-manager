@@ -111,6 +111,11 @@ class EventAdmin(admin.ModelAdmin):
         ('Date e luogo', {
             'fields': ('start_date', 'end_date', 'location', 'venue_name', 'venue_address'),
         }),
+        ('Notifiche email', {
+            'fields': ('notification_cc_emails',),
+            'description': "Indirizzi a cui inoltrare in copia nascosta (BCC) tutte "
+                           "le email inviate per questo evento (es. una casella interna).",
+        }),
         ('Lingue supportate', {
             'fields': ('supported_languages', 'default_language'),
             'description': "Quali lingue sono supportate per questo evento. "
