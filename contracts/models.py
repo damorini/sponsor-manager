@@ -1260,7 +1260,7 @@ class ContractLine(TimeStampedModel):
         """True se il prezzo riservato è inferiore al listino (sconto o override).
         Esclude i servizi INCLUSI (a €0: vanno mostrati come 'Incluso', non scontati)."""
         try:
-            if self.is_incluso:
+            if self.is_included:
                 return False
             riservato = self.prezzo_riservato or Decimal('0')
             if riservato <= 0:
