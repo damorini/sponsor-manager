@@ -1226,6 +1226,34 @@ def _format_admission_services_table(docx_path):
     doc.save(str(docx_path))
 
 
+def _rimuovi_riga_iva_domanda(docx_path):
+    """Per i clienti ESENTI IVA: elimina la riga 'IVA ...' dalla tabella totali
+    della domanda (post-render docxtpl). Best-effort e idempotente.
+    Non tocca la cella 'PARTITA IVA' dei dati sponsor."""
+    from docx import Document
+    d = Document(str(docx_path))
+    removed = False
+    for t in d.tables:
+        full = ' '.join(c.text for row in t.rows for c in row.cells).upper()
+        # solo la tabella dei totali (ha IVA + Totale/Imponibile), mai quella dati sponsor
+        if not (('TOTALE' in full or 'IMPONIBILE' in full) and 'IVA' in full):
+            continue
+        for row in list(t.rows):
+            if removed:
+                break
+            for c in row.cells:
+                ct = c.text.strip().upper()
+                if ct.startswith('IVA') and 'PARTITA' not in ct:
+                    row._tr.getparent().remove(row._tr)
+                    removed = True
+                    break
+        if removed:
+            break
+    if removed:
+        d.save(str(docx_path))
+    return removed
+
+
 def generate_admission_request_pdf(contract, as_allegato=False):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
@@ -1317,6 +1345,15 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     except Exception as e:
         logger.warning("Formattazione tabella domanda non applicata per %s: %s",
                        contract.contract_number, e)
+
+    # Cliente ESENTE IVA: togli la riga IVA dalla tabella totali (non va indicato
+    # l'importo IVA per chi non la applica).
+    if not contract.vat_applicable:
+        try:
+            _rimuovi_riga_iva_domanda(full_docx_path)
+        except Exception as e:
+            logger.warning("Riga IVA non rimossa dalla domanda per %s: %s",
+                           contract.contract_number, e)
 
     # Addendum: stesso modello, ma il titolo diventa "ADDENDUM AL CONTRATTO N° ...".
     if is_addendum:
