@@ -279,8 +279,12 @@ class EmailTemplateAdmin(admin.ModelAdmin):
         }),
         ('Contenuto', {
             'fields': ('subject_template', 'body_template'),
-            'description': "Placeholder Jinja2 supportati: {{ contact.full_name }}, "
-                           "{{ event.name }}, {{ contract.contract_number }}, etc.",
+            'description': "Segnaposti disponibili: "
+                           "{{ azienda }} (ragione sociale dell'azienda) · "
+                           "{{ contact.full_name }} (nome del contatto principale) · "
+                           "{{ event.name }} (nome evento) · "
+                           "{{ contract.contract_number }} (numero contratto). "
+                           "In alternativa a {{ azienda }} puoi usare {{ sponsor.legal_name }}.",
         }),
         ('Sistema', {
             'fields': ('created_at', 'updated_at'),

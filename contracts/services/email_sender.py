@@ -152,13 +152,17 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
     # Il context custom prevale (può sovrascrivere se serve)
     common.update(extra_context)
 
-    # Fallback 'contact' per i template email che usano {{ contact.full_name }}:
-    # se il chiamante non l'ha passato, lo ricavo dal contratto/sponsor
-    # (contatto principale). Così il nome nel saluto c'è sempre.
-    if not common.get('contact'):
-        _ctr = common.get('contract')
-        _sp = common.get('sponsor') or (getattr(_ctr, 'sponsor', None) if _ctr else None)
-        if _sp is not None:
+    # Fallback per i template email: se il chiamante non li ha passati, li ricavo
+    # dal contratto/sponsor così sono SEMPRE disponibili:
+    #  - {{ sponsor.legal_name }} e {{ azienda }} -> ragione sociale dell'azienda
+    #  - {{ contact.full_name }} -> contatto principale (nome nel saluto)
+    _ctr = common.get('contract')
+    _sp = common.get('sponsor') or (getattr(_ctr, 'sponsor', None) if _ctr else None)
+    if _sp is not None:
+        common.setdefault('sponsor', _sp)
+        if not common.get('azienda'):
+            common['azienda'] = getattr(_sp, 'legal_name', '') or ''
+        if not common.get('contact'):
             try:
                 common['contact'] = _sp.primary_contact or _sp.contacts.first()
             except Exception:
