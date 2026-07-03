@@ -47,7 +47,7 @@
       <p class="mt-1 text-gray-600">
         {{ contract.event.get_name }} ·
         {{ contract.event.start_date|date:"d/m/Y" }} - {{ contract.event.end_date|date:"d/m/Y" }}
-        {% if contract.event.location %}· {{ contract.event.location }}{% endif %}
+        {% if contract.event.luogo_completo %}· {{ contract.event.luogo_completo }}{% endif %}
       </p>
     </div>
     

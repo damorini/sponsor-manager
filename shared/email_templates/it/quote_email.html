@@ -4,7 +4,7 @@
 <h2 class="text-primary" style="margin:0 0 4px 0; font-size:22px;">La tua proposta di sponsorizzazione</h2>
 <p style="margin:0 0 2px 0; font-size:18px; font-weight:600; color:#111827;">{{ event_name }}</p>
 <p class="text-muted" style="margin:0 0 18px 0; font-size:14px;">
-  {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.venue_name %} &middot; {{ event.venue_name }}{% elif event.location %} &middot; {{ event.location }}{% endif %}
+  {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.luogo_completo %} &middot; {{ event.luogo_completo }}{% endif %}
 </p>
 
 <p style="margin:0 0 16px 0;">Gentile {{ contract.sponsor.legal_name }},<br>

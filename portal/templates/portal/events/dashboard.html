@@ -14,7 +14,7 @@
   <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ event.get_name }}</h1>
   <p class="text-gray-500 mb-4">
     {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date %} – {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
-    {% if event.location %} · {{ event.location }}{% endif %}
+    {% if event.luogo_completo %} · {{ event.luogo_completo }}{% endif %}
   </p>
 
   {% if event.get_description %}

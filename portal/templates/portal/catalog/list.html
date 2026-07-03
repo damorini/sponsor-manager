@@ -23,7 +23,7 @@
           </h2>
           <p class="text-sm text-gray-600">
             {{ item.event.start_date|date:"d/m/Y" }} - {{ item.event.end_date|date:"d/m/Y" }}
-            {% if item.event.location %}· {{ item.event.location }}{% endif %}
+            {% if item.event.luogo_completo %}· {{ item.event.luogo_completo }}{% endif %}
           </p>
         </div>
         <a href="{% url 'portal:catalog_event' item.event.id %}" 

@@ -22,7 +22,7 @@
       </div>
       <p class="text-sm text-gray-500 mt-1">
         {% if it.event.start_date %}{{ it.event.start_date|date:"d/m/Y" }}{% if it.event.end_date %} – {{ it.event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
-        {% if it.event.location %} · {{ it.event.location }}{% endif %}
+        {% if it.event.luogo_completo %} · {{ it.event.luogo_completo }}{% endif %}
       </p>
       <div class="mt-3 text-sm text-gray-500">
         <span class="font-semibold">{{ it.completed }}</span> {% trans "scadenze completate" %}

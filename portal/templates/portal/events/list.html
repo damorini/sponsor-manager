@@ -20,7 +20,7 @@
       <h2 class="text-xl font-semibold text-gray-900">{{ it.event.get_name }}</h2>
       <p class="text-sm text-gray-500 mt-1">
         {% if it.event.start_date %}{{ it.event.start_date|date:"d/m/Y" }}{% if it.event.end_date %} – {{ it.event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}
-        {% if it.event.location %} · {{ it.event.location }}{% endif %}
+        {% if it.event.luogo_completo %} · {{ it.event.luogo_completo }}{% endif %}
       </p>
       <div class="flex flex-wrap gap-4 mt-4 text-sm">
         <span class="text-gray-700"><span class="font-semibold">{{ it.pending }}</span> {% trans "da fare" %}</span>

@@ -221,6 +221,20 @@ class Event(TimeStampedModel):
         """True se è un evento ECM (per template contratto)."""
         return self.event_type == EventType.ECM
 
+    @property
+    def luogo_completo(self):
+        """Luogo dell'evento come 'Nome sede, Indirizzo, Città', saltando i vuoti
+        ed evitando duplicati. Da usare OVUNQUE si cita la sede (portale,
+        preventivo, contratto, email): così l'indirizzo compare sempre quando
+        valorizzato. Se manca 'Indirizzo completo sede' sull'evento, mostra ciò
+        che c'è (nome sede e/o città)."""
+        parts = []
+        for v in (self.venue_name, self.venue_address, self.location):
+            v = " ".join(str(v or "").split()).strip()
+            if v and not any(v.lower() in p.lower() or p.lower() in v.lower() for p in parts):
+                parts.append(v)
+        return ", ".join(parts)
+
     def clean(self):
         """Valida le date e la coerenza dei campi multilingua."""
         super().clean()

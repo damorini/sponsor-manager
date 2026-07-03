@@ -9,7 +9,7 @@
 
 <p>in allegato trovate il contratto di sponsorizzazione per l'evento
   <strong>{{ event_name }}</strong>
-  {% if event.start_date %}({{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} - {{ event.end_date|date:"d/m/Y" }}{% endif %}{% if event.location %}, {{ event.location }}{% endif %}){% endif %}.
+  {% if event.start_date %}({{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} - {{ event.end_date|date:"d/m/Y" }}{% endif %}{% if event.luogo_completo %}, {{ event.luogo_completo }}{% endif %}){% endif %}.
 </p>
 
 <p>Vi chiediamo cortesemente di restituire il documento firmato per accettazione.

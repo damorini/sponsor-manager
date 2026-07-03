@@ -57,7 +57,7 @@
       <span class="flex items-center justify-center h-11 w-11 rounded-lg bg-brand-50 text-brand-600 shrink-0"><i class="ti ti-calendar-event text-2xl"></i></span>
       <div class="min-w-0 flex-1">
         <div class="text-base font-bold text-gray-900 leading-tight">{{ ev.get_name }}</div>
-        <div class="text-sm text-gray-500">{{ ev.start_date|date:"d/m/Y" }}{% if ev.location %} &middot; {{ ev.location }}{% endif %}</div>
+        <div class="text-sm text-gray-500">{{ ev.start_date|date:"d/m/Y" }}{% if ev.luogo_completo %} &middot; {{ ev.luogo_completo }}{% endif %}</div>
       </div>
       <i class="ti ti-chevron-right text-gray-300 group-hover:text-brand-600 text-xl shrink-0"></i>
     </a>

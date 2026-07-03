@@ -24,7 +24,7 @@
       <div class="font-medium text-gray-900">{{ event.get_name }}</div>
       <div class="text-gray-600 mt-1">
         {{ event.start_date|date:"d/m/Y" }} - {{ event.end_date|date:"d/m/Y" }}
-        {% if event.location %}· {{ event.location }}{% endif %}
+        {% if event.luogo_completo %}· {{ event.luogo_completo }}{% endif %}
       </div>
     </div>
   </div>
