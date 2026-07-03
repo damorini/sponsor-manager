@@ -344,6 +344,99 @@ def export_stand_workbook(event):
         ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
     return wb
 
+def export_sponsor_workbook(sponsors):
+    """Workbook con gli sponsor/clienti esistenti (stesse colonne del template
+    import, così il file è ri-importabile). Il referente è il contatto principale
+    (o il primo disponibile)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Sponsor"
+    headers = ["ragione_sociale", "nome_commerciale", "partita_iva", "codice_fiscale",
+               "codice_sdi", "pec", "indirizzo", "citta", "cap", "provincia", "paese",
+               "settore", "sito_web", "note",
+               "referente_nome", "referente_email", "referente_telefono", "referente_ruolo"]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, name in enumerate(headers, start=1):
+        c = ws.cell(row=1, column=i, value=name)
+        c.fill = header_fill
+        c.font = header_font
+
+    r = 2
+    for s in sponsors:
+        try:
+            ref = s.contacts.filter(is_primary=True).first() or s.contacts.first()
+        except Exception:
+            ref = None
+        vals = [
+            s.legal_name or '', getattr(s, 'display_name', '') or '', s.vat_number or '',
+            s.tax_code or '', s.sdi_code or '', s.pec_email or '', s.address_street or '',
+            s.address_city or '', s.address_zip or '', s.address_province or '',
+            s.address_country or '', getattr(s, 'industry', '') or '', s.website or '',
+            s.notes or '',
+            (ref.full_name if ref else ''), (ref.email if ref else ''),
+            (getattr(ref, 'phone', '') if ref else ''), (getattr(ref, 'job_title', '') if ref else ''),
+        ]
+        for col, v in enumerate(vals, start=1):
+            ws.cell(row=r, column=col, value=v)
+        r += 1
+
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
+    return wb
+
+
+def export_contatti_workbook(contatti):
+    """Workbook con i contatti esistenti (stesse colonne del template import)."""
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font
+
+    ROLE_IT = {'signer': 'firmatario', 'marketing': 'marketing', 'finance': 'amministrazione',
+               'operational': 'operativo', 'cc': 'cc', 'educational': 'educational'}
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Contatti"
+    headers = ["sponsor_partita_iva", "sponsor_ragione_sociale", "cognome", "nome", "email",
+               "telefono", "ruolo_aziendale", "ruoli_funzionali", "principale",
+               "consenso_marketing", "lingua", "note"]
+    header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for i, name in enumerate(headers, start=1):
+        c = ws.cell(row=1, column=i, value=name)
+        c.fill = header_fill
+        c.font = header_font
+
+    r = 2
+    for ct in contatti:
+        sp = ct.sponsor
+        cognome = getattr(ct, 'last_name', '') or ''
+        nome = getattr(ct, 'first_name', '') or ''
+        if not (cognome or nome) and getattr(ct, 'full_name', ''):
+            parts = ct.full_name.strip().split()
+            if parts:
+                cognome = parts[-1]
+                nome = ' '.join(parts[:-1])
+        ruoli = ', '.join(ROLE_IT.get(x, x) for x in (ct.roles or []))
+        vals = [
+            (sp.vat_number if sp else '') or '', (sp.legal_name if sp else '') or '',
+            cognome, nome, ct.email or '', getattr(ct, 'phone', '') or '',
+            getattr(ct, 'job_title', '') or '', ruoli,
+            's' if getattr(ct, 'is_primary', False) else 'n',
+            's' if getattr(ct, 'marketing_consent', False) else 'n',
+            getattr(ct, 'preferred_language', 'it') or 'it', getattr(ct, 'notes', '') or '',
+        ]
+        for col, v in enumerate(vals, start=1):
+            ws.cell(row=r, column=col, value=v)
+        r += 1
+
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = 18
+    return wb
+
+
 def build_template_sponsor_workbook():
     """Crea e ritorna un Workbook col template Excel per importa_sponsor."""
     wb = Workbook()

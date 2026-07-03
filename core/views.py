@@ -844,6 +844,39 @@ def export_stand(request):
 
 
 @staff_member_required
+def export_sponsor(request):
+    """Scarica un Excel con TUTTI gli sponsor/clienti (anagrafica, non per evento)."""
+    from django.http import HttpResponse
+    from sponsors.models import Sponsor
+    from catalog.utils.excel_template import export_sponsor_workbook
+
+    qs = Sponsor.objects.all().order_by('legal_name').prefetch_related('contacts')
+    wb = export_sponsor_workbook(qs)
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="sponsor_clienti.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+@staff_member_required
+def export_contatti(request):
+    """Scarica un Excel con TUTTI i contatti (anagrafica, non per evento)."""
+    from django.http import HttpResponse
+    from sponsors.models import Contact
+    from catalog.utils.excel_template import export_contatti_workbook
+
+    qs = (Contact.objects.select_related('sponsor')
+          .order_by('sponsor__legal_name', 'last_name', 'full_name'))
+    wb = export_contatti_workbook(qs)
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename="contatti.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+@staff_member_required
 @require_POST
 def translate_view(request):
     # Traduce un testo (IT->EN di default) per i campi bilingue dell'admin.
