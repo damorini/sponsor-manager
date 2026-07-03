@@ -88,6 +88,35 @@ def get_paypal_client():
 # Creazione ordine PayPal
 # ============================================================================
 
+def _response_to_dict(response):
+    """Normalizza la risposta dell'SDK PayPal (ApiResponse) in un dict semplice.
+
+    L'SDK espone la risposta sia come oggetto tipizzato (.body -> Order/Order
+    catturato) sia come JSON grezzo (.text). Usiamo il JSON grezzo cosi' il resto
+    del codice puo' fare .get(...) e la risposta resta serializzabile nel
+    JSONField paypal_response. Fallback difensivi se .text mancasse.
+    """
+    raw = getattr(response, 'text', None)
+    if isinstance(raw, str) and raw.strip():
+        try:
+            return json.loads(raw)
+        except Exception:
+            pass
+    body = getattr(response, 'body', response)
+    if isinstance(body, dict):
+        return body
+    if isinstance(body, str):
+        try:
+            return json.loads(body)
+        except Exception:
+            return {}
+    # Oggetto tipizzato senza .text: serializza via __dict__ come ultima spiaggia.
+    try:
+        return json.loads(json.dumps(body, default=lambda o: getattr(o, '__dict__', str(o))))
+    except Exception:
+        return {}
+
+
 def create_paypal_order(payment, return_url=None, cancel_url=None):
     """
     Crea un ordine PayPal per un Payment esistente.
@@ -179,9 +208,7 @@ def create_paypal_order(payment, return_url=None, cancel_url=None):
             "body": request_body,
             "prefer": "return=representation",  # restituisce ordine completo
         })
-        order_data = response.body if hasattr(response, 'body') else response
-        if isinstance(order_data, str):
-            order_data = json.loads(order_data)
+        order_data = _response_to_dict(response)
     except Exception as e:
         logger.exception("Errore creazione ordine PayPal per payment %s", payment.id)
         raise RuntimeError(f"PayPal API error: {e}") from e
@@ -277,9 +304,7 @@ def capture_paypal_order(order_id):
             "id": order_id,
             "prefer": "return=representation",
         })
-        capture_data = response.body if hasattr(response, 'body') else response
-        if isinstance(capture_data, str):
-            capture_data = json.loads(capture_data)
+        capture_data = _response_to_dict(response)
     except Exception as e:
         logger.exception("Errore capture order %s", order_id)
         payment.mark_failed(reason=f"PayPal capture error: {e}")
