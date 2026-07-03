@@ -98,6 +98,7 @@ class _DocEventoFilter(admin.SimpleListFilter):
     """Filtra i documenti per Evento (risolve Contract/Deadline/Event collegati)."""
     title = 'Evento'
     parameter_name = 'evento'
+    template = 'admin/dropdown_filter.html'
 
     def lookups(self, request, model_admin):
         from events.models import Event
@@ -137,6 +138,7 @@ class _DocClienteFilter(admin.SimpleListFilter):
     """Filtra i documenti per Cliente/Sponsor (risolve Contract/Deadline/Sponsor collegati)."""
     title = 'Cliente'
     parameter_name = 'cliente'
+    template = 'admin/dropdown_filter.html'
 
     def lookups(self, request, model_admin):
         from sponsors.models import Sponsor
@@ -171,7 +173,10 @@ class DocumentAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         from core.event_scope import scope_generic_by_event
-        return scope_generic_by_event(request, super().get_queryset(request))
+        qs = super().get_queryset(request)
+        # le copie Word non hanno una riga propria: si aprono a fianco del PDF
+        qs = qs.exclude(document_type__endswith='_word')
+        return scope_generic_by_event(request, qs)
 
     def save_model(self, request, obj, form, change):
         f = form.cleaned_data.get('upload')
@@ -183,9 +188,9 @@ class DocumentAdmin(admin.ModelAdmin):
 
 
     list_display = (
-        'title', 'type_badge', 'entity_display',
+        'title', 'type_badge', 'azienda_display', 'entity_display',
         'file_name', 'file_size_display', 'uploaded_by_display',
-        'is_visible_to_sponsor', 'created_at_short', 'apri_file',
+        'is_visible_to_sponsor', 'created_at_short', 'apri_file', 'apri_word',
     )
     list_filter = (_DocEventoFilter, _DocClienteFilter, 'document_type', 'is_visible_to_sponsor')
     search_fields = ('title', 'file_name', 'description')
@@ -231,8 +236,39 @@ class DocumentAdmin(admin.ModelAdmin):
     def apri_file(self, obj):
         if obj and obj.pk and obj.storage_url:
             url = reverse('core:documento_apri', args=[obj.pk])
-            return format_html('<a href="{}" target="_blank">📄 apri</a>', url)
+            return format_html('<a href="{}" target="_blank">📄 PDF</a>', url)
         return '—'
+
+    @admin.display(description='Word')
+    def apri_word(self, obj):
+        """Link alla copia Word (.docx) collegata a questo PDF, se esiste."""
+        if not (obj and obj.pk and obj.document_type):
+            return '—'
+        word = Document.objects.filter(
+            content_type_id=obj.content_type_id,
+            object_id=obj.object_id,
+            document_type=obj.document_type + '_word',
+            deleted_at__isnull=True,
+        ).order_by('-created_at').first()
+        if word and word.storage_url:
+            url = reverse('core:documento_apri', args=[word.pk])
+            return format_html('<a href="{}" target="_blank">📝 Word</a>', url)
+        return '—'
+
+    @admin.display(description='Azienda', ordering='object_id')
+    def azienda_display(self, obj):
+        """Nome dell'azienda (sponsor) collegata al documento."""
+        sp = None
+        try:
+            ent = obj.entity
+        except Exception:
+            ent = None
+        if ent is not None:
+            if ent.__class__.__name__ == 'Sponsor':
+                sp = ent
+            else:
+                sp = getattr(ent, 'sponsor', None) or getattr(getattr(ent, 'contract', None), 'sponsor', None)
+        return getattr(sp, 'legal_name', None) or '—'
 
     @admin.display(description='Tipo')
     def type_badge(self, obj):
