@@ -17,9 +17,10 @@
   .svc td { padding:6px 0; border-bottom:1px solid #eef0f2; vertical-align:top; }
   .svc .name { font-weight:700; color:#111827; margin-bottom:1px; }
   .svc .desc { color:#6b7280; font-size:10px; font-weight:400; line-height:1.35; }
-  .svc .price { text-align:right; white-space:nowrap; font-weight:700; padding-left:14px; width:110px; }
+  .svc .price { text-align:right; white-space:nowrap; font-weight:700; padding-left:14px; width:100px; }
+  .svc .qty { text-align:right; white-space:nowrap; font-weight:400; color:#374151; padding-left:12px; width:44px; }
   .svc .chead td { border-bottom:1.5px solid {{ brand_color }}; color:{{ brand_color }}; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:0 0 4px; }
-  .svc .chead td.price { padding-left:14px; }
+  .svc .chead td.price, .svc .chead td.qty { padding-left:12px; }
   .svc .listino { text-decoration:line-through; color:#9ca3af; font-weight:400; font-size:9.5px; }
   .svc .special { color:{{ brand_color }}; font-weight:800; }
   .badge-sconto { display:inline-block; background:#d1fae5; color:#065f46; font-weight:700; font-size:8.5px; padding:2px 8px; border-radius:10px; margin-top:2px; letter-spacing:.02em; }
@@ -58,16 +59,29 @@
 
   <p class="section-title">{{ t.section_title }}</p>
   <table class="svc">
-    <tr class="chead"><td></td><td class="price">{{ t.col_listino }}</td><td class="price">{{ t.col_riservato }}</td></tr>
+    <tr class="chead">
+      <td>{{ t.col_descrizione }}</td>
+      <td class="qty">{{ t.col_qta }}</td>
+      <td class="price">{{ t.col_prezzo }}</td>
+      <td class="price">{{ t.col_totale }}</td>
+    </tr>
     {% for line in lines %}
-    <tr><td><div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">({{ line.variant_label_snapshot }})</span>{% endif %}</div>{% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}</td><td class="price">{% if line.line_subtotal %}<span class="{% if line.is_prezzo_revisionato %}listino{% endif %}">&euro; {{ line.prezzo_listino|floatformat:2 }}</span>{% endif %}</td><td class="price">{% if line.line_subtotal %}&euro; {{ line.prezzo_riservato|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td></tr>
+    <tr>
+      <td>
+        <div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">&ndash; {{ line.variant_label_snapshot }}</span>{% endif %}</div>
+        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}
+        {% if line.is_prezzo_revisionato %}<div><span class="badge-sconto">{% if line.is_sconto_esplicito %}{{ t.badge_sconto }} &euro; {{ line.sconto_eur|floatformat:2 }}{% else %}{{ t.badge_riservato }} &euro; {{ line.prezzo_riservato|floatformat:2 }}{% endif %}</span></div>{% endif %}
+      </td>
+      <td class="qty">{{ line.quantity }}</td>
+      <td class="price">{% if line.is_prezzo_revisionato %}<span class="listino">&euro; {{ line.prezzo_listino_unit|floatformat:2 }}</span>{% else %}&euro; {{ line.unit_price|floatformat:2 }}{% endif %}</td>
+      <td class="price">{% if line.line_subtotal %}&euro; {{ line.line_subtotal|floatformat:2 }}{% else %}<span class="incl">{{ t.incl }}</span>{% endif %}</td>
+    </tr>
     {% empty %}
-    <tr><td colspan="3" class="desc">{{ t.empty }}</td></tr>
+    <tr><td colspan="4" class="desc">{{ t.empty }}</td></tr>
     {% endfor %}
   </table>
   <table class="tot">
-    {% if sconto_totale and sconto_totale > 0 %}<tr><td class="lbl" style="color:#065f46;">{{ t.sconto }}</td><td class="val" style="color:#065f46;">&minus; &euro; {{ sconto_totale|floatformat:2 }}</td></tr>{% endif %}
-    <tr><td class="lbl">{{ t.imponibile }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">{{ t.subtotale }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
     <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
     <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>

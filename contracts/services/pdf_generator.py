@@ -1606,9 +1606,10 @@ def generate_quote_pdf_html(contract):
             'eyebrow': 'Sponsorship proposal', 'intro': intro, 'attn': attn,
             'section_title': 'Summary of spaces and services on option',
             'empty': 'No items selected.', 'incl': 'Included',
-            'col_listino': 'List price', 'col_riservato': 'Reserved price',
-            'sconto': 'Unconditional discount',
-            'imponibile': 'Net amount', 'iva': 'VAT', 'totale': 'Total (VAT included)',
+            'col_descrizione': 'Description', 'col_qta': 'Qty',
+            'col_prezzo': 'Price', 'col_totale': 'Total (excl. VAT)',
+            'badge_sconto': 'RESERVED DISCOUNT', 'badge_riservato': 'RESERVED PRICE',
+            'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total',
             'validity': validity, 'cta': 'View and confirm the quote', 'ref': 'Quote',
         }
     else:
@@ -1630,9 +1631,10 @@ def generate_quote_pdf_html(contract):
             'eyebrow': 'Proposta di sponsorizzazione', 'intro': intro, 'attn': attn,
             'section_title': 'Riepilogo spazi e servizi in opzione',
             'empty': 'Nessuna voce selezionata.', 'incl': 'Incluso',
-            'col_listino': 'Prezzo di listino', 'col_riservato': 'Prezzo riservato',
-            'sconto': 'Sconto incondizionato',
-            'imponibile': 'Imponibile', 'iva': 'IVA', 'totale': 'Totale (IVA inclusa)',
+            'col_descrizione': 'Descrizione', 'col_qta': 'Q.tà',
+            'col_prezzo': 'Prezzo', 'col_totale': 'Totale (IVA escl.)',
+            'badge_sconto': 'SCONTO A VOI RISERVATO', 'badge_riservato': 'PREZZO A VOI RISERVATO',
+            'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale',
             'validity': validity, 'cta': 'Vedi e conferma il preventivo', 'ref': 'Preventivo',
         }
 
