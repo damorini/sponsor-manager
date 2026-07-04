@@ -7,6 +7,7 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.cruscotto_home, name='cruscotto_home'),
+    path('cerca/', views.cruscotto_cerca, name='cruscotto_cerca'),
     path('scadenze-cliente/', views.cruscotto_scadenze_cliente, name='cruscotto_scadenze_cliente'),
     path('scadenze-cliente/file/<uuid:document_id>/', views.cruscotto_scadenza_file, name='cruscotto_scadenza_file'),
     path('scadenze-cliente/<uuid:deadline_id>/', views.cruscotto_scadenza_dettaglio, name='cruscotto_scadenza_dettaglio'),

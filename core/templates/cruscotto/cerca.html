@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Cerca cliente · Cruscotto{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
+{% block branding %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_("Django administration") }}</a></h1>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; Cerca cliente
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">Cerca cliente</h1>
+    <p class="cr-sub">Ricerca per ragione sociale, P.IVA, nome o email dei contatti.</p>
+    <form method="get" style="margin-top:14px; display:flex; gap:8px; max-width:520px;">
+      <input type="search" name="q" value="{{ q }}" autofocus
+             placeholder="Es. ACME, 01234567890, mario.rossi@…"
+             style="flex:1; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px;">
+      <button type="submit" class="cr-btn cr-btn--small">Cerca</button>
+    </form>
+  </div>
+
+  {% if q %}
+    {% if risultati %}
+    <table style="width:100%; border-collapse:collapse; background:#fff; margin-top:18px;">
+      <thead>
+        <tr style="text-align:left; border-bottom:2px solid #e5e7eb;">
+          <th style="padding:8px;">Cliente</th>
+          <th style="padding:8px;">P.IVA</th>
+          <th style="padding:8px;">Contatto</th>
+          <th style="padding:8px;">Email</th>
+          <th style="padding:8px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in risultati %}
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:8px;"><a href="{{ r.admin_url }}"><strong>{{ r.nome }}</strong></a></td>
+          <td style="padding:8px;">{{ r.piva|default:"—" }}</td>
+          <td style="padding:8px;">{{ r.contatto|default:"—" }}</td>
+          <td style="padding:8px;">{{ r.email|default:"—" }}</td>
+          <td style="padding:8px; white-space:nowrap;">
+            <a href="{{ r.admin_url }}" class="cr-btn cr-btn--ghost cr-btn--small">Scheda</a>
+            <a href="{{ r.nuovo_contratto_url }}" class="cr-btn cr-btn--ghost cr-btn--small">+ Contratto</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#666; margin-top:18px;">Nessun cliente trovato per &laquo;{{ q }}&raquo;.</p>
+    {% endif %}
+  {% endif %}
+
+  <p style="margin-top:18px;">
+    <a href="{% url 'core:cruscotto_home' %}" class="cr-btn cr-btn--ghost cr-btn--small">&larr; Torna al cruscotto</a>
+  </p>
+</div>
+{% endblock %}

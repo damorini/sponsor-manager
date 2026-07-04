@@ -26,26 +26,32 @@
     <p class="cr-sub">Servizi che richiedono testi e/o file dal cliente (es. Workshop), con lo stato di consegna.</p>
   </div>
 
+  {# Box riepilogo cliccabili: applicano il filtro ?stato= mantenendo evento e ricerca #}
   <div style="display:flex; gap:14px; flex-wrap:wrap; margin:18px 0;">
-    <div style="flex:1; min-width:120px; background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:14px;">
+    <a href="?{% if event_id %}event={{ event_id }}&amp;{% endif %}{% if q %}q={{ q|urlencode }}{% endif %}"
+       style="flex:1; min-width:120px; background:#fff; border:{% if not stato %}2px solid #6b7280{% else %}1px solid #e5e7eb{% endif %}; border-radius:10px; padding:14px; text-decoration:none; color:inherit;">
       <div style="font-size:1.8em; font-weight:700;">{{ tot }}</div>
       <div style="color:#666;">Totali</div>
-    </div>
-    <div style="flex:1; min-width:120px; background:#fff; border:1px solid #d1fae5; border-radius:10px; padding:14px;">
+    </a>
+    <a href="?stato=completata{% if event_id %}&amp;event={{ event_id }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       style="flex:1; min-width:120px; background:#fff; border:{% if stato == 'completata' %}2px solid #41ad7c{% else %}1px solid #d1fae5{% endif %}; border-radius:10px; padding:14px; text-decoration:none; color:inherit;">
       <div style="font-size:1.8em; font-weight:700; color:#41ad7c;">{{ completate }}</div>
       <div style="color:#666;">Completate</div>
-    </div>
-    <div style="flex:1; min-width:120px; background:#fff; border:1px solid #fde68a; border-radius:10px; padding:14px;">
+    </a>
+    <a href="?stato=dafare{% if event_id %}&amp;event={{ event_id }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       style="flex:1; min-width:120px; background:#fff; border:{% if stato == 'dafare' %}2px solid #e6a23c{% else %}1px solid #fde68a{% endif %}; border-radius:10px; padding:14px; text-decoration:none; color:inherit;">
       <div style="font-size:1.8em; font-weight:700; color:#e6a23c;">{{ da_fare }}</div>
       <div style="color:#666;">Da fare</div>
-    </div>
-    <div style="flex:1; min-width:120px; background:#fff; border:1px solid #fecaca; border-radius:10px; padding:14px;">
+    </a>
+    <a href="?stato=ritardo{% if event_id %}&amp;event={{ event_id }}{% endif %}{% if q %}&amp;q={{ q|urlencode }}{% endif %}"
+       style="flex:1; min-width:120px; background:#fff; border:{% if stato == 'ritardo' %}2px solid #ba2121{% else %}1px solid #fecaca{% endif %}; border-radius:10px; padding:14px; text-decoration:none; color:inherit;">
       <div style="font-size:1.8em; font-weight:700; color:#ba2121;">{{ in_ritardo }}</div>
       <div style="color:#666;">In ritardo</div>
-    </div>
+    </a>
   </div>
 
-  <form method="get" style="margin-bottom:14px;">
+  <form method="get" style="margin-bottom:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    {% if stato %}<input type="hidden" name="stato" value="{{ stato }}">{% endif %}
     <label>Evento:
       <select name="event" onchange="this.form.submit()">
         <option value="">Tutti</option>
@@ -54,7 +60,12 @@
         {% endfor %}
       </select>
     </label>
-    <noscript><button type="submit">Filtra</button></noscript>
+    <input type="search" name="q" value="{{ q }}" placeholder="Cerca sponsor o scadenza…"
+           style="padding:6px 10px; border:1px solid #d1d5db; border-radius:8px; min-width:220px;">
+    <button type="submit" class="cr-btn cr-btn--ghost cr-btn--small">Filtra</button>
+    {% if stato or q %}
+    <a href="?{% if event_id %}event={{ event_id }}{% endif %}" style="font-size:.9em;">Azzera filtri</a>
+    {% endif %}
   </form>
 
   {% if righe %}

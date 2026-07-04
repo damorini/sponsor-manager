@@ -57,7 +57,14 @@
       Eventi in vendita o in corso.
       {% if n_eventi == 0 %}Nessun evento attivo al momento.{% else %}<strong>{{ n_eventi }}</strong> evento{% if n_eventi != 1 %}i{% endif %} attivo{% if n_eventi != 1 %}i{% endif %}.{% endif %}
     </p>
-    <p style="margin-top:18px;">
+    <form method="get" action="{% url 'core:cruscotto_cerca' %}"
+          style="margin-top:16px; display:flex; gap:8px; max-width:520px;">
+      <input type="search" name="q"
+             placeholder="Cerca cliente per nome, P.IVA o contatto…"
+             style="flex:1; padding:8px 12px; border:1px solid #d1d5db; border-radius:8px;">
+      <button type="submit" class="cr-btn cr-btn--small">Cerca</button>
+    </form>
+    <p style="margin-top:14px;">
       <a href="{% url 'core:cruscotto_scadenze_cliente' %}" class="cr-btn cr-btn--ghost cr-btn--small">
         <span>🗓</span> Scadenze cliente
       </a>

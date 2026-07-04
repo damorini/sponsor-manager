@@ -126,6 +126,54 @@ def cruscotto_home(request):
 
 
 @staff_member_required
+def cruscotto_cerca(request):
+    """Ricerca cliente globale dal cruscotto.
+
+    Cerca per ragione sociale, P.IVA e nome/email dei contatti; esclude
+    gli sponsor nel cestino (manager di default del soft-delete). Le
+    anagrafiche sono visibili a tutti gli operatori (niente scope evento).
+    """
+    from django.db.models import Q
+    from django.urls import reverse
+    from sponsors.models import Sponsor
+
+    q = (request.GET.get('q') or '').strip()
+    risultati = []
+    if q:
+        qs = (Sponsor.objects
+              .filter(Q(legal_name__icontains=q)
+                      | Q(vat_number__icontains=q)
+                      | Q(contacts__full_name__icontains=q)
+                      | Q(contacts__email__icontains=q))
+              .distinct()
+              .order_by('legal_name')
+              .prefetch_related('contacts'))
+        for sp in qs[:50]:
+            try:
+                pc = sp.primary_contact or sp.contacts.first()
+            except Exception:
+                pc = None
+            risultati.append({
+                'id': sp.id,
+                'nome': sp.legal_name,
+                'piva': sp.vat_number or '',
+                'contatto': pc.full_name if pc else '',
+                'email': pc.email if pc else '',
+                'admin_url': reverse('admin:sponsors_sponsor_change', args=[sp.id]),
+                'nuovo_contratto_url': (reverse('admin:contracts_contract_add')
+                                        + f'?sponsor={sp.id}'),
+            })
+
+    context = {
+        **admin_site.each_context(request),
+        'title': 'Cerca cliente',
+        'q': q,
+        'risultati': risultati,
+    }
+    return render(request, 'cruscotto/cerca.html', context)
+
+
+@staff_member_required
 def evento_dettaglio(request, pk):
     """Dashboard di dettaglio dell'evento: KPI principali."""
     from datetime import date
@@ -956,6 +1004,22 @@ def cruscotto_scadenze_cliente(request):
             'deadline_id': d.id,
         })
 
+    # Filtri di visualizzazione: i contatori dei box restano quelli globali
+    # della selezione evento; stato e ricerca filtrano solo la tabella.
+    stato = request.GET.get('stato') or ''
+    if stato not in ('completata', 'dafare', 'ritardo'):
+        stato = ''
+    q = (request.GET.get('q') or '').strip()
+
+    righe_visibili = righe
+    if stato:
+        righe_visibili = [r for r in righe_visibili if r['stato'] == stato]
+    if q:
+        ql = q.lower()
+        righe_visibili = [r for r in righe_visibili
+                          if ql in (r['sponsor'] or '').lower()
+                          or ql in (r['titolo'] or '').lower()]
+
     # eventi con scadenze cliente, per il filtro
     ev_ids = set(Deadline.objects
                  .filter(deadline_template__isnull=False)
@@ -974,13 +1038,15 @@ def cruscotto_scadenze_cliente(request):
     context = {
         **admin_site.each_context(request),
         'title': 'Scadenze cliente',
-        'righe': righe,
+        'righe': righe_visibili,
         'tot': len(deadlines),
         'completate': completate,
         'da_fare': da_fare,
         'in_ritardo': in_ritardo,
         'eventi': ev_list,
         'event_id': event_id,
+        'stato': stato,
+        'q': q,
     }
     return render(request, 'cruscotto/scadenze_cliente.html', context)
 
