@@ -192,11 +192,45 @@ class EmailSettingsAdmin(admin.ModelAdmin):
         }),
         ("Test invio", {
             "fields": ("test_recipient",),
-            "description": "Indirizzo a cui mandare l'email di PROVA (azione qui sotto). "
-                           "Se vuoto, l'email di prova va al tuo indirizzo di accesso.",
+            "description": None,  # impostata dinamicamente in get_fieldsets
         }),
     )
     actions = ["invia_email_di_prova"]
+
+    def get_fieldsets(self, request, obj=None):
+        """Istruzioni passo-passo per il test, con link diretto alla pagina
+        di invio prova (l'URL si può risolvere solo a runtime)."""
+        from django.urls import reverse
+        from django.utils.html import format_html
+        fieldsets = list(super().get_fieldsets(request, obj))
+        descr = format_html(
+            "<b>Come fare il test:</b> "
+            "1) compila i dati SMTP qui sopra e premi <b>Salva e continua</b>; "
+            "2) scrivi qui l'indirizzo a cui vuoi ricevere la prova "
+            "(se lo lasci vuoto, la prova va al tuo indirizzo di accesso); "
+            "3) clicca <a class=\"button\" href=\"{}\">Invia email di prova</a> "
+            "e conferma l'indirizzo nella pagina che si apre. "
+            "Se la configurazione è corretta ricevi l'email "
+            "«Houston, non abbiamo problemi»; altrimenti qui in alto compare "
+            "l'errore SMTP da correggere.",
+            reverse('admin:core_emailsettings_test_invio'),
+        )
+        nuovi = []
+        for name, opts in fieldsets:
+            if name == "Test invio":
+                opts = {**opts, "description": descr}
+            nuovi.append((name, opts))
+        return nuovi
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('test-invio/',
+                 self.admin_site.admin_view(self.test_invio_view),
+                 name='core_emailsettings_test_invio'),
+        ]
+        return custom + urls
 
     def has_add_permission(self, request):
         return not EmailSettings.objects.exists()
@@ -204,86 +238,106 @@ class EmailSettingsAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return False
 
-    @admin.action(description="Invia un'email di PROVA")
-    def invia_email_di_prova(self, request, queryset):
+    def _send_test_email(self, request, dest):
+        """Valida il destinatario e invia l'email di prova. Esito via messages."""
         from django.core.mail import EmailMultiAlternatives
         from django.contrib import messages
-        from django.contrib.admin import helpers
-        from django.template.response import TemplateResponse
         from django.core.validators import validate_email
         from django.core.exceptions import ValidationError
         s = EmailSettings.load()
 
-        # Secondo passo: l'utente ha digitato l'indirizzo e confermato -> invio.
-        if request.POST.get('apply_test'):
-            dest = (request.POST.get('test_email') or '').strip()
-            try:
-                validate_email(dest)
-            except ValidationError:
-                self.message_user(request, "Indirizzo email non valido.", level=messages.ERROR)
-                return
-            conn = s.get_connection()
-            if conn is None:
-                self.message_user(
-                    request,
-                    "Configurazione SMTP non attiva o senza host: spunta «Usa questa "
-                    "configurazione SMTP» e compila l'host, poi salva e riprova.",
-                    level=messages.WARNING)
-                return
-            text_body = (
-                "Houston, non abbiamo problemi.\n\n"
-                "Questa e-mail conferma che il sistema di comunicazione del portale "
-                "Sponsor Manager di VALET Conference funziona perfettamente.\n"
-                "Sei correttamente raggiungibile: da questo momento riceverai tutte le "
-                "comunicazioni ufficiali relative alla tua area riservata.\n\n"
-                "Benvenuto a bordo!\nIl team VALET CONFERENCE\n\n"
-                "----------------------------------------\n\n"
-                "Houston, we have no problems.\n\n"
-                "This e-mail confirms that the communication system of the Sponsor Manager "
-                "of VALET Conference portal is working perfectly. You are correctly reachable: "
-                "from now on, you will receive all official communications related to your "
-                "reserved area.\n\nWelcome on board!\nThe VALET CONFERENCE Team"
+        try:
+            validate_email(dest)
+        except ValidationError:
+            self.message_user(request, "Indirizzo email non valido.", level=messages.ERROR)
+            return
+        conn = s.get_connection()
+        if conn is None:
+            self.message_user(
+                request,
+                "Configurazione SMTP non attiva o senza host: spunta «Usa questa "
+                "configurazione SMTP» e compila l'host, poi salva e riprova.",
+                level=messages.WARNING)
+            return
+        text_body = (
+            "Houston, non abbiamo problemi.\n\n"
+            "Questa e-mail conferma che il sistema di comunicazione del portale "
+            "Sponsor Manager di VALET Conference funziona perfettamente.\n"
+            "Sei correttamente raggiungibile: da questo momento riceverai tutte le "
+            "comunicazioni ufficiali relative alla tua area riservata.\n\n"
+            "Benvenuto a bordo!\nIl team VALET CONFERENCE\n\n"
+            "----------------------------------------\n\n"
+            "Houston, we have no problems.\n\n"
+            "This e-mail confirms that the communication system of the Sponsor Manager "
+            "of VALET Conference portal is working perfectly. You are correctly reachable: "
+            "from now on, you will receive all official communications related to your "
+            "reserved area.\n\nWelcome on board!\nThe VALET CONFERENCE Team"
+        )
+        html_body = _EMAIL_TEST_HTML
+        try:
+            msg = EmailMultiAlternatives(
+                subject="🚀 Houston, non abbiamo problemi · VALET Conference",
+                body=text_body,
+                from_email=s.from_full or s.username,
+                to=[dest],
+                connection=conn,
             )
-            html_body = _EMAIL_TEST_HTML
+            msg.attach_alternative(html_body, "text/html")
+            # Logo VALET incorporato (inline, sempre visibile)
             try:
-                msg = EmailMultiAlternatives(
-                    subject="🚀 Houston, non abbiamo problemi · VALET Conference",
-                    body=text_body,
-                    from_email=s.from_full or s.username,
-                    to=[dest],
-                    connection=conn,
-                )
-                msg.attach_alternative(html_body, "text/html")
-                # Logo VALET incorporato (inline, sempre visibile)
-                try:
-                    import os
-                    from email.mime.image import MIMEImage
-                    from django.conf import settings as _st
-                    _logo = os.path.join(_st.BASE_DIR, 'core', 'static', 'branding', 'valet_logo.png')
-                    if os.path.exists(_logo):
-                        with open(_logo, 'rb') as _f:
-                            _img = MIMEImage(_f.read(), 'png')
-                        _img.add_header('Content-ID', '<valetlogo>')
-                        _img.add_header('Content-Disposition', 'inline', filename='valet_logo.png')
-                        msg.mixed_subtype = 'related'
-                        msg.attach(_img)
-                except Exception:
-                    pass  # se il logo manca, l'email parte comunque (senza immagine)
-                msg.send(fail_silently=False)
-                self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
-                                  level=messages.SUCCESS)
-            except Exception as e:
-                self.message_user(request, f"Invio fallito: {e}", level=messages.ERROR)
-            return  # torna alla lista
+                import os
+                from email.mime.image import MIMEImage
+                from django.conf import settings as _st
+                _logo = os.path.join(_st.BASE_DIR, 'core', 'static', 'branding', 'valet_logo.png')
+                if os.path.exists(_logo):
+                    with open(_logo, 'rb') as _f:
+                        _img = MIMEImage(_f.read(), 'png')
+                    _img.add_header('Content-ID', '<valetlogo>')
+                    _img.add_header('Content-Disposition', 'inline', filename='valet_logo.png')
+                    msg.mixed_subtype = 'related'
+                    msg.attach(_img)
+            except Exception:
+                pass  # se il logo manca, l'email parte comunque (senza immagine)
+            msg.send(fail_silently=False)
+            self.message_user(request, f"Email di prova inviata a {dest}. Controlla la casella.",
+                              level=messages.SUCCESS)
+        except Exception as e:
+            self.message_user(request, f"Invio fallito: {e}", level=messages.ERROR)
 
-        # Primo passo: chiedo a quale indirizzo inviare (paginetta al volo).
+    def _test_confirm_page(self, request, selected_pks=None):
+        """Paginetta che chiede a quale indirizzo inviare la prova."""
+        from django.contrib.admin import helpers
+        from django.template.response import TemplateResponse
+        s = EmailSettings.load()
         default = (s.test_recipient or '').strip() or (request.user.email or '')
         ctx = {
             **self.admin_site.each_context(request),
             'title': "Invia un'email di prova",
             'default_email': default,
-            'selected': list(queryset.values_list('pk', flat=True)),
+            'selected': selected_pks or [],
             'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
             'opts': self.model._meta,
         }
         return TemplateResponse(request, 'admin/email_test_confirm.html', ctx)
+
+    def test_invio_view(self, request):
+        """Pagina diretta di test (linkata dalle istruzioni nella change form):
+        GET mostra la conferma indirizzo, POST invia e torna alla config."""
+        from django.shortcuts import redirect
+        if request.method == 'POST' and request.POST.get('apply_test'):
+            dest = (request.POST.get('test_email') or '').strip()
+            self._send_test_email(request, dest)
+            s = EmailSettings.load()
+            return redirect('admin:core_emailsettings_change', s.pk)
+        return self._test_confirm_page(request)
+
+    @admin.action(description="Invia un'email di PROVA")
+    def invia_email_di_prova(self, request, queryset):
+        # Secondo passo: l'utente ha digitato l'indirizzo e confermato -> invio.
+        if request.POST.get('apply_test'):
+            dest = (request.POST.get('test_email') or '').strip()
+            self._send_test_email(request, dest)
+            return  # torna alla lista
+        # Primo passo: chiedo a quale indirizzo inviare (paginetta al volo).
+        return self._test_confirm_page(
+            request, list(queryset.values_list('pk', flat=True)))

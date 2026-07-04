@@ -45,11 +45,12 @@ logger = logging.getLogger(__name__)
 # Path base dei template (relativo a BASE_DIR di Django)
 TEMPLATES_DIR = Path(settings.BASE_DIR) / 'contracts' / 'templates_pdf'
 
-# Mapping tipo evento → template
+# Mapping (tipo evento, lingua contratto) → template
 TEMPLATE_MAP = {
     ('ecm', 'it'): 'template_ecm_it.docx',
+    ('ecm', 'en'): 'template_ecm_en.docx',
     ('non_ecm', 'it'): 'template_non_ecm_it.docx',
-    # In futuro: ('ecm', 'en'): 'template_ecm_en.docx', ecc.
+    ('non_ecm', 'en'): 'template_non_ecm_en.docx',
 }
 
 # Mapping accounting_category → label per allegato ECM
@@ -1132,7 +1133,17 @@ def generate_client_summary_pdf(sponsor, event):
 # DOMANDA DI AMMISSIONE
 # ============================================================================
 
-ADMISSION_TEMPLATE = 'template_domanda_ammissione_it.docx'
+ADMISSION_TEMPLATES = {
+    'it': 'template_domanda_ammissione_it.docx',
+    'en': 'template_domanda_ammissione_en.docx',
+}
+ADMISSION_TEMPLATE = ADMISSION_TEMPLATES['it']  # retrocompatibilità
+
+
+def _admission_template_for(language):
+    """Template della domanda di ammissione per la lingua del contratto
+    (fallback italiano per lingue non gestite)."""
+    return ADMISSION_TEMPLATES.get(language or 'it', ADMISSION_TEMPLATES['it'])
 
 
 def _replace_title_in_docx(docx_path, new_title):
@@ -1206,7 +1217,10 @@ def _format_admission_services_table(docx_path):
     doc = Document(str(docx_path))
     for t in doc.tables:
         header = ' '.join(c.text.strip().lower() for c in t.rows[0].cells)
-        if 'descrizione dei servizi' not in header and 'pr. unit' not in header:
+        # intestazioni riconosciute in entrambe le lingue dei template
+        if ('descrizione dei servizi' not in header and 'pr. unit' not in header
+                and 'description of the services' not in header
+                and 'unit price' not in header):
             continue
         for ri, row in enumerate(t.rows):
             qta = row.cells[0].text.strip()
@@ -1235,15 +1249,19 @@ def _rimuovi_riga_iva_domanda(docx_path):
     removed = False
     for t in d.tables:
         full = ' '.join(c.text for row in t.rows for c in row.cells).upper()
-        # solo la tabella dei totali (ha IVA + Totale/Imponibile), mai quella dati sponsor
-        if not (('TOTALE' in full or 'IMPONIBILE' in full) and 'IVA' in full):
+        # solo la tabella dei totali (ha IVA/VAT + Totale/Imponibile, in
+        # entrambe le lingue dei template), mai quella dati sponsor
+        if not (('TOTALE' in full or 'IMPONIBILE' in full
+                 or 'TOTAL' in full or 'TAXABLE' in full)
+                and ('IVA' in full or 'VAT' in full)):
             continue
         for row in list(t.rows):
             if removed:
                 break
             for c in row.cells:
                 ct = c.text.strip().upper()
-                if ct.startswith('IVA') and 'PARTITA' not in ct:
+                if ((ct.startswith('IVA') and 'PARTITA' not in ct)
+                        or (ct.startswith('VAT') and 'NUMBER' not in ct)):
                     row._tr.getparent().remove(row._tr)
                     removed = True
                     break
@@ -1271,7 +1289,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     from contracts.models import ContractKind
     is_addendum = contract.contract_kind == ContractKind.ADDENDUM
 
-    template_path = TEMPLATES_DIR / ADMISSION_TEMPLATE
+    template_path = TEMPLATES_DIR / _admission_template_for(contract.language)
     if not template_path.exists():
         raise FileNotFoundError(f"Template domanda non trovato: {template_path}")
 
@@ -1401,7 +1419,18 @@ def generate_admission_request_pdf(contract, as_allegato=False):
 # CONTRATTO DI SPONSORIZZAZIONE (non-ECM) con Domanda di ammissione = Allegato 1
 # ============================================================================
 
-SPONSOR_CONTRACT_TEMPLATE = 'template_contratto_sponsor_non_ecm_it.docx'
+SPONSOR_CONTRACT_TEMPLATES = {
+    'it': 'template_contratto_sponsor_non_ecm_it.docx',
+    'en': 'template_contratto_sponsor_non_ecm_en.docx',
+}
+SPONSOR_CONTRACT_TEMPLATE = SPONSOR_CONTRACT_TEMPLATES['it']  # retrocompatibilità
+
+
+def _sponsor_contract_template_for(language):
+    """Template del contratto di sponsorizzazione per la lingua del contratto
+    (fallback italiano per lingue non gestite)."""
+    return SPONSOR_CONTRACT_TEMPLATES.get(
+        language or 'it', SPONSOR_CONTRACT_TEMPLATES['it'])
 
 
 def _get_operational_contact(contract):
@@ -1418,7 +1447,7 @@ def generate_sponsor_contract_pdf(contract):
 
     Ritorna il Document creato (document_type='sponsor_contract').
     """
-    template_path = TEMPLATES_DIR / SPONSOR_CONTRACT_TEMPLATE
+    template_path = TEMPLATES_DIR / _sponsor_contract_template_for(contract.language)
     if not template_path.exists():
         raise FileNotFoundError(f"Template contratto sponsor non trovato: {template_path}")
 
@@ -1738,6 +1767,35 @@ def _proforma_installments(contract):
              'due_date': contract.balance_due_date}]
 
 
+def _upsert_invoice_export(contract, inst, document):
+    """Registra/aggiorna la riga in "Export fatture" per la proforma generata.
+
+    Upsert su (contratto, tipo, rata): rigenerare la proforma aggiorna importi
+    e link al PDF ma NON tocca stato e riferimenti esterni gia' lavorati.
+    """
+    from shared.models import DocumentType, InvoiceExport, InvoiceExportType
+
+    tipo_map = {
+        DocumentType.PROFORMA: (InvoiceExportType.FULL, None),
+        DocumentType.PROFORMA_ACCONTO: (InvoiceExportType.DEPOSIT, 1),
+        DocumentType.PROFORMA_SALDO: (InvoiceExportType.BALANCE, 2),
+    }
+    export_type, rata = tipo_map.get(inst['doc_type'], (InvoiceExportType.FULL, None))
+    InvoiceExport.objects.update_or_create(
+        contract=contract,
+        export_type=export_type,
+        installment_number=rata,
+        defaults={
+            'amount_subtotal': inst['imponibile'],
+            'amount_vat': inst['iva'],
+            'amount_total': inst['totale'],
+            'export_file_url': document.storage_url,
+            'notes': f"Proforma {(contract.contract_number or '')}{inst['suffix']}"
+                     f" · {inst['label']}",
+        },
+    )
+
+
 def generate_proforma_pdf(contract):
     """Genera la/e FATTURA/E PROFORMA del contratto (PDF via WeasyPrint).
 
@@ -1745,6 +1803,8 @@ def generate_proforma_pdf(contract):
     - Acconto + saldo  -> 2 proforme numerate .../1 (acconto) e .../2 (saldo).
 
     Documento NON fiscale (la fattura vera la emette il sistema esterno).
+    Ogni proforma viene anche registrata in "Export fatture" (InvoiceExport)
+    con gli importi e il link al PDF.
     Ritorna la lista dei Document creati."""
     from django.template.loader import render_to_string
     from django.utils import timezone
@@ -1843,6 +1903,7 @@ def generate_proforma_pdf(contract):
             contract, full_pdf_path, relative_pdf_path,
             file_name=pdf_filename, mime='application/pdf', document_type=inst['doc_type'],
         )
+        _upsert_invoice_export(contract, inst, document)
         docs.append(document)
     logger.info("Proforma generate per %s: %d documento/i", contract.contract_number, len(docs))
     return docs

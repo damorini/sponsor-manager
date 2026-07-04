@@ -506,7 +506,7 @@ class InvoiceExportAdmin(admin.ModelAdmin):
     list_display = (
         'reference_display', 'contract_link', 'export_type',
         'amount_total_display', 'status_badge', 'external_invoice_number',
-        'invoiced_at_short',
+        'invoiced_at_short', 'pdf_link',
     )
     list_filter = ('status', 'export_type', 'external_system')
     search_fields = (
@@ -591,6 +591,14 @@ class InvoiceExportAdmin(admin.ModelAdmin):
     def invoiced_at_short(self, obj):
         if obj.invoiced_at:
             return obj.invoiced_at.strftime('%d/%m/%Y')
+        return '—'
+
+    @admin.display(description='PDF')
+    def pdf_link(self, obj):
+        if obj.export_file_url:
+            return format_html(
+                '<a href="{}" target="_blank">Apri proforma</a>',
+                obj.export_file_url)
         return '—'
 
 
