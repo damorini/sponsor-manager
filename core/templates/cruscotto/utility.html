@@ -36,8 +36,9 @@
   <div class="cr-section">
     <h2 class="cr-h2">Esporta dati esistenti</h2>
     <p style="color: var(--ink-3); font-size:13px; margin-top:-6px;">
-      Scarica un Excel con i servizi o gli stand già inseriti per un evento.
-      Le colonne sono identiche a quelle dell'import: puoi correggere e ricaricare.
+      Scarica un Excel con i dati già inseriti. Le colonne sono identiche a quelle
+      dell'import: puoi correggere e ricaricare. <strong>Servizi</strong> e <strong>stand</strong>
+      sono per evento; <strong>clienti</strong> e <strong>contatti</strong> esportano l'intera anagrafica.
     </p>
     <div class="cr-panel">
       <div class="cr-form-row">
@@ -49,6 +50,8 @@
         </select>
         <a id="btn-export-servizi" href="#" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta servizi</a>
         <a id="btn-export-stand" href="#" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta stand</a>
+        <a href="{% url 'core:cruscotto_export_sponsor' %}" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta clienti</a>
+        <a href="{% url 'core:cruscotto_export_contatti' %}" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta contatti</a>
       </div>
     </div>
     <script>
@@ -135,7 +138,6 @@
       <div class="cr-panel">
         <h3>Sponsor / clienti</h3>
         <p class="cr-card-desc">Anagrafiche delle aziende: ragione sociale, P.IVA, indirizzo e recapiti.</p>
-        <a href="{% url 'core:cruscotto_export_sponsor' %}" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta clienti</a>
         <a href="{% url 'core:cruscotto_download_template_sponsor' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello sponsor</a>
         <form method="post" action="{% url 'core:cruscotto_importa_sponsor' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
@@ -157,7 +159,6 @@
       <div class="cr-panel">
         <h3>Contatti</h3>
         <p class="cr-card-desc">Persone di riferimento degli sponsor: nome, email, telefono e ruolo.</p>
-        <a href="{% url 'core:cruscotto_export_contatti' %}" class="cr-btn cr-btn--accent cr-btn--small">↓ Esporta contatti</a>
         <a href="{% url 'core:cruscotto_download_template_contatti' %}" class="cr-btn cr-btn--primary cr-btn--small">↓ Modello contatti</a>
         <form method="post" action="{% url 'core:cruscotto_importa_contatti' %}"
               enctype="multipart/form-data" style="margin-top:14px; border-top:1px solid var(--line); padding-top:14px;">
