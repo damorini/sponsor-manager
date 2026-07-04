@@ -1708,3 +1708,141 @@ def generate_quote_pdf_html(contract):
     logger.info("Preventivo (HTML->PDF) generato per %s (Document id=%s)",
                 contract.contract_number, document.id)
     return document
+
+
+def _proforma_installments(contract):
+    """Ritorna le 'rate' da fatturare come proforma per il contratto.
+    Modello attuale: pagamento unico, oppure acconto+saldo (deposit_percent>0).
+    Ogni voce: dict con suffix ('', '/1', '/2'), label, doc_type,
+    imponibile/iva/totale (Decimal) e due_date."""
+    from decimal import Decimal
+    from shared.models import DocumentType
+    sub = contract.subtotal or Decimal('0')
+    iva = contract.vat_amount or Decimal('0')
+    tot = contract.total or Decimal('0')
+    if getattr(contract, 'has_deposit', False):
+        pct = contract.deposit_percent or Decimal('0')
+        acc_sub = (sub * pct / Decimal('100')).quantize(Decimal('0.01'))
+        acc_iva = (iva * pct / Decimal('100')).quantize(Decimal('0.01'))
+        pct_txt = str(int(pct)) if pct == pct.to_integral_value() else str(pct.normalize())
+        return [
+            {'suffix': '/1', 'label': f'Acconto {pct_txt}%', 'doc_type': DocumentType.PROFORMA_ACCONTO,
+             'imponibile': acc_sub, 'iva': acc_iva, 'totale': contract.deposit_amount,
+             'due_date': contract.deposit_due_date},
+            {'suffix': '/2', 'label': 'Saldo', 'doc_type': DocumentType.PROFORMA_SALDO,
+             'imponibile': (sub - acc_sub), 'iva': (iva - acc_iva), 'totale': contract.balance_amount,
+             'due_date': contract.balance_due_date},
+        ]
+    return [{'suffix': '', 'label': 'Pagamento unico', 'doc_type': DocumentType.PROFORMA,
+             'imponibile': sub, 'iva': iva, 'totale': tot,
+             'due_date': contract.balance_due_date}]
+
+
+def generate_proforma_pdf(contract):
+    """Genera la/e FATTURA/E PROFORMA del contratto (PDF via WeasyPrint).
+
+    - Pagamento unico  -> 1 proforma (numero = numero contratto).
+    - Acconto + saldo  -> 2 proforme numerate .../1 (acconto) e .../2 (saldo).
+
+    Documento NON fiscale (la fattura vera la emette il sistema esterno).
+    Ritorna la lista dei Document creati."""
+    from django.template.loader import render_to_string
+    from django.utils import timezone
+    try:
+        from weasyprint import HTML as _WeasyHTML
+    except Exception as e:
+        raise RuntimeError("WeasyPrint non installato: %s" % e)
+
+    sponsor = contract.sponsor
+    event = contract.event
+    lines = list(contract.lines.all())
+    site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+
+    # Logo + dati emittente (VALET) — riuso della logica del preventivo.
+    try:
+        from core.models import OrganizerSettings
+        _org = OrganizerSettings.load()
+    except Exception:
+        _org = None
+    org_logo_url = ''
+    try:
+        if _org and _org.logo:
+            org_logo_url = (site_url + _org.logo.url) if site_url else _org.logo.url
+        else:
+            from django.contrib.staticfiles import finders as _finders
+            _logo_fs = _finders.find('branding/valet_logo.png')
+            if _logo_fs:
+                org_logo_url = Path(_logo_fs).as_uri()
+    except Exception:
+        org_logo_url = ''
+    org = {
+        'name': (_org.name if _org and _org.name else None) or getattr(settings, 'ORGANIZER_DISPLAY_NAME', 'VALET S.r.l.'),
+        'address': " ".join(str((_org.address if _org else '') or '').split()),
+        'email': (_org.email if _org else '') or getattr(settings, 'SUPPORT_EMAIL', ''),
+        'phone': (_org.phone if _org else '') or '',
+        'website': (_org.website if _org else '') or '',
+        'vat': (_org.vat_number if _org else '') or '',
+        'rea': (_org.rea if _org else '') or '',
+        'logo_url': org_logo_url,
+    }
+    bank = {
+        'holder': getattr(settings, 'BANK_TRANSFER_HOLDER', '') or '',
+        'bank': getattr(settings, 'BANK_TRANSFER_BANK', '') or '',
+        'iban': getattr(settings, 'BANK_TRANSFER_IBAN', '') or '',
+        'bic': getattr(settings, 'BANK_TRANSFER_BIC', '') or '',
+    }
+    _addr = ', '.join(x for x in [
+        getattr(sponsor, 'address_street', '') or '',
+        ' '.join(y for y in [
+            getattr(sponsor, 'address_zip', '') or '',
+            getattr(sponsor, 'address_city', '') or '',
+            (f"({sponsor.address_province})" if getattr(sponsor, 'address_province', '') else ''),
+        ] if y),
+    ] if x)
+    cliente = {
+        'name': sponsor.legal_name if sponsor else '',
+        'vat': getattr(sponsor, 'vat_number', '') or '',
+        'cf': getattr(sponsor, 'tax_code', '') or '',
+        'sdi': getattr(sponsor, 'sdi_code', '') or '',
+        'pec': getattr(sponsor, 'pec_email', '') or '',
+        'address': _addr,
+    }
+    try:
+        ev_name = event.get_name(contract.language or 'it') if hasattr(event, 'get_name') else str(event)
+    except Exception:
+        ev_name = str(event)
+
+    oggi = timezone.localdate()
+    esente = not getattr(contract, 'vat_applicable', True)
+    try:
+        _r = contract.vat_rate
+        aliquota = f"{int(_r)}" if _r == int(_r) else f"{_r}"
+    except Exception:
+        aliquota = ''
+
+    docs = []
+    for inst in _proforma_installments(contract):
+        ctx = {
+            'contract': contract, 'org': org, 'bank': bank, 'cliente': cliente,
+            'ev_name': ev_name, 'lines': lines, 'inst': inst,
+            'numero': (contract.contract_number or '') + inst['suffix'],
+            'data': oggi, 'esente': esente,
+            'vat_exemption_reason': getattr(contract, 'vat_exemption_reason', '') or '',
+            'aliquota': aliquota,
+            'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
+        }
+        html = render_to_string('proforma_pdf.html', ctx)
+        pdf_bytes = _WeasyHTML(string=html, base_url=(site_url or None)).write_pdf()
+        safe_suffix = inst['suffix'].replace('/', '_')
+        pdf_filename = f"proforma_{contract.contract_number}{safe_suffix}_{event.id}.pdf"
+        relative_pdf_path = f"documents/contracts/{contract.id}/{pdf_filename}"
+        full_pdf_path = Path(settings.MEDIA_ROOT) / relative_pdf_path
+        full_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+        full_pdf_path.write_bytes(pdf_bytes)
+        document = _create_document_record(
+            contract, full_pdf_path, relative_pdf_path,
+            file_name=pdf_filename, mime='application/pdf', document_type=inst['doc_type'],
+        )
+        docs.append(document)
+    logger.info("Proforma generate per %s: %d documento/i", contract.contract_number, len(docs))
+    return docs

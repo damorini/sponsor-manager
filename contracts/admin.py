@@ -451,7 +451,8 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
                'action_registra_bonifico',
-               'action_genera_domanda_ammissione', 'action_restore']
+               'action_genera_domanda_ammissione', 'action_genera_proforma',
+               'action_restore']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):
@@ -960,6 +961,29 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 request,
                 f"Documento generato per {ok} contratto/i (domanda di ammissione per i "
                 f"principali, addendum per gli addendum). Ora e' visibile anche nel portale.",
+                level=messages.SUCCESS,
+            )
+
+    @admin.action(description='Genera FATTURA PROFORMA (acconto+saldo se previsti)')
+    def action_genera_proforma(self, request, queryset):
+        from .services.pdf_generator import generate_proforma_pdf
+        tot_docs = 0
+        for contract in queryset:
+            try:
+                docs = generate_proforma_pdf(contract)
+            except Exception as e:
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: proforma non generata - {e}",
+                    level=messages.ERROR,
+                )
+                continue
+            tot_docs += len(docs)
+        if tot_docs:
+            self.message_user(
+                request,
+                f"Generate {tot_docs} fattura/e proforma. Le trovi tra i Documenti del contratto "
+                "(numerate .../1 acconto e .../2 saldo se il contratto prevede l'acconto).",
                 level=messages.SUCCESS,
             )
 

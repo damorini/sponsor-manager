@@ -1,0 +1,118 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 14mm 15mm 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color:#1f2937; font-size:11px; margin:0; line-height:1.45; }
+  .top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid {{ brand_color }}; padding-bottom:10px; margin-bottom:14px; }
+  .emit .logo { max-height:52px; max-width:170px; object-fit:contain; margin-bottom:6px; }
+  .emit .name { font-size:15px; font-weight:800; color:#111827; }
+  .emit .meta { color:#6b7280; font-size:10px; line-height:1.5; }
+  .doc { text-align:right; }
+  .doc .kind { color:{{ brand_color }}; font-size:13px; font-weight:800; letter-spacing:.03em; text-transform:uppercase; }
+  .doc .num { font-size:16px; font-weight:800; color:#111827; margin-top:2px; }
+  .doc .date { color:#6b7280; font-size:10.5px; margin-top:2px; }
+  .parties { display:flex; gap:14px; margin-bottom:14px; }
+  .box { flex:1; border:1px solid #e5e7eb; border-radius:6px; padding:9px 12px; }
+  .box .lbl { color:{{ brand_color }}; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
+  .box .cname { font-weight:700; color:#111827; font-size:12px; }
+  .box .row { color:#374151; font-size:10.5px; }
+  .oggetto { margin:4px 0 12px; }
+  .oggetto .lbl { color:#6b7280; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .oggetto .val { font-weight:700; color:#111827; font-size:12px; }
+  table.amt { width:100%; border-collapse:collapse; margin-top:4px; }
+  table.amt th { background:{{ brand_color }}; color:#fff; text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.03em; padding:6px 10px; }
+  table.amt th.r, table.amt td.r { text-align:right; white-space:nowrap; }
+  table.amt td { padding:7px 10px; border-bottom:1px solid #eef0f2; }
+  .tot { width:52%; margin-left:auto; margin-top:8px; }
+  .tot td { padding:3px 0; }
+  .tot .lbl { color:#6b7280; } .tot .val { text-align:right; }
+  .tot .grand td { border-top:2px solid #e5e7eb; padding-top:7px; font-weight:800; color:#111827; font-size:14px; }
+  .tot .grand .g { color:{{ brand_color }}; text-align:right; }
+  .esente { color:#065f46; font-size:10px; }
+  .pay { margin-top:16px; border:1px solid {{ brand_color }}; border-left:5px solid {{ brand_color }}; border-radius:6px; padding:10px 13px; background:#f7fdfa; }
+  .pay .lbl { color:{{ brand_color }}; font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-bottom:3px; }
+  .pay .row { font-size:10.5px; color:#374151; }
+  .rif { color:#6b7280; font-size:10px; margin-top:10px; }
+  .disc { margin-top:16px; padding:8px 12px; background:#fff7ed; border:1px solid #fed7aa; border-radius:6px; color:#9a3412; font-size:10px; font-weight:600; }
+  .foot { margin-top:16px; border-top:1px solid #e5e7eb; padding-top:6px; color:#9ca3af; font-size:9px; }
+</style></head><body>
+  <div class="top">
+    <div class="emit">
+      {% if org.logo_url %}<img class="logo" src="{{ org.logo_url }}"><br>{% endif %}
+      <div class="name">{{ org.name }}</div>
+      <div class="meta">
+        {% if org.address %}{{ org.address }}<br>{% endif %}
+        {% if org.vat %}P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}<br>
+        {% if org.email %}{{ org.email }}{% endif %}{% if org.phone %} &middot; {{ org.phone }}{% endif %}
+      </div>
+    </div>
+    <div class="doc">
+      <div class="kind">Fattura Proforma</div>
+      <div class="num">N. {{ numero }}</div>
+      <div class="date">Data: {{ data|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="box">
+      <div class="lbl">Emittente</div>
+      <div class="cname">{{ org.name }}</div>
+      {% if org.address %}<div class="row">{{ org.address }}</div>{% endif %}
+      {% if org.vat %}<div class="row">P.IVA {{ org.vat }}</div>{% endif %}
+    </div>
+    <div class="box">
+      <div class="lbl">Destinatario</div>
+      <div class="cname">{{ cliente.name }}</div>
+      {% if cliente.address %}<div class="row">{{ cliente.address }}</div>{% endif %}
+      {% if cliente.vat %}<div class="row">P.IVA {{ cliente.vat }}</div>{% endif %}
+      {% if cliente.cf %}<div class="row">C.F. {{ cliente.cf }}</div>{% endif %}
+      {% if cliente.sdi %}<div class="row">SDI {{ cliente.sdi }}</div>{% endif %}
+      {% if cliente.pec %}<div class="row">PEC {{ cliente.pec }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="oggetto">
+    <span class="lbl">Oggetto:</span>
+    <span class="val">Contributo di sponsorizzazione &ndash; {{ ev_name }}</span>
+  </div>
+
+  <table class="amt">
+    <tr><th>Descrizione</th><th class="r">Imponibile</th></tr>
+    <tr>
+      <td>Sponsorizzazione {{ ev_name }}{% if inst.label and inst.suffix %} &ndash; <strong>{{ inst.label }}</strong>{% endif %}</td>
+      <td class="r">&euro; {{ inst.imponibile|floatformat:2 }}</td>
+    </tr>
+  </table>
+
+  <table class="tot">
+    <tr><td class="lbl">Imponibile</td><td class="val">&euro; {{ inst.imponibile|floatformat:2 }}</td></tr>
+    {% if esente %}
+    <tr><td class="lbl">IVA{% if vat_exemption_reason %} <span class="esente">&ndash; {{ vat_exemption_reason }}</span>{% endif %}</td><td class="val">&euro; 0,00</td></tr>
+    {% else %}
+    <tr><td class="lbl">IVA {{ aliquota }}%</td><td class="val">&euro; {{ inst.iva|floatformat:2 }}</td></tr>
+    {% endif %}
+    <tr class="grand"><td>Totale{% if inst.suffix %} {{ inst.label|lower }}{% endif %}</td><td class="g">&euro; {{ inst.totale|floatformat:2 }}</td></tr>
+  </table>
+
+  <div class="rif">
+    Riferimento contratto N. <strong>{{ contract.contract_number }}</strong> &middot; importo complessivo del contratto: &euro; {{ contract.total|floatformat:2 }}{% if inst.suffix %} &middot; la presente proforma si riferisce a: <strong>{{ inst.label }}</strong>{% endif %}.
+  </div>
+
+  <div class="pay">
+    <div class="lbl">Modalità di pagamento</div>
+    {% if inst.due_date %}<div class="row">Scadenza: <strong>{{ inst.due_date|date:"d/m/Y" }}</strong></div>{% endif %}
+    {% if bank.iban %}
+    <div class="row">Bonifico bancario{% if bank.holder %} intestato a <strong>{{ bank.holder }}</strong>{% endif %}{% if bank.bank %} &middot; {{ bank.bank }}{% endif %}</div>
+    <div class="row">IBAN: <strong>{{ bank.iban }}</strong>{% if bank.bic %} &middot; BIC/SWIFT: {{ bank.bic }}{% endif %}</div>
+    <div class="row">Causale: {{ numero }} &ndash; {{ cliente.name }}</div>
+    {% endif %}
+  </div>
+
+  <div class="disc">
+    Documento non valido ai fini fiscali. Fattura proforma emessa su richiesta del cliente: la fattura fiscale sarà emessa a seguito del pagamento.
+  </div>
+
+  <div class="foot">
+    {{ org.name }}{% if org.address %} &middot; {{ org.address }}{% endif %}{% if org.vat %} &middot; P.IVA {{ org.vat }}{% endif %}{% if org.rea %} &middot; REA {{ org.rea }}{% endif %}
+  </div>
+</body></html>
