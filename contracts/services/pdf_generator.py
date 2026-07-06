@@ -245,7 +245,8 @@ def generate_contract_pdf(contract):
         'contact_referente': referente,
         'event': _event_for_template(event),
         'lines_by_category': lines_by_category,
-        'lines': [ln for _cat, items in lines_by_category for ln in items],  # lista piatta righe (tabella Allegato 2 ECM)
+        # lista piatta righe (tabella Allegato 2 ECM): valorizzate prima, incluse in coda
+        'lines': _righe_valorizzate_prima(ln for _cat, items in lines_by_category for ln in items),
         'services_list': services_list,
         'stand_size': _get_stand_size(contract),
         'signature_place': getattr(settings, 'SIGNATURE_PLACE', 'Bologna'),
@@ -389,13 +390,25 @@ def _get_referente_contact(contract):
 # Helper: raggruppa righe per categoria contabile (per allegato ECM)
 # ============================================================================
 
+def _righe_valorizzate_prima(lines):
+    """Ordina il riepilogo servizi: PRIMA le righe valorizzate economicamente
+    (importo decrescente), POI in cascata le altre (incluse/a costo zero,
+    nell'ordine originale). Ordinamento stabile."""
+    from decimal import Decimal as _D
+    return sorted(
+        list(lines),
+        key=lambda l: ((l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0'))),
+    )
+
+
 def _group_lines_by_category(contract, event_type):
     """
     Raggruppa le ContractLine per accounting_category del Service.
-    
+
     Restituisce una LISTA di tuple (category_label, [lines]) ordinata
     secondo ECM_CATEGORY_LABELS. Le categorie senza righe vengono saltate.
-    
+    Dentro ogni categoria: prima le righe valorizzate, poi le incluse.
+
     Per non-ECM, raggruppa tutto in 'altro' (l'allegato non-ECM ha tabella
     diversa, non usa raggruppamento).
     """
@@ -406,19 +419,19 @@ def _group_lines_by_category(contract, event_type):
             getattr(line.service, 'accounting_category', None) or 'altro'
         )
         grouped[category].append(line)
-    
+
     # Ordina secondo ECM_CATEGORY_LABELS (e label friendly)
     result = []
     for cat_key, label in ECM_CATEGORY_LABELS:
         if cat_key in grouped and grouped[cat_key]:
-            result.append((label, grouped[cat_key]))
-    
+            result.append((label, _righe_valorizzate_prima(grouped[cat_key])))
+
     # Aggiungi categorie non standard alla fine
     standard_keys = {k for k, _ in ECM_CATEGORY_LABELS}
     for cat_key, lines in grouped.items():
         if cat_key not in standard_keys and lines:
-            result.append((cat_key.replace('_', ' ').capitalize(), lines))
-    
+            result.append((cat_key.replace('_', ' ').capitalize(), _righe_valorizzate_prima(lines)))
+
     return result
 
 
@@ -426,9 +439,10 @@ def _build_services_list_string(contract):
     """
     Costruisce una stringa con la lista servizi separati da '; '.
     Usata per la cella 'MODALITà DI SPONSORIZZAZIONE SCELTA' del non-ECM.
+    Ordine: prima i servizi valorizzati, poi gli inclusi.
     """
     parts = []
-    for line in contract.lines.all():
+    for line in _righe_valorizzate_prima(contract.lines.all()):
         qty = line.quantity if line.quantity > 1 else None
         if qty:
             parts.append(f"{line.service_name_snapshot} (q.tà {qty})")
@@ -1316,7 +1330,8 @@ def generate_admission_request_pdf(contract, as_allegato=False):
 
     event_type = _get_event_type(event)
     lines_by_category = _group_lines_by_category(contract, event_type)
-    lines = [ln for _cat, items in lines_by_category for ln in items]
+    # Tabella riepilogo domanda: ordine GLOBALE valorizzate-prima (non per categoria)
+    lines = _righe_valorizzate_prima(ln for _cat, items in lines_by_category for ln in items)
 
     # Percentuali "pulite" (40 anziche' 40.00) per il testo del contratto.
     def _pct(v):
@@ -1587,7 +1602,8 @@ def generate_quote_pdf_html(contract):
 
     sponsor = contract.sponsor
     event = contract.event
-    lines = list(contract.lines.all())
+    # Riepilogo: prima i servizi valorizzati (importo decrescente), poi gli inclusi.
+    lines = _righe_valorizzate_prima(contract.lines.all())
     site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
     try:
         portal_path = reverse('portal:contract_detail', args=[contract.id])

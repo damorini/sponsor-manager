@@ -679,6 +679,18 @@ class Contract(SoftDeleteModel):
             self.save(update_fields=['subtotal', 'vat_amount', 'total', 'updated_at'])
 
     # ---------------------------------------------------------------------
+    @property
+    def lines_riepilogo(self):
+        """Righe per il RIEPILOGO servizi (portale/documenti): prima le righe
+        valorizzate economicamente (importo decrescente), poi in cascata le
+        altre (incluse/a costo zero, nell'ordine originale)."""
+        from decimal import Decimal
+        return sorted(
+            self.lines.all(),
+            key=lambda l: ((l.line_subtotal or Decimal('0')) <= 0,
+                           -(l.line_subtotal or Decimal('0'))),
+        )
+
     # Piano pagamento (acconto/saldo) - calcolato al volo, IVA inclusa
     @property
     def deposit_amount(self):
