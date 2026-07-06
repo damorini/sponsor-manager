@@ -471,13 +471,12 @@ def _user_owns_contract(user, contract) -> bool:
     if hasattr(user, 'is_internal_user') and user.is_internal_user:
         return True
 
-    # Sponsor: verifica via Contact
-    try:
-        contact = user.contact_profile  # OneToOne reverse
-    except Exception:
-        return False
-
-    return contact.sponsor_id == contract.sponsor_id
+    # Sponsor: verifica via Contact. Multi-azienda: basta che UNO dei contatti
+    # collegati a questo utente appartenga allo sponsor del contratto.
+    from sponsors.models import Contact
+    return Contact.objects.filter(
+        portal_user=user, sponsor_id=contract.sponsor_id,
+    ).exists()
 
 
 @login_required

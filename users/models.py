@@ -89,3 +89,10 @@ class User(AbstractUser):
     def can_see_all_events(self):
         """Superuser e Amministratori vedono tutti gli eventi."""
         return self.is_superuser or self.role == UserRole.ADMIN
+
+    @property
+    def contact_profile(self):
+        """Primo contatto attivo collegato (compat: prima era OneToOne).
+        Nelle view del portale usare get_active_contact(request), che rispetta
+        l'azienda scelta in sessione quando l'utente ne gestisce piu' di una."""
+        return self.contact_profiles.filter(deleted_at__isnull=True).first()

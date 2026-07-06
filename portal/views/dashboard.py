@@ -21,10 +21,41 @@ logger = logging.getLogger(__name__)
 # Decorator: richiede sponsor autenticato con Contact collegato
 # ============================================================================
 
+def user_contacts_qs(user):
+    """Contatti attivi (di aziende attive) collegati a questo utente portale."""
+    from sponsors.models import Contact
+    return (Contact.objects
+            .filter(portal_user=user, sponsor__deleted_at__isnull=True)
+            .select_related('sponsor')
+            .order_by('sponsor__legal_name'))
+
+
+def get_active_contact(request):
+    """Contatto dell'AZIENDA ATTIVA per questo utente.
+
+    La stessa persona (stesso login) puo' gestire piu' aziende: la scelta vive
+    in sessione ('active_contact_id', impostata dalla maschera scegli_azienda).
+    Con un solo contatto la scelta e' automatica. Ritorna None se l'utente non
+    ha contatti oppure ne ha piu' d'uno e non ha ancora scelto."""
+    qs = user_contacts_qs(request.user)
+    cid = request.session.get('active_contact_id')
+    if cid:
+        c = qs.filter(pk=cid).first()
+        if c is not None:
+            return c
+    contacts = list(qs[:2])
+    if len(contacts) == 1:
+        request.session['active_contact_id'] = str(contacts[0].pk)
+        return contacts[0]
+    return None
+
+
 def sponsor_required(view_func):
     """
     Verifica che l'utente sia loggato + sia uno sponsor + abbia Contact collegato.
     Salva contact e sponsor nella request per comodità della view.
+    Se l'utente gestisce PIU' aziende e non ha ancora scelto, rimanda alla
+    maschera 'Scegli l'azienda'.
     """
     @wraps(view_func)
     @login_required(login_url='portal:login')
@@ -35,9 +66,11 @@ def sponsor_required(view_func):
                 "Per ulteriori info contattare helpdesk@valet.it"
             )
 
-        try:
-            contact = request.user.contact_profile
-        except Exception:
+        contact = get_active_contact(request)
+        if contact is None:
+            if user_contacts_qs(request.user).exists():
+                # piu' aziende, nessuna scelta in sessione: chiedi quale
+                return redirect('portal:scegli_azienda')
             logger.warning("User %s sponsor senza Contact", request.user.id)
             return HttpResponseForbidden(
                 "Account configurato in modo incompleto."

@@ -282,14 +282,18 @@ class Contact(SoftDeleteModel):
         verbose_name="Accesso portale",
         help_text="Se True, può autenticarsi nel portale sponsor self-service",
     )
-    portal_user = models.OneToOneField(
+    # ForeignKey (non piu' OneToOne): la STESSA persona (stessa email/login)
+    # puo' essere referente di PIU' aziende. Al login, se i contatti collegati
+    # sono piu' di uno, il portale chiede quale azienda gestire (scegli_azienda).
+    portal_user = models.ForeignKey(
         'users.User',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='contact_profile',
+        related_name='contact_profiles',
         verbose_name="Utente portale collegato",
-        help_text="Account User per login al portale (se has_portal_access=True)",
+        help_text="Account User per login al portale (se has_portal_access=True). "
+                  "Lo stesso utente puo' essere collegato a contatti di piu' aziende.",
     )
 
     notes = models.TextField(blank=True, verbose_name="Note")

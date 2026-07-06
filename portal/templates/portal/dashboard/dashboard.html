@@ -11,9 +11,9 @@
   <div class="flex flex-wrap justify-between items-start gap-4 mb-8">
     <div>
       <p class="text-sm text-gray-500">{% trans "Bentornato/a," %}</p>
-      <h1 class="text-3xl font-bold text-gray-900 leading-tight">{{ user.contact_profile.full_name|title }}</h1>
-      {% if user.contact_profile.sponsor %}
-      <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mt-1">{{ user.contact_profile.sponsor.legal_name }}</p>
+      <h1 class="text-3xl font-bold text-gray-900 leading-tight">{{ active_contact.full_name|title }}</h1>
+      {% if active_sponsor %}
+      <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mt-1">{{ active_sponsor.legal_name }}</p>
       {% endif %}
     </div>
     <a id="cta-acquista" href="{% url 'portal:catalog' %}" class="btn-primary text-sm px-5">

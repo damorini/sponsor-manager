@@ -66,10 +66,11 @@ def login_view(request):
             django_login(request, user)
             logger.info("Sponsor login: %s", email)
 
-            # Verifica che il Contact collegato esista
-            try:
-                contact = user.contact_profile
-            except Exception:
+            # Contatti collegati: 0 = account incompleto; 1 = azienda automatica;
+            # 2+ = la stessa persona gestisce piu' aziende -> maschera di scelta.
+            from portal.views.dashboard import user_contacts_qs
+            contacts = list(user_contacts_qs(user)[:2])
+            if not contacts:
                 logger.error("User %s sponsor ma senza Contact collegato", user.id)
                 django_logout(request)
                 messages.error(
@@ -77,6 +78,14 @@ def login_view(request):
                     "Account configurato in modo incompleto. Contatta l'assistenza."
                 )
                 return redirect('portal:login')
+            if len(contacts) == 1:
+                request.session['active_contact_id'] = str(contacts[0].pk)
+            else:
+                url = reverse('portal:scegli_azienda')
+                if next_url and next_url.startswith('/'):
+                    from urllib.parse import quote
+                    url += '?next=' + quote(next_url)
+                return redirect(url)
 
             # Redirect a next o dashboard
             if next_url and next_url.startswith('/'):
@@ -230,6 +239,47 @@ def password_change_view(request):
         form = PasswordChangeForm(request.user)
     return render(request, 'portal/auth/password_change.html', {'form': form})
 
+@login_required(login_url='portal:login')
+def scegli_azienda_view(request):
+    """Maschera 'Scegli l'azienda': la stessa persona (stesso login) puo'
+    gestire piu' aziende. Qui sceglie quale usare; la scelta resta in sessione
+    e si puo' cambiare in ogni momento dal menu ('Cambia azienda')."""
+    from django.http import HttpResponseForbidden
+    from portal.views.dashboard import user_contacts_qs
+
+    if not getattr(request.user, 'is_sponsor', False):
+        return HttpResponseForbidden("Pagina riservata agli utenti del portale.")
+
+    contacts = list(user_contacts_qs(request.user))
+    if not contacts:
+        return HttpResponseForbidden("Account configurato in modo incompleto.")
+
+    next_url = request.POST.get('next', '') or request.GET.get('next', '')
+
+    if request.method == 'POST':
+        cid = (request.POST.get('contact_id') or '').strip()
+        scelto = next((c for c in contacts if str(c.pk) == cid), None)
+        if scelto is not None:
+            request.session['active_contact_id'] = str(scelto.pk)
+            logger.info("Azienda attiva scelta: user=%s sponsor=%s",
+                        request.user.id, scelto.sponsor_id)
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            return redirect('portal:dashboard')
+        messages.error(request, "Scelta non valida, riprova.")
+
+    if len(contacts) == 1:
+        request.session['active_contact_id'] = str(contacts[0].pk)
+        return redirect('portal:dashboard')
+
+    attiva = request.session.get('active_contact_id')
+    return render(request, 'portal/auth/scegli_azienda.html', {
+        'contacts': contacts,
+        'next': next_url,
+        'attiva': attiva,
+    })
+
+
 def impersonate_start(request, sponsor_id):
     """Staff: entra nel portale come il cliente (contatto principale dello sponsor)."""
     from django.contrib.auth import login as dj_login
@@ -249,6 +299,9 @@ def impersonate_start(request, sponsor_id):
     target.backend = 'django.contrib.auth.backends.ModelBackend'
     dj_login(request, target)
     request.session['impersonator_id'] = str(staff_pk)
+    # L'operatore impersona per QUESTO sponsor: azienda attiva gia' scelta
+    # (l'utente reale potrebbe gestirne piu' di una).
+    request.session['active_contact_id'] = str(contact.pk)
     messages.info(request, "Stai navigando come cliente. Usa il banner in alto per tornare all'amministrazione.")
     return redirect('portal:dashboard')
 

@@ -16,6 +16,7 @@ urlpatterns = [
     # Auth
     path('login/', auth.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
+    path('scegli-azienda/', auth.scegli_azienda_view, name='scegli_azienda'),
     
     # Password reset
     path('password-reset/', auth.password_reset_view, name='password_reset'),

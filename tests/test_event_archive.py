@@ -48,6 +48,18 @@ def test_evento_archiviato_sparisce_e_va_in_archivio(client, user_sponsor, spons
 
 @pytest.mark.django_db
 def test_catalogo_evento_archiviato_vietato(client, user_sponsor, sponsor, contact, evento_con_contratto):
+    # Anagrafica completa: senza, il gate acquisto rimanda a 'I miei dati'
+    # PRIMA del controllo evento archiviato (comportamento voluto).
+    sponsor.sdi_code = 'ABCDEFG'
+    sponsor.pec_email = 'pec@test.it'
+    sponsor.address_street = 'Via Roma 1'
+    sponsor.address_city = 'Bologna'
+    sponsor.address_zip = '40100'
+    sponsor.address_province = 'BO'
+    sponsor.website = 'https://test.it'
+    sponsor.business_description = 'Distributore'
+    sponsor.save()
+    assert sponsor.campi_anagrafica_mancanti() == []
     evento_con_contratto.status = EventStatus.ARCHIVED
     evento_con_contratto.save(update_fields=['status'])
     client.force_login(user_sponsor)

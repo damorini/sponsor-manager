@@ -1,0 +1,66 @@
+{% load i18n %}<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% trans "Scegli l'azienda" %} · {{ organizer_name|default:"Portale sponsor" }}</title>
+  <style>
+    :root { --brand: {{ brand_primary_color|default:"#1d6534" }}; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Segoe UI', Arial, sans-serif; background:#f3f6f4; color:#1f2937;
+           min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .card { background:#fff; border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.08);
+            width:100%; max-width:520px; padding:34px 36px; }
+    .eyebrow { color:var(--brand); font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; margin:0 0 6px; }
+    h1 { font-size:22px; margin:0 0 6px; color:#111827; }
+    .sub { color:#6b7280; font-size:14px; margin:0 0 22px; line-height:1.5; }
+    .azienda { display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+               border:1.5px solid #e5e7eb; background:#fff; border-radius:10px;
+               padding:14px 16px; margin-bottom:10px; cursor:pointer; font-size:15px;
+               transition:border-color .15s, background .15s; }
+    .aziende form { margin:0; }
+    .azienda:hover { border-color:var(--brand); background:#f7fdf9; }
+    .azienda .badge { margin-left:auto; font-size:11px; font-weight:700; color:var(--brand);
+                      background:#e8f5ee; border-radius:999px; padding:3px 10px; white-space:nowrap; }
+    .azienda .nome { font-weight:700; color:#111827; }
+    .azienda .ruolo { color:#9ca3af; font-size:12px; display:block; margin-top:1px; }
+    .icona { width:38px; height:38px; border-radius:9px; background:var(--brand); color:#fff;
+             display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px; flex-shrink:0; }
+    .foot { margin-top:18px; text-align:center; }
+    .foot form { display:inline; }
+    .foot button { background:none; border:none; color:#9ca3af; font-size:13px; text-decoration:underline; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="eyebrow">{% trans "Area riservata" %}</p>
+    <h1>{% trans "Scegli l'azienda" %} 🏢</h1>
+    <p class="sub">{% blocktrans %}Il tuo account è collegato a più aziende. Seleziona quella che vuoi gestire adesso: potrai cambiarla in ogni momento dal menu «Cambia azienda».{% endblocktrans %}</p>
+
+    <div class="aziende">
+      {% for c in contacts %}
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="contact_id" value="{{ c.pk }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="azienda">
+          <span class="icona">{{ c.sponsor.legal_name|first|upper }}</span>
+          <span>
+            <span class="nome">{{ c.sponsor.legal_name }}</span>
+            {% if c.job_title %}<span class="ruolo">{{ c.job_title }}</span>{% endif %}
+          </span>
+          {% if attiva == c.pk|stringformat:"s" %}<span class="badge">{% trans "attuale" %}</span>{% endif %}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+
+    <div class="foot">
+      <form method="post" action="{% url 'portal:logout' %}">
+        {% csrf_token %}
+        <button type="submit">{% trans "Esci dall'account" %}</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
