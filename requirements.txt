@@ -42,3 +42,4 @@ whitenoise==6.8.2
 
 # Dev tools
 django-debug-toolbar==4.4.6
+premailer==3.10.0

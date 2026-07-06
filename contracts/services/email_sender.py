@@ -274,6 +274,23 @@ def send_email(
         if subject_override:
             subject = subject_override
             full_context['subject'] = subject
+    # 3-bis(0). CSS INLINE: molti client email (Yahoo, vecchi Outlook, alcune
+    # app mobili) IGNORANO il blocco <style> nell'<head> e l'email arriva
+    # "senza grafica". premailer copia gli stili direttamente sui tag
+    # (style="..."), mantenendo comunque il blocco <style> per i client buoni.
+    try:
+        import logging as _logging
+        _logging.getLogger('CSSUTILS').setLevel(_logging.CRITICAL)
+        from premailer import transform as _css_inline
+        body_html = _css_inline(
+            body_html,
+            keep_style_tags=True,
+            remove_classes=False,
+            disable_validation=True,
+        )
+    except Exception:
+        pass  # meglio un'email con soli <style> che nessuna email
+
     body_text = strip_tags(body_html)  # versione testuale fallback
 
     # 3-bis. Oggetto: anteponi il nome dell'azienda (sponsor) come prima cosa
