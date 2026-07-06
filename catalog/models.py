@@ -289,9 +289,13 @@ class Service(TranslatableMixin, TimeStampedModel):
         return self.event.default_language if self.event_id else 'it'
 
     def quantity_committed(self, exclude_contract_id=None):
-        """Somma delle quantita' impegnate in contratti NON cancellati."""
+        """Somma delle quantita' impegnate in contratti NON cancellati.
+        Esclude sia i contratti ANNULLATI (status cancelled) sia quelli
+        CANCELLATI (soft-delete): in entrambi i casi i pezzi tornano liberi."""
         from django.db.models import Sum
-        qs = self.contract_lines.exclude(contract__status='cancelled')
+        qs = (self.contract_lines
+              .exclude(contract__status='cancelled')
+              .filter(contract__deleted_at__isnull=True))
         if exclude_contract_id is not None:
             qs = qs.exclude(contract_id=exclude_contract_id)
         return qs.aggregate(tot=Sum('quantity'))['tot'] or 0
@@ -439,8 +443,11 @@ class ServiceVariant(TimeStampedModel):
         return self.label
 
     def quantity_committed(self, exclude_contract_id=None):
+        """Come Service.quantity_committed: esclude annullati E soft-cancellati."""
         from django.db.models import Sum
-        qs = self.variant_lines.exclude(contract__status='cancelled')
+        qs = (self.variant_lines
+              .exclude(contract__status='cancelled')
+              .filter(contract__deleted_at__isnull=True))
         if exclude_contract_id is not None:
             qs = qs.exclude(contract_id=exclude_contract_id)
         return qs.aggregate(tot=Sum('quantity'))['tot'] or 0
