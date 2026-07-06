@@ -69,6 +69,11 @@ def privacy_consent_view(request):
                 'marketing_consent', 'marketing_consent_at', 'updated_at',
             ])
             flash.success(request, "Grazie. Preferenze salvate.")
+            # Primo accesso: dopo la privacy porta l'utente su "I miei dati",
+            # dove trova il messaggio di benvenuto (controlla i dati, aggiungi
+            # i referenti, cambia la password provvisoria).
+            if contact.welcome_seen_at is None:
+                return redirect('portal:profile')
             return redirect('portal:dashboard')
 
     from core.models import OrganizerSettings

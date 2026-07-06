@@ -370,6 +370,42 @@ class Contact(SoftDeleteModel):
         return bool(self.privacy_accepted_at) and \
             (self.privacy_policy_version or '') == (versione_corrente or '')
 
+    def clean(self):
+        """Email univoca per PERSONA:
+        - stessa azienda: mai due contatti con la stessa email;
+        - azienda diversa: consentito SOLO se e' la stessa persona (multi-azienda,
+          nome e cognome uguali); due persone diverse con la stessa email
+          vengono bloccate con un errore chiaro."""
+        from django.core.exceptions import ValidationError
+        super().clean()
+        email = (self.email or '').strip()
+        if not email:
+            return
+
+        # nome "effettivo" come verra' composto dal save()
+        fn = (self.first_name or '').strip()
+        ln = (self.last_name or '').strip()
+        nome = (fn + ' ' + ln).strip() or (self.full_name or '').strip()
+
+        def _norm(s):
+            return ' '.join((s or '').split()).casefold()
+
+        altri = (Contact.objects.filter(email__iexact=email)
+                 .exclude(pk=self.pk).select_related('sponsor'))
+        for other in altri:
+            if self.sponsor_id and other.sponsor_id == self.sponsor_id:
+                raise ValidationError({'email':
+                    "Esiste già un contatto con questa email per questa azienda "
+                    f"({other.full_name}). Due utenti diversi non possono avere "
+                    "lo stesso indirizzo email."})
+            if _norm(other.full_name) != _norm(nome):
+                az = other.sponsor.legal_name if other.sponsor_id else '—'
+                raise ValidationError({'email':
+                    f"Questa email è già usata da un'altra persona: {other.full_name} "
+                    f"({az}). Due utenti diversi non possono avere lo stesso indirizzo "
+                    "email. Se invece è la STESSA persona che segue più aziende, "
+                    "scrivi nome e cognome esattamente uguali all'anagrafica esistente."})
+
     def save(self, *args, **kwargs):
         # Tiene allineato il "Nome completo": se sono presenti Nome/Cognome lo
         # ricompone; altrimenti (dati vecchi col solo nome completo) ricava

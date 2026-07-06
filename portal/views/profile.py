@@ -99,7 +99,7 @@ def profile_view(request):
             _nl = (request.POST.get('nuovo_preferred_language') or '').strip()
             nuovo_lang = _nl if _nl in ('it', 'en') else 'it'
             try:
-                Contact.objects.create(
+                nuovo = Contact(
                     sponsor=sponsor,
                     full_name=nome,
                     email=email,
@@ -109,6 +109,16 @@ def profile_view(request):
                     preferred_language=nuovo_lang,
                     has_portal_access=False,
                 )
+                # Validazione (email univoca per persona: vedi Contact.clean)
+                from django.core.exceptions import ValidationError
+                try:
+                    nuovo.clean()
+                except ValidationError as ve:
+                    for msgs in ve.message_dict.values():
+                        for m in msgs:
+                            messages.error(request, m)
+                    return redirect('portal:profile')
+                nuovo.save()
                 messages.success(request, f"Contatto '{nome}' aggiunto.")
                 logger.info("Nuovo contatto aggiunto da sponsor %s: %s", sponsor.id, email)
             except Exception as e:
