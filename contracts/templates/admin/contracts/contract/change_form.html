@@ -5,7 +5,8 @@
   {% if original and original.pk %}
   <li>
     <a href="{% url 'admin:contracts_contract_preview_quote' original.pk %}"
-       class="historylink" title="{% trans 'Genera il PDF del preventivo e aprilo, SENZA inviarlo' %}">
+       target="_blank" rel="noopener"
+       class="historylink" title="{% trans 'Genera il PDF del preventivo e aprilo in una nuova scheda, SENZA inviarlo' %}">
       🔍 {% trans "Anteprima preventivo" %}
     </a>
   </li>
