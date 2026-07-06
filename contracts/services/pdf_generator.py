@@ -118,11 +118,16 @@ def get_jinja_env():
 # ============================================================================
 
 def _sede_completa(ev):
-    """Compone 'citta, sede, indirizzo' saltando i vuoti ed evitando duplicati."""
+    """Compone 'sede, indirizzo, citta' saltando i vuoti ed evitando duplicati.
+
+    ORDINE IMPORTANTE: l'indirizzo va valutato PRIMA della citta', altrimenti
+    la dedup lo scarta quando contiene il nome della citta' (es. venue_address
+    '90133 Palermo, Via...' veniva buttato perche' 'Palermo' era gia' presente)
+    e nei documenti spariva proprio l'indirizzo."""
     if ev is None:
         return ''
     parts = []
-    for v in (getattr(ev, 'location', ''), getattr(ev, 'venue_name', ''), getattr(ev, 'venue_address', '')):
+    for v in (getattr(ev, 'venue_name', ''), getattr(ev, 'venue_address', ''), getattr(ev, 'location', '')):
         v = " ".join(str(v or '').split()).strip()
         if v and not any(v.lower() in p.lower() or p.lower() in v.lower() for p in parts):
             parts.append(v)
@@ -145,6 +150,13 @@ class _EventForTemplate:
     @property
     def sede_completa(self):
         return _sede_completa(self._ev)
+
+    @property
+    def location(self):
+        """Nei DOCUMENTI la 'sede' e' sempre quella completa (sede, indirizzo,
+        citta'): i template docx storici usano {{ event.location }} e senza
+        questo override mostravano solo la citta', mai l'indirizzo."""
+        return _sede_completa(self._ev) or getattr(self._ev, 'location', '')
 
     def __getattr__(self, attr):
         return getattr(self._ev, attr)
@@ -759,8 +771,8 @@ def build_quote_context(contract):
     else:
         date_evento = ""
 
-    # Luogo evento
-    luogo_evento = getattr(event, 'location', "") or ""
+    # Luogo evento: sempre la sede COMPLETA (sede, indirizzo, citta')
+    luogo_evento = _sede_completa(event) or ""
 
     # Stand assegnato (riusa l'helper esistente)
     stand = _get_stand_size(contract) or ""

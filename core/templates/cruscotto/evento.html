@@ -27,7 +27,7 @@
     <div class="cr-meta">
       <span><strong>Stato:</strong> {{ evento.get_status_display }}</span>
       {% if evento.start_date %}<span class="dot"></span><span>📅 {{ evento.start_date|date:"d/m/Y" }}{% if evento.end_date %} – {{ evento.end_date|date:"d/m/Y" }}{% endif %}</span>{% endif %}
-      {% if evento.location %}<span class="dot"></span><span>📍 {{ evento.location }}</span>{% endif %}
+      {% if evento.luogo_completo %}<span class="dot"></span><span>📍 {{ evento.luogo_completo }}</span>{% endif %}
     </div>
   </div>
 

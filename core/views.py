@@ -66,7 +66,7 @@ def cruscotto_home(request):
             'status_code': ev.status,
             'start_date': ev.start_date,
             'end_date': getattr(ev, 'end_date', None),
-            'location': getattr(ev, 'location', '') or '',
+            'location': getattr(ev, 'luogo_completo', '') or getattr(ev, 'location', '') or '',
         })
 
     # Avviso: risposte dei clienti non ancora lette dall'operatore
