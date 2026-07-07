@@ -80,11 +80,16 @@ def _stand_price_and_label(contract):
         except Exception:
             return ''
 
+    # Etichetta nella lingua del contratto (i preventivi EN devono mostrare
+    # "Exhibition space", non "Spazio espositivo").
+    base_label = "Exhibition space" if lang == 'en' else "Spazio espositivo"
+    block_word = "Block" if lang == 'en' else "Blocco"
+
     if stand:
-        return (stand.base_price, f"Spazio espositivo - {stand.code}",
+        return (stand.base_price, f"{base_label} - {stand.code}",
                 f"stand:{stand.code}", _desc(stand), stand.stand_type or "")
     if block:
-        return (block.effective_price, f"Spazio espositivo - Blocco {block.code}",
+        return (block.effective_price, f"{base_label} - {block_word} {block.code}",
                 f"block:{block.code}", _desc(block), _block_stand_type(block))
     raise ValueError("Il contratto non ha ne' uno stand ne' un blocco assegnato.")
 

@@ -489,6 +489,15 @@ class Contract(SoftDeleteModel):
             except Exception:
                 pass
 
+        # Cambio LINGUA su un contratto esistente: gli snapshot delle righe
+        # (nome/descrizione servizio, etichetta stand) vanno ri-tradotti,
+        # altrimenti il preventivo resta nella lingua vecchia.
+        _riallinea_lingua = False
+        if not self._state.adding and self.pk:
+            _prev_lang = (type(self).all_objects.filter(pk=self.pk)
+                          .values_list('language', flat=True).first())
+            _riallinea_lingua = bool(_prev_lang) and _prev_lang != (self.language or _prev_lang)
+
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
             super().save(*args, **kwargs)
@@ -497,6 +506,10 @@ class Contract(SoftDeleteModel):
             # quando il preventivo viene confermato (status -> SIGNED) o l'opzione
             # viene rimossa, la Deadline 'scadenza_opzione' pending viene eliminata.
             self._sync_option_deadline(kwargs.get('update_fields'))
+            if _riallinea_lingua and self.status in (
+                    ContractStatus.DRAFT, ContractStatus.SENT,
+                    ContractStatus.PENDING_PAYMENT):
+                self._riallinea_snapshot_lingua()
             return
 
         # Numero assente: genera in automatico (vale anche per ADDON/ADDENDUM).
@@ -1068,6 +1081,59 @@ class Contract(SoftDeleteModel):
             due_date=base + timedelta(days=giorni),
         )
 
+    def _riallinea_snapshot_lingua(self, apply=True):
+        """Ri-traduce gli snapshot delle righe nella lingua del contratto.
+
+        Tocca solo le righe il cui snapshot corrisponde ancora al nome (o alla
+        descrizione) del servizio in UNA delle lingue disponibili — quelli
+        personalizzati a mano dall'operatore restano intatti. La riga stand
+        (marcatore 'stand:'/'block:' nelle note) viene rietichettata dalla
+        stessa logica che l'ha creata. Con apply=False non scrive nulla.
+        Ritorna la lista dei cambi: (line_id, campo, vecchio, nuovo)."""
+        lang = self.language or 'it'
+        cambi = []
+
+        # Riga stand/blocco: etichetta e descrizione rigenerate per lingua
+        try:
+            from contracts.services.stand_line import _stand_price_and_label
+            _, label, marker, descrizione, _tipo = _stand_price_and_label(self)
+            for ln in self.lines.filter(notes__contains=marker):
+                if ln.service_name_snapshot != label:
+                    cambi.append((ln.pk, 'service_name_snapshot',
+                                  ln.service_name_snapshot, label))
+                    if apply:
+                        type(ln).objects.filter(pk=ln.pk).update(
+                            service_name_snapshot=label,
+                            service_description_snapshot=descrizione,
+                            updated_at=timezone.now())
+        except ValueError:
+            pass  # nessuno stand/blocco assegnato
+
+        for ln in self.lines.select_related('service'):
+            note = ln.notes or ''
+            if not ln.service_id or 'stand:' in note or 'block:' in note:
+                continue
+            campi = {}
+            nomi = ln.service.name if isinstance(ln.service.name, dict) else {}
+            nuovo_nome = ln.service.translated('name', lang) or ''
+            if (nuovo_nome and nuovo_nome != ln.service_name_snapshot
+                    and ln.service_name_snapshot in set(nomi.values())):
+                campi['service_name_snapshot'] = nuovo_nome
+                cambi.append((ln.pk, 'service_name_snapshot',
+                              ln.service_name_snapshot, nuovo_nome))
+            descr = (ln.service.description
+                     if isinstance(ln.service.description, dict) else {})
+            nuova_desc = ln.service.translated('description', lang) or ''
+            if (nuova_desc and nuova_desc != ln.service_description_snapshot
+                    and ln.service_description_snapshot in set(descr.values())):
+                campi['service_description_snapshot'] = nuova_desc
+                cambi.append((ln.pk, 'service_description_snapshot',
+                              ln.service_description_snapshot, nuova_desc))
+            if campi and apply:
+                campi['updated_at'] = timezone.now()
+                type(ln).objects.filter(pk=ln.pk).update(**campi)
+        return cambi
+
 
 class ContractLine(TimeStampedModel):
     """
@@ -1375,12 +1441,16 @@ class ContractLine(TimeStampedModel):
         """
         is_new = self._state.adding
 
-        # Snapshot al primo salvataggio
+        # Snapshot al primo salvataggio, nella LINGUA DEL CONTRATTO (senza
+        # lingua esplicita translated() userebbe la lingua dell'interfaccia
+        # di chi salva — l'admin e' in italiano — e i preventivi EN
+        # mostrerebbero i nomi in italiano).
         if is_new and self.service:
+            _lang = getattr(self.contract, 'language', None) or 'it'
             if not self.service_name_snapshot:
-                self.service_name_snapshot = self.service.translated('name')
+                self.service_name_snapshot = self.service.translated('name', _lang)
             if not self.service_description_snapshot:
-                self.service_description_snapshot = self.service.translated('description')
+                self.service_description_snapshot = self.service.translated('description', _lang)
             # Variante scelta: salva l'etichetta e usa il suo prezzo.
             if self.service_variant_id and not self.variant_label_snapshot:
                 self.variant_label_snapshot = self.service_variant.label
@@ -1432,7 +1502,8 @@ def _aggiungi_servizi_inclusi(parent_line):
         sub_line = ContractLine(
             contract=parent_line.contract,
             service=sub,
-            service_name_snapshot=sub.translated('name'),
+            service_name_snapshot=sub.translated(
+                'name', getattr(parent_line.contract, 'language', None) or 'it'),
             quantity=sub_qta,
             notes=marker,
         )

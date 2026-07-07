@@ -263,8 +263,10 @@ def cart_add_view(request):
             service=service,
             service_variant=variant,
             variant_label_snapshot=(variant.label if variant else ''),
-            service_name_snapshot=service.translated('name'),
-            service_description_snapshot=service.translated('description'),
+            service_name_snapshot=service.translated(
+                'name', getattr(contract, 'language', None) or 'it'),
+            service_description_snapshot=service.translated(
+                'description', getattr(contract, 'language', None) or 'it'),
             quantity=quantity,
             unit_price=prezzo,
             vat_rate=service.vat_rate,
