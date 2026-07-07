@@ -62,6 +62,33 @@ class SoftDeleteAdminMixin:
             qs = qs.order_by(*ordering)
         return qs
 
+    def get_deleted_objects(self, objs, request):
+        """La pagina di conferma di Django BLOCCA l'eliminazione se altri
+        oggetti la "proteggono" (FK on_delete=PROTECT), contando anche le
+        righe gia' soft-cancellate (il collector lavora a livello DB). Ma
+        qui l'eliminazione e' SOFT: le righe restano nel database e nessuna
+        FK viene rotta. Caso tipico: contratto principale con i carrelli
+        figli gia' nel cestino -> l'admin diceva "impossibile eliminare"
+        elencando contratti che per l'utente "non esistono piu'".
+
+        Se TUTTI gli oggetti che proteggono sono gia' nel cestino, togliamo
+        il blocco: Django mostra la normale pagina di conferma ("Sei
+        sicuro?"). Se esistono figli ancora attivi il blocco resta: prima
+        si cancellano i figli."""
+        deleted_objects, model_count, perms_needed, protected = (
+            super().get_deleted_objects(objs, request))
+        if protected:
+            from django.contrib.admin.utils import NestedObjects
+            from django.db import router
+            collector = NestedObjects(using=router.db_for_write(self.model))
+            collector.collect(list(objs))
+            tutti_nel_cestino = all(
+                getattr(o, 'deleted_at', None) is not None
+                for o in collector.protected)
+            if tutti_nel_cestino:
+                protected = []
+        return deleted_objects, model_count, perms_needed, protected
+
     def delete_queryset(self, request, queryset):
         """Soft delete in blocco (l'azione standard farebbe hard delete)."""
         n = 0
