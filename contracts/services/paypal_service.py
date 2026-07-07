@@ -259,6 +259,21 @@ def _build_items_from_contract(contract, currency):
 
 
 # ============================================================================
+# Stato ordine
+# ============================================================================
+
+def get_paypal_order_status(order_id):
+    """Stato attuale di un ordine PayPal: 'CREATED' (vergine), 'APPROVED',
+    'PAYER_ACTION_REQUIRED' (flusso lasciato a meta', es. MyBank abbandonato),
+    'COMPLETED', 'VOIDED'. Solleva eccezione se l'ordine non esiste o la
+    chiamata fallisce."""
+    client = get_paypal_client()
+    response = client.orders.get_order({'id': order_id})
+    data = _response_to_dict(response)
+    return data.get('status')
+
+
+# ============================================================================
 # Cattura ordine (dopo approvazione utente)
 # ============================================================================
 

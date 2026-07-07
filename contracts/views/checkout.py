@@ -237,7 +237,7 @@ def card_checkout_page(request, contract_id):
     amount_gross = compute_due_amount(contract)
 
     # Crea Payment + ordine PayPal (per ottenere order_id da passare al JS SDK)
-    payment, _ = Payment.objects.get_or_create(
+    payment, _creato = Payment.objects.get_or_create(
         contract=contract,
         status=PaymentStatus.PENDING,
         payment_method=PaymentMethodChoice.PAYPAL,
@@ -246,6 +246,30 @@ def card_checkout_page(request, contract_id):
             'currency': 'EUR',
         },
     )
+
+    # Importo cambiato dall'ultima visita (es. acconto pagato nel frattempo):
+    # aggiorna il Payment e scarta l'ordine vecchio.
+    if not _creato and payment.amount_gross != amount_gross:
+        payment.amount_gross = amount_gross
+        payment.paypal_order_id = ''
+        payment.save(update_fields=['amount_gross', 'paypal_order_id', 'updated_at'])
+
+    # Riusa l'ordine PayPal SOLO se ancora vergine (CREATED). Un tentativo
+    # abbandonato a meta' (es. MyBank chiuso -> PAYER_ACTION_REQUIRED) o un
+    # ordine scaduto fanno fallire il popup con "si e' verificato un errore
+    # nel sistema" a ogni tentativo successivo.
+    if payment.paypal_order_id:
+        from contracts.services.paypal_service import get_paypal_order_status
+        try:
+            _stato_ordine = get_paypal_order_status(payment.paypal_order_id)
+        except Exception:
+            _stato_ordine = None
+        if _stato_ordine != 'CREATED':
+            logger.info(
+                "Ordine PayPal %s in stato %s: lo scarto e ne creo uno nuovo",
+                payment.paypal_order_id, _stato_ordine)
+            payment.paypal_order_id = ''
+            payment.save(update_fields=['paypal_order_id', 'updated_at'])
 
     if not payment.paypal_order_id:
         try:
