@@ -51,6 +51,46 @@ def test_ordine_non_vergine_viene_rigenerato(client, user_sponsor, addon_cart, m
 
 
 @pytest.mark.django_db
+def test_csrf_token_iniettato_nel_template(client, user_sponsor, addon_cart, monkeypatch):
+    """Il token CSRF per la capture AJAX arriva dal template, non dal cookie:
+    in produzione CSRF_COOKIE_HTTPONLY=True rende il cookie invisibile al JS
+    (la capture carta falliva 403 con token vuoto)."""
+    def fake_create(p, **kw):
+        p.paypal_order_id = 'ORD-1'
+        p.save(update_fields=['paypal_order_id'])
+    monkeypatch.setattr(
+        'contracts.services.paypal_service.create_paypal_order', fake_create)
+
+    client.force_login(user_sponsor)
+    resp = client.get(reverse('portal:checkout_card', args=[addon_cart.id]))
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert 'const csrfToken = "' in html
+    assert 'const csrfToken = ""' not in html
+    assert 'NOTPROVIDED' not in html
+    assert 'getCookie' not in html
+
+
+@pytest.mark.django_db
+def test_checkout_gia_pagato_reindirizza(client, user_sponsor, addon_cart):
+    """Ordine gia' saldato: la pagina di pagamento non rimostra i bottoni
+    (il cliente penserebbe che il pagamento non sia andato a buon fine)."""
+    from contracts.models import ContractStatus
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+    addon_cart.status = ContractStatus.SIGNED
+    addon_cart.save(update_fields=['status'])
+    Payment.objects.create(
+        contract=addon_cart, status=PaymentStatus.SUCCEEDED,
+        payment_method=PaymentMethodChoice.PAYPAL,
+        amount_gross=addon_cart.total, currency='EUR')
+
+    client.force_login(user_sponsor)
+    resp = client.get(reverse('portal:checkout_card', args=[addon_cart.id]))
+    assert resp.status_code == 302
+    assert resp.url == reverse('portal:contract_detail', args=[addon_cart.id])
+
+
+@pytest.mark.django_db
 def test_ordine_vergine_viene_riusato(client, user_sponsor, addon_cart, monkeypatch):
     payment = _pending_payment(addon_cart, 'GOOD-789')
 

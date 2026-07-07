@@ -236,6 +236,14 @@ def card_checkout_page(request, contract_id):
     from contracts.views._payment_helpers import compute_due_amount
     amount_gross = compute_due_amount(contract)
 
+    # Niente da pagare (gia' saldato): mai rimostrare i bottoni di pagamento,
+    # il cliente penserebbe che il pagamento non sia andato a buon fine.
+    if not amount_gross or amount_gross <= 0:
+        messages.success(
+            request,
+            "Questo ordine risulta già pagato: non c'è nulla da saldare.")
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
     # Crea Payment + ordine PayPal (per ottenere order_id da passare al JS SDK)
     payment, _creato = Payment.objects.get_or_create(
         contract=contract,

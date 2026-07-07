@@ -176,12 +176,10 @@
   const paymentId = "{{ payment.id }}";
   const captureUrl = "{% url 'portal:checkout_card_capture' payment.id %}";
   
-  // CSRF token per le AJAX
-  function getCookie(name) {
-    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-    return v ? v.pop() : '';
-  }
-  const csrfToken = getCookie('csrftoken');
+  // CSRF token per le AJAX: iniettato dal template, NON letto dal cookie.
+  // In produzione CSRF_COOKIE_HTTPONLY=True rende il cookie invisibile al
+  // JS: leggendolo si mandava un token vuoto e la capture falliva con 403.
+  const csrfToken = "{{ csrf_token }}";
   
   // ==========================================================================
   // 1. PayPal Smart Buttons (PayPal account / pay later / Venmo / etc)
