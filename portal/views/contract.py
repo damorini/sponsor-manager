@@ -153,6 +153,19 @@ def quote_confirm_view(request, contract_id):
         next_url = reverse('portal:quote_confirm_page', args=[contract.id])
         return redirect(f"{reverse('portal:profile')}?next={next_url}")
 
+    # Gate firmatario: senza il legale rappresentante il contratto/domanda
+    # non puo' essere generato (partirebbe un'email SENZA allegato e l'area
+    # riservata resterebbe vuota). Il firmatario lo registra la segreteria.
+    from contracts.services.pdf_generator import _get_signer_contact
+    if not _get_signer_contact(contract):
+        messages.error(
+            request,
+            "Non risulta ancora registrato il legale rappresentante "
+            "firmatario della vostra azienda: senza, il contratto non può "
+            "essere generato. Contattate la segreteria organizzativa e "
+            "riprovate dopo la registrazione.")
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
     try:
         contract.mark_as_signed()
     except Exception as e:
@@ -332,4 +345,15 @@ def quote_confirm_page_view(request, contract_id):
             "Campi mancanti: " + ", ".join(mancanti) + ". "
             "Dopo il salvataggio verrai riportato alla conferma del preventivo.")
         return redirect(f"{reverse('portal:profile')}?next={request.path}")
+    # Gate firmatario (stesso controllo del POST): meglio scoprirlo qui che
+    # dopo il clic di conferma.
+    from contracts.services.pdf_generator import _get_signer_contact
+    if not _get_signer_contact(contract):
+        messages.error(
+            request,
+            "Non risulta ancora registrato il legale rappresentante "
+            "firmatario della vostra azienda: senza, il contratto non può "
+            "essere generato. Contattate la segreteria organizzativa e "
+            "riprovate dopo la registrazione.")
+        return redirect('portal:contract_detail', contract_id=contract.id)
     return render(request, 'portal/contract/quote_confirm.html', {'contract': contract})

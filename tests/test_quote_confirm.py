@@ -156,6 +156,21 @@ class TestQuoteConfirm:
         quote_setup.refresh_from_db()
         assert quote_setup.status == ContractStatus.SENT
 
+    def test_confirm_bloccata_senza_firmatario(self, client, user_sponsor, quote_setup):
+        """Senza legale rappresentante firmatario la conferma e' bloccata:
+        il contratto non potrebbe essere generato (email senza allegato e
+        area riservata vuota). Il preventivo resta SENT."""
+        quote_setup.sponsor.contacts.update(is_signer=False)
+        client.force_login(user_sponsor)
+        resp = client.post(reverse('portal:quote_confirm', args=[quote_setup.id]))
+        assert resp.status_code == 302
+        assert f'/portal/contracts/{quote_setup.id}/' in resp.url
+        quote_setup.refresh_from_db()
+        assert quote_setup.status == ContractStatus.SENT
+        # anche la pagina di conferma rimanda via
+        resp = client.get(reverse('portal:quote_confirm_page', args=[quote_setup.id]))
+        assert resp.status_code == 302
+
     def test_gate_rimanda_al_profilo_con_next(self, client, user_sponsor, quote_setup):
         """Il gate passa al profilo l'URL di ritorno (next) verso la conferma."""
         sponsor = quote_setup.sponsor

@@ -2,19 +2,26 @@
 
 {% block content %}
 <h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
-  Sponsor contract confirmed
+  Thank you for confirming the proposal
 </h2>
 
 <p>Dear {{ contact.full_name }},</p>
 
-<p>we confirm activation of sponsor contract
+<p>thank you for confirming proposal
   <strong>{{ contract.contract_number }}</strong>
   for event <strong>{{ event_name }}</strong>
   ({{ event.start_date|date:"Y-m-d" }} - {{ event.end_date|date:"Y-m-d" }},
   {{ event.luogo_completo }}).
 </p>
 
-<p>Please find the contract PDF attached.</p>
+{% if is_main_non_ecm %}
+<p>Please find attached the <strong>sponsorship agreement</strong>
+  (with the services summary as Annex 1), also available in your reserved
+  area among the contract documents.</p>
+{% else %}
+<p>Please find attached the <strong>admission request</strong>, also
+  available in your reserved area among the contract documents.</p>
+{% endif %}
 
 {% if has_deadlines %}
 <div class="alert-warning">

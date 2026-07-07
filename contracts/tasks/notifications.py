@@ -114,6 +114,9 @@ def send_contract_signed_notification(self, contract_id):
         'event_name': event_name,
         'contact': primary_contact,
         'has_deadlines': contract.deadlines.exists(),
+        # il template ringrazia e cita l'allegato giusto:
+        # contratto (non-ECM) oppure domanda di ammissione (ECM/addendum)
+        'is_main_non_ecm': is_main_non_ecm,
     }
 
     # Subject in lingua

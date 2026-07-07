@@ -2,19 +2,26 @@
 
 {% block content %}
 <h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
-  Contratto sponsor confermato
+  Grazie per aver confermato il preventivo
 </h2>
 
 <p>Buongiorno {{ contact.full_name }},</p>
 
-<p>vi confermiamo l'attivazione del contratto sponsor
+<p>grazie per aver confermato il preventivo
   <strong>{{ contract.contract_number }}</strong>
   per l'evento <strong>{{ event_name }}</strong>
   ({{ event.start_date|date:"d/m/Y" }} - {{ event.end_date|date:"d/m/Y" }},
   {{ event.luogo_completo }}).
 </p>
 
-<p>In allegato trovate il PDF del contratto.</p>
+{% if is_main_non_ecm %}
+<p>In allegato trovate il <strong>contratto di sponsorizzazione</strong>
+  (con il riepilogo dei servizi come Allegato 1), disponibile anche nella
+  vostra area riservata tra i documenti del contratto.</p>
+{% else %}
+<p>In allegato trovate la <strong>domanda di ammissione</strong>, disponibile
+  anche nella vostra area riservata tra i documenti del contratto.</p>
+{% endif %}
 
 {% if has_deadlines %}
 <div class="alert-warning">
