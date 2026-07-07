@@ -69,3 +69,50 @@ def test_figli_attivi_bloccano_ancora(client, admin_user, main_con_figlio):
     assert resp.status_code == 200
     assert resp.context['protected'], \
         "con figli attivi il blocco deve restare"
+
+
+@pytest.mark.django_db
+def test_elenco_bloccanti_mostra_solo_i_vivi(client, admin_user, main_con_figlio, sponsor):
+    """Con un figlio attivo e uno nel cestino, l'elenco dei bloccanti
+    mostra SOLO quello attivo (niente 'fantasmi' gia' cancellati)."""
+    from contracts.models import Contract, ContractKind, ContractStatus
+    main, addon_vivo = main_con_figlio
+    addon_cestinato = Contract.objects.create(
+        sponsor=sponsor, event=main.event, contract_kind=ContractKind.ADDON,
+        status=ContractStatus.PENDING_PAYMENT, contract_number='DEL-26-003',
+        parent_contract=main,
+    )
+    addon_cestinato.delete()  # soft
+    client.force_login(admin_user)
+
+    resp = client.get(reverse('admin:contracts_contract_delete', args=[main.id]))
+    protetti = ' '.join(str(p) for p in resp.context['protected'])
+    assert 'DEL-26-002' in protetti, "il figlio attivo deve comparire"
+    assert 'DEL-26-003' not in protetti, "il figlio nel cestino NON deve comparire"
+
+
+@pytest.mark.django_db
+def test_pagamento_su_figlio_cestinato_non_blocca(client, admin_user, main_con_figlio):
+    """Un Payment (senza cestino, FK PROTECT) su un figlio gia' cestinato
+    non deve bloccare il soft delete: la riga pagamento resta comunque in DB."""
+    from decimal import Decimal
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+    main, addon = main_con_figlio
+    Payment.objects.create(
+        contract=addon, status=PaymentStatus.SUCCEEDED,
+        payment_method=PaymentMethodChoice.PAYPAL,
+        amount_gross=Decimal('1.22'), currency='EUR')
+    addon.delete()  # soft: nel cestino, ma il pagamento resta collegato
+    client.force_login(admin_user)
+
+    url = reverse('admin:contracts_contract_delete', args=[main.id])
+    resp = client.get(url)
+    assert not resp.context['protected'], \
+        "pagamenti e figli nel cestino non devono bloccare"
+
+    resp = client.post(url, {'post': 'yes'})
+    assert resp.status_code == 302
+    from contracts.models import Contract
+    assert Contract.all_objects.get(pk=main.pk).deleted_at is not None
+    # il pagamento e' ancora in DB (nessuna cancellazione reale)
+    assert Payment.objects.filter(contract=addon).exists()

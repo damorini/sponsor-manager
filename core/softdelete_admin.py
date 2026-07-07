@@ -65,28 +65,30 @@ class SoftDeleteAdminMixin:
     def get_deleted_objects(self, objs, request):
         """La pagina di conferma di Django BLOCCA l'eliminazione se altri
         oggetti la "proteggono" (FK on_delete=PROTECT), contando anche le
-        righe gia' soft-cancellate (il collector lavora a livello DB). Ma
-        qui l'eliminazione e' SOFT: le righe restano nel database e nessuna
-        FK viene rotta. Caso tipico: contratto principale con i carrelli
-        figli gia' nel cestino -> l'admin diceva "impossibile eliminare"
-        elencando contratti che per l'utente "non esistono piu'".
+        righe gia' soft-cancellate e i record senza cestino come i pagamenti
+        (il collector lavora a livello DB). Ma qui l'eliminazione e' SOFT:
+        le righe restano nel database e nessuna FK viene rotta.
 
-        Se TUTTI gli oggetti che proteggono sono gia' nel cestino, togliamo
-        il blocco: Django mostra la normale pagina di conferma ("Sei
-        sicuro?"). Se esistono figli ancora attivi il blocco resta: prima
-        si cancellano i figli."""
+        Regola: blocca SOLO chi e' (a) un oggetto col cestino e (b) ancora
+        attivo — es. un carrello figlio non ancora cancellato. Gli oggetti
+        gia' nel cestino non contano; i record senza soft-delete (pagamenti,
+        log) non contano perche' restano comunque in DB. E l'elenco mostrato
+        contiene solo i veri bloccanti, non i "fantasmi" del cestino."""
         deleted_objects, model_count, perms_needed, protected = (
             super().get_deleted_objects(objs, request))
         if protected:
             from django.contrib.admin.utils import NestedObjects
             from django.db import router
+            from django.utils.text import capfirst
             collector = NestedObjects(using=router.db_for_write(self.model))
             collector.collect(list(objs))
-            tutti_nel_cestino = all(
-                getattr(o, 'deleted_at', None) is not None
-                for o in collector.protected)
-            if tutti_nel_cestino:
-                protected = []
+            bloccanti = [
+                o for o in collector.protected
+                if hasattr(o, 'deleted_at') and o.deleted_at is None
+            ]
+            protected = [
+                f"{capfirst(o._meta.verbose_name)}: {o}" for o in bloccanti
+            ]
         return deleted_objects, model_count, perms_needed, protected
 
     def delete_queryset(self, request, queryset):
