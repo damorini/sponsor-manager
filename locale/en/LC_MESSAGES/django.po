@@ -3711,3 +3711,12 @@ msgstr "Open <strong>My details</strong> and fill in your company data (needed f
 
 msgid "Scrivi alla segreteria dal menu <strong>Archivio messaggi</strong>, oppure contattaci all'indirizzo"
 msgstr "Write to the secretariat from the <strong>Message archive</strong> menu, or contact us at"
+
+msgid "Azienda farmaceutica?"
+msgstr "Pharmaceutical company?"
+
+msgid "Codice SIS"
+msgstr "SIS code"
+
+msgid "Codice identificativo SIS dell'azienda farmaceutica."
+msgstr "SIS identification code of the pharmaceutical company."

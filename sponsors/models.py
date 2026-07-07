@@ -60,6 +60,17 @@ class Sponsor(SoftDeleteModel):
         blank=True,
         verbose_name="PEC",
     )
+    is_pharma_company = models.BooleanField(
+        default=False,
+        verbose_name="Azienda farmaceutica",
+        help_text="Se sì, è richiesto il Codice SIS",
+    )
+    sis_code = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Codice SIS",
+        help_text="Codice identificativo SIS (solo aziende farmaceutiche)",
+    )
 
     # Indirizzo sede legale
     address_street = models.CharField(max_length=255, blank=True, verbose_name="Indirizzo")
@@ -157,6 +168,9 @@ class Sponsor(SoftDeleteModel):
             val = getattr(self, field, None)
             if not (val and str(val).strip()):
                 mancanti.append(label)
+        # Il Codice SIS è obbligatorio solo per le aziende farmaceutiche.
+        if self.is_pharma_company and not (self.sis_code or '').strip():
+            mancanti.append('Codice SIS')
         return mancanti
 
     @property
@@ -220,6 +234,8 @@ class Sponsor(SoftDeleteModel):
             'tax_code': self.tax_code,
             'sdi_code': self.sdi_code,
             'pec_email': self.pec_email,
+            'is_pharma_company': self.is_pharma_company,
+            'sis_code': self.sis_code,
             'address_street': self.address_street,
             'address_city': self.address_city,
             'address_zip': self.address_zip,

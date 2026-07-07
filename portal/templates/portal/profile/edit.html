@@ -83,6 +83,21 @@
         </div>
         {% endfor %}
       </div>
+
+      <div class="mt-5 border-t border-gray-100 pt-4">
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="sponsor_is_pharma_company" id="sponsor_is_pharma_company"
+                 {% if sponsor.is_pharma_company %}checked{% endif %}
+                 class="rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+          <span class="text-sm font-medium text-gray-700">{% trans "Azienda farmaceutica?" %}</span>
+        </label>
+        <div id="sis-code-box" class="mt-3 sm:w-1/2{% if not sponsor.is_pharma_company %} hidden{% endif %}">
+          <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Codice SIS" %} <span class="text-red-500" title="{% trans 'Campo obbligatorio' %}">*</span></label>
+          <input type="text" name="sponsor_sis_code" value="{{ sponsor.sis_code }}"
+                 class="w-full border {% if sponsor.is_pharma_company and not sponsor.sis_code %}border-amber-400{% else %}border-gray-300{% endif %} rounded-md px-3 py-2 focus:ring-brand-500 focus:border-brand-500">
+          <p class="text-xs text-gray-500 mt-1">{% trans "Codice identificativo SIS dell'azienda farmaceutica." %}</p>
+        </div>
+      </div>
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
@@ -243,6 +258,16 @@
 </div>
 
 <script>
+  // Domanda "Azienda farmaceutica?": il campo Codice SIS compare solo se flaggato.
+  (function () {
+    var chk = document.getElementById('sponsor_is_pharma_company');
+    var box = document.getElementById('sis-code-box');
+    if (!chk || !box) return;
+    chk.addEventListener('change', function () {
+      box.classList.toggle('hidden', !chk.checked);
+    });
+  })();
+
   // Selettore lingua riusabile: ogni contenitore [data-flag-group] ha un input
   // nascosto .flag-input e le bandiere .lang-flag. Clic -> la scelta resta a
   // colori, l'altra diventa grigia. Con [data-autosubmit] invia subito il form

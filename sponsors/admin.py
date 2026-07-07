@@ -182,7 +182,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     )
     list_display_links = ('legal_name',)
     list_filter = (
-        'industry', 'address_country', DeletedListFilter,
+        'industry', 'address_country', 'is_pharma_company', DeletedListFilter,
     )
     search_fields = (
         'legal_name', 'display_name', 'vat_number', 'tax_code',
@@ -434,7 +434,8 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview'),
         }),
         ('Dati fiscali', {
-            'fields': ('vat_number', 'tax_code', 'sdi_code', 'pec_email'),
+            'fields': ('vat_number', 'tax_code', 'sdi_code', 'pec_email',
+                       ('is_pharma_company', 'sis_code')),
         }),
         ('Sede legale', {
             'fields': (

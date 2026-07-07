@@ -165,6 +165,9 @@ def profile_view(request):
             if hasattr(sponsor, field):
                 val = request.POST.get(f'sponsor_{field}', '').strip()
                 setattr(sponsor, field, val)
+        # domanda "Azienda farmaceutica": flag + Codice SIS (mostrato solo se flaggato)
+        sponsor.is_pharma_company = request.POST.get('sponsor_is_pharma_company') == 'on'
+        sponsor.sis_code = request.POST.get('sponsor_sis_code', '').strip()
         # aggiorna contatto
         for field, _label in CONTACT_FIELDS:
             if hasattr(contact, field):
