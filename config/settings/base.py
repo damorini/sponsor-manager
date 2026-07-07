@@ -209,7 +209,7 @@ LOGGING = {
 ORGANIZER_DISPLAY_NAME = config('ORGANIZER_DISPLAY_NAME', default='VALET S.r.l.')
 ORGANIZER_ADDRESS = config('ORGANIZER_ADDRESS',
                             default='Via Dei Fornaciai 29/B, 40129 Bologna')
-SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='info@valet.it')
+SUPPORT_EMAIL = config('SUPPORT_EMAIL', default='helpdesk@valet.it')
 # Dati per il pagamento via bonifico (PLACEHOLDER: sostituire nel .env con quelli reali)
 BANK_TRANSFER_HOLDER = config('BANK_TRANSFER_HOLDER', default='Valet S.r.l. (DA CONFIGURARE)')
 BANK_TRANSFER_BANK = config('BANK_TRANSFER_BANK', default='Banca di Esempio S.p.A. (DA CONFIGURARE)')

@@ -33,6 +33,8 @@ x-app-env: &app-env
   PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
   PAYPAL_WEBHOOK_ID: ${PAYPAL_WEBHOOK_ID:-}
   PAYPAL_MERCHANT_ID: ${PAYPAL_MERCHANT_ID:-}
+  # Email di assistenza mostrata ai clienti nel portale e nelle email.
+  SUPPORT_EMAIL: ${SUPPORT_EMAIL:-helpdesk@valet.it}
 
 services:
   # PostgreSQL Database
