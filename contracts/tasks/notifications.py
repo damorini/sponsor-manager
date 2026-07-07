@@ -202,6 +202,54 @@ def _invia_contratto_sponsor(contract, language, event_name, document=None):
 
 
 # ============================================================================
+# Contratto firmato caricato dallo sponsor
+# ============================================================================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_signed_contract_uploaded_alert(self, deadline_id):
+    """Avvisa l'amministrazione che lo sponsor ha caricato il contratto
+    firmato nel portale (scadenza deadline_type='contratto_firmato')."""
+    from contracts.models import Deadline
+    from contracts.services.email_sender import send_email
+
+    try:
+        deadline = Deadline.objects.select_related(
+            'contract__sponsor', 'contract__event').get(pk=deadline_id)
+    except Deadline.DoesNotExist:
+        logger.error("Deadline %s non trovata per alert contratto firmato", deadline_id)
+        return
+
+    contract = deadline.contract
+    event_name = (
+        contract.event.get_name('it')
+        if hasattr(contract.event, 'get_name') else str(contract.event)
+    )
+    subject = (f"Contratto firmato ricevuto · {contract.sponsor.legal_name} "
+               f"· {contract.contract_number}")
+    try:
+        send_email(
+            template_name='signed_contract_uploaded',
+            context={
+                'contract': contract,
+                'sponsor': contract.sponsor,
+                'event': contract.event,
+                'event_name': event_name,
+                'deadline': deadline,
+            },
+            to=['amministrazione@valet.it'],
+            cc=['morini@valet.it'],
+            subject=subject,
+            language='it',
+            related_to=contract,
+            communication_type='initial_send',
+            is_automated=True,
+        )
+    except Exception as e:
+        logger.exception("Errore invio alert contratto firmato %s", deadline_id)
+        raise self.retry(exc=e)
+
+
+# ============================================================================
 # Conferma pagamento ricevuto
 # ============================================================================
 

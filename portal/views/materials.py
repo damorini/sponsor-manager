@@ -282,6 +282,17 @@ def material_upload_view(request, deadline_id):
 
     if uploaded_count > 0 and deadline.status != DeadlineStatus.RECEIVED:
         deadline.mark_as_received(contact=getattr(request, 'contact', None))
+        # Contratto firmato caricato: avvisa subito l'amministrazione
+        if deadline.deadline_type == 'contratto_firmato':
+            try:
+                from contracts.tasks.notifications import (
+                    send_signed_contract_uploaded_alert,
+                )
+                send_signed_contract_uploaded_alert.delay(str(deadline.id))
+            except Exception:
+                logger.exception(
+                    "Notifica contratto firmato non inviata per deadline %s",
+                    deadline.id)
 
     if uploaded_count > 0:
         messages.success(

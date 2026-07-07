@@ -179,7 +179,9 @@ def quote_confirm_view(request, contract_id):
                            contract.contract_number, e)
             messages.warning(request, "Preventivo confermato. Il contratto di sponsorizzazione sara' allegato a breve.")
             return redirect('portal:contract_detail', contract_id=contract.id)
-        messages.success(request, "Preventivo confermato. Trovi il contratto di sponsorizzazione e le scadenze qui sotto.")
+        messages.success(request,
+                         "Preventivo confermato. Trovi il contratto di sponsorizzazione e le scadenze qui sotto. "
+                         "Firma il contratto e caricalo nella sezione Materiali entro la scadenza indicata.")
     else:
         try:
             from contracts.services.pdf_generator import generate_admission_request_pdf

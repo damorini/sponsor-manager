@@ -785,6 +785,9 @@ class Contract(SoftDeleteModel):
         # Genera le scadenze di pagamento (acconto/saldo) per i reminder automatici
         self._generate_payment_deadlines()
 
+        # Scadenza per la restituzione del contratto firmato (upload nel portale)
+        self._generate_signed_contract_deadline()
+
         # Notifica email di conferma (sincrona in dev con EAGER=True).
         try:
             from contracts.tasks.notifications import send_contract_signed_notification
@@ -1031,6 +1034,39 @@ class Contract(SoftDeleteModel):
             _crea('pagamento_acconto', "Scadenza acconto", self.deposit_due_date)
         # Saldo sempre (se c'e' una data calcolabile)
         _crea('pagamento_saldo', "Scadenza saldo", self.balance_due_date)
+
+    def _generate_signed_contract_deadline(self, giorni=10):
+        """Crea la scadenza 'Invio contratto firmato' (solo contratti MAIN).
+
+        Il cliente deve restituire firmato il documento ricevuto alla
+        conferma: il contratto di sponsorizzazione (eventi non-ECM) o la
+        domanda di ammissione (eventi ECM). L'upload avviene nel portale,
+        sezione Materiali; la scadenza entra nel giro standard di reminder
+        (T-10/T-3/T-0) e solleciti. Idempotente."""
+        from datetime import timedelta
+        if self.contract_kind != ContractKind.MAIN:
+            return
+        if self.deadlines.filter(deadline_type='contratto_firmato').exists():
+            return
+        try:
+            from events.models import EventType
+            is_ecm = getattr(self.event, 'event_type', None) == EventType.ECM
+        except Exception:
+            is_ecm = False
+        titolo = ("Invio domanda di ammissione firmata" if is_ecm
+                  else "Invio contratto firmato")
+        descrizione = (
+            "Carica qui la copia firmata (PDF o scansione leggibile) del "
+            "documento che hai ricevuto alla conferma del preventivo."
+        )
+        base = self.signed_date or timezone.now().date()
+        Deadline.objects.create(
+            contract=self,
+            deadline_type='contratto_firmato',
+            title=titolo,
+            description=descrizione,
+            due_date=base + timedelta(days=giorni),
+        )
 
 
 class ContractLine(TimeStampedModel):
