@@ -7,6 +7,18 @@
   Sponsor <strong>{{ contract.sponsor.legal_name }}</strong>
 </p>
 
+{% if manca_firmatario %}
+<div style="background:#fef3cd; border-left:4px solid #f0ad4e; padding:12px 16px; margin:12px 0; border-radius:4px;">
+  <strong>&#9888;&#65039; Manca il firmatario.</strong>
+  Questo sponsor non ha un contatto registrato come
+  <em>legale rappresentante firmatario</em>: puoi comunque inviare il
+  preventivo, ma il cliente <strong>non potr&agrave; confermarlo</strong>
+  finch&eacute; il firmatario non viene registrato (anagrafica di
+  riferimento &rarr; spunta &laquo;&Egrave; il legale rappresentante
+  firmatario?&raquo; con i suoi dati).
+</div>
+{% endif %}
+
 <form method="post">
   {% csrf_token %}
   <fieldset class="module aligned">

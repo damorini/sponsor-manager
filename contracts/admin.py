@@ -692,6 +692,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 + (" Contratto impostato su 'Inviato'." if stato_ok else ""),
                 level=messages.SUCCESS,
             )
+            # Promemoria operatore: senza firmatario il cliente non potra'
+            # confermare (gate lato portale) e il contratto non si genera.
+            self._avvisa_se_manca_firmatario(request, contract)
             return HttpResponseRedirect('../')
 
         # GET: mostra la pagina di conferma
@@ -700,9 +703,34 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             'title': 'Genera e invia preventivo',
             'contract': contract,
             'contacts': contacts,
+            'manca_firmatario': self._manca_firmatario(contract),
             'opts': self.model._meta,
         }
         return render(request, 'admin/quote_send_confirm.html', context)
+
+    # ---- Firmatario: helper avvisi operatore ----
+
+    def _manca_firmatario(self, contract):
+        """True se il contratto non ha un firmatario utilizzabile."""
+        from contracts.services.pdf_generator import _get_signer_contact
+        try:
+            return _get_signer_contact(contract) is None
+        except Exception:
+            return False
+
+    def _avvisa_se_manca_firmatario(self, request, contract):
+        """Avviso (non bloccante) all'operatore: senza legale rappresentante
+        firmatario il cliente viene fermato alla conferma del preventivo."""
+        if self._manca_firmatario(contract):
+            self.message_user(
+                request,
+                f"⚠️ {contract.sponsor.legal_name}: manca il legale rappresentante "
+                f"FIRMATARIO. Il cliente non potrà confermare il preventivo "
+                f"{contract.contract_number} finché non lo registrate "
+                "(Anagrafica di riferimento → spunta «È il legale rappresentante "
+                "firmatario?» con i suoi dati).",
+                level=messages.WARNING,
+            )
 
     def send_contract_view(self, request, object_id):
         """Trasforma in contratto (mark_as_sent) e invia il PDF ai destinatari scelti."""
@@ -1053,6 +1081,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             try:
                 contract.mark_as_sent()
                 ok += 1
+                self._avvisa_se_manca_firmatario(request, contract)
             except Exception as e:
                 err += 1
                 self.message_user(
