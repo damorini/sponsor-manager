@@ -1,6 +1,6 @@
 """
 La tabella servizi della Domanda di Ammissione viene impaginata in modo
-professionale dopo il render: font Arial 10pt uniforme, numeri a destra,
+professionale dopo il render: font Arial 8pt uniforme, numeri a destra,
 descrizione a sinistra, intestazione centrata in grassetto con sfondo.
 """
 from docx import Document
@@ -48,13 +48,13 @@ def test_admission_table_formatting(tmp_path):
     for ci in (0, 2, 3):
         assert data.cells[ci].paragraphs[0].alignment == WD_ALIGN_PARAGRAPH.RIGHT
 
-    # --- font uniforme Arial 10pt su tutta la riga dati ---
+    # --- font uniforme Arial 8pt su tutta la riga dati (BODY_SIZE del formatter) ---
     for ci in range(4):
         runs = [r for r in data.cells[ci].paragraphs[0].runs if r.text.strip()]
         assert runs, f"cella {ci} senza testo"
         for r in runs:
             assert r.font.name == 'Arial'
-            assert r.font.size == Pt(10)
+            assert r.font.size == Pt(8)
 
     # --- righe totali a destra in grassetto ---
     for ri in (2, 3, 4):

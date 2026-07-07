@@ -49,7 +49,8 @@ def test_payment_items_amounts_and_badges(sponsor):
     assert len(items) == 2
     by_title = {it['title']: it for it in items}
     acc = by_title['Acconto da pagare']
-    sal = by_title['Saldo da pagare']
+    # la scadenza RECEIVED viene mostrata al cliente come "regolarizzata"
+    sal = by_title['Saldo regolarizzato']
 
     assert acc['amount'] == Decimal('300.00')
     assert acc['firmato'] is True

@@ -12,8 +12,9 @@ from contracts.services.email_sender import _pick_lang
 
 @pytest.mark.django_db
 def test_salvataggio_oggetto_e_corpo_bilingue_persiste():
+    # 'code' e' una scelta chiusa (EMAIL_POINTS): serve un punto di invio reale
     tpl = EmailTemplate.objects.create(
-        code='test_persist', name='Prova', communication_type='manual',
+        code='quote_email', name='Prova', communication_type='manual',
         subject_template={}, body_template={},
     )
     data = {

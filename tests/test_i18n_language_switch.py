@@ -32,9 +32,9 @@ class TestLanguageSwitch:
         )
         content = resp.content.decode()
         assert resp.status_code == 200
-        assert 'Sponsor portal login' in content  # "Accesso portale sponsor"
-        assert 'Log in' in content                 # "Accedi"
-        assert 'Accedi' not in content
+        assert 'Welcome back' in content              # "Bentornato"
+        assert 'Sign in to the portal' in content     # "Accedi al portale"
+        assert 'Accedi al portale' not in content
 
     def test_switch_back_to_italian(self, client):
         """Tornare a IT ripristina le stringhe italiane."""

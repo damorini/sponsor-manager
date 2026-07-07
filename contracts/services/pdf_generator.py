@@ -1206,8 +1206,8 @@ def _format_admission_services_table(docx_path):
     """
     Uniforma la tabella servizi della Domanda di Ammissione DOPO il render docxtpl
     (il template resta intatto). Rende l'impaginazione professionale:
-      - font Arial 10pt su TUTTE le celle (uguale al resto del documento; le righe
-        dati nel template erano 9pt e con font ereditato, quindi "stonavano");
+      - font Arial 8pt su TUTTE le celle (BODY_SIZE; le righe dati nel template
+        erano 9pt e con font ereditato, quindi "stonavano");
       - numeri incolonnati a DESTRA (q.tà, Pr. Unit., Euro), descrizione a sinistra;
       - intestazione centrata in grassetto con sfondo grigio chiaro.
     Best-effort e idempotente: se la tabella non c'e', non fa nulla.
