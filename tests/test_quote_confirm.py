@@ -21,11 +21,27 @@ from contracts.models import Contract, ContractKind, ContractStatus
 from shared.models import Document
 
 
+def _completa_anagrafica(sponsor):
+    """Compila i campi anagrafici obbligatori: senza, la conferma del
+    preventivo viene bloccata dal gate anagrafica (vedi quote_confirm_view)."""
+    sponsor.sdi_code = 'ABCDEFG'
+    sponsor.pec_email = 'pec@test.it'
+    sponsor.address_street = 'Via Roma 1'
+    sponsor.address_city = 'Bologna'
+    sponsor.address_zip = '40100'
+    sponsor.address_province = 'BO'
+    sponsor.website = 'https://test.it'
+    sponsor.business_description = 'Distributore dispositivi medici'
+    sponsor.save()
+
+
 @pytest.fixture
 def quote_setup(db, user_sponsor, sponsor):
-    """Sponsor con un contatto operativo+firmatario e un contratto in stato SENT."""
+    """Sponsor (anagrafica completa) con un contatto operativo+firmatario
+    e un contratto in stato SENT."""
     from django.utils import timezone
     from core.models import OrganizerSettings
+    _completa_anagrafica(sponsor)
     Contact.objects.create(
         portal_user=user_sponsor,
         sponsor=sponsor,
@@ -102,3 +118,40 @@ class TestQuoteConfirm:
         url = reverse('portal:quote_confirm', args=[quote_setup.id])
         resp = client.get(url)
         assert resp.status_code == 405
+
+    def test_confirm_bloccata_con_anagrafica_incompleta(self, client, user_sponsor, quote_setup):
+        """Gate anagrafica: senza dati completi la conferma rimanda a 'I miei dati'
+        e il preventivo resta SENT (il contratto va compilato con dati completi)."""
+        sponsor = quote_setup.sponsor
+        sponsor.pec_email = ''
+        sponsor.sdi_code = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        resp = client.post(reverse('portal:quote_confirm', args=[quote_setup.id]))
+        assert resp.status_code == 302
+        assert '/portal/profilo/' in resp.url
+        quote_setup.refresh_from_db()
+        assert quote_setup.status == ContractStatus.SENT
+
+    def test_confirm_page_bloccata_con_anagrafica_incompleta(self, client, user_sponsor, quote_setup):
+        """Anche la pagina di conferma rimanda a 'I miei dati' se mancano campi."""
+        sponsor = quote_setup.sponsor
+        sponsor.pec_email = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        resp = client.get(reverse('portal:quote_confirm_page', args=[quote_setup.id]))
+        assert resp.status_code == 302
+        assert '/portal/profilo/' in resp.url
+
+    def test_confirm_bloccata_farmaceutica_senza_sis(self, client, user_sponsor, quote_setup):
+        """Azienda farmaceutica senza Codice SIS: conferma bloccata dal gate."""
+        sponsor = quote_setup.sponsor
+        sponsor.is_pharma_company = True
+        sponsor.sis_code = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        resp = client.post(reverse('portal:quote_confirm', args=[quote_setup.id]))
+        assert resp.status_code == 302
+        assert '/portal/profilo/' in resp.url
+        quote_setup.refresh_from_db()
+        assert quote_setup.status == ContractStatus.SENT

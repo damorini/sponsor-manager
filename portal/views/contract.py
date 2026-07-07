@@ -137,6 +137,18 @@ def quote_confirm_view(request, contract_id):
         messages.error(request, "Questo preventivo non e' confermabile.")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
+    # Gate anagrafica: domanda e contratto vengono compilati con i dati
+    # anagrafici ATTUALI dello sponsor. Se mancano campi obbligatori la
+    # conferma viene bloccata e il cliente rimandato a "I miei dati".
+    mancanti = request.sponsor.campi_anagrafica_mancanti()
+    if mancanti:
+        messages.warning(
+            request,
+            "Prima di confermare il preventivo completa l'anagrafica aziendale "
+            "(questi dati vengono riportati nella domanda di partecipazione e "
+            "nel contratto). Campi mancanti: " + ", ".join(mancanti) + ".")
+        return redirect('portal:profile')
+
     try:
         contract.mark_as_signed()
     except Exception as e:
@@ -295,4 +307,14 @@ def quote_confirm_page_view(request, contract_id):
     if contract.status != ContractStatus.SENT:
         messages.info(request, "Questo preventivo e' gia' stato gestito.")
         return redirect('portal:contract_detail', contract_id=contract.id)
+    # Stesso gate della conferma (POST): senza anagrafica completa il cliente
+    # viene portato subito a "I miei dati" invece di scoprirlo dopo il clic.
+    mancanti = request.sponsor.campi_anagrafica_mancanti()
+    if mancanti:
+        messages.warning(
+            request,
+            "Prima di confermare il preventivo completa l'anagrafica aziendale "
+            "(questi dati vengono riportati nella domanda di partecipazione e "
+            "nel contratto). Campi mancanti: " + ", ".join(mancanti) + ".")
+        return redirect('portal:profile')
     return render(request, 'portal/contract/quote_confirm.html', {'contract': contract})
