@@ -21,7 +21,7 @@
           </div>
           <div class="text-right">
             <div class="text-lg font-bold text-gray-900">&euro; {{ o.total|floatformat:2 }}</div>
-            <span class="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">{% trans "Da pagare · Bonifico" %}</span>
+            <span class="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">{% trans "Da pagare" %}</span>
           </div>
         </div>
         <table class="w-full text-sm border-t border-gray-100 mb-3">
@@ -58,8 +58,14 @@
             </tr>
           </tfoot>
         </table>
+        <div class="mb-3">
+          <a href="{% url 'portal:checkout_card' o.id %}"
+             class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg shadow-sm">
+            &#128179; {% trans "Paga ora con carta o PayPal" %}
+          </a>
+        </div>
         <div class="bg-gray-50 rounded p-3 text-sm text-gray-800 space-y-1">
-          <div class="font-medium text-gray-900 mb-1">{% trans "Effettua il bonifico con questi dati:" %}</div>
+          <div class="font-medium text-gray-900 mb-1">{% trans "In alternativa, effettua il bonifico con questi dati:" %}</div>
           <div><span class="text-gray-500">{% trans "Intestatario:" %}</span> {{ bank_holder }}</div>
           <div><span class="text-gray-500">{% trans "Banca:" %}</span> {{ bank_name }}</div>
           <div><span class="text-gray-500">IBAN:</span> <span class="font-mono">{{ bank_iban }}</span></div>

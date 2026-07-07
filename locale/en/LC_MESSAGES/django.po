@@ -3720,3 +3720,9 @@ msgstr "SIS code"
 
 msgid "Codice identificativo SIS dell'azienda farmaceutica."
 msgstr "SIS identification code of the pharmaceutical company."
+
+msgid "Paga ora con carta o PayPal"
+msgstr "Pay now by card or PayPal"
+
+msgid "In alternativa, effettua il bonifico con questi dati:"
+msgstr "Alternatively, make a bank transfer using these details:"

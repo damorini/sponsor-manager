@@ -20,6 +20,7 @@ from django.db import transaction
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 
@@ -190,6 +191,7 @@ def paypal_cancel(request, payment_id):
 
 @login_required
 @require_http_methods(['GET'])
+@never_cache
 def card_checkout_page(request, contract_id):
     """
     Pagina checkout con form carta diretto (PayPal Hosted Fields).
