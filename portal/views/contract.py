@@ -16,6 +16,7 @@ from django.http import HttpResponseForbidden, Http404
 from django.shortcuts import render, get_object_or_404
 from django.shortcuts import redirect
 from django.contrib import messages
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from portal.views.dashboard import sponsor_required
@@ -139,15 +140,18 @@ def quote_confirm_view(request, contract_id):
 
     # Gate anagrafica: domanda e contratto vengono compilati con i dati
     # anagrafici ATTUALI dello sponsor. Se mancano campi obbligatori la
-    # conferma viene bloccata e il cliente rimandato a "I miei dati".
+    # conferma viene bloccata e il cliente rimandato a "I miei dati"; una
+    # volta completati i campi viene riportato alla pagina di conferma (next).
     mancanti = request.sponsor.campi_anagrafica_mancanti()
     if mancanti:
         messages.warning(
             request,
             "Prima di confermare il preventivo completa l'anagrafica aziendale "
-            "(questi dati vengono riportati nella domanda di partecipazione e "
-            "nel contratto). Campi mancanti: " + ", ".join(mancanti) + ".")
-        return redirect('portal:profile')
+            "(questi dati vengono riportati nel contratto). "
+            "Campi mancanti: " + ", ".join(mancanti) + ". "
+            "Dopo il salvataggio verrai riportato alla conferma del preventivo.")
+        next_url = reverse('portal:quote_confirm_page', args=[contract.id])
+        return redirect(f"{reverse('portal:profile')}?next={next_url}")
 
     try:
         contract.mark_as_signed()
@@ -155,29 +159,36 @@ def quote_confirm_view(request, contract_id):
         messages.error(request, f"Impossibile confermare il preventivo: {e}")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
-    try:
-        from contracts.services.pdf_generator import generate_admission_request_pdf
-        generate_admission_request_pdf(contract)
-    except Exception as e:
-        logger.warning("Domanda non generata per %s: %s", contract.contract_number, e)
-        messages.warning(request, "Preventivo confermato. La domanda di partecipazione sara' allegata a breve.")
-        return redirect('portal:contract_detail', contract_id=contract.id)
-
-    # Genera SUBITO anche il contratto di sponsorizzazione (MAIN non-ECM), così
-    # compare immediatamente in "I miei documenti" senza dover ricaricare. L'email
-    # al contatto operativo + CC parte comunque dal task Celery (mark_as_signed).
-    try:
-        from contracts.models import ContractKind
-        from events.models import EventType
-        if (contract.contract_kind == ContractKind.MAIN
-                and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
+    # Documenti post-conferma:
+    # - MAIN non-ECM: SOLO il contratto di sponsorizzazione (la domanda di
+    #   ammissione e' gia' inclusa nel PDF come Allegato 1): il cliente firma
+    #   UN documento solo, niente domanda standalone da firmare a parte.
+    # - Altri casi (eventi ECM, addendum): la domanda di ammissione.
+    from contracts.models import ContractKind
+    from events.models import EventType
+    is_main_non_ecm = (
+        contract.contract_kind == ContractKind.MAIN
+        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
+    )
+    if is_main_non_ecm:
+        try:
             from contracts.services.pdf_generator import generate_sponsor_contract_pdf
             generate_sponsor_contract_pdf(contract)
-    except Exception as e:
-        logger.warning("Contratto sponsor non generato subito per %s: %s",
-                       contract.contract_number, e)
-
-    messages.success(request, "Preventivo confermato. Trovi la domanda di partecipazione e le scadenze qui sotto.")
+        except Exception as e:
+            logger.warning("Contratto sponsor non generato subito per %s: %s",
+                           contract.contract_number, e)
+            messages.warning(request, "Preventivo confermato. Il contratto di sponsorizzazione sara' allegato a breve.")
+            return redirect('portal:contract_detail', contract_id=contract.id)
+        messages.success(request, "Preventivo confermato. Trovi il contratto di sponsorizzazione e le scadenze qui sotto.")
+    else:
+        try:
+            from contracts.services.pdf_generator import generate_admission_request_pdf
+            generate_admission_request_pdf(contract)
+        except Exception as e:
+            logger.warning("Domanda non generata per %s: %s", contract.contract_number, e)
+            messages.warning(request, "Preventivo confermato. La domanda di partecipazione sara' allegata a breve.")
+            return redirect('portal:contract_detail', contract_id=contract.id)
+        messages.success(request, "Preventivo confermato. Trovi la domanda di partecipazione e le scadenze qui sotto.")
     return redirect('portal:contract_detail', contract_id=contract.id)
 
 
@@ -308,13 +319,15 @@ def quote_confirm_page_view(request, contract_id):
         messages.info(request, "Questo preventivo e' gia' stato gestito.")
         return redirect('portal:contract_detail', contract_id=contract.id)
     # Stesso gate della conferma (POST): senza anagrafica completa il cliente
-    # viene portato subito a "I miei dati" invece di scoprirlo dopo il clic.
+    # viene portato subito a "I miei dati" invece di scoprirlo dopo il clic;
+    # dopo il salvataggio torna automaticamente qui (next).
     mancanti = request.sponsor.campi_anagrafica_mancanti()
     if mancanti:
         messages.warning(
             request,
             "Prima di confermare il preventivo completa l'anagrafica aziendale "
-            "(questi dati vengono riportati nella domanda di partecipazione e "
-            "nel contratto). Campi mancanti: " + ", ".join(mancanti) + ".")
-        return redirect('portal:profile')
+            "(questi dati vengono riportati nel contratto). "
+            "Campi mancanti: " + ", ".join(mancanti) + ". "
+            "Dopo il salvataggio verrai riportato alla conferma del preventivo.")
+        return redirect(f"{reverse('portal:profile')}?next={request.path}")
     return render(request, 'portal/contract/quote_confirm.html', {'contract': contract})

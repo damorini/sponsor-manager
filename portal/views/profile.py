@@ -5,6 +5,8 @@ from io import BytesIO
 from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from portal.views.dashboard import sponsor_required
 
@@ -199,14 +201,33 @@ def profile_view(request):
         if contact.welcome_seen_at is None:
             from django.utils import timezone
             contact.welcome_seen_at = timezone.now()
+        # Ritorno automatico (es. alla conferma del preventivo che ha
+        # rimandato qui il cliente): solo URL interni.
+        next_url = (request.POST.get('next') or '').strip()
+        if next_url and not url_has_allowed_host_and_scheme(
+                next_url, allowed_hosts={request.get_host()}):
+            next_url = ''
         try:
             sponsor.save()
             contact.save()
-            messages.success(request, "Dati aggiornati correttamente.")
             logger.info("Profilo aggiornato da sponsor %s", sponsor.id)
         except Exception as e:
             logger.exception("Errore salvataggio profilo sponsor %s", sponsor.id)
             messages.error(request, f"Errore nel salvataggio: {e}")
+            return redirect('portal:profile')
+        if next_url:
+            ancora_mancanti = sponsor.campi_anagrafica_mancanti()
+            if not ancora_mancanti:
+                messages.success(
+                    request,
+                    "Anagrafica completa. Ora puoi confermare il preventivo.")
+                return redirect(next_url)
+            messages.warning(
+                request,
+                "Dati salvati, ma per confermare il preventivo mancano ancora: "
+                + ", ".join(ancora_mancanti) + ".")
+            return redirect(f"{reverse('portal:profile')}?next={next_url}")
+        messages.success(request, "Dati aggiornati correttamente.")
         return redirect('portal:profile')
 
     # GET: costruisco i campi con valori attuali
@@ -255,7 +276,14 @@ def profile_view(request):
 
     manca_operativo = not any('operational' in (c.roles or []) for c in contatti)
 
+    # URL interno a cui tornare dopo il salvataggio (es. conferma preventivo)
+    next_url = (request.GET.get('next') or '').strip()
+    if next_url and not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}):
+        next_url = ''
+
     return render(request, 'portal/profile/edit.html', {
+        'next_url': next_url,
         'sponsor': sponsor,
         'contact': contact,
         'sponsor_fields': sponsor_fields,

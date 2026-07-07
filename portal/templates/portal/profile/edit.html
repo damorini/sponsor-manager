@@ -49,6 +49,7 @@
 
   <form method="post" class="space-y-8" enctype="multipart/form-data">
     {% csrf_token %}
+    {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
     <div class="bg-white border border-gray-200 rounded-lg p-6">
       <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Logo aziendale" %}</h2>

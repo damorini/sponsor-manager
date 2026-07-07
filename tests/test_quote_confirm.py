@@ -155,3 +155,95 @@ class TestQuoteConfirm:
         assert '/portal/profilo/' in resp.url
         quote_setup.refresh_from_db()
         assert quote_setup.status == ContractStatus.SENT
+
+    def test_gate_rimanda_al_profilo_con_next(self, client, user_sponsor, quote_setup):
+        """Il gate passa al profilo l'URL di ritorno (next) verso la conferma."""
+        sponsor = quote_setup.sponsor
+        sponsor.pec_email = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        url_page = reverse('portal:quote_confirm_page', args=[quote_setup.id])
+        resp = client.get(url_page)
+        assert resp.status_code == 302
+        assert resp.url == f"{reverse('portal:profile')}?next={url_page}"
+
+    def test_anagrafica_completata_torna_alla_conferma(self, client, user_sponsor, quote_setup):
+        """Giro completo: anagrafica incompleta -> profilo -> salvataggio dati
+        completi -> ritorno automatico alla pagina di conferma preventivo."""
+        sponsor = quote_setup.sponsor
+        sponsor.pec_email = ''
+        sponsor.sdi_code = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        url_page = reverse('portal:quote_confirm_page', args=[quote_setup.id])
+        # 1. la conferma rimanda al profilo con next
+        resp = client.get(url_page)
+        assert resp.status_code == 302
+        # 2. salvataggio profilo con TUTTI i campi obbligatori -> torna alla conferma
+        data = {
+            'sponsor_legal_name': sponsor.legal_name,
+            'sponsor_vat_number': sponsor.vat_number,
+            'sponsor_sdi_code': 'ABCDEFG',
+            'sponsor_pec_email': 'pec@test.it',
+            'sponsor_address_street': 'Via Roma 1',
+            'sponsor_address_city': 'Bologna',
+            'sponsor_address_zip': '40100',
+            'sponsor_address_province': 'BO',
+            'sponsor_address_country': 'IT',
+            'sponsor_website': 'https://test.it',
+            'sponsor_business_description': 'Distributore',
+            'next': url_page,
+        }
+        resp = client.post(reverse('portal:profile'), data)
+        assert resp.status_code == 302
+        assert resp.url == url_page
+        # 3. ora la pagina di conferma si apre davvero
+        resp = client.get(url_page)
+        assert resp.status_code == 200
+
+    def test_anagrafica_ancora_incompleta_resta_sul_profilo(self, client, user_sponsor, quote_setup):
+        """Se dopo il salvataggio mancano ancora campi, si resta sul profilo
+        e il next viene conservato per il tentativo successivo."""
+        sponsor = quote_setup.sponsor
+        sponsor.pec_email = ''
+        sponsor.sdi_code = ''
+        sponsor.save()
+        client.force_login(user_sponsor)
+        url_page = reverse('portal:quote_confirm_page', args=[quote_setup.id])
+        data = {
+            'sponsor_legal_name': sponsor.legal_name,
+            'sponsor_vat_number': sponsor.vat_number,
+            'sponsor_sdi_code': 'ABCDEFG',  # PEC ancora mancante
+            'sponsor_address_street': 'Via Roma 1',
+            'sponsor_address_city': 'Bologna',
+            'sponsor_address_zip': '40100',
+            'sponsor_address_province': 'BO',
+            'sponsor_address_country': 'IT',
+            'sponsor_website': 'https://test.it',
+            'sponsor_business_description': 'Distributore',
+            'next': url_page,
+        }
+        resp = client.post(reverse('portal:profile'), data)
+        assert resp.status_code == 302
+        assert resp.url == f"{reverse('portal:profile')}?next={url_page}"
+
+    def test_non_ecm_genera_solo_contratto(self, client, user_sponsor, quote_setup):
+        """MAIN non-ECM: alla conferma si genera SOLO il contratto di
+        sponsorizzazione (domanda inclusa come Allegato 1), NIENTE domanda
+        di ammissione standalone: il cliente firma un documento solo."""
+        from events.models import EventType
+        event = quote_setup.event
+        event.event_type = EventType.NON_ECM
+        event.save(update_fields=['event_type'])
+        client.force_login(user_sponsor)
+        resp = client.post(reverse('portal:quote_confirm', args=[quote_setup.id]))
+        assert resp.status_code == 302
+        quote_setup.refresh_from_db()
+        assert quote_setup.status == ContractStatus.SIGNED
+
+        docs = Document.objects.filter(
+            object_id=quote_setup.id, deleted_at__isnull=True)
+        types = set(docs.values_list('document_type', flat=True))
+        assert 'sponsor_contract' in types, "manca il contratto di sponsorizzazione"
+        assert 'admission_request' not in types, \
+            "la domanda standalone NON va piu' generata per i MAIN non-ECM"

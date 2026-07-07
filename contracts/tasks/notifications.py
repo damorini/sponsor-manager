@@ -56,10 +56,25 @@ def send_contract_signed_notification(self, contract_id):
         logger.warning("Nessun destinatario per contratto %s", contract.contract_number)
         return
 
-    # Genera PDF e prepara allegato
+    # Genera PDF e prepara allegato.
+    # MAIN non-ECM: si allega il CONTRATTO di sponsorizzazione, che include gia'
+    # la domanda di ammissione come Allegato 1 — il cliente firma UN documento
+    # solo. Negli altri casi (eventi ECM, addendum) resta la domanda.
+    from contracts.models import ContractKind
+    from events.models import EventType
+    is_main_non_ecm = (
+        contract.contract_kind == ContractKind.MAIN
+        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
+    )
     pdf_attachment = None
+    contract_document = None
     try:
-        document = generate_admission_request_pdf(contract)
+        if is_main_non_ecm:
+            from contracts.services.pdf_generator import generate_sponsor_contract_pdf
+            document = generate_sponsor_contract_pdf(contract)
+            contract_document = document
+        else:
+            document = generate_admission_request_pdf(contract)
         # Leggi il file salvato
         from django.conf import settings
         from pathlib import Path
@@ -126,11 +141,9 @@ def send_contract_signed_notification(self, contract_id):
     # --- Contratto di sponsorizzazione (solo MAIN non-ECM): genera e invia ---
     # Wrappato: un errore qui NON deve far ritentare l'intera notifica.
     try:
-        from contracts.models import ContractKind
-        from events.models import EventType
-        if (contract.contract_kind == ContractKind.MAIN
-                and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
-            _invia_contratto_sponsor(contract, language, event_name)
+        if is_main_non_ecm:
+            _invia_contratto_sponsor(contract, language, event_name,
+                                     document=contract_document)
     except Exception:
         logger.exception(
             "Generazione/invio contratto di sponsorizzazione fallito per %s",
@@ -138,10 +151,11 @@ def send_contract_signed_notification(self, contract_id):
         )
 
 
-def _invia_contratto_sponsor(contract, language, event_name):
-    """Genera il contratto di sponsorizzazione (con Domanda di ammissione come
-    Allegato 1) e lo invia al contatto OPERATIVO dello sponsor, in CC ad
-    amministrazione@valet.it ed elisa.fantini@valet.it."""
+def _invia_contratto_sponsor(contract, language, event_name, document=None):
+    """Invia il contratto di sponsorizzazione (con Domanda di ammissione come
+    Allegato 1) al contatto OPERATIVO dello sponsor, in CC ad
+    amministrazione@valet.it ed elisa.fantini@valet.it.
+    Se 'document' non viene passato, il PDF viene generato qui."""
     from django.conf import settings
     from pathlib import Path
     from contracts.services.pdf_generator import (
@@ -149,7 +163,8 @@ def _invia_contratto_sponsor(contract, language, event_name):
     )
     from contracts.services.email_sender import send_email
 
-    document = generate_sponsor_contract_pdf(contract)
+    if document is None:
+        document = generate_sponsor_contract_pdf(contract)
     rel = document.storage_url.replace(settings.MEDIA_URL, '')
     pdf_path = Path(settings.MEDIA_ROOT) / rel
     if not pdf_path.exists():
