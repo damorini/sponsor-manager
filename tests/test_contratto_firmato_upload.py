@@ -80,6 +80,26 @@ class TestContrattoFirmato:
         assert avvisi, "manca l'email di avviso all'amministrazione"
         assert 'amministrazione@valet.it' in avvisi[0].to
 
+    def test_email_contratto_contiene_link_upload(self, client, user_sponsor, quote_setup):
+        """L'email col contratto da firmare indica come restituirlo: via
+        email ad amministrazione@valet.it o col pulsante diretto alla
+        pagina di upload (Materiali) dell'area riservata."""
+        from events.models import EventType
+        quote_setup.event.event_type = EventType.NON_ECM
+        quote_setup.event.save(update_fields=['event_type'])
+        mail.outbox.clear()
+        contract = self._conferma(client, user_sponsor, quote_setup)
+
+        corpi = []
+        for m in mail.outbox:
+            corpi.append(m.body or '')
+            for alt, _mime in getattr(m, 'alternatives', []):
+                corpi.append(alt or '')
+        tutto = ' '.join(corpi)
+        assert f'contracts/{contract.id}/materials/' in tutto, \
+            "manca il link diretto alla pagina di upload del firmato"
+        assert 'amministrazione@valet.it' in tutto
+
     def test_scadenza_non_creata_per_addon(self, db, user_sponsor, sponsor):
         """I contratti ADDON (ecommerce) non richiedono contratto firmato."""
         from datetime import date as _date

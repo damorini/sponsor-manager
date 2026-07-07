@@ -10,5 +10,13 @@ a seguito della conferma del preventivo, in allegato trovate il <strong>contratt
 
 <p style="margin:0 0 16px 0;">Vi chiediamo di verificare i dati riportati, firmare il contratto e restituircelo. Per qualsiasi necessità la segreteria organizzativa resta a vostra disposizione.</p>
 
+<p style="margin:0 0 12px 0;">Il documento, una volta firmato, potrà essere inviato via email all'indirizzo
+<a href="mailto:amministrazione@valet.it">amministrazione@valet.it</a>
+oppure caricato direttamente nella vostra area riservata:</p>
+
+<p style="text-align:center; margin:20px 0;">
+  <a href="{{ portal_url }}contracts/{{ contract.id }}/materials/" class="button">Carica il contratto firmato</a>
+</p>
+
 <p style="margin:18px 0 0 0;">Cordiali saluti,<br>{{ org_name|default:organizer_name }}</p>
 {% endblock %}
