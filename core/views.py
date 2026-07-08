@@ -959,7 +959,9 @@ def cruscotto_scadenze_cliente(request):
     today = timezone.now().date()
 
     qs = (Deadline.objects
-          .filter(deadline_template__isnull=False)
+          .filter(deadline_template__isnull=False,
+                  # niente scadenze di contratti nel cestino
+                  contract__deleted_at__isnull=True)
           .exclude(status=DeadlineStatus.WAIVED)
           .select_related('contract', 'contract__sponsor', 'contract__event',
                           'completed_by_contact')

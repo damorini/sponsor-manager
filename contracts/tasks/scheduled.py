@@ -41,12 +41,13 @@ def check_upcoming_deadlines():
 
     today = date.today()
 
-    # Pesca solo scadenze "vive" e non scadute
+    # Pesca solo scadenze "vive" e non scadute (mai per contratti nel cestino)
     deadlines = Deadline.objects.select_related(
         'deadline_template'
     ).filter(
         status__in=[DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT],
         due_date__gte=today,  # non in ritardo
+        contract__deleted_at__isnull=True,
     )
 
     sent_count = 0
@@ -99,6 +100,7 @@ def check_overdue_deadlines():
     overdue = Deadline.objects.filter(
         status__in=[DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT],
         due_date__lt=today,  # in ritardo
+        contract__deleted_at__isnull=True,  # mai per contratti nel cestino
     ).filter(
         # Mai inviato sollecito OR ultimo sollecito >3 giorni fa
         Q(last_reminder_sent_at__isnull=True) |

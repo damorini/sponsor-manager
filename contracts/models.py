@@ -884,12 +884,19 @@ class Contract(SoftDeleteModel):
         self._update_venue_status()
 
         # Le scadenze di un contratto annullato non sono piu' dovute: le esonero.
+        self._esonera_scadenze()
+
+    def _esonera_scadenze(self):
+        """Esonera (WAIVED) le scadenze aperte e soft-cancella i file inviati
+        dal cliente. Usato sia dall'annullamento sia dalla cancellazione
+        (cestino): un contratto che sparisce non deve lasciare scadenze vive
+        nel cruscotto ne' far partire reminder/solleciti."""
         self.deadlines.filter(
             status__in=[DeadlineStatus.PENDING, DeadlineStatus.REMINDER_SENT,
                         DeadlineStatus.OVERDUE]
         ).update(status=DeadlineStatus.WAIVED)
 
-        # I file inviati dal cliente per un contratto annullato vengono rimossi
+        # I file inviati dal cliente vengono rimossi
         # (soft-delete: i record restano recuperabili lato admin).
         from django.contrib.contenttypes.models import ContentType
         from shared.models import Document
@@ -906,9 +913,19 @@ class Contract(SoftDeleteModel):
         contratti con deleted_at valorizzato, quindi lo spazio torna disponibile.
         Cosi' cancellare un preventivo libera lo stand esattamente come annullarlo.
         I servizi a numero limitato si liberano da soli (quantity_committed
-        ignora i contratti cancellati/soft-deleted)."""
+        ignora i contratti cancellati/soft-deleted).
+        Le SCADENZE aperte vengono esonerate come nell'annullamento: non devono
+        restare nel cruscotto ne' generare reminder per un contratto cestinato."""
         stand = self.stand
         block = self.stand_block
+        if not hard:
+            try:
+                self._esonera_scadenze()
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception(
+                    "Esonero scadenze fallito cancellando il contratto %s",
+                    getattr(self, 'contract_number', '?'))
         super().delete(using=using, keep_parents=keep_parents, hard=hard)
         try:
             if stand:
