@@ -273,6 +273,9 @@
     }
     #nav-sidebar {
       position: fixed !important; top: 0; left: 0; bottom: 0;
+      /* Django parcheggia la sidebar con margin-left:-276px: senza questo
+         azzeramento il pannello aperto resta fuori schermo (solo ~50px visibili) */
+      margin-left: 0 !important;
       width: 84% !important; max-width: 330px;
       z-index: 10001; overflow-y: auto;
       background: var(--body-bg, #fff);
