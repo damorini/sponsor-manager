@@ -91,20 +91,38 @@
     {% trans "Ci siamo quasi!" %}
   </h1>
 
-  <p class="vt-up vt-d3 text-lg text-gray-700 leading-relaxed mb-2">
-    {% trans "Per entrare nel portale ti basta fare il primo accesso con le credenziali che ti sono state inviate via email." %}
-  </p>
-  <p class="vt-up vt-d3 text-gray-600 mb-8">
-    {% trans "Non le hai ricevute?" %}
-    <a href="mailto:helpdesk@valet.it" class="text-brand-600 font-semibold hover:underline">helpdesk@valet.it</a>
-    {% trans "è qui per questo." %}
+  <p class="vt-up vt-d3 text-lg text-gray-700 leading-relaxed mb-8">
+    {% trans "Per entrare ti basta fare il primo accesso al portale." %}
   </p>
 
-  <div class="vt-up vt-d4">
-    <a href="{% url 'portal:login' %}"
-       class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-base font-semibold px-8 py-3.5 rounded-xl shadow-sm">
-      {% trans "Vai alla pagina di accesso" %} &rarr;
-    </a>
+  <div class="vt-up vt-d4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
+      <p class="text-lg font-semibold text-gray-900 mb-1">
+        {% trans "Hai ricevuto le credenziali di accesso?" %}
+      </p>
+      <p class="text-sm text-gray-600 mb-5">
+        {% trans "Perfetto: usale per il tuo primo accesso, il portale ti aspetta." %}
+      </p>
+      <a href="{% url 'portal:login' %}"
+         class="mt-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-base font-semibold px-6 py-3 rounded-xl shadow-sm">
+        {% trans "Accedi al portale" %} &rarr;
+      </a>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
+      <p class="text-lg font-semibold text-gray-900 mb-1">
+        {% trans "Non le hai ricevute?" %}
+      </p>
+      <p class="text-sm text-gray-600 mb-5">
+        {% trans "Nessun problema: scrivici e te le facciamo riavere subito." %}
+      </p>
+      <a href="mailto:helpdesk@valet.it"
+         class="mt-auto inline-flex items-center justify-center gap-2 border-2 border-brand-500 text-brand-600 hover:bg-brand-50 text-base font-semibold px-6 py-3 rounded-xl">
+        &#9993; {% trans "Scrivi a" %} helpdesk@valet.it
+      </a>
+    </div>
+
   </div>
 
 </div>

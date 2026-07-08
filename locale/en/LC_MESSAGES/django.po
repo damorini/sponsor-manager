@@ -3747,3 +3747,18 @@ msgstr "almost!"
 
 msgid "Una persona salta un piccolo fosso verso la porta del portale: manca pochissimo!"
 msgstr "A person jumps over a small gap towards the portal door: almost there!"
+
+msgid "Per entrare ti basta fare il primo accesso al portale."
+msgstr "To get in, simply log in to the portal for the first time."
+
+msgid "Hai ricevuto le credenziali di accesso?"
+msgstr "Have you received your login credentials?"
+
+msgid "Perfetto: usale per il tuo primo accesso, il portale ti aspetta."
+msgstr "Great: use them for your first login — the portal is waiting for you."
+
+msgid "Nessun problema: scrivici e te le facciamo riavere subito."
+msgstr "No problem: write to us and we will send them again right away."
+
+msgid "Scrivi a"
+msgstr "Write to"
