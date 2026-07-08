@@ -96,6 +96,8 @@
     <li>Accede su <code>/portal/login/</code> con la propria email.</li>
   </ul>
   <div class="nota">Il tema del backoffice può essere <strong>chiaro</strong> o <strong>scuro</strong> (icona in alto a destra): cambia solo l'aspetto, non i dati.</div>
+  <div class="nota"><strong>Da smartphone.</strong> Il backoffice funziona anche dal telefono: il menu laterale si apre col pulsante <strong>☰</strong> in alto a sinistra; le tabelle lunghe si fanno scorrere in orizzontale e i filtri si richiamano col pulsante «Mostra filtri».</div>
+  <div class="nota"><strong>«Ci siamo quasi».</strong> Se qualcuno apre un link del portale <em>senza un profilo sponsor utilizzabile</em> (es. non ha mai fatto il primo accesso con le credenziali ricevute, oppure sei tu loggato come operatore), non vede più una pagina bianca ma una pagina di cortesia che invita a fare il primo accesso o a scrivere a <strong>helpdesk@valet.it</strong>.</div>
 </section>
 
 <section id="concetti">
@@ -139,7 +141,7 @@ flowchart TD
   C --> E["5 - Crea la Domanda di ammissione<br/>(il preventivo)"]
   E --> F["6 - Invia il preventivo allo sponsor"]
   F --> G{"Lo sponsor conferma?"}
-  G -->|"Si"| H["7 - Si genera la Domanda in PDF<br/>+ Scadenze automatiche"]
+  G -->|"Si"| H["7 - Si genera il Contratto in PDF<br/>(riepilogo come Allegato 1)<br/>+ Scadenze automatiche<br/>(incl. Invio contratto firmato)"]
   G -->|"No"| F
   H --> I["8 - Registri gli incassi<br/>(bonifico / PayPal / carta)"]
   I --> L["9 - Materiali e scadenze<br/>fino all'evento"]
@@ -209,6 +211,8 @@ stateDiagram-v2
     <li>Aggiungi i <strong>Contatti</strong> (persone). Per il firmatario, spunta <em>è firmatario</em> e compila i dati anagrafici.</li>
     <li>Per dare accesso al portale: usa l'azione di <strong>invito</strong> sul contatto.</li>
   </ol>
+  <div class="nota"><strong>Azienda farmaceutica → Codice SIS.</strong> Nella sezione «Dati fiscali» dello Sponsor c'è la spunta <strong>«Azienda farmaceutica»</strong> con il campo <strong>Codice SIS</strong>: per le aziende flaggate il codice è <strong>obbligatorio</strong> (rientra nei dati che il cliente deve completare nel portale prima di confermare o acquistare). Nel portale la domanda compare in «I miei dati»: spuntando la casella appare il campo da compilare.</div>
+  <div class="attenzione"><strong>Il firmatario è indispensabile.</strong> Senza un contatto marcato come <strong>legale rappresentante firmatario</strong> il sistema non può compilare il contratto: il cliente viene <strong>bloccato alla conferma</strong> del preventivo con l'invito a contattare la segreteria. Se invii un preventivo a uno sponsor senza firmatario, il sistema te lo segnala (banner giallo nella pagina di invio + avviso dopo l'invio).</div>
 
   <h3>6.5 Creare e inviare il preventivo</h3>
   <ol>
@@ -236,28 +240,39 @@ stateDiagram-v2
   <p>Creando un <strong>Blocco stand</strong>: scegli prima il congresso, poi nella casella vedi <strong>solo gli stand disponibili</strong> di quell'evento e li sposti nel blocco. Per il <strong>prezzo</strong>: se lasci vuoto "Prezzo blocco" il sistema usa la <strong>somma dei prezzi degli stand</strong>; se inserisci un prezzo, vale quello.</p>
 
   <h3>6.9 Conferma e seguito</h3>
-  <p>Quando lo sponsor conferma dal portale, il sistema genera la <strong>Domanda di ammissione in PDF</strong>, le <strong>scadenze</strong> (acconto/saldo + materiali) e invia l'email di conferma. Tu poi <strong>registri gli incassi</strong> e segui i materiali fino all'evento.</p>
+  <p>Quando lo sponsor clicca <strong>Conferma</strong> dal portale, il sistema per prima cosa <strong>controlla i suoi dati</strong>:</p>
+  <ul>
+    <li>se manca un campo obbligatorio dell'<strong>anagrafica</strong> (compreso il Codice SIS per le farmaceutiche), viene portato a «I miei dati» con l'elenco dei campi; appena li completa <strong>torna da solo</strong> alla pagina di conferma;</li>
+    <li>se manca il <strong>firmatario</strong>, la conferma è bloccata con l'invito a contattare la segreteria (devi registrarlo tu, vedi §6.4).</li>
+  </ul>
+  <p>Superati i controlli, per gli eventi <strong>non-ECM</strong> viene generato <strong>UN SOLO documento da firmare</strong>: il <strong>contratto di sponsorizzazione</strong> (~3 pagine dal template Word) con il riepilogo dei servizi come <strong>Allegato 1</strong> — la «domanda di ammissione» non esce più come documento separato. Per gli eventi <strong>ECM</strong> resta la domanda di ammissione. I dati anagrafici nel PDF sono quelli <strong>al momento della conferma</strong>.</p>
+  <p>Partono poi le <strong>email</strong> («Grazie per aver confermato il preventivo», col PDF allegato; il contatto operativo riceve anche l'email dedicata col contratto, in CC amministrazione) e si generano le <strong>scadenze</strong>: acconto/saldo, materiali e la nuova <strong>«Invio contratto firmato»</strong> a <strong>+10 giorni</strong>.</p>
+  <div class="nota"><strong>Ritorno del contratto firmato.</strong> Il cliente può restituire il contratto firmato in due modi (l'email glielo spiega): via email ad <strong>amministrazione@valet.it</strong> oppure caricandolo nella sezione <strong>Materiali</strong> del portale (l'email ha il pulsante diretto). Se non lo fa, partono i <strong>promemoria automatici</strong> a 10/3/0 giorni e poi i solleciti ogni 3 giorni; quando lo carica, la scadenza va in «Ricevuto» e <strong>amministrazione riceve un avviso email</strong>.</div>
   <div class="nota"><strong>Addendum:</strong> per un contratto di tipo <em>Addendum</em> viene usato lo stesso modulo della Domanda, ma intitolato «Addendum al contratto n° … del …». Gli <strong>acquisti online (Addon)</strong> non hanno preventivo da confermare: il cliente paga e l'acquisto è subito valido (vedi §7).</div>
-  <div class="attenzione">Quando clicchi <strong>Elimina</strong> (su una scheda o sull'azione di gruppo) il sistema chiede <strong>conferma</strong> prima di cancellare.</div>
+  <div class="attenzione">Quando clicchi <strong>Elimina</strong> (su una scheda o sull'azione di gruppo) il sistema chiede <strong>conferma</strong> prima di cancellare. I contratti <strong>già nel cestino</strong> non bloccano l'eliminazione del contratto principale: bloccano solo i collegati <strong>ancora attivi</strong> (da cestinare prima).</div>
 </section>
 
 <section id="portale">
   <h2>7. Lato sponsor (il portale)</h2>
   <p>Nel menu di sinistra lo sponsor trova: <strong>In evidenza</strong> (eventi attivi, scadenze e messaggi), <strong>Archivio eventi</strong> (eventi conclusi, sola consultazione), <strong>I miei documenti</strong> (domande di ammissione + copia degli acquisti online), <strong>I miei acquisti</strong>, <strong>Archivio messaggi</strong>, <strong>I miei dati</strong>, <strong>Wishlist</strong>.</p>
-  <div class="nota"><strong>Anagrafica obbligatoria.</strong> Al primo accesso, se mancano dati aziendali obbligatori (ragione sociale, P.IVA, codice SDI, PEC, indirizzo, città, CAP, provincia, paese, sito web, descrizione attività), lo sponsor viene portato a <strong>«I miei dati»</strong> con l'elenco dei campi da completare; quelli mancanti sono evidenziati (asterisco rosso, bordo arancione). Finché non li compila, il portale resta su quella pagina.</div>
+  <div class="nota"><strong>Anagrafica obbligatoria.</strong> Al primo accesso, se mancano dati aziendali obbligatori (ragione sociale, P.IVA, codice SDI, PEC, indirizzo, città, CAP, provincia, paese, sito web, descrizione attività — e il <strong>Codice SIS</strong> per chi spunta «Azienda farmaceutica»), lo sponsor viene portato a <strong>«I miei dati»</strong> con l'elenco dei campi da completare; quelli mancanti sono evidenziati (asterisco rosso, bordo arancione). Finché non li compila, il portale resta su quella pagina. Lo stesso controllo scatta alla <strong>conferma del preventivo</strong>: completati i dati, il cliente torna automaticamente alla pagina di conferma.</div>
+  <div class="nota"><strong>Pagamenti online (attivi, soldi veri).</strong> Gli acquisti dal carrello si pagano con <strong>PayPal</strong>, <strong>MyBank</strong> (bonifico istantaneo dal proprio home banking) o <strong>carta di credito/debito</strong>, oltre al bonifico classico. Un ordine rimasto <strong>in attesa di pagamento</strong> mostra in «I miei acquisti» il pulsante <strong>«Paga ora con carta o PayPal»</strong> per riprendere il pagamento in qualsiasi momento (il bonifico resta come alternativa).</div>
   <div class="nota"><strong>I miei acquisti</strong> mostra ogni ordine con il dettaglio riga per riga (descrizione, prezzo unitario, quantità, totale <em>IVA esclusa</em>) e, in fondo, <strong>imponibile, IVA e totale</strong>. Dalla scheda di un articolo del catalogo il cliente ha il pulsante <strong>«Torna al catalogo»</strong>; dal carrello, <strong>«Continua acquisti per questo evento»</strong>.</div>
   <div class="nota"><strong>Lingua preferita (bandierine).</strong> In «I miei dati» il cliente sceglie la lingua del portale e delle comunicazioni cliccando la bandiera <strong>🇮🇹 / 🇬🇧</strong>: quella scelta resta a colori, l'altra diventa grigia. Da questa scelta dipende anche la lingua del <strong>preventivo</strong> (§6.5).</div>
   <p>Cosa fa lo sponsor, una volta invitato:</p>
   <div class="diagram">
     <pre class="mermaid">
 flowchart TD
-  A["Accede al Portale"] --> B["Vede il preventivo<br/>(Domanda di ammissione)"]
+  A["Accede al Portale"] --> B["Vede il preventivo"]
   B --> C{"Conferma?"}
-  C -->|"Conferma"| D["Domanda confermata<br/>(scarica il PDF)"]
+  C -->|"Anagrafica incompleta"| C2["Completa I miei dati<br/>e torna alla conferma"]
+  C2 --> C
+  C -->|"Conferma"| D["Riceve il Contratto in PDF<br/>(email + area riservata)"]
+  D --> D2["Firma e restituisce:<br/>upload nei Materiali<br/>o email ad amministrazione"]
   D --> E["Acquista servizi extra<br/>(Carrello)"]
   E --> F{"Come paga?"}
-  F -->|"PayPal / Carta"| G["Pagamento online<br/>conferma immediata"]
-  F -->|"Bonifico"| H["Ordine in attesa:<br/>l'operatore registra l'incasso"]
+  F -->|"PayPal / MyBank / Carta"| G["Pagamento online<br/>conferma immediata"]
+  F -->|"Bonifico"| H["Ordine in attesa:<br/>Paga ora oppure<br/>l'operatore registra l'incasso"]
   D --> I["Carica i materiali<br/>e rispetta le scadenze"]
     </pre>
   </div>
@@ -380,7 +395,16 @@ flowchart TD
   <p>La tendina <strong>Variante</strong> mostra solo le varianti <strong>del servizio scelto in quella riga</strong>. Se è vuota, quel servizio non ha varianti: aggiungile nella scheda del servizio, sezione "Varianti servizio" (vedi §6.6).</p>
 
   <h3>Lo sponsor non riesce a usare il portale: lo rimanda sempre a «I miei dati»</h3>
-  <p>L'anagrafica aziendale è <strong>incompleta</strong>. In «I miei dati» i campi obbligatori mancanti sono evidenziati (asterisco rosso, bordo arancione): compilali e salva. Vedi §7.</p>
+  <p>L'anagrafica aziendale è <strong>incompleta</strong>. In «I miei dati» i campi obbligatori mancanti sono evidenziati (asterisco rosso, bordo arancione): compilali e salva. Ricorda che per le <strong>aziende farmaceutiche</strong> è obbligatorio anche il <strong>Codice SIS</strong>. Vedi §7.</p>
+
+  <h3>Il cliente non riesce a confermare il preventivo</h3>
+  <p>Due cause possibili: <strong>anagrafica incompleta</strong> (viene mandato a «I miei dati» e al salvataggio torna alla conferma da solo) oppure <strong>manca il firmatario</strong> — in questo caso il messaggio lo invita a contattare la segreteria: apri lo Sponsor → Contatti e spunta <em>«È il legale rappresentante firmatario?»</em> sul contatto giusto, con i suoi dati. Vedi §6.4 e §6.9.</p>
+
+  <h3>Non riesco a eliminare un contratto principale: dice che ci sono contratti collegati</h3>
+  <p>Bloccano l'eliminazione solo i contratti collegati <strong>ancora attivi</strong> (es. un acquisto online figlio): mettili prima nel <strong>cestino</strong>, poi elimina il principale. I collegati <em>già nel cestino</em> e i pagamenti registrati <strong>non</strong> bloccano più.</p>
+
+  <h3>Un preventivo in inglese mostra voci in italiano</h3>
+  <p>Le righe vengono «fotografate» nella <strong>lingua del contratto</strong> al momento della creazione; cambiando la lingua di un preventivo non confermato le righe si <strong>ri-traducono da sole</strong> (le etichette personalizzate a mano restano). Per riallineare in blocco i preventivi non confermati esiste il comando <code>riallinea_lingua_righe</code> (prima con <code>--dry-run</code>).</p>
 
   <h3>Apro un documento dall'admin e non vedo il PDF / vedo una versione vecchia</h3>
   <p>Apri i PDF con il pulsante <strong>«📄 apri»</strong> nella lista o nella scheda <strong>Documenti</strong>: mostra sempre l'ultima versione. Se il <strong>pannello filtri</strong> di destra copre la colonna, usa il pulsante <strong>«Mostra/Nascondi filtri»</strong> in cima alla lista per richiuderlo.</p>

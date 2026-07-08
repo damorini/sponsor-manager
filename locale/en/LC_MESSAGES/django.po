@@ -3762,3 +3762,36 @@ msgstr "No problem: write to us and we will send them again right away."
 
 msgid "Scrivi a"
 msgstr "Write to"
+
+msgid "Firma e restituisci il contratto"
+msgstr "Sign and return the agreement"
+
+msgid "Confermare il preventivo"
+msgstr "Confirm the proposal"
+
+msgid "Aprilo e premi <strong>Vedi e conferma</strong>: se mancano dati aziendali ti portiamo a <strong>I miei dati</strong> e al salvataggio torni qui da solo."
+msgstr "Open it and press <strong>View and confirm</strong>: if any company details are missing we take you to <strong>My details</strong>, and after saving you come straight back here."
+
+msgid "Confermato: ricevi il <strong>contratto</strong> via email e lo trovi anche in <strong>I miei documenti</strong>."
+msgstr "Confirmed: you receive the <strong>agreement</strong> by email and you can also find it in <strong>My documents</strong>."
+
+msgid "Restituire il contratto firmato"
+msgstr "Return the signed agreement"
+
+msgid "Firma il contratto che hai ricevuto alla conferma del preventivo."
+msgstr "Sign the agreement you received when you confirmed the proposal."
+
+msgid "Caricalo nella sezione <strong>Materiali</strong>: trovi la scadenza «Invio contratto firmato» con il pulsante di caricamento."
+msgstr "Upload it in the <strong>Materials</strong> section: you will find the «Signed agreement return» deadline with the upload button."
+
+msgid "In alternativa invialo via email ad <strong>amministrazione@valet.it</strong>."
+msgstr "Alternatively, send it by email to <strong>amministrazione@valet.it</strong>."
+
+msgid "Vai al <strong>Carrello</strong> e paga (PayPal, MyBank, carta o bonifico)."
+msgstr "Go to the <strong>Cart</strong> and pay (PayPal, MyBank, card or bank transfer)."
+
+msgid "Preventivo / contratto"
+msgstr "Proposal / agreement"
+
+msgid "confermato"
+msgstr "confirmed"

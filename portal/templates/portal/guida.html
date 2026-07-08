@@ -15,21 +15,25 @@
 
   <!-- IL PERCORSO IN 4 PASSI -->
   <h2 class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-3">{% trans "Il tuo percorso, in breve" %}</h2>
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-10">
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-10">
     <div class="bg-white rounded-xl shadow-sm p-4">
       <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">1</span><i class="ti ti-file-check text-brand-600 text-xl"></i></div>
-      <div class="text-sm font-semibold text-gray-900">{% trans "Conferma la domanda di ammissione" %}</div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Conferma il preventivo" %}</div>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-4">
-      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">2</span><i class="ti ti-paperclip text-brand-600 text-xl"></i></div>
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">2</span><i class="ti ti-signature text-brand-600 text-xl"></i></div>
+      <div class="text-sm font-semibold text-gray-900">{% trans "Firma e restituisci il contratto" %}</div>
+    </div>
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">3</span><i class="ti ti-paperclip text-brand-600 text-xl"></i></div>
       <div class="text-sm font-semibold text-gray-900">{% trans "Carica i materiali delle scadenze" %}</div>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-4">
-      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">3</span><i class="ti ti-cash text-brand-600 text-xl"></i></div>
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white text-sm font-bold">4</span><i class="ti ti-cash text-brand-600 text-xl"></i></div>
       <div class="text-sm font-semibold text-gray-900">{% trans "Paga acconto e saldo" %}</div>
     </div>
     <div class="bg-white rounded-xl shadow-sm p-4">
-      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-400 text-white text-sm font-bold">4</span><i class="ti ti-building-store text-brand-600 text-xl"></i></div>
+      <div class="flex items-center gap-2 mb-2"><span class="flex h-7 w-7 items-center justify-center rounded-full bg-gray-400 text-white text-sm font-bold">5</span><i class="ti ti-building-store text-brand-600 text-xl"></i></div>
       <div class="text-sm font-semibold text-gray-900">{% trans "Acquista servizi extra" %} <span class="text-gray-400 font-normal">({% trans "facoltativo" %})</span></div>
     </div>
   </div>
@@ -75,21 +79,34 @@
       <ol class="space-y-2 text-sm text-gray-700">
         <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Apri <strong>Acquista servizi</strong> e scegli quello che ti serve.{% endblocktrans %}</span></li>
         <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Premi <strong>Aggiungi al carrello</strong>.{% endblocktrans %}</span></li>
-        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}Vai al <strong>Carrello</strong> e paga (PayPal, carta o bonifico).{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}Vai al <strong>Carrello</strong> e paga (PayPal, MyBank, carta o bonifico).{% endblocktrans %}</span></li>
       </ol>
       <a href="{% url 'portal:cart_view' %}" class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:text-brand-900">{% trans "Vai al Carrello" %}<i class="ti ti-arrow-right"></i></a>
     </div>
 
-    <!-- Confermare domanda di ammissione -->
+    <!-- Confermare il preventivo -->
     <div class="bg-white rounded-xl shadow-sm p-6">
       <div class="flex items-center gap-3 mb-4">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-file-check text-xl"></i></span>
-        <h3 class="text-base font-bold text-gray-900">{% trans "Confermare la domanda di ammissione" %}</h3>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Confermare il preventivo" %}</h3>
       </div>
       <ol class="space-y-2 text-sm text-gray-700">
         <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% blocktrans %}Ricevi il preventivo via email o in <strong>I miei documenti</strong>.{% endblocktrans %}</span></li>
-        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Aprilo e premi <strong>Vedi e conferma</strong>.{% endblocktrans %}</span></li>
-        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% trans "Confermato: diventa la tua domanda di ammissione." %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Aprilo e premi <strong>Vedi e conferma</strong>: se mancano dati aziendali ti portiamo a <strong>I miei dati</strong> e al salvataggio torni qui da solo.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}Confermato: ricevi il <strong>contratto</strong> via email e lo trovi anche in <strong>I miei documenti</strong>.{% endblocktrans %}</span></li>
+      </ol>
+    </div>
+
+    <!-- Restituire il contratto firmato -->
+    <div class="bg-white rounded-xl shadow-sm p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><i class="ti ti-signature text-xl"></i></span>
+        <h3 class="text-base font-bold text-gray-900">{% trans "Restituire il contratto firmato" %}</h3>
+      </div>
+      <ol class="space-y-2 text-sm text-gray-700">
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">1</span><span>{% trans "Firma il contratto che hai ricevuto alla conferma del preventivo." %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">2</span><span>{% blocktrans %}Caricalo nella sezione <strong>Materiali</strong>: trovi la scadenza «Invio contratto firmato» con il pulsante di caricamento.{% endblocktrans %}</span></li>
+        <li class="flex gap-2.5"><span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 text-xs font-bold">3</span><span>{% blocktrans %}In alternativa invialo via email ad <strong>amministrazione@valet.it</strong>.{% endblocktrans %}</span></li>
       </ol>
     </div>
 
@@ -136,8 +153,8 @@
         <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Pagato" %}</span><span class="text-gray-500">{% trans "incassato" %}</span></div>
       </div>
       <div>
-        <div class="font-semibold text-gray-900 mb-2">{% trans "Domanda di ammissione" %}</div>
-        <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Firmato" %}</span><span class="text-gray-500">{% trans "confermata" %}</span></div>
+        <div class="font-semibold text-gray-900 mb-2">{% trans "Preventivo / contratto" %}</div>
+        <div class="flex items-center gap-2"><span class="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">{% trans "Firmato" %}</span><span class="text-gray-500">{% trans "confermato" %}</span></div>
       </div>
     </div>
   </div>

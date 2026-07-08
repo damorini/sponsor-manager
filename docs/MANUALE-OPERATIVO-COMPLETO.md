@@ -85,31 +85,51 @@
 ```
  CREO IL CONTRATTO         INVIO IL PREVENTIVO        IL CLIENTE CONFERMA
  (bozza)                   (azione admin)             (dal portale)
- • sponsor + evento   ──>  • stato: INVIATO      ──>  • stato: FIRMATO
- • stand / blocco          • stand: RISERVATO         • stand: ASSEGNATO
- • righe servizio          • PDF preventivo            • si generano le SCADENZE
- • (opz.) opzione          • email al cliente          • l'OPZIONE sparisce
+ • sponsor + evento   ──>  • stato: INVIATO      ──>  • GATE: anagrafica completa
+ • stand / blocco          • stand: RISERVATO           (incl. Codice SIS farmaceutiche)
+ • righe servizio          • PDF preventivo             + firmatario registrato
+ • (opz.) opzione          • email al cliente           (se manca → il cliente completa
+ • FIRMATARIO!               (avviso se manca            «I miei dati» e TORNA da solo
+                              il firmatario)             alla conferma)
+                                                        • stato: FIRMATO · stand: ASSEGNATO
+                                                        • si generano le SCADENZE
+                                                          (acconto/saldo, materiali,
+                                                           «Invio contratto firmato» +10gg)
                                                         │
-                                                        └─> GENERATI IN AUTOMATICO:
-                                                            1) Domanda di ammissione (PDF)
-                                                            2) Contratto di sponsorizzazione (non-ECM)
-                                                               con la domanda come ALLEGATO 1
-                                                               → email al contatto OPERATIVO
-                                                                 in CC: amministrazione@valet.it
-                                                                        elisa.fantini@valet.it
+                                                        └─> GENERATO IN AUTOMATICO (non-ECM):
+                                                            UN SOLO PDF: Contratto di
+                                                            sponsorizzazione con il riepilogo
+                                                            servizi come ALLEGATO 1
+                                                            → email «Grazie per aver confermato»
+                                                              con il contratto allegato
+                                                            → email al contatto OPERATIVO
+                                                              in CC: amministrazione@valet.it
+                                                                     morini@valet.it
+                                                            (eventi ECM: resta la Domanda
+                                                             di ammissione)
 ```
+
+> **Ritorno del firmato**: il cliente restituisce il contratto firmato via email ad
+> **amministrazione@valet.it** oppure caricandolo nei **Materiali** del portale (pulsante
+> diretto nell'email). Scadenza a **+10 giorni** con reminder 10/3/0 e solleciti ogni 3 giorni;
+> al caricamento parte l'**avviso email ad amministrazione**.
 
 ### Schema B — Chi paga come (IMPORTANTE)
 
 ```
  CONTRATTO PRINCIPALE                    SERVIZI ACQUISTATI ONLINE
- (domanda di ammissione)                 (carrello / addon ecommerce)
+ (contratto di sponsorizzazione)         (carrello / addon ecommerce)
         │                                        │
-        └──> SOLO BONIFICO                       └──> CARTA / PAYPAL / BONIFICO
+        └──> SOLO BONIFICO                       └──> PAYPAL / MYBANK / CARTA / BONIFICO
              acconto + saldo                          pagamento immediato
              l'operatore registra l'incasso           il contratto si firma all'incasso
 ```
-> Il pagamento **online (carta/PayPal)** è riservato agli **acquisti ecommerce**. Il **contratto principale si salda solo con bonifico**.
+> Il pagamento **online** è riservato agli **acquisti ecommerce** ed è **LIVE dal 7/7/2026**
+> (soldi veri sul conto PayPal Business VALET): PayPal, **MyBank** (bonifico istantaneo
+> dall'home banking del cliente) e carta. Il **contratto principale si salda solo con bonifico**.
+> Un ordine rimasto in attesa mostra in «I miei acquisti» il pulsante **«Paga ora con carta o
+> PayPal»**; l'ordine PayPal scaduto o lasciato a metà viene **rigenerato da solo** alla
+> riapertura della pagina di pagamento.
 
 ### Schema C — Quale email parte (template per tipo evento)
 
@@ -165,7 +185,9 @@ Voci vendibili in un evento specifico. Si possono creare **da zero** o **dal cat
 
 ### 4.5 Sponsor e Anagrafiche (contatti)
 - **Sponsor**: ragione sociale, P.IVA, C.F., SDI, PEC, indirizzo, logo, ecc.
+- **Azienda farmaceutica + Codice SIS**: spunta nei *Dati fiscali*; per le aziende flaggate il Codice SIS è **obbligatorio** (rientra nel gate anagrafica del portale: conferma preventivo e acquisti). Filtro dedicato nella lista Sponsor.
 - **Anagrafica di riferimento (Contatti)**: referenti dell'azienda con ruoli funzionali (firmatario, marketing, amministrazione, operativo, CC, educational) e **lingua preferita**.
+- ⚠️ **Il firmatario è indispensabile**: senza un contatto con «È il legale rappresentante firmatario?» il contratto non si può generare e il cliente viene **bloccato alla conferma**. All'invio del preventivo il sistema ti avvisa (banner giallo + warning) se manca.
 - Import contatti/sponsor da Excel (colonne Cognome/Nome separate).
 
 ### 4.6 Contratti (Domande di ammissione)
@@ -174,17 +196,18 @@ Cuore operativo. Per un contratto:
 2. Aggiungi **righe servizio** (con quantità/variante). I servizi inclusi si aggiungono da soli a €0. I prezzi sono **congelati** (snapshot) alla creazione della riga.
 3. (Opzionale) imposta un'**opzione**: nella sezione **Spazio espositivo**, campo **"Spazio opzionato fino al"** (`option_until`). Finché quella data non è passata lo spazio resta *riservato* per lo sponsor anche a preventivo in bozza; oltre la data torna disponibile. Puoi modificare/togliere questa data quando vuoi.
 4. **Invia preventivo** (azione "Genera e invia PREVENTIVO"): stato → *Inviato*, stand → *riservato*, genera il PDF e invia l'email allo sponsor.
-5. **Firma** (lo sponsor conferma dal portale, o l'operatore con l'azione "Marca come FIRMATO", o automaticamente all'incasso): stato → *Firmato*, stand → *assegnato*, **genera le scadenze** (tecniche + acconto/saldo), **rimuove la scadenza-opzione** e invia notifica. Vedi anche il punto seguente.
-6. **Annulla o cancella** se serve: **libera subito lo stand/blocco** (torna disponibile) e i **servizi a numero limitato**; le scadenze pendenti diventano "esonerate".
-- **Generazione automatica alla conferma** (contratti principali di eventi **non-ECM**): oltre alla domanda di ammissione, il sistema genera il **contratto di sponsorizzazione** (con la domanda come *Allegato 1*) e lo invia via email al **contatto operativo** dello sponsor, in CC ad *amministrazione@valet.it* ed *elisa.fantini@valet.it*. Vedi Schema A.
+5. **Firma** (lo sponsor conferma dal portale, o l'operatore con l'azione "Marca come FIRMATO", o automaticamente all'incasso): stato → *Firmato*, stand → *assegnato*, **genera le scadenze** (tecniche + acconto/saldo + **«Invio contratto firmato»** a +10 giorni), **rimuove la scadenza-opzione** e invia notifica. La conferma dal portale è protetta dai **gate**: anagrafica completa (con ritorno automatico da «I miei dati») e firmatario registrato. Vedi anche il punto seguente.
+6. **Annulla o cancella** se serve: **libera subito lo stand/blocco** (torna disponibile) e i **servizi a numero limitato**; le scadenze pendenti diventano "esonerate". I collegati **già nel cestino** e i pagamenti registrati **non bloccano** l'eliminazione del principale; bloccano solo i figli ancora attivi.
+- **Generazione automatica alla conferma** (contratti principali di eventi **non-ECM**): il sistema genera **UN SOLO documento da firmare** — il **contratto di sponsorizzazione** con il riepilogo servizi come *Allegato 1* — e lo invia sia al cliente («Grazie per aver confermato il preventivo», con PDF allegato) sia al **contatto operativo**, in CC ad *amministrazione@valet.it* e *morini@valet.it*. La domanda di ammissione **non esce più come documento separato** (resta per gli eventi **ECM**). L'email spiega come restituire il firmato: email ad amministrazione@valet.it o **upload nei Materiali** (pulsante diretto). Vedi Schema A.
 - **Numerazione** automatica `SIGLA-AA-NNN` (anti-collisione), anche per gli addon.
 - **Azione "Genera scadenze dai template"**: per contratti **già firmati** a cui hai aggiunto/modificato scadenze dopo la firma (vedi §11 e Troubleshooting).
 - **Termini di cancellazione / penale**: la percentuale di penale del contratto/domanda si imposta per evento in *Eventi → Dati per contratti → "Penale cancellazione (%)"* (default 50%). Nel PDF il testo si adatta alla forma di pagamento (con o senza acconto).
 
 ### 4.7 Pagamenti
-- **Contratto principale (domanda di ammissione) = solo bonifico.** Acconto e saldo si pagano con bonifico; l'operatore registra l'incasso con l'azione **"Registra pagamento bonifico ricevuto"**. Il pagamento online **non** è disponibile per il contratto principale.
-- **Pagamento online (carta/PayPal) = solo acquisti ecommerce** (servizi dal carrello, contratti *addon*): si registrano da soli e il contratto addon si firma all'incasso. Vedi Schema B.
-- I dati bancari mostrati al cliente vengono dalle variabili `.env` `BANK_TRANSFER_*` (vedi §14).
+- **Contratto principale = solo bonifico.** Acconto e saldo si pagano con bonifico; l'operatore registra l'incasso con l'azione **"Registra pagamento bonifico ricevuto"**. Il pagamento online **non** è disponibile per il contratto principale.
+- **Pagamento online (PayPal / MyBank / carta) = solo acquisti ecommerce** (servizi dal carrello, contratti *addon*): si registrano da soli e il contratto addon si firma all'incasso. **LIVE dal 7/7/2026** (app PayPal Business VALET, webhook attivo). MyBank = bonifico istantaneo dall'home banking del cliente, comodo per le aziende. Vedi Schema B.
+- Ordini in attesa: il cliente ha il pulsante **«Paga ora con carta o PayPal»** in «I miei acquisti»; un ordine PayPal scaduto/lasciato a metà viene rigenerato da solo.
+- I dati bancari mostrati al cliente vengono dalle variabili `.env` `BANK_TRANSFER_*`; le chiavi PayPal da `PAYPAL_*` (vedi §14).
 
 ### 4.8 Scadenze cliente (Cruscotto)
 `/admin/cruscotto/scadenze-cliente/`: elenco di tutte le scadenze tecniche generate dai template, con stato (da fare / in ritardo / completata) e chi/quando ha consegnato. Filtrabile per evento.
@@ -208,12 +231,13 @@ Home operatore `/admin/cruscotto/`: KPI (soci/sponsor, incassi, eventi, ecc.), *
 
 ## 5. PORTALE SPONSOR (lato cliente)
 
-- **Login** con email → Dashboard con prossimi eventi, scadenze aperte, saldo da pagare, messaggi.
-- **I miei dati**: l'azienda aggiorna anagrafica e **contatti**. Ogni contatto (principale e altri) ha la **scelta lingua** con bandierina (IT/EN); per i contatti esistenti si cambia al volo cliccando la bandiera.
-- **Servizi / Catalogo**: visibile solo se l'azienda ha **almeno un contratto firmato/attivo**. I servizi acquistabili sono mostrati come **card per evento** (con varianti/quantità e cutoff). *Gli stand non si scelgono dal portale*: li assegna l'operatore; il cliente li vede nel dettaglio del contratto. Se non ha ancora firmato, c'è il link **"Vai alla domanda di ammissione"** per rivedere/confermare il preventivo.
-- **Carrello / Wishlist**: un carrello per evento (= contratto addon in bozza). Checkout con **Carta / PayPal / Bonifico**.
-- **Materiali / Scadenze**: l'azienda carica i file richiesti dalle scadenze tecniche (es. logo, file relatori).
-- **Documenti**: i PDF (preventivo, domanda di ammissione) sono scaricabili.
+- **Login** con email → Dashboard con prossimi eventi, scadenze aperte, saldo da pagare, messaggi. Chi apre un link del portale **senza un profilo utilizzabile** (mai fatto il primo accesso) vede la pagina di cortesia **«Ci siamo quasi»** con le due strade: accedi con le credenziali ricevute, o scrivi a **helpdesk@valet.it**.
+- **I miei dati**: l'azienda aggiorna anagrafica e **contatti**. Ogni contatto (principale e altri) ha la **scelta lingua** con bandierina (IT/EN); per i contatti esistenti si cambia al volo cliccando la bandiera. Domanda **«Azienda farmaceutica?»**: se spuntata compare il campo **Codice SIS** (obbligatorio).
+- **Conferma preventivo**: protetta dai gate (anagrafica completa → ritorno automatico alla conferma; firmatario registrato). Alla conferma il cliente riceve il **contratto** (unico PDF con Allegato 1) via email e in area riservata, e trova la scadenza **«Invio contratto firmato»** nei Materiali.
+- **Servizi / Catalogo**: visibile solo se l'azienda ha **almeno un contratto firmato/attivo**. I servizi acquistabili sono mostrati come **card per evento** (con varianti/quantità e cutoff). *Gli stand non si scelgono dal portale*: li assegna l'operatore; il cliente li vede nel dettaglio del contratto. Se non ha ancora firmato, c'è il link per rivedere/confermare il preventivo.
+- **Carrello / Wishlist**: un carrello per evento (= contratto addon in bozza). Checkout con **PayPal / MyBank / Carta / Bonifico**; ordini in attesa riprendibili con «Paga ora».
+- **Materiali / Scadenze**: l'azienda carica i file richiesti dalle scadenze tecniche (es. logo, file relatori) **e il contratto firmato** (avviso automatico ad amministrazione al caricamento).
+- **Documenti**: i PDF (preventivo, contratto/domanda) sono scaricabili.
 
 ---
 
@@ -273,16 +297,19 @@ File template scaricabili dal Cruscotto (Utility) per catalogo, servizi, stand.
 
 > **Regola generale**: contratto **principale** (domanda di ammissione) → **solo bonifico**; **servizi ecommerce** (carrello/addon) → carta/PayPal/bonifico. Il pulsante di pagamento online compare solo per i contratti *addon*.
 
-- **PayPal / Carta** (solo ecommerce/addon): tramite PayPal SDK; al ritorno/cattura il pagamento diventa *Succeeded* e il contratto addon si firma. Webhook PayPal idempotente.
+- **PayPal / MyBank / Carta** (solo ecommerce/addon): tramite PayPal JS SDK (Smart Buttons + Card Fields); alla cattura il pagamento diventa *Succeeded* e il contratto addon si firma. Webhook PayPal idempotente e verificato. **LIVE dal 7/7/2026** (app "Sponsor Manager" sul conto PayPal Business VALET): i pagamenti sono soldi veri.
+- **MyBank** = bonifico istantaneo dall'home banking del cliente (lo propone PayPal automaticamente ai compratori italiani in euro): utile per aziende senza carta con plafond alto.
+- **Ordini in attesa**: pulsante «Paga ora con carta o PayPal» in «I miei acquisti»; l'ordine PayPal riusato solo se ancora "vergine" (CREATED), altrimenti rigenerato da solo (evita l'errore "si è verificato un errore nel sistema" da ordini scaduti/lasciati a metà).
 - **Bonifico** (principale e, se scelto, ecommerce): lo sponsor vede IBAN e causale (dai `.env` `BANK_TRANSFER_*`); l'operatore registra l'incasso manualmente.
 - All'incasso, le **scadenze di pagamento** (acconto/saldo) coperte vengono marcate come ricevute.
-- Configurazione PayPal in `.env` (`PAYPAL_MODE/CLIENT_ID/SECRET/WEBHOOK_ID`).
+- Configurazione PayPal in `.env` (`PAYPAL_MODE/CLIENT_ID/SECRET/WEBHOOK_ID`); per test usare la sandbox (mai il sito live).
 
 ---
 
 ## 11. SCADENZE E REMINDER
 
 - **Tecniche**: generate **alla firma** dai *Template scadenze* dei servizi con "Genera scadenze" attivo. Data = inizio evento − giorni del template. Lo sponsor le soddisfa caricando file/compilando campi dal portale. Se il tipo è **"Materiale fisico"**, invece dell'upload il cliente vede le tue **istruzioni di spedizione**.
+- **«Invio contratto firmato»** (contratti principali): creata **alla firma**, scade a **+10 giorni**. Il cliente carica il PDF firmato nei Materiali (o lo manda ad amministrazione@valet.it); al caricamento la scadenza va in *Ricevuto* e parte l'**avviso email ad amministrazione** (CC morini@valet.it).
 - **Pagamento**: acconto (firma + N giorni) e saldo (inizio evento − M giorni), da *Impostazioni segreteria*.
 - **Reminder/solleciti** automatici via Celery beat (giorni configurati nei template; solleciti per le scadute).
 - ⚠️ Le scadenze si generano **all'istante della firma**. Se aggiungi una scadenza **dopo** che il contratto è già firmato: usa l'azione **"Genera scadenze dai template"** sul contratto, oppure salva di nuovo il servizio (la rigenerazione automatica via signal è attiva).
@@ -310,6 +337,7 @@ Eseguibili con `python manage.py <comando>` (in Docker: `docker compose exec web
 | `copia_servizi --da EVENTO --a EVENTO [--dry-run]` | copia i servizi tra eventi |
 | `diagnosi_scadenze "NOME SERVIZIO"` | diagnostica perché un servizio non genera scadenze |
 | `elimina_contratti_annullati [--conferma] [--hard]` | rimuove i contratti annullati (anteprima → conferma; `--hard` = definitivo) |
+| `riallinea_lingua_righe [--dry-run]` | ri-traduce nella lingua del contratto le righe dei preventivi NON confermati (nomi/descrizioni servizio, etichetta stand) |
 | `compilemessages` | compila le traduzioni EN (.po → .mo) |
 
 ---
@@ -321,7 +349,8 @@ Funzionalità (se mancano, la feature non va):
 - `DEEPL_API_KEY` → traduzioni automatiche IT→EN.
 - `BANK_TRANSFER_HOLDER/_BANK/_IBAN/_BIC` → dati del bonifico al checkout (senza, compaiono i placeholder "DA CONFIGURARE").
 - `EMAIL_*` → invio email reali (senza, vanno in console).
-- `PAYPAL_MODE/_CLIENT_ID/_CLIENT_SECRET/_WEBHOOK_ID` → pagamenti PayPal.
+- `PAYPAL_MODE/_CLIENT_ID/_CLIENT_SECRET/_WEBHOOK_ID` → pagamenti PayPal (**in produzione: `live` con le chiavi dell'app "Sponsor Manager"** — cambiare i valori nel `.env` e ricreare i container).
+- `SUPPORT_EMAIL` (default `helpdesk@valet.it`) → email di assistenza mostrata ai clienti (portale, email, PDF).
 - `AUTO_TRANSLATE_ON_SAVE` (default True) → on/off auto-traduzione.
 
 Riferimento completo con esempi: `.env.prod.example`.
@@ -338,7 +367,11 @@ Riferimento completo con esempi: `.env.prod.example`.
 | **Scadenza non creata** su contratto firmato | il template scadenza è stato aggiunto/abilitato **dopo** la firma | azione "Genera scadenze dai template" sul contratto, o ri-salva il servizio. Verifica con `diagnosi_scadenze "NOME"` |
 | **Logo segreteria assente** nel footer PDF | la cartella `media/` non è stata trasferita (volume nuovo vuoto) | ricaricare il logo da *Impostazioni segreteria* |
 | Template email **non salva** oggetto/corpo | (risolto) campi resi multilingua JSON | assicurarsi di avere l'ultima versione (migrazione `shared 0009`) |
-| Menu admin invisibile su **mobile** | Django nasconde la sidebar sotto 767px | usare l'**hamburger ☰** in alto a sinistra |
+| Menu admin invisibile su **mobile** | Django nasconde la sidebar sotto 767px | usare l'**hamburger ☰** in alto a sinistra (dal 8/7/2026 il pannello si apre per intero) |
+| Il cliente **non riesce a confermare** il preventivo | anagrafica incompleta (incl. Codice SIS farmaceutiche) o **firmatario mancante** | il cliente completa «I miei dati» (torna da solo alla conferma); il firmatario lo registra l'operatore sul contatto |
+| **Email di conferma senza allegato** / contratto assente in area riservata | (risolto) generazione fallita per firmatario mancante | oggi la conferma è bloccata prima dal gate; registrare il firmatario e far riconfermare |
+| Preventivo **EN con voci in italiano** | righe fotografate nella lingua sbagliata (storico) | cambiare lingua del contratto le ri-traduce; in blocco: `riallinea_lingua_righe --dry-run` poi senza flag |
+| **Impossibile eliminare** un contratto principale | contratti figli ancora **attivi** (quelli nel cestino e i pagamenti non bloccano più) | cestinare prima i figli attivi, poi il principale |
 | Download admin arrivano con nome UUID senza estensione | Service Worker "fantasma" su `localhost:8000` da altro progetto | usare un'altra porta o deregistrare il SW da `chrome://serviceworker-internals` |
 
 ---
@@ -355,9 +388,11 @@ Riferimento completo con esempi: `.env.prod.example`.
 
 **Dove ricarico il logo che appare sui PDF/email?** *Backoffice → Impostazioni segreteria → Logo*.
 
-**Perché il cliente non può pagare la domanda di ammissione con carta/PayPal?** È voluto: il **contratto principale si paga solo con bonifico**. Carta/PayPal restano per i **servizi acquistati online** (carrello/addon).
+**Perché il cliente non può pagare il contratto principale con carta/PayPal?** È voluto: il **contratto principale si paga solo con bonifico**. PayPal/MyBank/carta restano per i **servizi acquistati online** (carrello/addon).
 
-**Il contratto di sponsorizzazione a chi arriva?** Alla conferma del preventivo (eventi **non-ECM**) parte in automatico al **contatto operativo** dello sponsor, in CC ad *amministrazione@valet.it* ed *elisa.fantini@valet.it*, con la domanda di ammissione come *Allegato 1*.
+**Il contratto di sponsorizzazione a chi arriva?** Alla conferma del preventivo (eventi **non-ECM**) è l'**unico documento da firmare** (riepilogo servizi come *Allegato 1*): arriva al cliente con l'email «Grazie per aver confermato il preventivo» e al **contatto operativo** con l'email dedicata, in CC ad *amministrazione@valet.it* e *morini@valet.it*. L'email spiega come restituirlo firmato (email ad amministrazione o upload nei Materiali, dove c'è la scadenza a +10 giorni con solleciti automatici).
+
+**Come segnalo che uno sponsor è un'azienda farmaceutica?** Spunta «Azienda farmaceutica» nei *Dati fiscali* dello Sponsor (o la spunta il cliente in «I miei dati»): a quel punto il **Codice SIS** diventa obbligatorio per confermare/acquistare.
 
 **Ho creato un nuovo servizio: devo creare anche un template email?** No. I template email sono **12 punti fissi** (× ECM/Non-ECM). I servizi non aggiungono email.
 
