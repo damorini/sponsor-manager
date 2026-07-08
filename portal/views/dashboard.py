@@ -50,6 +50,13 @@ def get_active_contact(request):
     return None
 
 
+def accesso_quasi_fatto(request):
+    """Pagina cortese 'Ci siamo quasi' al posto del Forbidden bianco: spiega
+    che serve il primo accesso con le credenziali ricevute via email
+    (o contattare helpdesk@valet.it). Mantiene lo status 403."""
+    return render(request, 'portal/accesso_quasi.html', status=403)
+
+
 def sponsor_required(view_func):
     """
     Verifica che l'utente sia loggato + sia uno sponsor + abbia Contact collegato.
@@ -61,10 +68,7 @@ def sponsor_required(view_func):
     @login_required(login_url='portal:login')
     def wrapper(request, *args, **kwargs):
         if not getattr(request.user, 'is_sponsor', False):
-            return HttpResponseForbidden(
-                "Questa pagina è riservata ad utenti con i privilegi di accesso. "
-                "Per ulteriori info contattare helpdesk@valet.it"
-            )
+            return accesso_quasi_fatto(request)
 
         contact = get_active_contact(request)
         if contact is None:
@@ -72,9 +76,7 @@ def sponsor_required(view_func):
                 # piu' aziende, nessuna scelta in sessione: chiedi quale
                 return redirect('portal:scegli_azienda')
             logger.warning("User %s sponsor senza Contact", request.user.id)
-            return HttpResponseForbidden(
-                "Account configurato in modo incompleto."
-            )
+            return accesso_quasi_fatto(request)
 
         request.contact = contact
         request.sponsor = contact.sponsor

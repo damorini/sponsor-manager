@@ -1,0 +1,111 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Ci siamo quasi!" %}{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<style>
+  .vt-serif { font-family: 'Fraunces', Georgia, 'Times New Roman', serif; }
+  @keyframes vtUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .vt-up { opacity: 0; animation: vtUp .7s cubic-bezier(.2,.7,.2,1) forwards; }
+  .vt-d1 { animation-delay: .05s; } .vt-d2 { animation-delay: .18s; }
+  .vt-d3 { animation-delay: .30s; } .vt-d4 { animation-delay: .42s; }
+  /* L'omino "fluttua" a mezz'aria sopra il fosso */
+  @keyframes vtJump { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  .vt-jumper { animation: vtJump 1.8s ease-in-out infinite; transform-origin: center; }
+  /* La porta del portale pulsa leggermente */
+  @keyframes vtGlow { 0%,100% { opacity: .35; } 50% { opacity: .7; } }
+  .vt-glow { animation: vtGlow 2.6s ease-in-out infinite; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-14 text-center">
+
+  <div class="vt-up vt-d1">
+    <svg viewBox="0 0 520 240" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="{% trans 'Una persona salta un piccolo fosso verso la porta del portale: manca pochissimo!' %}"
+         class="w-full max-w-md mx-auto h-auto">
+      <!-- bagliore dietro la porta -->
+      <ellipse class="vt-glow" cx="420" cy="150" rx="80" ry="70" fill="#e7cf9b"/>
+      <!-- terreno di sinistra (da dove si salta) -->
+      <path d="M0 196 L196 196 Q204 196 202 204 L196 240 L0 240 Z" fill="#e5e7eb"/>
+      <path d="M0 196 L196 196 L194 206 L0 206 Z" fill="#d1d5db"/>
+      <!-- terreno di destra (dove sta il portale) -->
+      <path d="M244 196 L520 196 L520 240 L238 240 Q242 196 244 196 Z" fill="#e5e7eb"/>
+      <path d="M244 196 L520 196 L520 206 L242 206 Z" fill="#d1d5db"/>
+      <!-- il piccolo fosso -->
+      <path d="M196 240 L202 204 Q220 226 238 240 Z" fill="#9ca3af" opacity=".35"/>
+
+      <!-- la porta del portale -->
+      <rect x="388" y="92" width="70" height="104" rx="8" fill="#154a26"/>
+      <rect x="396" y="100" width="54" height="96" rx="6" fill="#1d6534"/>
+      <rect x="402" y="106" width="42" height="90" rx="5" fill="#2e8b4f"/>
+      <circle cx="438" cy="152" r="3.5" fill="#e7cf9b"/>
+      <!-- tappetino di benvenuto -->
+      <rect x="392" y="196" width="62" height="8" rx="4" fill="#c8a04e" opacity=".8"/>
+
+      <!-- linee di slancio dietro l'omino -->
+      <g stroke="#c8a04e" stroke-width="4" stroke-linecap="round" opacity=".65">
+        <path d="M96 120 q16 -6 30 -4" fill="none"/>
+        <path d="M88 142 q20 -8 36 -5" fill="none"/>
+        <path d="M100 164 q14 -6 26 -4" fill="none"/>
+      </g>
+
+      <!-- l'omino in volo sopra il fosso -->
+      <g class="vt-jumper">
+        <!-- gamba dietro piegata -->
+        <path d="M196 148 Q184 162 170 160" stroke="#154a26" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <!-- gamba avanti protesa -->
+        <path d="M204 150 Q226 158 242 148" stroke="#154a26" stroke-width="10" stroke-linecap="round" fill="none"/>
+        <!-- scarpette -->
+        <circle cx="168" cy="160" r="6" fill="#c8a04e"/>
+        <circle cx="245" cy="147" r="6" fill="#c8a04e"/>
+        <!-- corpo proteso in avanti -->
+        <path d="M188 148 Q198 112 216 100" stroke="#1d6534" stroke-width="16" stroke-linecap="round" fill="none"/>
+        <!-- braccio dietro -->
+        <path d="M198 122 Q184 116 176 104" stroke="#1d6534" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <!-- braccio avanti, teso verso la porta -->
+        <path d="M212 108 Q234 98 252 100" stroke="#1d6534" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <circle cx="255" cy="100" r="5" fill="#c8a04e"/>
+        <!-- testa -->
+        <circle cx="224" cy="86" r="15" fill="#f3d9a4"/>
+        <!-- sorriso -->
+        <path d="M222 92 q5 4 10 0" stroke="#8a6d3b" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <!-- occhio -->
+        <circle cx="231" cy="84" r="1.8" fill="#5b4a26"/>
+      </g>
+
+      <!-- cartellino "quasi!" piantato a destra del fosso -->
+      <g transform="translate(268 158)">
+        <line x1="0" y1="38" x2="0" y2="8" stroke="#8a6d3b" stroke-width="3"/>
+        <rect x="-6" y="-6" width="58" height="22" rx="5" fill="#fff" stroke="#c8a04e" stroke-width="2"/>
+        <text x="23" y="10" text-anchor="middle" font-size="13" font-weight="bold" fill="#1d6534" font-family="Arial, sans-serif">{% trans "quasi!" %}</text>
+      </g>
+    </svg>
+  </div>
+
+  <h1 class="vt-serif vt-up vt-d2 text-4xl font-semibold text-gray-900 mt-6 mb-3">
+    {% trans "Ci siamo quasi!" %}
+  </h1>
+
+  <p class="vt-up vt-d3 text-lg text-gray-700 leading-relaxed mb-2">
+    {% trans "Per entrare nel portale ti basta fare il primo accesso con le credenziali che ti sono state inviate via email." %}
+  </p>
+  <p class="vt-up vt-d3 text-gray-600 mb-8">
+    {% trans "Non le hai ricevute?" %}
+    <a href="mailto:helpdesk@valet.it" class="text-brand-600 font-semibold hover:underline">helpdesk@valet.it</a>
+    {% trans "è qui per questo." %}
+  </p>
+
+  <div class="vt-up vt-d4">
+    <a href="{% url 'portal:login' %}"
+       class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white text-base font-semibold px-8 py-3.5 rounded-xl shadow-sm">
+      {% trans "Vai alla pagina di accesso" %} &rarr;
+    </a>
+  </div>
+
+</div>
+{% endblock %}

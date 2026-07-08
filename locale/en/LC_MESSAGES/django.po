@@ -3726,3 +3726,24 @@ msgstr "Pay now by card or PayPal"
 
 msgid "In alternativa, effettua il bonifico con questi dati:"
 msgstr "Alternatively, make a bank transfer using these details:"
+
+msgid "Ci siamo quasi!"
+msgstr "Almost there!"
+
+msgid "Per entrare nel portale ti basta fare il primo accesso con le credenziali che ti sono state inviate via email."
+msgstr "To enter the portal, simply log in for the first time using the credentials you received by email."
+
+msgid "Non le hai ricevute?"
+msgstr "Haven't received them?"
+
+msgid "è qui per questo."
+msgstr "is there for you."
+
+msgid "Vai alla pagina di accesso"
+msgstr "Go to the login page"
+
+msgid "quasi!"
+msgstr "almost!"
+
+msgid "Una persona salta un piccolo fosso verso la porta del portale: manca pochissimo!"
+msgstr "A person jumps over a small gap towards the portal door: almost there!"

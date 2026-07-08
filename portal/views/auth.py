@@ -244,15 +244,14 @@ def scegli_azienda_view(request):
     """Maschera 'Scegli l'azienda': la stessa persona (stesso login) puo'
     gestire piu' aziende. Qui sceglie quale usare; la scelta resta in sessione
     e si puo' cambiare in ogni momento dal menu ('Cambia azienda')."""
-    from django.http import HttpResponseForbidden
-    from portal.views.dashboard import user_contacts_qs
+    from portal.views.dashboard import accesso_quasi_fatto, user_contacts_qs
 
     if not getattr(request.user, 'is_sponsor', False):
-        return HttpResponseForbidden("Pagina riservata agli utenti del portale.")
+        return accesso_quasi_fatto(request)
 
     contacts = list(user_contacts_qs(request.user))
     if not contacts:
-        return HttpResponseForbidden("Account configurato in modo incompleto.")
+        return accesso_quasi_fatto(request)
 
     next_url = request.POST.get('next', '') or request.GET.get('next', '')
 
