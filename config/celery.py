@@ -68,6 +68,12 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=9, minute=30, day_of_week=1),
     },
 
+    # 11:00 — Campagne promozionali (rispetta l'intervallo di ogni campagna)
+    'check_promotional_campaigns_daily': {
+        'task': 'contracts.tasks.scheduled.check_promotional_campaigns',
+        'schedule': crontab(hour=11, minute=0),
+    },
+
     # Esempi alternativi (commentati):
     
     # Settimanale lunedì alle 8:00:

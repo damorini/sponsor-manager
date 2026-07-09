@@ -151,6 +151,7 @@ class CommunicationType(models.TextChoices):
     THANK_YOU = 'thank_you', 'Ringraziamento'
     DOCUMENT_REQUEST = 'document_request', 'Richiesta documenti'
     MANUAL = 'manual', 'Manuale'
+    PROMOTIONAL_CAMPAIGN = 'promotional_campaign', 'Campagna promozionale'
 
 
 class EmailTemplate(TimeStampedModel):

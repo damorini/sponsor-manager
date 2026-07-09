@@ -292,3 +292,23 @@ def check_wishlist_reminders(min_days=7):
         sent += 1
     logger.info("check_wishlist_reminders: %d reminder schedulati", sent)
     return sent
+
+
+# ============================================================================
+# Campagne promozionali (upsell servizi extra agli sponsor di un evento)
+# ============================================================================
+
+@shared_task
+def check_promotional_campaigns():
+    """Mette in coda l'invio delle campagne promozionali ATTIVE il cui
+    intervallo (interval_days) e' scaduto (vedi PromotionalCampaign.is_due)."""
+    from events.models import PromotionalCampaign
+    from contracts.tasks.notifications import send_promotional_campaign_batch
+
+    n = 0
+    for campaign in PromotionalCampaign.objects.filter(is_active=True):
+        if campaign.is_due:
+            send_promotional_campaign_batch.delay(campaign.id)
+            n += 1
+    logger.info("check_promotional_campaigns: %d campagne messe in coda", n)
+    return n

@@ -142,6 +142,19 @@
           </td>
         </tr>
 
+        {% if unsubscribe_url %}
+        <!-- FOOTER disiscrizione: SOLO da questo tipo di messaggio (campagne
+             promozionali), non tocca le email transazionali del contratto. -->
+        <tr>
+          <td style="padding:14px 40px; background-color:#f9fafb;
+                     border-top:1px solid #e5e7eb; color:#9ca3af;
+                     font-size:11px; line-height:1.5; text-align:center;">
+            {{ unsubscribe_intro }}
+            <a href="{{ unsubscribe_url }}" style="color:#6b7280; text-decoration:underline;">{{ unsubscribe_label }}</a>
+          </td>
+        </tr>
+        {% endif %}
+
       </table>
     </td>
   </tr>

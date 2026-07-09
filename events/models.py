@@ -347,3 +347,111 @@ class Event(TimeStampedModel):
     @property
     def is_active(self):
         return self.status != EventStatus.ARCHIVED
+
+
+class PromotionalCampaign(TimeStampedModel):
+    """
+    Campagna email ricorrente per proporre servizi extra/visibilità agli
+    sponsor già confermati di un evento (es. "abbiamo pensato a numerosi
+    servizi per aumentare la vostra visibilità..."). Un task schedulato la
+    rimanda ogni `interval_days` giorni finché resta attiva.
+    """
+    event = models.ForeignKey(
+        'events.Event',
+        on_delete=models.CASCADE,
+        related_name='promotional_campaigns',
+        verbose_name="Evento",
+    )
+    name = models.CharField(
+        max_length=255,
+        verbose_name="Nome interno",
+        help_text="Solo per riconoscerla in lista: il cliente non la vede.",
+    )
+    subject = models.JSONField(
+        default=dict, blank=True, verbose_name="Oggetto",
+        help_text="Bilingue IT/EN.",
+    )
+    body = models.JSONField(
+        default=dict, blank=True, verbose_name="Corpo email",
+        help_text="Bilingue IT/EN. Segnaposto: {{ sponsor.legal_name }}, {{ event_name }}, {{ contact.full_name }}.",
+    )
+    interval_days = models.PositiveIntegerField(
+        default=14,
+        verbose_name="Ogni quanti giorni",
+        help_text="Intervallo minimo tra un invio e il successivo.",
+    )
+    is_active = models.BooleanField(default=True, verbose_name="Attiva")
+    last_sent_at = models.DateTimeField(
+        null=True, blank=True, verbose_name="Ultimo invio")
+
+    class Meta:
+        verbose_name = "Campagna promozionale"
+        verbose_name_plural = "Campagne promozionali"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} · {self.event}"
+
+    @property
+    def is_due(self):
+        """True se attiva e se e' passato almeno interval_days dall'ultimo invio."""
+        if not self.is_active:
+            return False
+        if self.last_sent_at is None:
+            return True
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() - self.last_sent_at >= timedelta(days=self.interval_days)
+
+    def eligible_contacts_queryset(self):
+        """Contatti con email di sponsor CONFERMATI (contratto principale
+        firmato/attivo/completato) dell'evento, esclusi quelli disiscritti
+        da QUESTA campagna. Contract.objects esclude gia' i contratti nel
+        cestino; qui si esclude anche lo sponsor nel cestino per sicurezza."""
+        from contracts.models import Contract, ContractKind, ContractStatus
+        from sponsors.models import Contact
+
+        sponsor_ids = (Contract.objects
+                       .filter(event=self.event, contract_kind=ContractKind.MAIN,
+                               status__in=[ContractStatus.SIGNED,
+                                           ContractStatus.ACTIVE,
+                                           ContractStatus.COMPLETED])
+                       .values_list('sponsor_id', flat=True).distinct())
+        opted_out_ids = self.opt_outs.values_list('contact_id', flat=True)
+        return (Contact.objects
+                .filter(sponsor_id__in=sponsor_ids, sponsor__deleted_at__isnull=True)
+                .exclude(email='')
+                .exclude(id__in=opted_out_ids))
+
+
+class PromotionalCampaignOptOut(TimeStampedModel):
+    """
+    Un contatto disiscritto da UNA campagna promozionale specifica: non
+    riceve piu' QUEL tipo di messaggio, ma resta raggiungibile per contratti,
+    scadenze e altre comunicazioni transazionali.
+    """
+    campaign = models.ForeignKey(
+        PromotionalCampaign,
+        on_delete=models.CASCADE,
+        related_name='opt_outs',
+        verbose_name="Campagna",
+    )
+    contact = models.ForeignKey(
+        'sponsors.Contact',
+        on_delete=models.CASCADE,
+        related_name='campaign_opt_outs',
+        verbose_name="Contatto",
+    )
+
+    class Meta:
+        verbose_name = "Disiscrizione campagna"
+        verbose_name_plural = "Disiscrizioni campagne"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['campaign', 'contact'],
+                name='unique_promocampaign_optout_campaign_contact',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.contact} · {self.campaign}"

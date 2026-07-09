@@ -13,7 +13,7 @@ from django.urls import reverse
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import Event, EventStatus
+from .models import Event, EventStatus, PromotionalCampaign, PromotionalCampaignOptOut
 
 
 class EventAdminForm(forms.ModelForm):
@@ -331,4 +331,95 @@ def _crea_servizio_da_catalogo(cat, event):
             is_active=cv.is_active, display_order=cv.display_order,
         )
     return svc
+
+
+# =============================================================================
+# CAMPAGNE PROMOZIONALI (email ricorrente agli sponsor confermati di un evento)
+# =============================================================================
+
+class PromotionalCampaignForm(forms.ModelForm):
+    subject = TranslatableJSONField(
+        languages=['it', 'en'],
+        required_languages=['it'],
+        label='Oggetto',
+    )
+    body = TranslatableJSONField(
+        languages=['it', 'en'],
+        required_languages=['it'],
+        wysiwyg=True,
+        label='Corpo email',
+        help_text="Il piè di pagina con il link di disiscrizione (SOLO da questa "
+                  "campagna) viene aggiunto automaticamente, non serve scriverlo.",
+    )
+
+    class Meta:
+        model = PromotionalCampaign
+        fields = '__all__'
+
+    class Media:
+        js = (
+            'https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
+            'admin/js/email_wysiwyg.js',
+        )
+
+
+@admin.register(PromotionalCampaign)
+class PromotionalCampaignAdmin(admin.ModelAdmin):
+    form = PromotionalCampaignForm
+    list_display = ('name', 'event', 'interval_days', 'is_active',
+                    'last_sent_at', 'destinatari_count', 'disiscritti_count')
+    list_filter = ('is_active', 'event')
+    search_fields = ('name', 'event__name')
+    autocomplete_fields = ['event']
+    readonly_fields = ('last_sent_at', 'created_at', 'updated_at')
+    actions = ['action_invia_ora']
+
+    fieldsets = (
+        (None, {'fields': ('event', 'name', 'is_active', 'interval_days')}),
+        ('Contenuto email', {'fields': ('subject', 'body')}),
+        ('Stato invii', {'fields': ('last_sent_at',)}),
+        ('Sistema', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+
+    @admin.display(description='Destinatari attuali')
+    def destinatari_count(self, obj):
+        if not obj.pk:
+            return '—'
+        return obj.eligible_contacts_queryset().count()
+
+    @admin.display(description='Disiscritti')
+    def disiscritti_count(self, obj):
+        if not obj.pk:
+            return '—'
+        return obj.opt_outs.count()
+
+    @admin.action(description="Invia ORA (ignora l'intervallo, per test)")
+    def action_invia_ora(self, request, queryset):
+        from contracts.tasks.notifications import send_promotional_campaign_batch
+        n = 0
+        for campaign in queryset:
+            send_promotional_campaign_batch.delay(campaign.id)
+            n += 1
+        self.message_user(
+            request,
+            f"{n} campagna/e messa/e in coda per l'invio immediato.",
+        )
+
+
+@admin.register(PromotionalCampaignOptOut)
+class PromotionalCampaignOptOutAdmin(admin.ModelAdmin):
+    list_display = ('contact', 'sponsor_display', 'campaign', 'created_at')
+    list_filter = ('campaign',)
+    search_fields = ('contact__full_name', 'contact__email', 'campaign__name')
+    list_select_related = ('contact', 'contact__sponsor', 'campaign')
+    autocomplete_fields = ['contact', 'campaign']
+
+    @admin.display(description='Sponsor', ordering='contact__sponsor__legal_name')
+    def sponsor_display(self, obj):
+        return obj.contact.sponsor.legal_name
+
+    def has_add_permission(self, request):
+        # Le disiscrizioni nascono dal link nell'email; l'operatore puo'
+        # comunque rimuoverle (riammette il contatto) ma non crearle a mano.
+        return False
 

@@ -625,3 +625,107 @@ def send_wishlist_reminder(self, wishlist_id):
     except Exception as e:
         logger.exception('Errore reminder wishlist %s', wishlist_id)
         raise self.retry(exc=e)
+
+
+# ============================================================================
+# Campagne promozionali (upsell servizi extra agli sponsor di un evento)
+# ============================================================================
+
+UNSUB_SALT = 'promo-campaign-optout'
+
+_UNSUB_TEXT = {
+    'it': {
+        'intro': ("Non vuoi più ricevere questo tipo di comunicazioni? Le altre "
+                 "email relative al tuo contratto continueranno ad arrivarti "
+                 "normalmente."),
+        'label': 'Disiscriviti da questo tipo di messaggio',
+    },
+    'en': {
+        'intro': ("Don't want to receive this type of communication anymore? "
+                 "Emails about your contract will keep arriving as usual."),
+        'label': 'Unsubscribe from this message type',
+    },
+}
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=120)
+def send_promotional_campaign_batch(self, campaign_id):
+    """
+    Invia una campagna promozionale a tutti i contatti eleggibili (sponsor
+    confermati dell'evento, esclusi i disiscritti da QUESTA campagna) e
+    aggiorna last_sent_at. Un fallimento su un singolo destinatario non
+    blocca gli altri (loop protetto).
+    """
+    from django.conf import settings
+    from django.core import signing
+    from django.urls import reverse
+    from events.models import PromotionalCampaign
+    from contracts.services.email_sender import send_email, _pick_lang
+
+    try:
+        campaign = PromotionalCampaign.objects.select_related('event').get(pk=campaign_id)
+    except PromotionalCampaign.DoesNotExist:
+        logger.error("Campagna promozionale %s non trovata", campaign_id)
+        return 0
+
+    event = campaign.event
+    event_name_cache = {}
+
+    def _event_name(lang):
+        if lang not in event_name_cache:
+            event_name_cache[lang] = (
+                event.get_name(lang) if hasattr(event, 'get_name') else str(event))
+        return event_name_cache[lang]
+
+    base_url = (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
+    from django.template import engines
+    dj = engines['django']
+
+    sent = 0
+    for contact in campaign.eligible_contacts_queryset().select_related('sponsor'):
+        lang = contact.preferred_language if contact.preferred_language in ('it', 'en') else 'it'
+        placeholders = {
+            'sponsor': contact.sponsor,
+            'contact': contact,
+            'event': event,
+            'event_name': _event_name(lang),
+        }
+        subject_raw = _pick_lang(campaign.subject, lang) or campaign.name
+        body = _pick_lang(campaign.body, lang) or ''
+        if not body.strip():
+            continue
+        # Il corpo viene ri-risolto da send_email/_render_custom_body con lo
+        # stesso context; l'oggetto va risolto qui perche' send_email non lo
+        # fa passare dal motore dei placeholder.
+        subject = dj.from_string(subject_raw).render(placeholders)
+
+        token = signing.dumps({'c': str(campaign.id), 'k': str(contact.id)}, salt=UNSUB_SALT)
+        unsubscribe_url = base_url + reverse('portal:campaign_unsubscribe', args=[token])
+        txt = _UNSUB_TEXT.get(lang, _UNSUB_TEXT['it'])
+
+        try:
+            send_email(
+                template_name='promotional_campaign',
+                context={
+                    **placeholders,
+                    'unsubscribe_url': unsubscribe_url,
+                    'unsubscribe_intro': txt['intro'],
+                    'unsubscribe_label': txt['label'],
+                },
+                to=[contact.email],
+                subject=subject,
+                language=lang,
+                custom_body_html=body,
+                related_to=campaign,
+                communication_type='promotional_campaign',
+                is_automated=True,
+            )
+            sent += 1
+        except Exception:
+            logger.exception("Invio campagna %s a %s fallito", campaign_id, contact.email)
+
+    campaign.last_sent_at = timezone.now()
+    campaign.save(update_fields=['last_sent_at', 'updated_at'])
+    logger.info("Campagna '%s' (evento %s) inviata a %d contatti",
+               campaign.name, event, sent)
+    return sent
