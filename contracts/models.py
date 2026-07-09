@@ -907,6 +907,20 @@ class Contract(SoftDeleteModel):
             deleted_at__isnull=True,
         ).update(deleted_at=timezone.now())
 
+        # Carrello (ecommerce) collegato: se resta ACTIVE per sempre continua
+        # a essere candidato ai reminder di recupero carrello abbandonato.
+        try:
+            from contracts.payments import CartSessionStatus
+            cart = getattr(self, 'cart_session', None)
+            if cart and cart.status == CartSessionStatus.ACTIVE:
+                cart.status = CartSessionStatus.EXPIRED
+                cart.save(update_fields=['status', 'updated_at'])
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Chiusura CartSession fallita per contratto %s",
+                getattr(self, 'contract_number', '?'))
+
     def delete(self, using=None, keep_parents=False, hard=False):
         """Soft-delete del contratto. Oltre a nasconderlo, LIBERA lo stand/blocco
         assegnato: la rivalutazione (update_status_from_contract) esclude i

@@ -144,6 +144,7 @@ def check_abandoned_carts():
         status=CartSessionStatus.ACTIVE,
         last_activity_at__lt=threshold,
         abandoned_email_sent_at__isnull=True,
+        contract__deleted_at__isnull=True,  # mai per carrelli cestinati
     )
 
     sent_count = 0
@@ -185,25 +186,27 @@ def send_operator_alerts():
 
     today = date.today()
 
-    # 1. Scadenze in ritardo > 3 giorni
+    # 1. Scadenze in ritardo > 3 giorni (mai per contratti nel cestino)
     overdue_deadlines = list(Deadline.objects.select_related(
         'contract__sponsor'
     ).filter(
         status=DeadlineStatus.OVERDUE,
         due_date__lt=today - timedelta(days=3),
+        contract__deleted_at__isnull=True,
     )[:20])  # max 20 per non riempire l'email
 
     # Calcola days_overdue per ciascuna
     for d in overdue_deadlines:
         d.days_overdue = (today - d.due_date).days
 
-    # 2. Pagamenti pendenti > 7 giorni
+    # 2. Pagamenti pendenti > 7 giorni (mai per contratti nel cestino)
     seven_days_ago = timezone.now() - timedelta(days=7)
     pending_payments = list(Payment.objects.select_related(
         'contract__sponsor'
     ).filter(
         status=PaymentStatus.PENDING,
         initiated_at__lt=seven_days_ago,
+        contract__deleted_at__isnull=True,
     )[:20])
 
     for p in pending_payments:
