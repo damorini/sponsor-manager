@@ -205,10 +205,13 @@ class ServiceAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         from django.db.models import Count
+        from core.event_scope import scope_lista_evento_attivo
         qs = super().get_queryset(request)
         qs = qs.annotate(_n_deadlines=Count(
             'deadline_templates', filter=models.Q(deadline_templates__is_active=True)
         ))
+        # EVENTO ATTIVO: la lista mostra solo i servizi di quell'evento.
+        qs = scope_lista_evento_attivo(request, qs, 'event')
         return qs.prefetch_related('deadline_templates')
 
     form = ServiceAdminForm
@@ -361,6 +364,11 @@ class DeadlineFieldTemplateInline(admin.TabularInline):
 class DeadlineTemplateAdmin(admin.ModelAdmin):
     """Admin separato per cercare template scadenze."""
     form = DeadlineTemplateForm
+
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'service__event')
     inlines = [DeadlineFieldTemplateInline]
     list_display = (
         'title', 'service_link', 'deadline_type',
@@ -438,6 +446,11 @@ class CatalogServiceAdmin(admin.ModelAdmin):
 class ServiceVariantAdmin(admin.ModelAdmin):
     """Registrato per abilitare l'autocomplete della variante nelle Righe
     contratto. Le varianti si gestiscono comunque dentro il Servizio."""
+
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'service__event')
     list_display = ('label', 'service', 'code', 'base_price', 'is_active')
     list_filter = (evento_filter('service__event'), 'is_active')
     search_fields = ('label', 'label_en', 'code',

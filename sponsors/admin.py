@@ -841,6 +841,14 @@ class _MittenteFilter(admin.SimpleListFilter):
 @admin.register(PortalMessage)
 class PortalMessageAdmin(admin.ModelAdmin):
     """Archivio conversazioni col portale, con stato letto / da leggere."""
+
+    def get_queryset(self, request):
+        # EVENTO ATTIVO: si vedono i messaggi dell'evento + quelli GENERICI
+        # (senza evento), che non appartengono a nessun altro evento.
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'event',
+            include_senza_evento=True)
     list_display = ('sponsor', 'mittente', 'estratto', 'stato', 'azioni',
                     'event', 'is_active', 'created_at', 'created_by')
     list_filter = (('sponsor', admin.RelatedOnlyFieldListFilter),
@@ -870,6 +878,11 @@ class PortalMessageAdmin(admin.ModelAdmin):
         event_id = (request.GET.get('event') or '').strip()
 
         base = PortalMessage.objects.filter(is_active=True, archived_at__isnull=True)
+        # EVENTO ATTIVO: conversazioni dell'evento + quelle generiche
+        # (messaggi senza evento); niente messaggi di ALTRI eventi.
+        from core.event_scope import scope_lista_evento_attivo
+        base = scope_lista_evento_attivo(request, base, 'event',
+                                         include_senza_evento=True)
         if event_id:
             base = base.filter(event_id=event_id)
 

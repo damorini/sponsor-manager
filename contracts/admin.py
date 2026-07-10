@@ -1185,8 +1185,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 @admin.register(ContractLine)
 class ContractLineAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
-        from core.event_scope import scope_by_event
-        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+        from core.event_scope import scope_by_event, escludi_figli_di_contratti_cestinati
+        qs = scope_by_event(request, super().get_queryset(request), 'contract__event')
+        return escludi_figli_di_contratti_cestinati(request, qs)
 
     list_display = (
         'contract_link', 'service_name_snapshot', 'quantity',
@@ -1223,8 +1224,11 @@ class ContractLineAdmin(admin.ModelAdmin):
 @admin.register(Deadline)
 class DeadlineAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
-        from core.event_scope import scope_by_event
-        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+        # Niente scadenze di contratti nel cestino: erano gia' esonerate ma
+        # restavano in elenco col conto alla rovescia dei giorni.
+        from core.event_scope import scope_by_event, escludi_figli_di_contratti_cestinati
+        qs = scope_by_event(request, super().get_queryset(request), 'contract__event')
+        return escludi_figli_di_contratti_cestinati(request, qs)
 
     list_display = (
         'title', 'contract_link', 'cliente', 'due_date', 'status_badge',
@@ -1328,8 +1332,9 @@ class DeadlineAdmin(admin.ModelAdmin):
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
-        from core.event_scope import scope_by_event
-        return scope_by_event(request, super().get_queryset(request), 'contract__event')
+        from core.event_scope import scope_by_event, escludi_figli_di_contratti_cestinati
+        qs = scope_by_event(request, super().get_queryset(request), 'contract__event')
+        return escludi_figli_di_contratti_cestinati(request, qs)
 
     list_display = (
         'contract_link', 'method_badge', 'amount_gross',
@@ -1478,6 +1483,13 @@ class PaymentAdmin(admin.ModelAdmin):
 
 @admin.register(CartSession)
 class CartSessionAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import (
+            escludi_figli_di_contratti_cestinati, scope_lista_evento_attivo)
+        qs = scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'contract__event')
+        return escludi_figli_di_contratti_cestinati(request, qs)
+
     list_display = (
         'contact_display', 'contract_link', 'status_badge',
         'last_activity_short', 'abandoned_email_sent',

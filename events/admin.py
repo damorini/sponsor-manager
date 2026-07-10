@@ -366,6 +366,12 @@ class PromotionalCampaignForm(forms.ModelForm):
 @admin.register(PromotionalCampaign)
 class PromotionalCampaignAdmin(admin.ModelAdmin):
     form = PromotionalCampaignForm
+
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'event')
+
     list_display = ('name', 'event', 'interval_days', 'is_active',
                     'last_sent_at', 'destinatari_count', 'disiscritti_count')
     list_filter = ('is_active', 'event')
@@ -408,6 +414,11 @@ class PromotionalCampaignAdmin(admin.ModelAdmin):
 
 @admin.register(PromotionalCampaignOptOut)
 class PromotionalCampaignOptOutAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'campaign__event')
+
     list_display = ('contact', 'sponsor_display', 'campaign', 'created_at')
     list_filter = ('campaign',)
     search_fields = ('contact__full_name', 'contact__email', 'campaign__name')

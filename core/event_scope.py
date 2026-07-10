@@ -115,6 +115,38 @@ def scope_anagrafica_by_event(request, qs, contract_path):
     }).distinct()
 
 
+def scope_lista_evento_attivo(request, qs, event_path, include_senza_evento=False):
+    """Solo filtro EVENTO ATTIVO per le liste dei modelli collegati a un
+    evento che NON hanno il RBAC per-evento (catalogo servizi, campagne,
+    messaggi portale, carrelli...): niente dati di un altro evento quando
+    un evento e' attivo. Autocomplete e viste di dettaglio restano completi
+    (vedi _active_event_esente).
+
+    include_senza_evento=True mantiene visibili le righe senza evento
+    (es. messaggi generici del portale).
+    """
+    active = get_active_event_id(request)
+    if not active or _active_event_esente(request):
+        return qs
+    if include_senza_evento:
+        from django.db.models import Q
+        return qs.filter(Q(**{event_path: active}) |
+                         Q(**{f"{event_path}__isnull": True}))
+    return qs.filter(**{event_path: active})
+
+
+def escludi_figli_di_contratti_cestinati(request, qs, contract_path='contract'):
+    """Le LISTE dei modelli figli del contratto (scadenze, righe, pagamenti,
+    carrelli, export fatture) non mostrano i record dei contratti NEL
+    CESTINO: sono storia del contratto cancellato, non lavoro da fare
+    (es. scadenze esonerate che restavano in elenco col conto alla
+    rovescia). Restano nel DB e visibili dentro la scheda del contratto
+    cestinato; le viste di dettaglio restano raggiungibili."""
+    if _active_event_esente(request):
+        return qs
+    return qs.filter(**{f"{contract_path}__deleted_at__isnull": True})
+
+
 def scope_generic_by_event(request, qs):
     """Scoping per modelli con GenericForeignKey (es. Document, Communication).
 

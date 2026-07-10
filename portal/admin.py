@@ -44,6 +44,12 @@ class WishlistAdmin(admin.ModelAdmin):
 @admin.register(WishlistItem)
 class WishlistItemAdmin(admin.ModelAdmin):
     """Elementi wishlist: sola lettura (ricerca/consultazione)."""
+
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'service__event')
+
     list_display = ('wishlist', 'service', 'added_at')
     list_filter = ('added_at', 'wishlist__user')
     search_fields = ('wishlist__user__email', 'service__name')

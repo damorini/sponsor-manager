@@ -503,6 +503,11 @@ class CommunicationAdmin(admin.ModelAdmin):
 
 @admin.register(InvoiceExport)
 class InvoiceExportAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        from core.event_scope import scope_lista_evento_attivo
+        return scope_lista_evento_attivo(
+            request, super().get_queryset(request), 'contract__event')
+
     list_display = (
         'reference_display', 'contract_link', 'export_type',
         'amount_total_display', 'status_badge', 'external_invoice_number',

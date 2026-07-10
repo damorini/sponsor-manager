@@ -333,6 +333,118 @@ def test_banner_filtro_sulla_lista_aziende(client, admin_user, contratti_separat
     assert 'Filtro evento attivo' not in client.get(url).content.decode()
 
 
+# --------------------- estensione: servizi, campagne, messaggi, carrelli
+
+@pytest.mark.django_db
+def test_lista_servizi_filtrata_su_evento_attivo(client, admin_user, due_eventi):
+    """Anche il catalogo servizi segue l'evento attivo."""
+    from decimal import Decimal
+    from catalog.models import Service
+    a, b = due_eventi
+    Service.objects.create(event=a, code='SRV-ALFA',
+                           name={'it': 'Servizio Solo Alfa'},
+                           base_price=Decimal('10.00'))
+    Service.objects.create(event=b, code='SRV-BETA',
+                           name={'it': 'Servizio Solo Beta'},
+                           base_price=Decimal('10.00'))
+    client.force_login(admin_user)
+    _scegli(client, str(a.pk))
+    testo = client.get(reverse('admin:catalog_service_changelist')).content.decode()
+    assert 'Servizio Solo Alfa' in testo
+    assert 'Servizio Solo Beta' not in testo
+    _scegli(client, 'tutti')
+    testo = client.get(reverse('admin:catalog_service_changelist')).content.decode()
+    assert 'Servizio Solo Alfa' in testo and 'Servizio Solo Beta' in testo
+
+
+@pytest.mark.django_db
+def test_lista_campagne_filtrata_su_evento_attivo(client, admin_user, due_eventi):
+    from events.models import PromotionalCampaign
+    a, b = due_eventi
+    PromotionalCampaign.objects.create(event=a, name='Campagna Alfa')
+    PromotionalCampaign.objects.create(event=b, name='Campagna Beta')
+    client.force_login(admin_user)
+    _scegli(client, str(a.pk))
+    testo = client.get(
+        reverse('admin:events_promotionalcampaign_changelist')).content.decode()
+    assert 'Campagna Alfa' in testo and 'Campagna Beta' not in testo
+
+
+@pytest.mark.django_db
+def test_messaggi_generici_sempre_visibili(client, admin_user, due_eventi):
+    """L'inbox messaggi con evento attivo mostra le conversazioni
+    dell'evento + quelle GENERICHE (senza evento); spariscono solo
+    quelle di ALTRI eventi."""
+    from sponsors.models import Sponsor, PortalMessage, MessageSender
+    a, b = due_eventi
+    sp_a = Sponsor.objects.create(legal_name='Conversazione Alfa S.r.l.',
+                                  vat_number='11111111111', address_country='IT')
+    sp_b = Sponsor.objects.create(legal_name='Conversazione Beta S.r.l.',
+                                  vat_number='22222222222', address_country='IT')
+    sp_g = Sponsor.objects.create(legal_name='Conversazione Generica S.r.l.',
+                                  vat_number='33333333333', address_country='IT')
+    PortalMessage.objects.create(sponsor=sp_a, sender=MessageSender.OPERATOR,
+                                 event=a, body='ciao alfa')
+    PortalMessage.objects.create(sponsor=sp_b, sender=MessageSender.OPERATOR,
+                                 event=b, body='ciao beta')
+    PortalMessage.objects.create(sponsor=sp_g, sender=MessageSender.OPERATOR,
+                                 body='ciao generico')
+    client.force_login(admin_user)
+    _scegli(client, str(a.pk))
+    testo = client.get(
+        reverse('admin:sponsors_portalmessage_changelist')).content.decode()
+    assert 'Conversazione Alfa' in testo
+    assert 'Conversazione Generica' in testo
+    assert 'Conversazione Beta' not in testo
+
+
+# ------------------- scadenze/righe/carrelli di contratti cestinati
+
+@pytest.mark.django_db
+def test_scadenze_di_contratti_cestinati_fuori_dalle_liste(client, admin_user,
+                                                           sponsor, due_eventi):
+    """Cestinato il contratto, le sue scadenze (esonerate) NON restano
+    nell'elenco Scadenze col conto alla rovescia."""
+    from datetime import date as d
+    from contracts.models import Contract, ContractKind, ContractStatus, Deadline
+    a, _ = due_eventi
+    c = Contract.objects.create(sponsor=sponsor, event=a,
+                                contract_kind=ContractKind.MAIN,
+                                status=ContractStatus.SIGNED,
+                                contract_number='ALF-26-666')
+    Deadline.objects.create(contract=c, deadline_type='consegna_materiali',
+                            title='Scadenza Fantasma', due_date=d(2026, 12, 1),
+                            submission_kind='file')
+    client.force_login(admin_user)
+    _scegli(client, 'tutti')
+    url = reverse('admin:contracts_deadline_changelist')
+    assert 'Scadenza Fantasma' in client.get(url).content.decode()
+    c.delete()  # cestino: esonera le scadenze E le toglie dalle liste
+    assert 'Scadenza Fantasma' not in client.get(url).content.decode()
+
+
+@pytest.mark.django_db
+def test_carrelli_di_contratti_cestinati_fuori_dalle_liste(client, admin_user,
+                                                           sponsor, contact,
+                                                           due_eventi):
+    from contracts.models import Contract, ContractKind, ContractStatus
+    from contracts.payments import CartSession, CartSessionStatus
+    a, _ = due_eventi
+    c = Contract.objects.create(sponsor=sponsor, event=a,
+                                contract_kind=ContractKind.ADDON,
+                                status=ContractStatus.DRAFT,
+                                contract_number='ALF-26-667')
+    CartSession.objects.create(contract=c, contact=contact,
+                               status=CartSessionStatus.ACTIVE)
+    client.force_login(admin_user)
+    _scegli(client, 'tutti')
+    url = reverse('admin:contracts_cartsession_changelist')
+    # la lista mostra "Contatto (Sponsor)", non il numero contratto
+    assert 'Test Contact' in client.get(url).content.decode()
+    c.delete()
+    assert 'Test Contact' not in client.get(url).content.decode()
+
+
 # --------------------------------------------- anagrafiche (Sponsor/Contact)
 
 @pytest.fixture
