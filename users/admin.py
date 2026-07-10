@@ -39,6 +39,34 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('last_name', 'first_name', 'email')
     filter_horizontal = ('managed_events', 'groups', 'user_permissions')
     change_password_form = ItAdminPasswordChangeForm
+    actions = ['action_invia_reset_password']
+
+    @admin.action(description="Invia email di RESET PASSWORD")
+    def action_invia_reset_password(self, request, queryset):
+        """Manda all'utente il link per impostarsi una nuova password
+        (stesso flusso del 'Password dimenticata?': nessuna password
+        viene mostrata o scelta dall'operatore)."""
+        from django.contrib import messages
+        from portal.views.auth import _send_password_reset_email
+        ok = saltati = 0
+        for user in queryset:
+            if not user.email or not user.is_active:
+                saltati += 1
+                continue
+            _send_password_reset_email(request, user)
+            ok += 1
+        if ok:
+            self.message_user(
+                request,
+                f"Email di reset inviata a {ok} utente/i. Il link scade "
+                "secondo le regole standard di sicurezza.",
+            )
+        if saltati:
+            self.message_user(
+                request,
+                f"{saltati} utente/i saltato/i (senza email o disattivato/i).",
+                level=messages.WARNING,
+            )
     
     fieldsets = (
         (None, {

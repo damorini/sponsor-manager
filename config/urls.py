@@ -29,6 +29,12 @@ urlpatterns = [
     path('health/', health_check, name='health'),
 
     path('admin/cruscotto/', include('core.urls', namespace='core')),
+    # Con questo nome registrato, la login dell'admin mostra da sola il link
+    # "Password o username dimenticati?": riusa il flusso reset del portale
+    # (che invia tramite l'SMTP del pannello e vale per TUTTI gli utenti).
+    path('admin/password_reset/',
+         RedirectView.as_view(pattern_name='portal:password_reset', permanent=False),
+         name='admin_password_reset'),
     path('admin/', RedirectView.as_view(pattern_name='core:cruscotto_home', permanent=False)),  # /admin/ -> cruscotto (landing dopo login)
     path('admin/', admin.site.urls),
     

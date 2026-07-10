@@ -125,11 +125,12 @@ def password_reset_view(request):
         email = request.POST.get('email', '').strip().lower()
 
         if email:
-            # Trova users sponsor con quell'email
+            # Qualsiasi utente attivo con quell'email (sponsor del portale,
+            # ma anche operatori/admin del backoffice: il link 'Password
+            # dimenticata?' della login admin arriva qui).
             users = User.objects.filter(
                 email__iexact=email,
                 is_active=True,
-                role='sponsor',
             )
             for user in users:
                 _send_password_reset_email(request, user)
