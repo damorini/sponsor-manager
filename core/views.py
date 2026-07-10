@@ -1,6 +1,7 @@
 """View del cruscotto: home con eventi in programmazione."""
 from django.contrib.admin import site as admin_site
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ValidationError
 from django.shortcuts import render, redirect
 import json
 from django.http import JsonResponse
@@ -48,6 +49,15 @@ def marca_materiale_rivisto(deadline):
         deadline.save(update_fields=['materials_reviewed_at', 'updated_at'])
 
 
+def _evento_scelto_valido(request, scelto):
+    """L'id scelto e' un evento che l'utente puo' vedere (RBAC)?
+    Robusto anche a valori non-UUID forzati nel POST."""
+    try:
+        return events_for_user(request).filter(pk=scelto).exists()
+    except (ValueError, ValidationError):
+        return False
+
+
 @staff_member_required
 def scegli_evento(request):
     """Scelta dell'EVENTO ATTIVO: mostrata al primo accesso dello staff
@@ -57,8 +67,7 @@ def scegli_evento(request):
     if request.method == 'POST':
         scelto = (request.POST.get('event_id') or '').strip()
         if scelto and scelto != 'tutti':
-            # accetta solo eventi che l'utente puo' vedere (RBAC)
-            if not events_for_user(request).filter(pk=scelto).exists():
+            if not _evento_scelto_valido(request, scelto):
                 scelto = ''
         set_active_event(request, '' if scelto in ('', 'tutti') else scelto)
         return redirect('core:cruscotto_home')
@@ -93,7 +102,7 @@ def imposta_evento_attivo(request):
     """Endpoint del selettore nell'header: cambia l'evento attivo al volo."""
     scelto = (request.POST.get('event_id') or '').strip()
     if scelto and scelto != 'tutti':
-        if not events_for_user(request).filter(pk=scelto).exists():
+        if not _evento_scelto_valido(request, scelto):
             scelto = ''
     set_active_event(request, '' if scelto in ('', 'tutti') else scelto)
     dest = request.POST.get('next') or request.META.get('HTTP_REFERER') or ''

@@ -52,6 +52,24 @@ def events_for_user(request):
     return qs
 
 
+def _active_event_esente(request):
+    """True se la richiesta NON va ristretta all'evento attivo (il RBAC
+    resta sempre): ricerche autocomplete dei form (es. scelta sponsor su
+    un nuovo contratto -> anagrafica completa) e pagine di DETTAGLIO
+    (un link diretto a una scheda/documento/scadenza di un altro evento
+    deve aprirsi, non dare 404). Le viste di dettaglio si riconoscono
+    dall'URL che punta a UN oggetto preciso (pk/uuid nei kwargs): vale per
+    l'admin (_change/_delete/_history) e per le pagine del cruscotto
+    (documento_apri, scadenza, evento...). Le LISTE non hanno kwargs e
+    restano filtrate."""
+    rm = getattr(request, 'resolver_match', None)
+    if rm is None:
+        return False
+    if (rm.url_name or '') == 'autocomplete':
+        return True
+    return bool(rm.kwargs)
+
+
 def scope_by_event(request, qs, event_path):
     """Limita qs agli eventi gestiti dall'utente (RBAC) e, se scelto,
     all'EVENTO ATTIVO di sessione.
@@ -65,9 +83,36 @@ def scope_by_event(request, qs, event_path):
             return qs.none()
         qs = qs.filter(**{f"{event_path}__in": managed.all()})
     active = get_active_event_id(request)
-    if active:
+    if active and not _active_event_esente(request):
         qs = qs.filter(**{event_path: active})
     return qs
+
+
+def scope_anagrafica_by_event(request, qs, contract_path):
+    """Anagrafiche (Sponsor/Contact): con un EVENTO ATTIVO le LISTE mostrano
+    solo chi ha contratti (non cestinati) su quell'evento. Nessun RBAC qui:
+    senza evento attivo l'anagrafica resta completa per tutti. Autocomplete
+    e schede di dettaglio non vengono mai ristrette (vedi _active_event_esente).
+
+    contract_path: percorso ORM verso il contratto, es. 'contracts' (Sponsor)
+    o 'sponsor__contracts' (Contact).
+    """
+    active = get_active_event_id(request)
+    if not active or _active_event_esente(request):
+        return qs
+    # Cestino (SoftDeleteAdminMixin): chi e' stato cestinato ha per forza i
+    # contratti gia' cestinati (FK PROTECT), quindi il filtro "contratto vivo
+    # sull'evento" lo renderebbe introvabile e non ripristinabile. Nel
+    # cestino si vede tutto.
+    try:
+        if request.GET.get('trash') in ('cestino', 'tutti'):
+            return qs
+    except Exception:
+        pass
+    return qs.filter(**{
+        f"{contract_path}__event": active,
+        f"{contract_path}__deleted_at__isnull": True,
+    }).distinct()
 
 
 def scope_generic_by_event(request, qs):
@@ -79,6 +124,8 @@ def scope_generic_by_event(request, qs):
     """
     user = getattr(request, "user", None)
     active = get_active_event_id(request)
+    if active and _active_event_esente(request):
+        active = None
     if (user is None or can_see_all(user)) and not active:
         return qs
     from django.contrib.contenttypes.models import ContentType

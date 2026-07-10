@@ -174,6 +174,7 @@ class PortalMessageInline(admin.TabularInline):
 
 @admin.register(Sponsor)
 class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
+    change_list_template = 'admin/anagrafica_change_list.html'
     list_display = (
         'impersona_link',
         'legal_name', 'display_name_or_dash', 'vat_number',
@@ -566,18 +567,27 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         return redirect(reverse('admin:sponsors_sponsor_change', args=[msg.sponsor_id]))
 
     def get_queryset(self, request):
+        from core.event_scope import scope_anagrafica_by_event
         qs = super().get_queryset(request)
-        return qs.annotate(
+        # distinct=True: il filtro evento (sotto) aggiunge un secondo join
+        # sui contratti che moltiplicherebbe le righe contate.
+        qs = qs.annotate(
             _contracts_count=Count(
-                'contracts',
+                'contracts', distinct=True,
                 filter=Q(contracts__deleted_at__isnull=True),
             ),
             _active_contracts=Count(
-                'contracts',
+                'contracts', distinct=True,
                 filter=Q(contracts__deleted_at__isnull=True) &
                        Q(contracts__status__in=['signed', 'active']),
             ),
         )
+        # EVENTO ATTIVO: la lista mostra solo le aziende con contratti su
+        # quell'evento; l'anagrafica completa resta nei form (autocomplete).
+        # Applicato DOPO l'annotate: il filtro usa un join separato e le
+        # colonne Contratti/Attivi restano i TOTALI dell'azienda (come
+        # nella scheda), non i parziali del solo evento.
+        return scope_anagrafica_by_event(request, qs, 'contracts')
 
     @admin.display(description='Nome breve')
     @admin.display(description="Entra")
@@ -652,6 +662,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 class ContactAdmin(admin.ModelAdmin):
     """Admin separato per cercare contatti tra tutti gli sponsor."""
     form = ContactRolesForm
+    change_list_template = 'admin/anagrafica_change_list.html'
 
     class Media:
         css = {'all': ('admin/css/contact_changelist.css',)}
@@ -674,6 +685,14 @@ class ContactAdmin(admin.ModelAdmin):
             if _sp:
                 queryset = queryset.filter(sponsor_id=_sp)
         return queryset, may_dup
+
+    def get_queryset(self, request):
+        from core.event_scope import scope_anagrafica_by_event
+        # EVENTO ATTIVO: la lista mostra solo i contatti delle aziende con
+        # contratti su quell'evento; nei form resta l'anagrafica completa.
+        return scope_anagrafica_by_event(
+            request, super().get_queryset(request), 'sponsor__contracts')
+
     list_select_related = ('sponsor',)
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',

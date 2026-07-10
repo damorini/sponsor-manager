@@ -1,0 +1,20 @@
+{% extends "admin/change_list.html" %}
+{% comment %}
+  Lista anagrafiche (Aziende/Contatti) con EVENTO ATTIVO: avvisa che la
+  lista e' filtrata, cosi' un'azienda appena creata (o senza contratti
+  sull'evento) che "non compare" non sembra sparita. Nel Cestino il filtro
+  evento non si applica (vedi scope_anagrafica_by_event), quindi niente banner.
+{% endcomment %}
+{% block search %}
+  {% if evento_attivo and request.GET.trash != 'cestino' and request.GET.trash != 'tutti' %}
+  <div style="margin:0 0 12px; padding:10px 14px; border-radius:8px;
+              background:rgba(200,160,78,.12); border:1px solid rgba(200,160,78,.5);
+              font-size:13px; line-height:1.5;">
+    <strong>Filtro evento attivo:</strong> vedi solo l'anagrafica con contratti su
+    <strong>«{{ evento_attivo }}»</strong>. Le aziende appena create o senza contratti
+    su questo evento non compaiono qui (le ritrovi nei form, es. sul nuovo contratto).
+    Per l'anagrafica completa scegli <strong>«Tutti gli eventi»</strong> dal selettore in alto.
+  </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
