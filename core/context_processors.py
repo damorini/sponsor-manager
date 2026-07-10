@@ -12,9 +12,23 @@ def admin_badges(request):
     count = 0
     bozze_count = 0
     bozze_url = ''
+    evento_attivo = None
+    eventi_switcher = []
     try:
         user = getattr(request, 'user', None)
         if user and user.is_authenticated and user.is_staff:
+            # Evento attivo di sessione + lista per il selettore nell'header.
+            from core.event_scope import events_for_user, get_active_event_id
+            eventi_switcher = list(events_for_user(request))
+            active_id = get_active_event_id(request)
+            if active_id:
+                evento_attivo = next(
+                    (e for e in eventi_switcher if str(e.pk) == str(active_id)), None)
+                if evento_attivo is None:
+                    # evento archiviato/sparito: spegni il filtro per non
+                    # lasciare l'operatore su liste vuote inspiegabili
+                    from core.event_scope import set_active_event
+                    set_active_event(request, '')
             from sponsors.models import PortalMessage, MessageSender
             count = PortalMessage.objects.filter(
                 sender=MessageSender.SPONSOR, read_at__isnull=True, is_active=True,
@@ -37,4 +51,6 @@ def admin_badges(request):
         'portal_unread_count': count,
         'bozze_count': bozze_count,
         'bozze_url': bozze_url,
+        'evento_attivo': evento_attivo,
+        'eventi_switcher': eventi_switcher,
     }

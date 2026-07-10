@@ -7,6 +7,8 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.cruscotto_home, name='cruscotto_home'),
+    path('scegli-evento/', views.scegli_evento, name='scegli_evento'),
+    path('evento-attivo/', views.imposta_evento_attivo, name='imposta_evento_attivo'),
     path('cerca/', views.cruscotto_cerca, name='cruscotto_cerca'),
     path('scadenze-cliente/', views.cruscotto_scadenze_cliente, name='cruscotto_scadenze_cliente'),
     path('scadenze-cliente/file/<uuid:document_id>/', views.cruscotto_scadenza_file, name='cruscotto_scadenza_file'),

@@ -7,7 +7,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from events.models import Event, EventStatus
-from core.event_scope import scope_by_event, scope_generic_by_event
+from core.event_scope import (
+    SESSION_EVENT_CHOSEN, events_for_user, get_active_event_id,
+    scope_by_event, scope_generic_by_event, set_active_event,
+)
 
 
 # Tipi di consegna che rappresentano un MATERIALE caricato dal cliente.
@@ -46,8 +49,68 @@ def marca_materiale_rivisto(deadline):
 
 
 @staff_member_required
+def scegli_evento(request):
+    """Scelta dell'EVENTO ATTIVO: mostrata al primo accesso dello staff
+    (e raggiungibile sempre dal selettore nell'header). Da qui in poi
+    tutte le liste dell'admin mostrano solo i dati dell'evento scelto;
+    'Tutti gli eventi' spegne il filtro."""
+    if request.method == 'POST':
+        scelto = (request.POST.get('event_id') or '').strip()
+        if scelto and scelto != 'tutti':
+            # accetta solo eventi che l'utente puo' vedere (RBAC)
+            if not events_for_user(request).filter(pk=scelto).exists():
+                scelto = ''
+        set_active_event(request, '' if scelto in ('', 'tutti') else scelto)
+        return redirect('core:cruscotto_home')
+
+    eventi = events_for_user(request)
+    cards = []
+    for ev in eventi:
+        try:
+            nome = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
+        except Exception:
+            nome = str(ev)
+        cards.append({
+            'id': ev.id,
+            'nome': nome,
+            'status_label': ev.get_status_display(),
+            'status_code': ev.status,
+            'start_date': ev.start_date,
+            'end_date': getattr(ev, 'end_date', None),
+            'location': getattr(ev, 'luogo_completo', '') or getattr(ev, 'location', '') or '',
+        })
+    return render(request, 'cruscotto/scegli_evento.html', {
+        **admin_site.each_context(request),
+        'title': 'Su quale evento vuoi lavorare?',
+        'cards': cards,
+        'evento_attivo_id': get_active_event_id(request) or '',
+    })
+
+
+@staff_member_required
+@require_POST
+def imposta_evento_attivo(request):
+    """Endpoint del selettore nell'header: cambia l'evento attivo al volo."""
+    scelto = (request.POST.get('event_id') or '').strip()
+    if scelto and scelto != 'tutti':
+        if not events_for_user(request).filter(pk=scelto).exists():
+            scelto = ''
+    set_active_event(request, '' if scelto in ('', 'tutti') else scelto)
+    dest = request.POST.get('next') or request.META.get('HTTP_REFERER') or ''
+    # solo redirect interni
+    from django.utils.http import url_has_allowed_host_and_scheme
+    if not dest or not url_has_allowed_host_and_scheme(dest, allowed_hosts={request.get_host()}):
+        return redirect('core:cruscotto_home')
+    return redirect(dest)
+
+
+@staff_member_required
 def cruscotto_home(request):
     """Home cruscotto: card degli eventi attivi (SELLING + LIVE)."""
+    # Primo accesso: prima si sceglie su quale evento lavorare.
+    if not request.session.get(SESSION_EVENT_CHOSEN):
+        return redirect('core:scegli_evento')
+
     eventi = scope_by_event(request, (Event.objects
               .filter(status__in=[EventStatus.SELLING, EventStatus.LIVE])
               .order_by('start_date', 'id')), 'id')

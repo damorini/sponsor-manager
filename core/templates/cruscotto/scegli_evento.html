@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}Scegli evento · {{ site_title|default:_("Django site admin") }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+  <style>
+    /* le card sono BOTTONI (submit del form): azzera lo stile bottone */
+    .vt-pick-card {
+      width: 100%; text-align: left; font: inherit; cursor: pointer;
+    }
+    button.cr-card:hover {
+      transform: translateY(-2px); box-shadow: var(--shadow-2);
+      border-color: var(--line-strong);
+    }
+    .vt-pick-card.vt-attivo { outline: 2px solid #C8A04E; outline-offset: 1px; }
+    .vt-pick-badge {
+      display: inline-block; margin-left: 8px; padding: 1px 8px;
+      border-radius: 999px; background: #C8A04E; color: #fff;
+      font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    }
+    .vt-pick-tutti .cr-event-name { display: flex; align-items: center; gap: 8px; }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; Scegli evento
+  </div>
+{% endblock %}
+
+{# il titolo sta gia' nell'hero: niente doppione sopra #}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div class="cr-content">
+
+  <div class="cr-hero">
+    <h1 class="cr-title">Su quale evento vuoi lavorare?</h1>
+    <p class="cr-sub">
+      Scegli un evento e da quel momento <strong>tutto il backoffice mostrerà solo
+      i suoi dati</strong> (contratti, scadenze, pagamenti, documenti…), senza dover
+      impostare filtri. Potrai cambiare evento in qualsiasi momento dal selettore
+      <strong>«Evento»</strong> in alto nella pagina.
+    </p>
+  </div>
+
+  <form method="post" action="{% url 'core:scegli_evento' %}">
+    {% csrf_token %}
+    <div class="cr-grid">
+      {% for c in cards %}
+        <button type="submit" name="event_id" value="{{ c.id }}"
+                class="cr-card cr-event-card vt-pick-card {% if evento_attivo_id == c.id|stringformat:'s' %}vt-attivo{% endif %}">
+          <span class="cr-status {% if 'corso' in c.status_label|lower or 'live' in c.status_label|lower %}live{% endif %}">{{ c.status_label }}</span>
+          <div class="cr-event-name">
+            {{ c.nome }}
+            {% if evento_attivo_id == c.id|stringformat:'s' %}<span class="vt-pick-badge">ATTIVO</span>{% endif %}
+          </div>
+          <div class="cr-event-meta">
+            {% if c.start_date %}<div><span class="ico">📅</span> {{ c.start_date|date:"d/m/Y" }}{% if c.end_date %} – {{ c.end_date|date:"d/m/Y" }}{% endif %}</div>{% endif %}
+            {% if c.location %}<div><span class="ico">📍</span> {{ c.location }}</div>{% endif %}
+          </div>
+        </button>
+      {% empty %}
+        <div class="cr-empty">
+          Nessun evento disponibile per il tuo utente.<br>
+          <a href="{% url 'admin:events_event_changelist' %}">Vai alla lista eventi →</a>
+        </div>
+      {% endfor %}
+
+      <button type="submit" name="event_id" value="tutti"
+              class="cr-card cr-event-card vt-pick-card vt-pick-tutti cr-card--neutral">
+        <div class="cr-event-name"><span>🌐</span> Tutti gli eventi</div>
+        <div class="cr-event-meta">
+          <div>Nessun filtro: vedi i dati di tutti gli eventi insieme.</div>
+        </div>
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

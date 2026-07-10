@@ -489,7 +489,58 @@
 </h1>
 {% endblock %}
 
-{% block nav-global %}{% endblock %}
+{% comment %}
+  Selettore EVENTO ATTIVO nell'header: cambia al volo l'evento su cui si
+  lavora (tutte le liste si filtrano da sole). eventi_switcher/evento_attivo
+  arrivano dal context processor core.context_processors.admin_badges.
+{% endcomment %}
+{% block nav-global %}
+{% if user.is_active and user.is_staff and eventi_switcher %}
+<style>
+  #vt-event-switcher {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin: 0 0 0 18px; vertical-align: middle;
+  }
+  #vt-event-switcher .vt-ev-label {
+    color: #C8A04E; font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+  }
+  #vt-event-switcher select {
+    background: rgba(255,255,255,.08) !important;
+    color: #F3ECDF !important;
+    border: 1px solid rgba(200,160,78,.55) !important;
+    border-radius: 999px; padding: 4px 28px 4px 12px;
+    font-size: 13px; font-weight: 600; max-width: 320px;
+    cursor: pointer; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C8A04E'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important; background-position: right 10px center !important;
+  }
+  #vt-event-switcher select:focus { outline: 2px solid #C8A04E; outline-offset: 1px; }
+  #vt-event-switcher select option { color: #241B12; background: #FFF; }
+  #vt-event-switcher.vt-ev-on select {
+    background: rgba(200,160,78,.22) !important;
+    border-color: #C8A04E !important;
+  }
+  @media (max-width: 767px) {
+    #vt-event-switcher { margin: 6px 0 0 0; display: flex; }
+    #vt-event-switcher select { max-width: 100%; flex: 1; }
+  }
+</style>
+<form id="vt-event-switcher" class="{% if evento_attivo %}vt-ev-on{% endif %}"
+      method="post" action="{% url 'core:imposta_evento_attivo' %}">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+  <span class="vt-ev-label">Evento</span>
+  <select name="event_id" onchange="this.form.submit()"
+          title="Scegli l'evento su cui lavorare: tutte le liste mostreranno solo i suoi dati">
+    <option value="tutti" {% if not evento_attivo %}selected{% endif %}>Tutti gli eventi</option>
+    {% for ev in eventi_switcher %}
+      <option value="{{ ev.pk }}" {% if evento_attivo and evento_attivo.pk == ev.pk %}selected{% endif %}>{{ ev }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endif %}
+{% endblock %}
 
 {% comment %}
   Avviso globale: preventivi creati ma non ancora inviati. Visibile su OGNI

@@ -101,6 +101,11 @@ def test_cruscotto_home_alert_appears_and_detail_clears_it(client, sponsor):
     d = _dl(_contract(sponsor), materials_reviewed_at=None)
 
     client.force_login(op)
+    # scelta evento gia' fatta ('tutti'): il cruscotto non redirige al picker
+    from core.event_scope import SESSION_EVENT_CHOSEN
+    s = client.session
+    s[SESSION_EVENT_CHOSEN] = True
+    s.save()
     resp = client.get(reverse('core:cruscotto_home'))
     assert resp.status_code == 200
     assert 'da rivedere' in resp.content.decode()

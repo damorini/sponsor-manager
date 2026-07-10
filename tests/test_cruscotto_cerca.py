@@ -20,6 +20,11 @@ def staff_client(client, db):
         username='op_cerca', email='op.cerca@test.it', password='x',
         is_staff=True, is_superuser=True, is_active=True)
     client.force_login(op)
+    # scelta evento gia' fatta ('tutti'): il cruscotto non redirige al picker
+    from core.event_scope import SESSION_EVENT_CHOSEN
+    s = client.session
+    s[SESSION_EVENT_CHOSEN] = True
+    s.save()
     return client
 
 
