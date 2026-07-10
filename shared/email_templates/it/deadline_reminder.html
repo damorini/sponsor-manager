@@ -2,11 +2,54 @@
 
 {% block content %}
 <h2 class="text-primary" style="margin:0 0 16px 0; font-size:20px;">
-  Promemoria scadenza
+  {% if is_pagamento %}Gentile promemoria di pagamento{% else %}Promemoria scadenza{% endif %}
 </h2>
 
-<p>Buongiorno {{ contact.full_name }},</p>
+<p>Gentile {{ contact.full_name }},</p>
 
+{% if is_pagamento %}
+<p>con la presente desideriamo ricordarvi, con un po' di anticipo, la prossima
+  scadenza di pagamento relativa alla vostra partecipazione a
+  <strong>{{ event_name }}</strong>.</p>
+
+<!-- Riquadro riepilogo pagamento -->
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:20px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr>
+    <td style="padding:18px 22px;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px; color:#374151;">
+        <tr>
+          <td style="padding:4px 0; color:#6b7280;">Pagamento</td>
+          <td style="padding:4px 0; text-align:right;"><strong>{{ etichetta_pagamento }}</strong> · contratto {{ contract.contract_number }}</td>
+        </tr>
+        {% if importo_scadenza %}
+        <tr>
+          <td style="padding:4px 0; color:#6b7280;">Importo</td>
+          <td style="padding:4px 0; text-align:right; font-size:18px;"><strong class="text-primary">€ {{ importo_scadenza|floatformat:2 }}</strong> <span style="color:#6b7280; font-size:12px;">(IVA inclusa)</span></td>
+        </tr>
+        {% endif %}
+        <tr>
+          <td style="padding:4px 0; color:#6b7280;">Entro il</td>
+          <td style="padding:4px 0; text-align:right;"><strong>{{ deadline.due_date|date:"d/m/Y" }}</strong></td>
+        </tr>
+      </table>
+      {% if bank_iban %}
+      <hr style="border:none; border-top:1px solid #e5e7eb; margin:12px 0;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:13px; color:#374151;">
+        <tr><td style="padding:2px 0; color:#6b7280; width:110px;">Intestatario</td><td style="padding:2px 0;">{{ bank_holder }}</td></tr>
+        {% if bank_name %}<tr><td style="padding:2px 0; color:#6b7280;">Banca</td><td style="padding:2px 0;">{{ bank_name }}</td></tr>{% endif %}
+        <tr><td style="padding:2px 0; color:#6b7280;">IBAN</td><td style="padding:2px 0;"><strong style="font-family:monospace;">{{ bank_iban }}</strong></td></tr>
+        {% if bank_bic %}<tr><td style="padding:2px 0; color:#6b7280;">BIC</td><td style="padding:2px 0; font-family:monospace;">{{ bank_bic }}</td></tr>{% endif %}
+        <tr><td style="padding:2px 0; color:#6b7280;">Causale</td><td style="padding:2px 0;">{{ etichetta_pagamento }} contratto {{ contract.contract_number }} · {{ event_name }}</td></tr>
+      </table>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+
+<p>Nella vostra area riservata trovate il riepilogo completo dei pagamenti e delle
+  scadenze del contratto:</p>
+{% else %}
 <p>vi ricordiamo che la scadenza
   <strong>"{{ deadline.title }}"</strong>
   relativa al contratto <strong>{{ contract.contract_number }}</strong>
@@ -16,14 +59,6 @@
   ({{ days_remaining }} giorni).
 </p>
 
-{% if is_pagamento and importo_scadenza %}
-<div class="alert-warning">
-  <strong>Importo da versare:</strong>
-  € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)
-</div>
-{% endif %}
-
-
 {% if deadline.description %}
 <div class="alert-warning">
   <strong>Cosa è richiesto:</strong><br>
@@ -32,15 +67,25 @@
 {% endif %}
 
 <p>Potete consultare lo stato completo del vostro contratto nell'area riservata:</p>
+{% endif %}
 
 <p style="text-align:center; margin:24px 0;">
-  <a href="{{ portal_url }}" class="button">Accedi al portale sponsor</a>
+  <a href="{% if is_pagamento %}{{ portal_url }}pagamenti/{% else %}{{ portal_url }}{% endif %}" class="button">
+    {% if is_pagamento %}Vedi i tuoi pagamenti{% else %}Accedi al portale sponsor{% endif %}
+  </a>
 </p>
 
-<p>Restiamo a disposizione per qualsiasi necessità.</p>
+{% if is_pagamento %}
+<p style="color:#6b7280; font-size:13px;">
+  Nel caso in cui un vostro pagamento dovesse incrociarsi con la presente,
+  vi chiediamo cortesemente di ritenere nulla questa comunicazione.
+</p>
+{% endif %}
+
+<p>Ringraziando per la collaborazione, cogliamo l'occasione per porgere i nostri
+  migliori saluti.</p>
 
 <p style="margin-top:24px;">
-  Cordiali saluti,<br>
   <strong>{{ organizer_name }}</strong>
 </p>
 {% endblock %}

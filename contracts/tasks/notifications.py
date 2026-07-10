@@ -425,6 +425,20 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
             _imp = None
         context['is_pagamento'] = True
         context['importo_scadenza'] = _imp
+        context['etichetta_pagamento'] = {
+            'pagamento_acconto': 'Acconto',
+            'pagamento_saldo': 'Saldo',
+        }.get(deadline.deadline_type, 'Pagamento')
+        # Dati bonifico: il contratto principale si paga solo cosi'.
+        # Nel riquadro compaiono solo se configurati davvero (niente placeholder).
+        from django.conf import settings as _settings
+        _iban = getattr(_settings, 'BANK_TRANSFER_IBAN', '') or ''
+        _holder = getattr(_settings, 'BANK_TRANSFER_HOLDER', '') or ''
+        if _iban and 'CONFIGURARE' not in _iban.upper() and 'CONFIGURARE' not in _holder.upper():
+            context['bank_holder'] = _holder
+            context['bank_name'] = getattr(_settings, 'BANK_TRANSFER_BANK', '')
+            context['bank_iban'] = _iban
+            context['bank_bic'] = getattr(_settings, 'BANK_TRANSFER_BIC', '')
 
     # Scegli template e subject in base al tipo
     if reminder_type == 'overdue':
