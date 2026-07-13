@@ -9,7 +9,7 @@ from django.contrib import admin, messages
 from django.urls import path
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from django.db.models import Count, Q, Func, CharField
+from django.db.models import Count, Max, Q, Func, CharField
 from django.db.models.functions import Lower
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
@@ -172,7 +172,35 @@ class PortalMessageInline(admin.TabularInline):
         return obj.read_by.full_name
 
 
+class AccessoPortaleFilter(admin.SimpleListFilter):
+    """Filtra per stato di accesso al portale, usando le annotazioni gia'
+    calcolate in SponsorAdmin.get_queryset (_ultimo_accesso, _portal_contacts):
+    evita un secondo filter/exclude sulla stessa relazione inversa 'contacts'
+    (che con piu' condizioni produce join multipli e risultati sbagliati)."""
+    title = 'Accesso portale'
+    parameter_name = 'accesso_portale'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('si', 'Ha effettuato accesso'),
+            ('mai', 'Invitato, mai entrato'),
+            ('no_invito', 'Nessun contatto invitato'),
+        )
+
+    def queryset(self, request, queryset):
+        val = self.value()
+        if val == 'si':
+            return queryset.filter(_ultimo_accesso__isnull=False)
+        if val == 'mai':
+            return queryset.filter(_ultimo_accesso__isnull=True, _portal_contacts__gt=0)
+        if val == 'no_invito':
+            return queryset.filter(_portal_contacts=0)
+        return queryset
+
+
 @admin.register(Sponsor)
+
+
 class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     change_list_template = 'admin/anagrafica_change_list.html'
     list_display = (
@@ -180,10 +208,12 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         'legal_name', 'display_name_or_dash', 'vat_number',
         'address_city', 'industry',
         'contracts_count', 'has_active_contracts',
+        'ultimo_accesso_portale',
     )
     list_display_links = ('legal_name',)
     list_filter = (
         'industry', 'address_country', 'is_pharma_company', DeletedListFilter,
+        AccessoPortaleFilter,
     )
     search_fields = (
         'legal_name', 'display_name', 'vat_number', 'tax_code',
@@ -581,6 +611,15 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 filter=Q(contracts__deleted_at__isnull=True) &
                        Q(contracts__status__in=['signed', 'active']),
             ),
+            # Accesso al portale: ultimo login (tra tutti i contatti collegati
+            # allo sponsor) e conteggio dei contatti effettivamente invitati
+            # (accesso abilitato + utente portale collegato).
+            _ultimo_accesso=Max('contacts__portal_user__last_login'),
+            _portal_contacts=Count(
+                'contacts', distinct=True,
+                filter=Q(contacts__has_portal_access=True) &
+                       Q(contacts__portal_user__isnull=False),
+            ),
         )
         # EVENTO ATTIVO: la lista mostra solo le aziende con contratti su
         # quell'evento; l'anagrafica completa resta nei form (autocomplete).
@@ -624,6 +663,24 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 active
             )
         return '—'
+
+    @admin.display(description='Accesso portale', ordering='_ultimo_accesso')
+    def ultimo_accesso_portale(self, obj):
+        """Chi ha davvero fatto login nel portale (invito accettato) vs chi
+        e' solo stato invitato ma non e' mai entrato vs nessun invito."""
+        from django.utils import timezone
+        dt = getattr(obj, '_ultimo_accesso', None)
+        if dt:
+            return format_html(
+                '<span style="color:#41ad7c;font-weight:600;" title="Data/ora ultimo accesso">'
+                '&#10003; {}</span>',
+                timezone.localtime(dt).strftime('%d/%m/%Y %H:%M'),
+            )
+        if getattr(obj, '_portal_contacts', 0) > 0:
+            return format_html(
+                '<span style="color:#e6a23c;" title="Invito inviato ma nessun accesso effettuato">'
+                'Invitato, mai entrato</span>')
+        return format_html('<span style="color:#999;">—</span>')
 
     @admin.display(description='Anteprima logo')
     def logo_preview(self, obj):
