@@ -177,6 +177,16 @@ def quote_confirm_view(request, contract_id):
     #   ammissione e' gia' inclusa nel PDF come Allegato 1): il cliente firma
     #   UN documento solo, niente domanda standalone da firmare a parte.
     # - Altri casi (eventi ECM, addendum): la domanda di ammissione.
+    #
+    # NOTA: la generazione del documento avviene UNA SOLA VOLTA, nel task
+    # asincrono avviato da mark_as_signed() (send_contract_signed_notification).
+    # Prima QUESTA view generava il documento una seconda volta, qui, in modo
+    # sincrono "per vederlo subito senza refresh": le due generazioni (questa
+    # + il task Celery) scrivevano in PARALLELO sugli stessi file (stesso nome
+    # deterministico per contratto), causando una race condition che a volte
+    # produceva un contratto senza Allegato 1 o, se la conversione in PDF
+    # falliva a meta', un allegato .docx invece che .pdf. Non generare piu'
+    # qui: il documento compare comunque in pochi secondi (task asincrono).
     from contracts.models import ContractKind
     from events.models import EventType
     is_main_non_ecm = (
@@ -184,26 +194,14 @@ def quote_confirm_view(request, contract_id):
         and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
     )
     if is_main_non_ecm:
-        try:
-            from contracts.services.pdf_generator import generate_sponsor_contract_pdf
-            generate_sponsor_contract_pdf(contract)
-        except Exception as e:
-            logger.warning("Contratto sponsor non generato subito per %s: %s",
-                           contract.contract_number, e)
-            messages.warning(request, "Preventivo confermato. Il contratto di sponsorizzazione sara' allegato a breve.")
-            return redirect('portal:contract_detail', contract_id=contract.id)
         messages.success(request,
-                         "Preventivo confermato. Trovi il contratto di sponsorizzazione e le scadenze qui sotto. "
-                         "Firma il contratto e caricalo nella sezione Materiali entro la scadenza indicata.")
+                         "Preventivo confermato. Il contratto di sponsorizzazione (con la domanda di ammissione "
+                         "come Allegato 1) ti arrivera' via email tra pochi istanti e comparira' qui tra i "
+                         "documenti. Firma il contratto e caricalo nella sezione Materiali entro la scadenza indicata.")
     else:
-        try:
-            from contracts.services.pdf_generator import generate_admission_request_pdf
-            generate_admission_request_pdf(contract)
-        except Exception as e:
-            logger.warning("Domanda non generata per %s: %s", contract.contract_number, e)
-            messages.warning(request, "Preventivo confermato. La domanda di partecipazione sara' allegata a breve.")
-            return redirect('portal:contract_detail', contract_id=contract.id)
-        messages.success(request, "Preventivo confermato. Trovi la domanda di partecipazione e le scadenze qui sotto.")
+        messages.success(request,
+                         "Preventivo confermato. La domanda di partecipazione ti arrivera' via email tra pochi "
+                         "istanti e comparira' qui tra i documenti.")
     return redirect('portal:contract_detail', contract_id=contract.id)
 
 

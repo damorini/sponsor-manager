@@ -56,7 +56,13 @@ def send_contract_signed_notification(self, contract_id):
         logger.warning("Nessun destinatario per contratto %s", contract.contract_number)
         return
 
-    # Genera PDF e prepara allegato.
+    language = contract.language or 'it'
+    event_name = (
+        contract.event.get_name(language)
+        if hasattr(contract.event, 'get_name')
+        else str(contract.event.name)
+    )
+
     # MAIN non-ECM: si allega il CONTRATTO di sponsorizzazione, che include gia'
     # la domanda di ammissione come Allegato 1 — il cliente firma UN documento
     # solo. Negli altri casi (eventi ECM, addendum) resta la domanda.
@@ -66,19 +72,42 @@ def send_contract_signed_notification(self, contract_id):
         contract.contract_kind == ContractKind.MAIN
         and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
     )
-    pdf_attachment = None
-    contract_document = None
-    try:
-        if is_main_non_ecm:
-            from contracts.services.pdf_generator import generate_sponsor_contract_pdf
+
+    # --- MAIN non-ECM: UN SOLO documento (contratto + Allegato 1 gia' uniti)
+    # e UNA SOLA email corretta (firmatario+marketing+operational, CC
+    # amministrazione/morini). Prima venivano inviate DUE email per lo stesso
+    # evento — questa email generica (col soggetto/testo ormai obsoleto
+    # "Domanda di ammissione confermata", ereditato da prima che esistesse il
+    # documento unico) E quella specifica del contratto sponsor. Se la
+    # generazione del documento fallisce, si RITENTA (niente email senza
+    # l'allegato giusto).
+    if is_main_non_ecm:
+        from contracts.services.pdf_generator import generate_sponsor_contract_pdf
+        try:
             document = generate_sponsor_contract_pdf(contract)
-            contract_document = document
-        else:
-            document = generate_admission_request_pdf(contract)
-        # Leggi il file salvato
+        except Exception as e:
+            logger.exception(
+                "Contratto sponsor non generato per %s: notifica NON inviata "
+                "(evito di mandare un'email senza il documento corretto).",
+                contract.contract_number,
+            )
+            raise self.retry(exc=e)
+        try:
+            _invia_contratto_sponsor(
+                contract, language, event_name,
+                document=document, extra_recipients=recipients,
+            )
+        except Exception as e:
+            logger.exception("Errore invio contratto sponsor %s", contract_id)
+            raise self.retry(exc=e)
+        return
+
+    # --- ECM / addendum: domanda di ammissione (flusso invariato) ---
+    pdf_attachment = None
+    try:
+        document = generate_admission_request_pdf(contract)
         from django.conf import settings
         from pathlib import Path
-        # storage_url include MEDIA_URL prefix; ricostruisco il path locale
         relative = document.storage_url.replace(settings.MEDIA_URL, '')
         pdf_path = Path(settings.MEDIA_ROOT) / relative
         if pdf_path.exists():
@@ -93,19 +122,9 @@ def send_contract_signed_notification(self, contract_id):
             contract.contract_number, e
         )
 
-    # Determina lingua
-    language = contract.language or 'it'
-
-    # Costruisci context
     primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
     if not primary_contact:
         primary_contact = contract.sponsor.contacts.first()
-
-    event_name = (
-        contract.event.get_name(language)
-        if hasattr(contract.event, 'get_name')
-        else str(contract.event.name)
-    )
 
     context = {
         'contract': contract,
@@ -114,12 +133,9 @@ def send_contract_signed_notification(self, contract_id):
         'event_name': event_name,
         'contact': primary_contact,
         'has_deadlines': contract.deadlines.exists(),
-        # il template ringrazia e cita l'allegato giusto:
-        # contratto (non-ECM) oppure domanda di ammissione (ECM/addendum)
-        'is_main_non_ecm': is_main_non_ecm,
+        'is_main_non_ecm': False,
     }
 
-    # Subject in lingua
     if language == 'en':
         subject = f"Contract {contract.contract_number} confirmed · {event_name}"
     else:
@@ -141,23 +157,15 @@ def send_contract_signed_notification(self, contract_id):
         logger.exception("Errore invio notifica contratto firmato %s", contract_id)
         raise self.retry(exc=e)
 
-    # --- Contratto di sponsorizzazione (solo MAIN non-ECM): genera e invia ---
-    # Wrappato: un errore qui NON deve far ritentare l'intera notifica.
-    try:
-        if is_main_non_ecm:
-            _invia_contratto_sponsor(contract, language, event_name,
-                                     document=contract_document)
-    except Exception:
-        logger.exception(
-            "Generazione/invio contratto di sponsorizzazione fallito per %s",
-            contract.contract_number,
-        )
 
-
-def _invia_contratto_sponsor(contract, language, event_name, document=None):
+def _invia_contratto_sponsor(contract, language, event_name, document=None, extra_recipients=None):
     """Invia il contratto di sponsorizzazione (con Domanda di ammissione come
-    Allegato 1) al contatto OPERATIVO dello sponsor, in CC ad
-    amministrazione@valet.it ed elisa.fantini@valet.it.
+    Allegato 1) allo sponsor, in CC ad amministrazione@valet.it e morini@valet.it.
+
+    Destinatari: extra_recipients (se passata, es. firmatario+marketing+operational)
+    piu' comunque il contatto OPERATIVO (aggiunto se non gia' presente). Se
+    extra_recipients non e' passata, va solo al contatto operativo (comportamento
+    storico, per compatibilita' con eventuali altri chiamanti).
     Se 'document' non viene passato, il PDF viene generato qui."""
     from django.conf import settings
     from pathlib import Path
@@ -175,11 +183,13 @@ def _invia_contratto_sponsor(contract, language, event_name, document=None):
         return
     attachment = (document.file_name, pdf_path.read_bytes(), 'application/pdf')
 
+    to_list = list(dict.fromkeys(extra_recipients or []))  # dedup, ordine stabile
     op = _get_operational_contact(contract)
-    to_email = getattr(op, 'email', None)
-    if not to_email:
-        logger.warning("Nessuna email (contatto operativo) per contratto sponsor %s",
-                       contract.contract_number)
+    op_email = getattr(op, 'email', None)
+    if op_email and op_email not in to_list:
+        to_list.append(op_email)
+    if not to_list:
+        logger.warning("Nessun destinatario per contratto sponsor %s", contract.contract_number)
         return
 
     subject = f"Contratto di sponsorizzazione {contract.contract_number} · {event_name}"
@@ -191,7 +201,7 @@ def _invia_contratto_sponsor(contract, language, event_name, document=None):
             'event': contract.event,
             'event_name': event_name,
         },
-        to=[to_email],
+        to=to_list,
         cc=['amministrazione@valet.it', 'morini@valet.it'],
         subject=subject,
         language=language,
@@ -200,8 +210,8 @@ def _invia_contratto_sponsor(contract, language, event_name, document=None):
         communication_type='initial_send',
         is_automated=True,
     )
-    logger.info("Contratto sponsor %s inviato a %s (CC amministrazione, elisa.fantini)",
-                contract.contract_number, to_email)
+    logger.info("Contratto sponsor %s inviato a %s (CC amministrazione, morini)",
+                contract.contract_number, to_list)
 
 
 # ============================================================================
