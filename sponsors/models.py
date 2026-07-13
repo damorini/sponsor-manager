@@ -99,7 +99,7 @@ class Sponsor(SoftDeleteModel):
         help_text="Es. 'BO252016'",
     )
     business_description = models.CharField(
-        max_length=255,
+        max_length=5000,
         blank=True,
         verbose_name="Descrizione attività",
         help_text="Es. 'prodotti farmaceutici per uso umano' (usato nei contratti)",

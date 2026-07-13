@@ -78,8 +78,13 @@
         {% for f in sponsor_fields %}
         <div class="{% if f.name == 'sponsor_business_description' or f.name == 'sponsor_address_street' %}sm:col-span-2{% endif %}">
           <label class="block text-sm font-medium text-gray-700 mb-1">{{ f.label }}{% if f.required %} <span class="text-red-500" title="{% trans 'Campo obbligatorio' %}">*</span>{% endif %}</label>
+          {% if f.name == 'sponsor_business_description' %}
+          <textarea name="{{ f.name }}" rows="4" maxlength="5000"
+                 class="w-full border {% if f.required and not f.value %}border-amber-400{% else %}border-gray-300{% endif %} rounded-md px-3 py-2 focus:ring-brand-500 focus:border-brand-500">{{ f.value }}</textarea>
+          {% else %}
           <input type="text" name="{{ f.name }}" value="{{ f.value }}"
                  class="w-full border {% if f.required and not f.value %}border-amber-400{% else %}border-gray-300{% endif %} rounded-md px-3 py-2 focus:ring-brand-500 focus:border-brand-500">
+          {% endif %}
           {% if f.help %}<p class="text-xs text-gray-500 mt-1">{{ f.help }}</p>{% endif %}
         </div>
         {% endfor %}
