@@ -85,7 +85,7 @@ def test_selezione_template_contratto_sponsor_per_lingua():
 
 
 @pytest.fixture
-def contratto_en(db, sponsor):
+def contratto_en(db, sponsor, dati_firmatario_completi):
     from sponsors.models import Contact
     from events.models import Event, EventType
     from catalog.models import Service
@@ -93,6 +93,7 @@ def contratto_en(db, sponsor):
     Contact.objects.create(
         sponsor=sponsor, full_name='John Smith',
         email='john@test.com', is_signer=True,
+        **dati_firmatario_completi,
     )
     event = Event.objects.create(
         name={'it': 'Evento EN', 'en': 'EN Event'}, code='ENG',

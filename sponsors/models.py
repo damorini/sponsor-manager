@@ -351,6 +351,33 @@ class Contact(SoftDeleteModel):
         max_length=20, blank=True, verbose_name="Numero documento",
     )
 
+    # Campi anagrafici obbligatori quando il contatto e' USATO come firmatario
+    # (contract.sponsor_signer_contact, o fallback is_signer=True): il
+    # contratto li stampa tutti (nato il/a, residenza, documento, CF) e senza
+    # non si genera. Vedi dati_firmatario_mancanti().
+    FIRMATARIO_CAMPI_OBBLIGATORI = [
+        ('signer_tax_code', 'Codice Fiscale'),
+        ('birth_date', 'Data di nascita'),
+        ('birth_place', 'Luogo di nascita'),
+        ('birth_province', 'Provincia di nascita'),
+        ('residence_street', 'Indirizzo di residenza'),
+        ('residence_street_number', 'Numero civico'),
+        ('residence_city', 'Città di residenza'),
+        ('residence_zip', 'CAP di residenza'),
+        ('residence_province', 'Provincia di residenza'),
+        ('id_document_number', "Numero carta d'identità"),
+    ]
+
+    def dati_firmatario_mancanti(self):
+        """Campi anagrafici del legale rappresentante ancora da compilare
+        (lista di etichette). Vuota se tutti presenti."""
+        mancanti = []
+        for field, label in self.FIRMATARIO_CAMPI_OBBLIGATORI:
+            val = getattr(self, field, None)
+            if not (val and str(val).strip()):
+                mancanti.append(label)
+        return mancanti
+
     # --- Privacy / consensi (GDPR) ---
     privacy_accepted_at = models.DateTimeField(
         null=True, blank=True, verbose_name="Informativa privacy accettata il")

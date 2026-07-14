@@ -222,15 +222,8 @@ def generate_contract_pdf(contract):
     # ========================================================================
     sponsor = contract.sponsor
     event = contract.event
-    signer = _get_signer_contact(contract)
+    signer = _require_complete_signer(contract)
     referente = _get_referente_contact(contract)
-    
-    # Validazione dati minimi
-    if not signer:
-        raise ValueError(
-            f"Contract {contract.contract_number}: nessun Contact con is_signer=True. "
-            "Imposta un firmatario sullo Sponsor prima di generare il contratto."
-        )
     
     # Raggruppa righe per categoria (per allegato ECM)
     lines_by_category = _group_lines_by_category(contract, event_type)
@@ -367,6 +360,27 @@ def _get_signer_contact(contract):
         is_signer=True,
         deleted_at__isnull=True,
     ).first()
+
+
+def _require_complete_signer(contract):
+    """Firmatario pronto per la generazione del contratto: deve esistere E
+    avere TUTTI i dati anagrafici obbligatori (nato il/a, residenza,
+    documento, codice fiscale) — il contratto li stampa tutti nella tabella
+    dati cliente. Solleva ValueError con l'elenco dei campi mancanti."""
+    signer = _get_signer_contact(contract)
+    if not signer:
+        raise ValueError(
+            f"Contract {contract.contract_number}: nessun Contact con is_signer=True. "
+            "Imposta un firmatario sullo Sponsor prima di generare il contratto."
+        )
+    mancanti = signer.dati_firmatario_mancanti()
+    if mancanti:
+        raise ValueError(
+            f"Il firmatario {signer.full_name} non ha ancora tutti i dati anagrafici "
+            "richiesti dal contratto (nato il/a, residenza, documento, codice fiscale). "
+            "Campi mancanti: " + ", ".join(mancanti) + "."
+        )
+    return signer
 
 
 def _get_referente_contact(contract):
@@ -1480,12 +1494,7 @@ def generate_sponsor_contract_pdf(contract):
 
     sponsor = contract.sponsor
     event = contract.event
-    signer = _get_signer_contact(contract)
-    if not signer:
-        raise ValueError(
-            f"Contract {contract.contract_number}: manca il firmatario, "
-            "impossibile generare il contratto di sponsorizzazione."
-        )
+    signer = _require_complete_signer(contract)
     ref = _get_operational_contact(contract)
     operational_email = (getattr(ref, 'email', '') or getattr(signer, 'email', '') or '')
 

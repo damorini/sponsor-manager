@@ -10,6 +10,27 @@ from users.models import UserRole
 User = get_user_model()
 
 
+@pytest.fixture
+def dati_firmatario_completi():
+    """Kwargs coi dati anagrafici COMPLETI del firmatario, richiesti dal
+    contratto MAIN non-ECM (vedi Contact.dati_firmatario_mancanti). Da
+    passare a Contact.objects.create(is_signer=True, **dati_firmatario_completi)
+    nei test che generano il contratto di sponsorizzazione."""
+    from datetime import date
+    return dict(
+        signer_tax_code='RSSMRA75C15H501Z',
+        birth_date=date(1975, 3, 15),
+        birth_place='Bologna',
+        birth_province='BO',
+        residence_street='Via Test',
+        residence_street_number='1',
+        residence_city='Bologna',
+        residence_zip='40100',
+        residence_province='BO',
+        id_document_number='AB1234567',
+    )
+
+
 @pytest.fixture(autouse=True)
 def _no_auto_translate(settings):
     """I test NON devono chiamare DeepL al salvataggio dei modelli traducibili.

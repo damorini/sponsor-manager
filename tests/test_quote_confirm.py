@@ -36,9 +36,9 @@ def _completa_anagrafica(sponsor):
 
 
 @pytest.fixture
-def quote_setup(db, user_sponsor, sponsor):
+def quote_setup(db, user_sponsor, sponsor, dati_firmatario_completi):
     """Sponsor (anagrafica completa) con un contatto operativo+firmatario
-    e un contratto in stato SENT."""
+    (dati anagrafici completi) e un contratto in stato SENT."""
     from django.utils import timezone
     from core.models import OrganizerSettings
     _completa_anagrafica(sponsor)
@@ -51,6 +51,7 @@ def quote_setup(db, user_sponsor, sponsor):
         is_signer=True,
         privacy_accepted_at=timezone.now(),
         privacy_policy_version=OrganizerSettings.load().privacy_policy_version or '1.0',
+        **dati_firmatario_completi,
     )
     event = Event.objects.create(
         name={'it': 'Quote Event', 'en': 'Quote Event'},

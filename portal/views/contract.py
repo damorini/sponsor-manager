@@ -129,7 +129,8 @@ def contract_detail_view(request, contract_id):
 @require_POST
 def quote_confirm_view(request, contract_id):
     """Conferma preventivo dal cliente: SENT -> SIGNED (scadenze) + domanda di partecipazione."""
-    from contracts.models import Contract, ContractStatus
+    from contracts.models import Contract, ContractStatus, ContractKind
+    from events.models import EventType
 
     contract = get_object_or_404(Contract, id=contract_id, deleted_at__isnull=True)
     if contract.sponsor_id != request.sponsor.id:
@@ -153,11 +154,17 @@ def quote_confirm_view(request, contract_id):
         next_url = reverse('portal:quote_confirm_page', args=[contract.id])
         return redirect(f"{reverse('portal:profile')}?next={next_url}")
 
+    is_main_non_ecm = (
+        contract.contract_kind == ContractKind.MAIN
+        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
+    )
+
     # Gate firmatario: senza il legale rappresentante il contratto/domanda
     # non puo' essere generato (partirebbe un'email SENZA allegato e l'area
     # riservata resterebbe vuota). Il firmatario lo registra la segreteria.
     from contracts.services.pdf_generator import _get_signer_contact
-    if not _get_signer_contact(contract):
+    signer = _get_signer_contact(contract)
+    if not signer:
         messages.error(
             request,
             "Non risulta ancora registrato il legale rappresentante "
@@ -165,6 +172,21 @@ def quote_confirm_view(request, contract_id):
             "essere generato. Contattate la segreteria organizzativa e "
             "riprovate dopo la registrazione.")
         return redirect('portal:contract_detail', contract_id=contract.id)
+
+    # Gate dati anagrafici del firmatario: il contratto (MAIN non-ECM) stampa
+    # nato il/a, residenza, documento e codice fiscale del legale
+    # rappresentante — senza questi dati non si genera. La domanda di
+    # ammissione (ECM/addendum) non li usa: nessun blocco in quel caso.
+    if is_main_non_ecm:
+        mancanti_firmatario = signer.dati_firmatario_mancanti()
+        if mancanti_firmatario:
+            messages.error(
+                request,
+                f"Il firmatario registrato ({signer.full_name}) non ha ancora tutti i "
+                "dati anagrafici richiesti dal contratto. Contattate la segreteria "
+                "organizzativa per completarli, poi riprovate a confermare. "
+                "Campi mancanti: " + ", ".join(mancanti_firmatario) + ".")
+            return redirect('portal:contract_detail', contract_id=contract.id)
 
     try:
         contract.mark_as_signed()
@@ -187,12 +209,6 @@ def quote_confirm_view(request, contract_id):
     # produceva un contratto senza Allegato 1 o, se la conversione in PDF
     # falliva a meta', un allegato .docx invece che .pdf. Non generare piu'
     # qui: il documento compare comunque in pochi secondi (task asincrono).
-    from contracts.models import ContractKind
-    from events.models import EventType
-    is_main_non_ecm = (
-        contract.contract_kind == ContractKind.MAIN
-        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
-    )
     if is_main_non_ecm:
         messages.success(request,
                          "Preventivo confermato. Il contratto di sponsorizzazione (con la domanda di ammissione "
@@ -324,7 +340,8 @@ def paga_scadenza_view(request, contract_id):
 @sponsor_required
 def quote_confirm_page_view(request, contract_id):
     """Pagina che spiega cosa accade prima della conferma definitiva."""
-    from contracts.models import Contract, ContractStatus
+    from contracts.models import Contract, ContractStatus, ContractKind
+    from events.models import EventType
     contract = get_object_or_404(Contract, id=contract_id, deleted_at__isnull=True)
     if contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Non hai accesso a questo contratto.")
@@ -346,7 +363,8 @@ def quote_confirm_page_view(request, contract_id):
     # Gate firmatario (stesso controllo del POST): meglio scoprirlo qui che
     # dopo il clic di conferma.
     from contracts.services.pdf_generator import _get_signer_contact
-    if not _get_signer_contact(contract):
+    signer = _get_signer_contact(contract)
+    if not signer:
         messages.error(
             request,
             "Non risulta ancora registrato il legale rappresentante "
@@ -354,4 +372,18 @@ def quote_confirm_page_view(request, contract_id):
             "essere generato. Contattate la segreteria organizzativa e "
             "riprovate dopo la registrazione.")
         return redirect('portal:contract_detail', contract_id=contract.id)
+    is_main_non_ecm = (
+        contract.contract_kind == ContractKind.MAIN
+        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM
+    )
+    if is_main_non_ecm:
+        mancanti_firmatario = signer.dati_firmatario_mancanti()
+        if mancanti_firmatario:
+            messages.error(
+                request,
+                f"Il firmatario registrato ({signer.full_name}) non ha ancora tutti i "
+                "dati anagrafici richiesti dal contratto. Contattate la segreteria "
+                "organizzativa per completarli, poi riprovate a confermare. "
+                "Campi mancanti: " + ", ".join(mancanti_firmatario) + ".")
+            return redirect('portal:contract_detail', contract_id=contract.id)
     return render(request, 'portal/contract/quote_confirm.html', {'contract': contract})

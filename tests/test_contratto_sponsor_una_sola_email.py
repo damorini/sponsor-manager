@@ -30,7 +30,7 @@ def _completa_anagrafica(sponsor):
 
 
 @pytest.fixture
-def contratto_pronto(db, user_sponsor, sponsor):
+def contratto_pronto(db, user_sponsor, sponsor, dati_firmatario_completi):
     from django.utils import timezone
     from core.models import OrganizerSettings
     _completa_anagrafica(sponsor)
@@ -40,6 +40,7 @@ def contratto_pronto(db, user_sponsor, sponsor):
         roles=[ContactRole.OPERATIONAL], is_signer=True,
         privacy_accepted_at=timezone.now(),
         privacy_policy_version=OrganizerSettings.load().privacy_policy_version or '1.0',
+        **dati_firmatario_completi,
     )
     event = Event.objects.create(
         name={'it': 'Evento Unico Email', 'en': 'Single Email Event'},

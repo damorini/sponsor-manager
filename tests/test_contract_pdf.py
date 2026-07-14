@@ -18,10 +18,11 @@ from contracts.services.pdf_generator import generate_contract_pdf
 
 
 @pytest.fixture
-def signed_contract(db, sponsor):
+def signed_contract(db, sponsor, dati_firmatario_completi):
     Contact.objects.create(
         sponsor=sponsor, full_name='Mario Rossi',
         email='mario@test.it', is_signer=True,
+        **dati_firmatario_completi,
     )
     event = Event.objects.create(
         name={'it': 'Pdf Event', 'en': 'Pdf Event'},
