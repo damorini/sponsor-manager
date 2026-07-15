@@ -46,6 +46,7 @@ class PaymentMethod(models.TextChoices):
     PAYPAL = 'paypal', 'PayPal'
     BANK_TRANSFER = 'bank_transfer', 'Bonifico'
     INSTALLMENTS = 'installments', 'Rateale'
+    RIBA = 'riba', 'RI.BA.'
     OTHER = 'other', 'Altro'
 
 
@@ -749,6 +750,31 @@ class Contract(SoftDeleteModel):
     def has_deposit(self):
         """True se e' previsto un acconto (percentuale impostata e > 0)."""
         return bool(self.deposit_percent and self.deposit_percent > 0)
+
+    @property
+    def payment_clause_text(self):
+        """Testo della clausola di pagamento del saldo stampata nel contratto.
+
+        Se payment_method e' RI.BA., riporta i termini liberi impostati
+        (es. '60 gg F.M.') invece della valuta fissa alla scadenza saldo:
+        alcuni clienti (es. grandi aziende) pagano solo tramite Ri.Ba. con
+        termini contrattuali propri, non a data fissa concordata da noi.
+        """
+        try:
+            importo = f"{float(self.balance_amount):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except (TypeError, ValueError):
+            importo = "0,00"
+        is_en = self.language == 'en'
+        if self.payment_method == PaymentMethod.RIBA:
+            termini = self.payment_terms or ('as per agreement' if is_en else 'come da accordi')
+            if is_en:
+                return f"BALANCE: € {importo} to be settled via Ri.Ba. (Italian bank collection), {termini}."
+            return f"SALDO: € {importo} da regolarsi tramite Ri.Ba. {termini}."
+        due = self.balance_due_date
+        due_str = due.strftime('%d/%m/%Y') if due else '___________'
+        if is_en:
+            return f"BALANCE: € {importo} to be paid with fixed value date on {due_str}."
+        return f"SALDO: € {importo} da versarsi con valuta fissa al {due_str}."
 
     # ---------------------------------------------------------------------
     # Transizioni di stato
