@@ -1,7 +1,9 @@
 """Regressione: la clausola SALDO del contratto/domanda di ammissione segue
-il metodo di pagamento impostato sul contratto. Di default (o Bonifico)
-resta 'valuta fissa alla scadenza saldo'; con RI.BA. riporta i termini
-liberi (es. '60 gg F.M.') invece della data fissa."""
+il metodo di pagamento impostato sul contratto. Di default (o Bonifico
+generico) resta 'valuta fissa alla scadenza saldo'; con RI.BA. riporta i
+termini liberi (es. '60 gg F.M.') invece della data fissa; con Bonifico
+(B.B.) a scadenza fissa usa la dicitura 'PAGAMENTO: ... tramite B.B. con
+scadenza [giorno] [mese] [anno]' al posto di 'SALDO'."""
 from datetime import date
 from decimal import Decimal
 
@@ -57,6 +59,25 @@ def test_clausola_riba_usa_termini_liberi(contratto_riba):
     assert 'Ri.Ba. 60 gg F.M.' in testo
     assert 'valuta fissa' not in testo
     assert '29/10/2026' not in testo
+
+
+def test_clausola_bonifico_scadenza_fissa_dicitura_bb(contratto_riba):
+    contratto_riba.payment_method = PaymentMethod.BANK_TRANSFER_FIXED_DATE
+    contratto_riba.save(update_fields=['payment_method'])
+    testo = contratto_riba.payment_clause_text
+    assert testo == 'PAGAMENTO: € 1.220,00 tramite B.B. con scadenza 29 OTTOBRE 2026.'
+    assert 'SALDO' not in testo
+
+
+def test_clausola_bank_transfer_generico_resta_invariata(contratto_riba):
+    """Il valore storico 'bank_transfer' (gia' presente su contratti
+    esistenti per default) NON deve attivare la nuova dicitura: solo il
+    valore dedicato 'bb_scadenza_fissa' lo fa."""
+    contratto_riba.payment_method = PaymentMethod.BANK_TRANSFER
+    contratto_riba.save(update_fields=['payment_method'])
+    testo = contratto_riba.payment_clause_text
+    assert 'valuta fissa al 29/10/2026' in testo
+    assert 'PAGAMENTO' not in testo
 
 
 @pytest.mark.django_db

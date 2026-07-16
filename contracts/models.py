@@ -47,6 +47,7 @@ class PaymentMethod(models.TextChoices):
     BANK_TRANSFER = 'bank_transfer', 'Bonifico'
     INSTALLMENTS = 'installments', 'Rateale'
     RIBA = 'riba', 'RI.BA.'
+    BANK_TRANSFER_FIXED_DATE = 'bb_scadenza_fissa', 'Bonifico (B.B.) con scadenza fissa'
     OTHER = 'other', 'Altro'
 
 
@@ -751,14 +752,29 @@ class Contract(SoftDeleteModel):
         """True se e' previsto un acconto (percentuale impostata e > 0)."""
         return bool(self.deposit_percent and self.deposit_percent > 0)
 
+    _MESI_IT = [
+        '', 'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+        'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
+    ]
+    _MONTHS_EN = [
+        '', 'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    ]
+
     @property
     def payment_clause_text(self):
         """Testo della clausola di pagamento del saldo stampata nel contratto.
 
-        Se payment_method e' RI.BA., riporta i termini liberi impostati
-        (es. '60 gg F.M.') invece della valuta fissa alla scadenza saldo:
-        alcuni clienti (es. grandi aziende) pagano solo tramite Ri.Ba. con
-        termini contrattuali propri, non a data fissa concordata da noi.
+        Il metodo di pagamento impostato sul contratto cambia la dicitura:
+        - RI.BA.: riporta i termini liberi impostati (es. '60 gg F.M.')
+          invece della valuta fissa, perche' alcuni clienti (es. grandi
+          aziende) pagano solo tramite Ri.Ba. con termini contrattuali
+          propri, non a data fissa concordata da noi.
+        - Bonifico: dicitura 'PAGAMENTO: ... tramite B.B. con scadenza
+          [giorno] [mese in lettere] [anno]' invece di 'SALDO ... valuta
+          fissa al gg/mm/aaaa' (richiesta esplicita di alcuni clienti,
+          es. Galderma, che vogliono la dicitura bancaria per esteso).
+        - Altrimenti: dicitura di default, valuta fissa alla scadenza saldo.
         """
         try:
             importo = f"{float(self.balance_amount):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
@@ -771,6 +787,11 @@ class Contract(SoftDeleteModel):
                 return f"BALANCE: € {importo} to be settled via Ri.Ba. (Italian bank collection), {termini}."
             return f"SALDO: € {importo} da regolarsi tramite Ri.Ba. {termini}."
         due = self.balance_due_date
+        if self.payment_method == PaymentMethod.BANK_TRANSFER_FIXED_DATE and due:
+            mese = self._MONTHS_EN[due.month] if is_en else self._MESI_IT[due.month]
+            if is_en:
+                return f"PAYMENT: € {importo} via bank transfer (B.B.), due date {due.day} {mese} {due.year}."
+            return f"PAGAMENTO: € {importo} tramite B.B. con scadenza {due.day} {mese.upper()} {due.year}."
         due_str = due.strftime('%d/%m/%Y') if due else '___________'
         if is_en:
             return f"BALANCE: € {importo} to be paid with fixed value date on {due_str}."
