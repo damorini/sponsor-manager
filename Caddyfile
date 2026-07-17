@@ -15,6 +15,16 @@
 		file_server
 	}
 
-	# Tutto il resto all'app Django (Gunicorn)
-	reverse_proxy web:8000
+	# Tutto il resto all'app Django (Gunicorn).
+	# keepalive off: Gunicorn con worker sync non gestisce bene le connessioni
+	# persistenti riusate da Caddy verso l'upstream - un worker occupato su
+	# una connessione riusata puo' fraintendere la richiesta successiva e
+	# rispondere 400 Bad Request in modo intermittente (~1 volta su 2).
+	# Disabilitando il keepalive verso l'upstream, Caddy apre una connessione
+	# nuova per ogni richiesta e il problema sparisce.
+	reverse_proxy web:8000 {
+		transport http {
+			keepalive off
+		}
+	}
 }
