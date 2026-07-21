@@ -1024,7 +1024,7 @@ class Contract(SoftDeleteModel):
 
         for line in self.lines.select_related('service').all():
             service = line.service
-            if not service.triggers_deadlines:
+            if not service or not service.triggers_deadlines:
                 continue
 
             for template in service.deadline_templates.filter(is_active=True):
@@ -1229,8 +1229,18 @@ class ContractLine(TimeStampedModel):
     service = models.ForeignKey(
         Service,
         on_delete=models.PROTECT,
+        null=True, blank=True,
         related_name='contract_lines',
         verbose_name="Servizio",
+        help_text="Lascia vuoto per una RIGA LIBERA (richiesta specifica del cliente non "
+                  "a catalogo): compila invece 'Descrizione libera' qui sotto.",
+    )
+    custom_description = models.CharField(
+        max_length=255, blank=True,
+        verbose_name="Descrizione libera",
+        help_text="Usata SOLO se 'Servizio' e' vuoto: diventa il nome della riga nel "
+                  "preventivo/contratto. Nessun controllo di quantita'/disponibilita' "
+                  "di catalogo si applica a queste righe.",
     )
 
     # Snapshot servizio
@@ -1365,6 +1375,14 @@ class ContractLine(TimeStampedModel):
                 f"'{_ev_contr}' per vedere solo i suoi servizi.")})
 
         if not self.service_id:
+            # Riga libera (nessun servizio a catalogo): serve una descrizione
+            # e un prezzo, ma NESSUN controllo di quantita'/disponibilita'.
+            if not (self.custom_description or '').strip():
+                raise ValidationError({'custom_description':
+                    "Senza un servizio selezionato, la descrizione libera è obbligatoria."})
+            if self.unit_price is None:
+                raise ValidationError({'unit_price':
+                    "Senza un servizio selezionato, il prezzo unitario è obbligatorio."})
             return
         contract_id = self.contract_id
 
@@ -1518,6 +1536,11 @@ class ContractLine(TimeStampedModel):
         - Ricalcola totali contratto dopo
         """
         is_new = self._state.adding
+
+        # Riga libera (nessun servizio): il nome mostrato ovunque (PDF,
+        # portale, admin) e' la descrizione libera compilata a mano.
+        if not self.service_id and (self.custom_description or '').strip():
+            self.service_name_snapshot = self.custom_description.strip()
 
         # Snapshot al primo salvataggio, nella LINGUA DEL CONTRATTO (senza
         # lingua esplicita translated() userebbe la lingua dell'interfaccia

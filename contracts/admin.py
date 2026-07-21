@@ -62,11 +62,16 @@ class _VariantSelectByService(forms.Select):
 
 
 class ContractLineInline(admin.TabularInline):
-    """Righe contratto editabili dentro il form contratto."""
+    """Righe contratto editabili dentro il form contratto.
+
+    'service' vuoto = riga LIBERA (richiesta specifica del cliente non a
+    catalogo): compila 'custom_description' al suo posto. Nessun controllo
+    di quantita'/disponibilita' di catalogo si applica a queste righe -
+    vedi ContractLine.clean()."""
     model = ContractLine
     extra = 0
     fields = (
-        'service', 'service_variant', 'quantity', 'unit_price',
+        'service', 'custom_description', 'service_variant', 'quantity', 'unit_price',
         'discount_percent', 'discount_amount',
         'line_subtotal', 'line_vat', 'line_total',
     )

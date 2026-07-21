@@ -622,7 +622,7 @@ def send_cart_recovery_email(self, cart_session_id):
     # Calcola giorni mancanti al cutoff più vicino tra i servizi nel carrello
     days_until_cutoff = 30
     for line in contract.lines.select_related('service').all():
-        if line.service.self_purchase_cutoff_days is not None:
+        if line.service and line.service.self_purchase_cutoff_days is not None:
             days_to_event = (contract.event.start_date - date.today()).days
             cutoff_remaining = days_to_event - line.service.self_purchase_cutoff_days
             days_until_cutoff = min(days_until_cutoff, cutoff_remaining)
