@@ -1,0 +1,29 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#1d6534; margin:0 0 16px 0; font-size:20px;">
+  📄 Fattura proforma disponibile
+</h2>
+
+<p>Buongiorno {{ contact.full_name }},</p>
+
+<p>è stata generata la fattura proforma
+  {% if plurale %}relativa all'acconto e al saldo{% endif %}
+  per il contratto <strong>{{ contract.contract_number }}</strong>
+  relativo all'evento <strong>{{ event_name }}</strong>.
+</p>
+
+<p>La trovi nella tua area riservata, alla voce <strong>«I miei documenti»</strong>.</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ document_url }}" class="button">Vai a «I miei documenti»</a>
+</p>
+
+<p>Ricordiamo che si tratta di un documento <strong>non fiscale</strong>: la fattura
+  vera e propria verrà emessa secondo i termini concordati.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}

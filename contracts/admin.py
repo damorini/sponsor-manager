@@ -13,6 +13,8 @@ Azioni admin custom:
 - Genera PDF contratto (via Celery, placeholder per ora)
 - Annulla contratto
 """
+import logging
+
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin import helpers
@@ -34,6 +36,8 @@ from .payments import (
     CartSession, CartSessionStatus, Payment,
     PaymentMethodChoice, PaymentStatus,
 )
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -995,7 +999,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.action(description='Genera FATTURA PROFORMA (acconto+saldo se previsti)')
     def action_genera_proforma(self, request, queryset):
         from .services.pdf_generator import generate_proforma_pdf
+        from .tasks.notifications import send_proforma_generated_notification
         tot_docs = 0
+        avvisati = 0
         for contract in queryset:
             try:
                 docs = generate_proforma_pdf(contract)
@@ -1007,11 +1013,20 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 )
                 continue
             tot_docs += len(docs)
+            if docs:
+                try:
+                    send_proforma_generated_notification.delay(
+                        contract.id, [d.id for d in docs])
+                    avvisati += 1
+                except Exception:
+                    logger.exception(
+                        "Errore invio notifica proforma per %s", contract.contract_number)
         if tot_docs:
             self.message_user(
                 request,
                 f"Generate {tot_docs} fattura/e proforma. Le trovi tra i Documenti del contratto "
-                "(numerate .../1 acconto e .../2 saldo se il contratto prevede l'acconto).",
+                "(numerate .../1 acconto e .../2 saldo se il contratto prevede l'acconto). "
+                f"Email di avviso inviata al cliente per {avvisati} contratto/i.",
                 level=messages.SUCCESS,
             )
 

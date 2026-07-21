@@ -336,6 +336,82 @@ def send_payment_confirmation_notification(self, payment_id):
 
 
 # ============================================================================
+# Notifica fattura proforma generata
+# ============================================================================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_proforma_generated_notification(self, contract_id, document_ids):
+    """
+    Avvisa il cliente che la/e fattura/e proforma sono state generate e sono
+    disponibili nell'area riservata, sezione "I miei documenti".
+
+    Triggerato da: contracts.admin.ContractAdmin.action_genera_proforma
+    (generazione manuale, di solito una tantum per contratto/installment).
+    """
+    from contracts.models import Contract
+    from contracts.services.email_sender import send_email, get_recipients_for_contract
+
+    try:
+        contract = Contract.all_objects.select_related('sponsor', 'event').get(pk=contract_id)
+    except Contract.DoesNotExist:
+        logger.error("Contract %s non trovato (notifica proforma)", contract_id)
+        return
+
+    recipients = get_recipients_for_contract(
+        contract, roles=['signer', 'finance', 'operational']
+    )
+    if not recipients:
+        logger.warning("Nessun destinatario per notifica proforma contratto %s", contract_id)
+        return
+
+    language = contract.language or 'it'
+    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
+    if not primary_contact:
+        primary_contact = contract.sponsor.contacts.first()
+
+    event_name = (
+        contract.event.get_name(language)
+        if hasattr(contract.event, 'get_name')
+        else str(contract.event.name)
+    )
+
+    from django.conf import settings
+    from django.urls import reverse
+    site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
+    document_url = site_url + reverse('portal:contract_detail', args=[contract.id])
+
+    context = {
+        'contract': contract,
+        'sponsor': contract.sponsor,
+        'event': contract.event,
+        'event_name': event_name,
+        'contact': primary_contact,
+        'document_url': document_url,
+        'plurale': len(document_ids or []) > 1,
+    }
+
+    if language == 'en':
+        subject = f"Proforma invoice available · {contract.contract_number}"
+    else:
+        subject = f"Fattura proforma disponibile · {contract.contract_number}"
+
+    try:
+        send_email(
+            template_name='proforma_generated',
+            context=context,
+            to=recipients,
+            subject=subject,
+            language=language,
+            related_to=contract,
+            communication_type='proforma_generated',
+            is_automated=True,
+        )
+    except Exception as e:
+        logger.exception("Errore invio notifica proforma contratto %s", contract_id)
+        raise self.retry(exc=e)
+
+
+# ============================================================================
 # Reminder scadenza singola
 # ============================================================================
 

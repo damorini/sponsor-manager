@@ -1,0 +1,29 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#1d6534; margin:0 0 16px 0; font-size:20px;">
+  📄 Proforma invoice available
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<p>the proforma invoice
+  {% if plurale %}for the deposit and the balance{% endif %}
+  has been generated for contract <strong>{{ contract.contract_number }}</strong>,
+  related to event <strong>{{ event_name }}</strong>.
+</p>
+
+<p>You can find it in your sponsor area, under <strong>«My documents»</strong>.</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ document_url }}" class="button">Go to «My documents»</a>
+</p>
+
+<p>Please note this is a <strong>non-fiscal</strong> document: the actual invoice
+  will be issued according to the agreed terms.</p>
+
+<p style="margin-top:24px;">
+  Kind regards,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% endblock %}
