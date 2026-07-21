@@ -161,7 +161,21 @@
       <tbody>
         {% for c in contatti %}
         <tr class="border-b border-gray-100">
-          <td class="py-2">{{ c.full_name }}{% if c.job_title %} <span class="text-gray-400">· {{ c.job_title }}</span>{% endif %}</td>
+          <td class="py-2">
+            {{ c.full_name }}{% if c.job_title %} <span class="text-gray-400">· {{ c.job_title }}</span>{% endif %}
+            {% if c.is_signer %}
+              {% if c.dati_firmatario_mancanti %}
+                <span class="ml-1 inline-block text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5"
+                      title="{% trans 'Mancano ancora' %}: {{ c.dati_firmatario_mancanti|join:', ' }}">
+                  &#9888; {% trans "Firmatario, dati incompleti" %}
+                </span>
+              {% else %}
+                <span class="ml-1 inline-block text-xs font-medium text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5">
+                  &#10003; {% trans "Firmatario" %}
+                </span>
+              {% endif %}
+            {% endif %}
+          </td>
           <td class="py-2">{{ c.email }}</td>
           <td class="py-2">{{ c.phone|default:"—" }}</td>
           <td class="py-2">{{ c.ruoli|default:"—" }}</td>
@@ -181,7 +195,9 @@
               </button>
             </form>
           </td>
-          <td class="py-2 text-right">
+          <td class="py-2 text-right whitespace-nowrap">
+            <button type="button" data-toggle-edit="{{ c.id }}"
+                    class="text-xs text-brand-600 hover:text-brand-800 font-medium mr-3">{% trans "Modifica" %}</button>
             {% if c.is_self %}
               <span class="text-xs text-gray-400">{% trans "tu" %}</span>
             {% else %}
@@ -192,6 +208,89 @@
               <button type="submit" class="text-xs text-red-600 hover:text-red-800 font-medium">{% trans "Rimuovi" %}</button>
             </form>
             {% endif %}
+          </td>
+        </tr>
+        <tr id="edit-row-{{ c.id }}" class="hidden border-b border-gray-100">
+          <td colspan="6" class="py-4 bg-gray-50 px-4 rounded-lg">
+            <form method="post" class="space-y-4">
+              {% csrf_token %}
+              <input type="hidden" name="azione" value="edit_contact">
+              <input type="hidden" name="contact_id" value="{{ c.id }}">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Nome e cognome *" %}</label>
+                  <input type="text" name="mod_full_name" value="{{ c.full_name }}" required
+                         class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input type="email" name="mod_email" value="{{ c.email }}" required
+                         class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Telefono" %}</label>
+                  <input type="text" name="mod_phone" value="{{ c.phone }}"
+                         class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">{% trans "Ruolo aziendale" %}</label>
+                  <input type="text" name="mod_job_title" value="{{ c.job_title }}"
+                         class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">{% trans "Ruoli funzionali (chi riceve quali comunicazioni)" %}</label>
+                <div class="flex flex-wrap gap-4">
+                  {% for value, label in role_choices %}
+                  <label class="inline-flex items-center gap-2">
+                    <input type="checkbox" name="mod_roles" value="{{ value }}"
+                           {% if value in c.roles %}checked{% endif %}
+                           class="rounded border-gray-300">
+                    <span class="text-sm text-gray-700">{{ label }}</span>
+                  </label>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="border-t border-gray-200 pt-4">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" name="mod_is_signer" id="mod-is-signer-{{ c.id }}"
+                         {% if c.is_signer %}checked{% endif %}
+                         class="rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+                  <span class="text-sm font-medium text-gray-700">{% trans "È il legale rappresentante che firma il contratto?" %}</span>
+                </label>
+                <p class="text-xs text-gray-500 mt-1 ml-6">
+                  {% trans "Se selezionato, questi dati vengono stampati nel contratto: senza di essi il contratto non può essere generato." %}
+                </p>
+                <div id="signer-box-{{ c.id }}" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4{% if not c.is_signer %} hidden{% endif %}">
+                  {% for f in c.signer_fields %}
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ f.label }} <span class="text-red-500">*</span></label>
+                    {% if f.name == 'birth_date' %}
+                    <input type="date" name="mod_{{ f.name }}" value="{{ f.value }}"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    {% elif f.name == 'id_document_type' %}
+                    <select name="mod_{{ f.name }}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                      {% for val, lbl in id_document_types %}
+                      <option value="{{ val }}" {% if f.value == val %}selected{% endif %}>{{ lbl }}</option>
+                      {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" name="mod_{{ f.name }}" value="{{ f.value }}"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+
+              <div class="flex justify-end gap-3">
+                <button type="button" data-toggle-edit="{{ c.id }}"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">{% trans "Annulla" %}</button>
+                <button type="submit"
+                        class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">{% trans "Salva contatto" %}</button>
+              </div>
+            </form>
           </td>
         </tr>
         {% endfor %}
@@ -253,6 +352,38 @@
           {% endfor %}
         </div>
       </div>
+
+      <div class="border-t border-gray-200 pt-4">
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" name="nuovo_is_signer" id="nuovo-is-signer"
+                 class="rounded border-gray-300 text-brand-500 focus:ring-brand-500">
+          <span class="text-sm font-medium text-gray-700">{% trans "È il legale rappresentante che firma il contratto?" %}</span>
+        </label>
+        <p class="text-xs text-gray-500 mt-1 ml-6">
+          {% trans "Se selezionato, questi dati vengono stampati nel contratto: senza di essi il contratto non può essere generato." %}
+        </p>
+        <div id="signer-box-nuovo" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-4 hidden">
+          {% for f in signer_fields_new %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ f.label }} <span class="text-red-500">*</span></label>
+            {% if f.name == 'birth_date' %}
+            <input type="date" name="nuovo_{{ f.name }}"
+                   class="w-full border border-gray-300 rounded-md px-3 py-2">
+            {% elif f.name == 'id_document_type' %}
+            <select name="nuovo_{{ f.name }}" class="w-full border border-gray-300 rounded-md px-3 py-2">
+              {% for val, lbl in id_document_types %}
+              <option value="{{ val }}">{{ lbl }}</option>
+              {% endfor %}
+            </select>
+            {% else %}
+            <input type="text" name="nuovo_{{ f.name }}"
+                   class="w-full border border-gray-300 rounded-md px-3 py-2">
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
       <div class="flex justify-end">
         <button type="submit"
                 class="px-5 py-2 bg-brand-500 text-white rounded-md hover:opacity-90 font-medium">
@@ -264,6 +395,33 @@
 </div>
 
 <script>
+  // "È il legale rappresentante che firma il contratto?": i campi
+  // anagrafici del firmatario compaiono solo se flaggato (form "Aggiungi
+  // contatto" + un form di modifica per ogni contatto esistente).
+  (function () {
+    document.querySelectorAll('input[type="checkbox"][id^="mod-is-signer-"], #nuovo-is-signer')
+      .forEach(function (chk) {
+        var boxId = chk.id === 'nuovo-is-signer' ? 'signer-box-nuovo'
+          : 'signer-box-' + chk.id.replace('mod-is-signer-', '');
+        var box = document.getElementById(boxId);
+        if (!box) return;
+        chk.addEventListener('change', function () {
+          box.classList.toggle('hidden', !chk.checked);
+        });
+      });
+  })();
+
+  // Bottone "Modifica" su un contatto: mostra/nasconde la riga con il form
+  // di modifica completo (dati anagrafici, ruoli, firmatario).
+  (function () {
+    document.querySelectorAll('[data-toggle-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var row = document.getElementById('edit-row-' + btn.getAttribute('data-toggle-edit'));
+        if (row) row.classList.toggle('hidden');
+      });
+    });
+  })();
+
   // Domanda "Azienda farmaceutica?": il campo Codice SIS compare solo se flaggato.
   (function () {
     var chk = document.getElementById('sponsor_is_pharma_company');

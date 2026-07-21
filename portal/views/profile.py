@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.files.base import ContentFile
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from portal.views.dashboard import sponsor_required
@@ -72,6 +73,38 @@ CONTACT_FIELDS = [
     ('job_title', _('Ruolo')),
 ]
 
+# Campi anagrafici del firmatario (nome_campo -> etichetta), mostrati solo
+# quando il contatto e' marcato come Firmatario. Stesso ordine di
+# Contact.FIRMATARIO_CAMPI_OBBLIGATORI cosi' l'utente vede subito cosa manca.
+SIGNER_FIELDS = [
+    ('birth_date', _('Data di nascita')),
+    ('birth_place', _('Luogo di nascita')),
+    ('birth_province', _('Provincia di nascita')),
+    ('residence_street', _('Indirizzo di residenza')),
+    ('residence_street_number', _('Numero civico')),
+    ('residence_city', _('Città di residenza')),
+    ('residence_zip', _('CAP di residenza')),
+    ('residence_province', _('Provincia di residenza')),
+    ('id_document_type', _('Tipo documento')),
+    ('id_document_number', _("Numero documento")),
+    ('signer_tax_code', _('Codice Fiscale')),
+]
+
+
+def _applica_dati_firmatario(target, request, prefix):
+    """Legge dal POST (con prefisso, es. 'nuovo_' o 'mod_') i campi
+    anagrafici del firmatario e li imposta sul Contact. Usata sia per un
+    nuovo contatto sia per la modifica di uno esistente."""
+    for field, _label in SIGNER_FIELDS:
+        if field == 'birth_date':
+            val = parse_date((request.POST.get(f'{prefix}birth_date') or '').strip())
+            target.birth_date = val
+        elif field == 'id_document_type':
+            val = (request.POST.get(f'{prefix}id_document_type') or '').strip()
+            target.id_document_type = val if val in dict(target.ID_DOCUMENT_TYPES) else 'CI'
+        else:
+            setattr(target, field, request.POST.get(f'{prefix}{field}', '').strip())
+
 
 @sponsor_required
 def profile_view(request):
@@ -100,6 +133,7 @@ def profile_view(request):
             ruoli = [r for r in ruoli if r in ruoli_validi]
             _nl = (request.POST.get('nuovo_preferred_language') or '').strip()
             nuovo_lang = _nl if _nl in ('it', 'en') else 'it'
+            is_signer = request.POST.get('nuovo_is_signer') == 'on'
             try:
                 nuovo = Contact(
                     sponsor=sponsor,
@@ -110,7 +144,10 @@ def profile_view(request):
                     roles=ruoli,
                     preferred_language=nuovo_lang,
                     has_portal_access=False,
+                    is_signer=is_signer,
                 )
+                if is_signer:
+                    _applica_dati_firmatario(nuovo, request, 'nuovo_')
                 # Validazione (email univoca per persona: vedi Contact.clean)
                 from django.core.exceptions import ValidationError
                 try:
@@ -121,11 +158,75 @@ def profile_view(request):
                             messages.error(request, m)
                     return redirect('portal:profile')
                 nuovo.save()
-                messages.success(request, f"Contatto '{nome}' aggiunto.")
+                if is_signer:
+                    mancanti = nuovo.dati_firmatario_mancanti()
+                    if mancanti:
+                        messages.warning(
+                            request,
+                            f"Contatto '{nome}' aggiunto come firmatario, ma mancano ancora: "
+                            + ", ".join(mancanti)
+                            + ". Il contratto non potrà essere generato finché non li completi "
+                              "(clicca 'Modifica' sul contatto).")
+                    else:
+                        messages.success(request, f"Contatto '{nome}' aggiunto come firmatario.")
+                else:
+                    messages.success(request, f"Contatto '{nome}' aggiunto.")
                 logger.info("Nuovo contatto aggiunto da sponsor %s: %s", sponsor.id, email)
             except Exception as e:
                 logger.exception("Errore creazione contatto sponsor %s", sponsor.id)
                 messages.error(request, f"Errore nell'aggiunta del contatto: {e}")
+            return redirect('portal:profile')
+
+        # --- modifica di un contatto aziendale esistente ---
+        if request.POST.get('azione') == 'edit_contact':
+            from sponsors.models import Contact
+            cid = (request.POST.get('contact_id') or '').strip()
+            target = Contact.objects.filter(sponsor=sponsor, id=cid).first() if cid else None
+            if not target:
+                messages.error(request, "Contatto non trovato.")
+                return redirect('portal:profile')
+            nome = request.POST.get('mod_full_name', '').strip()
+            email = request.POST.get('mod_email', '').strip()
+            if not nome or not email:
+                messages.error(request, "Nome ed email sono obbligatori.")
+                return redirect('portal:profile')
+            ruoli_validi = [r for r, _ in CONTACT_ROLE_CHOICES]
+            ruoli = [r for r in request.POST.getlist('mod_roles') if r in ruoli_validi]
+            target.full_name = nome
+            target.email = email
+            target.phone = request.POST.get('mod_phone', '').strip()
+            target.job_title = request.POST.get('mod_job_title', '').strip()
+            target.roles = ruoli
+            is_signer = request.POST.get('mod_is_signer') == 'on'
+            target.is_signer = is_signer
+            if is_signer:
+                _applica_dati_firmatario(target, request, 'mod_')
+            from django.core.exceptions import ValidationError
+            try:
+                target.clean()
+            except ValidationError as ve:
+                for msgs in ve.message_dict.values():
+                    for m in msgs:
+                        messages.error(request, m)
+                return redirect('portal:profile')
+            try:
+                target.save()
+                if is_signer:
+                    mancanti = target.dati_firmatario_mancanti()
+                    if mancanti:
+                        messages.warning(
+                            request,
+                            f"'{nome}' impostato come firmatario, ma mancano ancora: "
+                            + ", ".join(mancanti)
+                            + ". Il contratto non potrà essere generato finché non li completi.")
+                    else:
+                        messages.success(request, f"Contatto '{nome}' aggiornato.")
+                else:
+                    messages.success(request, f"Contatto '{nome}' aggiornato.")
+                logger.info("Contatto %s modificato da sponsor %s", target.id, sponsor.id)
+            except Exception as e:
+                logger.exception("Errore modifica contatto sponsor %s", sponsor.id)
+                messages.error(request, f"Errore nel salvataggio: {e}")
             return redirect('portal:profile')
 
         # --- cambio lingua preferita di un contatto esistente (bandierina) ---
@@ -231,7 +332,7 @@ def profile_view(request):
         return redirect('portal:profile')
 
     # GET: costruisco i campi con valori attuali
-    from sponsors.models import Sponsor as _Sponsor
+    from sponsors.models import Contact, Sponsor as _Sponsor
     _required = {f for f, _ in _Sponsor.PROFILO_OBBLIGATORIO}
     _help = {
         'business_description': _("Indicare se produttore o distributore e la "
@@ -271,7 +372,16 @@ def profile_view(request):
             'phone': getattr(c, 'phone', '') or '',
             'job_title': getattr(c, 'job_title', '') or '',
             'ruoli': ruoli_txt,
+            'roles': c.roles or [],
             'preferred_language': getattr(c, 'preferred_language', 'it') or 'it',
+            'is_signer': c.is_signer,
+            'dati_firmatario_mancanti': c.dati_firmatario_mancanti() if c.is_signer else [],
+            'signer_fields': [
+                {'name': f, 'label': lbl,
+                 'value': (c.birth_date.isoformat() if f == 'birth_date' and c.birth_date
+                           else getattr(c, f, '') or '')}
+                for f, lbl in SIGNER_FIELDS
+            ],
         })
 
     manca_operativo = not any('operational' in (c.roles or []) for c in contatti)
@@ -290,6 +400,8 @@ def profile_view(request):
         'contact_fields': contact_fields,
         'contatti': contatti_view,
         'role_choices': CONTACT_ROLE_CHOICES,
+        'signer_fields_new': [{'name': f, 'label': lbl, 'value': ''} for f, lbl in SIGNER_FIELDS],
+        'id_document_types': Contact.ID_DOCUMENT_TYPES,
         'manca_operativo': manca_operativo,
         # Benvenuto solo al primo accesso (finche' non l'ha visto/chiuso).
         'show_welcome': contact.welcome_seen_at is None,
