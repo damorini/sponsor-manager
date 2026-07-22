@@ -82,7 +82,9 @@
   </table>
   <table class="tot">
     <tr><td class="lbl">{{ t.subtotale }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
-    <tr><td class="lbl">{{ t.iva }}{% if not contract.vat_applicable and contract.vat_exemption_reason %} <span style="font-weight:400; color:#6b7280; font-size:9.5px;">&ndash; {{ contract.vat_exemption_reason }}</span>{% endif %}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
+    {% if contract.vat_applicable %}
+    <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
+    {% endif %}
     <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>
 
