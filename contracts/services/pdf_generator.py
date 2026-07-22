@@ -405,13 +405,20 @@ def _get_referente_contact(contract):
 # ============================================================================
 
 def _righe_valorizzate_prima(lines):
-    """Ordina il riepilogo servizi: PRIMA le righe valorizzate economicamente
-    (importo decrescente), POI in cascata le altre (incluse/a costo zero,
-    nell'ordine originale). Ordinamento stabile."""
+    """Ordina il riepilogo servizi: prima per 'display_order' (crescente, se
+    l'operatore l'ha impostato manualmente sulla riga - es. per forzare
+    righe specifiche in fondo al documento), poi PRIMA le righe valorizzate
+    economicamente (importo decrescente), POI in cascata le altre (incluse/a
+    costo zero, nell'ordine originale). Ordinamento stabile.
+
+    Quando nessuna riga ha un display_order (il caso normale: tutte a 0,
+    il default del modello), il comportamento e' IDENTICO a prima - il
+    display_order diventa rilevante solo se qualcuno lo valorizza."""
     from decimal import Decimal as _D
     return sorted(
         list(lines),
-        key=lambda l: ((l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0'))),
+        key=lambda l: (l.display_order or 0,
+                        (l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0'))),
     )
 
 
