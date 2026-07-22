@@ -151,6 +151,93 @@ def test_registra_incasso_post_creates_payment_and_reconciles(client, staff_user
     assert acc.status == DeadlineStatus.RECEIVED
 
 
+def _contratto_con_iva(sponsor, event_code, subtotal, vat_amount, deposit_percent=None,
+                        status=None):
+    """Contratto con subtotal/vat_amount/total impostati esplicitamente
+    (come farebbe recalculate_totals), per testare gli importi IVA esclusa
+    del cruscotto senza dipendere da ContractLine."""
+    from events.models import Event
+    from contracts.models import Contract, ContractStatus, ContractKind
+    ev = Event.objects.create(
+        name={'it': f'Evento {event_code}', 'en': f'Event {event_code}'},
+        code=event_code,
+        start_date=date(2026, 10, 1), end_date=date(2026, 10, 2),
+    )
+    c = Contract.objects.create(
+        sponsor=sponsor, event=ev, contract_kind=ContractKind.MAIN,
+        status=status or ContractStatus.SIGNED, contract_number=f'{event_code}-26-001',
+        subtotal=subtotal, vat_amount=vat_amount, total=subtotal + vat_amount,
+        deposit_percent=deposit_percent, vat_applicable=(vat_amount > 0),
+    )
+    return ev, c
+
+
+@pytest.mark.django_db
+def test_cruscotto_evento_mostra_importi_iva_esclusa(client, staff_user, sponsor):
+    """Il KPI 'Confermato' dell'evento e' l'IMPONIBILE (subtotal), non il
+    totale IVA inclusa - altrimenti sommare aziende con e senza IVA applicata
+    mescola basi diverse e il totale non ha piu' senso."""
+    ev, c = _contratto_con_iva(
+        sponsor, 'IVAK', subtotal=Decimal('1000.00'), vat_amount=Decimal('220.00'))
+
+    client.force_login(staff_user)
+    resp = client.get(reverse('core:cruscotto_evento', args=[ev.id]))
+
+    assert resp.context['confermati']['totale'] == Decimal('1000.00')
+
+
+@pytest.mark.django_db
+def test_incassato_esente_iva_non_viene_toccato(client, staff_user, sponsor):
+    """Contratto ESENTE IVA (subtotal == total): l'incasso registrato non va
+    scontato di nulla, il rapporto subtotal/total e' 1."""
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+    ev, c = _contratto_con_iva(
+        sponsor, 'IVAE', subtotal=Decimal('500.00'), vat_amount=Decimal('0.00'))
+    Payment.objects.create(contract=c, payment_method=PaymentMethodChoice.BANK_TRANSFER,
+                            amount_gross=Decimal('500.00'), status=PaymentStatus.SUCCEEDED)
+
+    client.force_login(staff_user)
+    resp = client.get(reverse('core:cruscotto_evento', args=[ev.id]))
+
+    assert resp.context['incassi']['incassato'] == Decimal('500.00')
+    assert resp.context['incassi']['da_incassare'] == Decimal('0.00')
+
+
+@pytest.mark.django_db
+def test_incassato_con_iva_viene_scontato_proporzionalmente(client, staff_user, sponsor):
+    """Contratto CON IVA (22%): un incasso di 610 (500 imponibile + 110 IVA,
+    pagamento completo) deve contare come 500 nel cruscotto (IVA esclusa)."""
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+    ev, c = _contratto_con_iva(
+        sponsor, 'IVAP', subtotal=Decimal('500.00'), vat_amount=Decimal('110.00'))
+    Payment.objects.create(contract=c, payment_method=PaymentMethodChoice.BANK_TRANSFER,
+                            amount_gross=Decimal('610.00'), status=PaymentStatus.SUCCEEDED)
+
+    client.force_login(staff_user)
+    resp = client.get(reverse('core:cruscotto_evento', args=[ev.id]))
+
+    assert resp.context['incassi']['incassato'] == Decimal('500.00')
+    assert resp.context['incassi']['da_incassare'] == Decimal('0.00')
+
+
+@pytest.mark.django_db
+def test_da_incassare_evento_righe_iva_esclusa(client, staff_user, sponsor):
+    """La pagina 'Da incassare' mostra totale/incassato/residuo IVA esclusa."""
+    from contracts.payments import Payment, PaymentStatus, PaymentMethodChoice
+    ev, c = _contratto_con_iva(
+        sponsor, 'IVAD', subtotal=Decimal('1000.00'), vat_amount=Decimal('220.00'))
+    Payment.objects.create(contract=c, payment_method=PaymentMethodChoice.BANK_TRANSFER,
+                            amount_gross=Decimal('610.00'), status=PaymentStatus.SUCCEEDED)
+
+    client.force_login(staff_user)
+    resp = client.get(reverse('core:cruscotto_da_incassare', args=[ev.id]))
+
+    riga = resp.context['righe'][0]
+    assert riga['totale'] == Decimal('1000.00')
+    assert riga['incassato'] == Decimal('500.00')
+    assert riga['residuo'] == Decimal('500.00')
+
+
 @pytest.mark.django_db
 def test_bonifici_in_attesa_card_in_template(client, staff_user, sponsor):
     """Il template cruscotto/evento.html mostra la card 'Bonifici in attesa'."""

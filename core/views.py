@@ -18,6 +18,26 @@ from core.event_scope import (
 _MATERIAL_SUBMISSIONS = ['file', 'content', 'both']
 
 
+def _quota_imponibile(importo_lordo, contract):
+    """Converte un importo LORDO (es. un incasso, sempre IVA inclusa perche'
+    e' il denaro realmente ricevuto) nella sua quota IMPONIBILE (IVA esclusa),
+    in proporzione al rapporto subtotal/total del contratto.
+
+    Tutti i totali del cruscotto sono in IVA ESCLUSA (vedi nota nei
+    template): sommare 'total' di aziende con e senza IVA applicata mescola
+    basi imponibili diverse e rende le somme incomprensibili. Un pagamento
+    non ha una propria scomposizione imponibile/IVA salvata (Payment ha solo
+    amount_gross), quindi si stima proporzionalmente sul contratto - per un
+    contratto ESENTE IVA (total == subtotal) il rapporto e' 1 e l'importo
+    resta invariato."""
+    from decimal import Decimal
+    total = contract.total or Decimal('0.00')
+    subtotal = contract.subtotal or Decimal('0.00')
+    if not total:
+        return importo_lordo
+    return (importo_lordo * subtotal / total).quantize(Decimal('0.01'))
+
+
 def materiali_da_rivedere_qs():
     """Scadenze-materiale RICEVUTE dal cliente e non ancora visionate
     dall'operatore. Esclude pagamenti e opzioni. Un nuovo upload
@@ -287,7 +307,7 @@ def evento_dettaglio(request, pk):
             n_servizi += c.lines.filter(service__event=ev).exclude(
                 notes__startswith='stand:').exclude(
                 notes__startswith='block:').count()
-            totale += (c.total or Decimal('0.00'))
+            totale += (c.subtotal or Decimal('0.00'))  # IVA esclusa
         return {'n_contratti': n_contratti, 'n_stand': n_stand,
                 'n_servizi': n_servizi, 'totale': totale}
 
@@ -308,9 +328,9 @@ def evento_dettaglio(request, pk):
     tot_confermato = Decimal('0.00')
     incassato = Decimal('0.00')
     for c in confermati_qs:
-        tot_confermato += (c.total or Decimal('0.00'))
+        tot_confermato += (c.subtotal or Decimal('0.00'))  # IVA esclusa
         for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
-            incassato += (p.amount_gross or Decimal('0.00'))
+            incassato += _quota_imponibile(p.amount_gross or Decimal('0.00'), c)
     da_incassare = tot_confermato - incassato
 
     # Bonifici in attesa di conferma (PENDING + method=bank_transfer)
@@ -736,10 +756,15 @@ def da_incassare_evento(request, pk):
     righe = []
     tot_residuo = Decimal('0.00')
     for c in confermati:
+        # incassato_c resta LORDO (IVA inclusa): serve per confrontarlo con
+        # deposit_amount (anch'esso lordo) e scegliere la prossima scadenza.
         incassato_c = Decimal('0.00')
         for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
             incassato_c += (p.amount_gross or Decimal('0.00'))
-        residuo = (c.total or Decimal('0.00')) - incassato_c
+        # Le colonne MOSTRATE sono invece in IVA ESCLUSA (imponibile), per
+        # non mescolare basi diverse tra aziende con/senza IVA applicata.
+        incassato_netto = _quota_imponibile(incassato_c, c)
+        residuo = (c.subtotal or Decimal('0.00')) - incassato_netto
         if residuo <= 0:
             continue  # gia' saldato
         # prossima scadenza utile (acconto se non ancora coperto, sennò saldo)
@@ -753,8 +778,8 @@ def da_incassare_evento(request, pk):
             'contract': c,
             'numero': c.contract_number,
             'cliente': c.sponsor.legal_name if c.sponsor_id else '-',
-            'totale': c.total or Decimal('0.00'),
-            'incassato': incassato_c,
+            'totale': c.subtotal or Decimal('0.00'),
+            'incassato': incassato_netto,
             'residuo': residuo,
             'scadenza': scadenza,
             'tipo_scadenza': tipo_scad,

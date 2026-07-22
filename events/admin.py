@@ -162,8 +162,10 @@ class EventAdmin(admin.ModelAdmin):
                        ~Q(contracts__status__in=['cancelled', 'draft']),
                 distinct=True,
             ),
+            # IVA ESCLUSA (subtotal): sommare 'total' mescolerebbe aziende
+            # con e senza IVA applicata su basi imponibili diverse.
             _revenue=Sum(
-                'contracts__total',
+                'contracts__subtotal',
                 filter=Q(contracts__deleted_at__isnull=True) &
                        ~Q(contracts__status__in=['cancelled', 'draft']),
             ),
@@ -196,7 +198,7 @@ class EventAdmin(admin.ModelAdmin):
             return '—'
         return count
 
-    @admin.display(description='Fatturato', ordering='_revenue')
+    @admin.display(description='Fatturato (IVA escl.)', ordering='_revenue')
     def revenue_display(self, obj):
         revenue = getattr(obj, '_revenue', None)
         if revenue is None:

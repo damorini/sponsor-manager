@@ -33,6 +33,10 @@
 
   <div class="cr-section">
     <h2 class="cr-h2">Incassi</h2>
+    <p style="font-size:.85em; color:#666; margin:-8px 0 12px;">
+      ⓘ Tutti gli importi sono <strong>al netto di IVA</strong> (imponibile) — per non
+      sommare aziende con e senza IVA applicata su basi diverse.
+    </p>
     <div class="cr-grid">
       <div class="cr-card cr-card--green">
         <div class="cr-label">Incassato</div>
@@ -96,17 +100,17 @@
       <div class="cr-card cr-card--green">
         <div class="cr-label">Confermato</div>
         <div class="cr-value">€ {{ confermati.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA inclusa</div>
+        <div class="cr-hint">IVA esclusa</div>
       </div>
       <div class="cr-card cr-card--terra">
         <div class="cr-label">In opzione</div>
         <div class="cr-value">€ {{ opzionati.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA inclusa</div>
+        <div class="cr-hint">IVA esclusa</div>
       </div>
       <div class="cr-card cr-card--indigo">
         <div class="cr-label">In trattativa</div>
         <div class="cr-value">€ {{ trattativa.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA inclusa</div>
+        <div class="cr-hint">IVA esclusa</div>
       </div>
     </div>
   </div>
