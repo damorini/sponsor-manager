@@ -6,6 +6,14 @@
 
 {% block extrastyle %}{{ block.super }}
   <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+  <style>
+    /* riga "complessivo" (IVA inclusa) sotto il valore netto nelle caselle importo */
+    .cr-lordo { margin-top:8px; padding-top:6px;
+                border-top:1px dashed rgba(120,120,120,.35);
+                font-size:1.05em; font-weight:800; }
+    .cr-lordo .cr-lordo-lbl { display:block; font-size:.6em; font-weight:600;
+                text-transform:uppercase; letter-spacing:.03em; opacity:.7; margin-top:2px; }
+  </style>
 {% endblock %}
 
 {% block branding %}
@@ -34,20 +42,24 @@
   <div class="cr-section">
     <h2 class="cr-h2">Incassi</h2>
     <p style="font-size:.85em; color:#666; margin:-8px 0 12px;">
-      ⓘ Tutti gli importi sono <strong>al netto di IVA</strong> (imponibile) — per non
-      sommare aziende con e senza IVA applicata su basi diverse.
+      ⓘ In ogni casella trovi il valore <strong>netto</strong> (imponibile, IVA esclusa) e,
+      sotto, il <strong>complessivo</strong> (IVA inclusa).
     </p>
     <div class="cr-grid">
       <div class="cr-card cr-card--green">
         <div class="cr-label">Incassato</div>
         <div class="cr-value">€ {{ incassi.incassato|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">su contratti confermati</div>
+        <div class="cr-hint">netto · su contratti confermati</div>
+        <div class="cr-lordo">€ {{ incassi.incassato_lordo|floatformat:2|intcomma }}
+          <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </div>
       <a href="{% url 'core:cruscotto_da_incassare' evento.id %}" class="cr-card cr-card--terra"
          title="Vedi il dettaglio dei residui da incassare">
         <div class="cr-label">Da incassare</div>
         <div class="cr-value">€ {{ incassi.da_incassare|floatformat:2|intcomma }}</div>
-        <div class="cr-hint"><span class="cr-arrow">Clicca per il dettaglio →</span></div>
+        <div class="cr-hint">netto · <span class="cr-arrow">dettaglio →</span></div>
+        <div class="cr-lordo">€ {{ incassi.da_incassare_lordo|floatformat:2|intcomma }}
+          <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </a>
       <div class="cr-card{% if incassi.bonifici_in_attesa %} cr-card--blue{% endif %}"
            style="{% if not incassi.bonifici_in_attesa %}opacity:.7{% endif %}">
@@ -100,17 +112,23 @@
       <div class="cr-card cr-card--green">
         <div class="cr-label">Confermato</div>
         <div class="cr-value">€ {{ confermati.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA esclusa</div>
+        <div class="cr-hint">netto · IVA esclusa</div>
+        <div class="cr-lordo">€ {{ confermati.totale_lordo|floatformat:2|intcomma }}
+          <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </div>
       <div class="cr-card cr-card--terra">
         <div class="cr-label">In opzione</div>
         <div class="cr-value">€ {{ opzionati.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA esclusa</div>
+        <div class="cr-hint">netto · IVA esclusa</div>
+        <div class="cr-lordo">€ {{ opzionati.totale_lordo|floatformat:2|intcomma }}
+          <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </div>
       <div class="cr-card cr-card--indigo">
         <div class="cr-label">In trattativa</div>
         <div class="cr-value">€ {{ trattativa.totale|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">IVA esclusa</div>
+        <div class="cr-hint">netto · IVA esclusa</div>
+        <div class="cr-lordo">€ {{ trattativa.totale_lordo|floatformat:2|intcomma }}
+          <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </div>
     </div>
   </div>

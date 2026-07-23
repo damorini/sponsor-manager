@@ -300,7 +300,8 @@ def evento_dettaglio(request, pk):
         n_contratti = 0
         n_stand = 0
         n_servizi = 0
-        totale = Decimal('0.00')
+        totale = Decimal('0.00')          # IVA esclusa (imponibile)
+        totale_lordo = Decimal('0.00')    # IVA inclusa (complessivo)
         for c in qs.select_related('stand_block'):
             n_contratti += 1
             n_stand += _num_stand(c)
@@ -308,8 +309,9 @@ def evento_dettaglio(request, pk):
                 notes__startswith='stand:').exclude(
                 notes__startswith='block:').count()
             totale += (c.subtotal or Decimal('0.00'))  # IVA esclusa
+            totale_lordo += (c.total or Decimal('0.00'))  # IVA inclusa
         return {'n_contratti': n_contratti, 'n_stand': n_stand,
-                'n_servizi': n_servizi, 'totale': totale}
+                'n_servizi': n_servizi, 'totale': totale, 'totale_lordo': totale_lordo}
 
     confermati = _aggrega(contratti_ev.filter(status__in=CONFIRMED))
     opzionati = _aggrega(contratti_ev.filter(
@@ -326,12 +328,17 @@ def evento_dettaglio(request, pk):
     from contracts.payments import PaymentStatus, PaymentMethodChoice
     confermati_qs = contratti_ev.filter(status__in=CONFIRMED)
     tot_confermato = Decimal('0.00')
+    tot_confermato_lordo = Decimal('0.00')
     incassato = Decimal('0.00')
+    incassato_lordo = Decimal('0.00')
     for c in confermati_qs:
         tot_confermato += (c.subtotal or Decimal('0.00'))  # IVA esclusa
+        tot_confermato_lordo += (c.total or Decimal('0.00'))  # IVA inclusa
         for p in c.payments.filter(status=PaymentStatus.SUCCEEDED):
             incassato += _quota_imponibile(p.amount_gross or Decimal('0.00'), c)
+            incassato_lordo += (p.amount_gross or Decimal('0.00'))  # incassato reale, IVA inclusa
     da_incassare = tot_confermato - incassato
+    da_incassare_lordo = tot_confermato_lordo - incassato_lordo
 
     # Bonifici in attesa di conferma (PENDING + method=bank_transfer)
     from contracts.payments import Payment as _Payment
@@ -355,8 +362,11 @@ def evento_dettaglio(request, pk):
 
     incassi = {
         'incassato': incassato,
+        'incassato_lordo': incassato_lordo,
         'da_incassare': da_incassare,
+        'da_incassare_lordo': da_incassare_lordo,
         'tot_confermato': tot_confermato,
+        'tot_confermato_lordo': tot_confermato_lordo,
         'bonifici_in_attesa': bonifici_in_attesa,
         'email_fallite': email_fallite,
     }
