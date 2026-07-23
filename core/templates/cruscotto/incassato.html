@@ -1,0 +1,77 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'cruscotto/cruscotto.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home admin</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_home' %}">Cruscotto</a>
+    &rsaquo; <a href="{% url 'core:cruscotto_evento' evento.id %}">{{ nome_evento }}</a>
+    &rsaquo; Incassato
+  </div>
+{% endblock %}
+
+{% block content %}
+<div class="cr-content">
+  <div class="cr-hero">
+    <h1 class="cr-title">Incassato</h1>
+    <p class="cr-sub">
+      {{ nome_evento }} · totale incassato
+      <strong style="color: var(--green-acc, #15803d); font-family:'Fraunces',serif; font-size:18px;">€ {{ tot_netto|floatformat:2|intcomma }}</strong>
+      <span style="color:#666;">netto</span>
+      &nbsp;·&nbsp;
+      <strong style="font-size:16px;">€ {{ tot_lordo|floatformat:2|intcomma }}</strong>
+      <span style="color:#666;">complessivo (IVA incl.)</span>
+    </p>
+  </div>
+
+  <div class="cr-section">
+    <p style="font-size:.85em; color:#666; margin:-4px 0 12px;">
+      ⓘ Elenco dei clienti da cui è stato ricevuto almeno un pagamento sui contratti
+      confermati. Per ogni riga: importo <strong>netto</strong> (imponibile) e
+      <strong>complessivo</strong> (IVA inclusa, quanto effettivamente incassato).
+    </p>
+    {% if righe %}
+    <div class="cr-table-wrap">
+      <table class="cr-table">
+        <thead><tr>
+          <th>Cliente</th>
+          <th>Contratto</th>
+          <th class="num">Netto (IVA escl.)</th>
+          <th class="num">Complessivo (IVA incl.)</th>
+          <th class="num">Pagamenti</th>
+          <th>Ultimo pagamento</th>
+        </tr></thead>
+        <tbody>
+          {% for r in righe %}
+          <tr>
+            <td class="strong">{{ r.cliente }}</td>
+            <td><a href="{% url 'admin:contracts_contract_change' r.contract.id %}">{{ r.numero }}</a></td>
+            <td class="num">€ {{ r.netto|floatformat:2|intcomma }}</td>
+            <td class="num incassato">€ {{ r.lordo|floatformat:2|intcomma }}</td>
+            <td class="num">{{ r.n_pagamenti }}</td>
+            <td>{% if r.ultimo %}{{ r.ultimo|date:"d/m/Y" }}{% else %}<span style="color: var(--ink-mute);">—</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="cr-card cr-card--neutral" style="padding:24px; text-align:center;">
+      <div class="cr-value" style="font-size:22px;">Nessun incasso registrato</div>
+      <div class="cr-hint">Non risultano pagamenti ricevuti sui contratti confermati di questo evento.</div>
+    </div>
+    {% endif %}
+
+    <p style="margin-top:24px;">
+      <a href="{% url 'core:cruscotto_evento' evento.id %}" class="cr-btn cr-btn--ghost">← Torna al cruscotto evento</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

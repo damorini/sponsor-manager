@@ -814,6 +814,67 @@ def da_incassare_evento(request, pk):
 
 
 @staff_member_required
+def incassato_evento(request, pk):
+    """Dettaglio degli incassi ricevuti (chi ha pagato) sui contratti confermati."""
+    from datetime import date
+    from decimal import Decimal
+    from django.http import Http404
+    from contracts.models import Contract, ContractStatus
+    from contracts.payments import PaymentStatus
+
+    try:
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    CONFIRMED = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
+    confermati = (Contract.objects
+                  .filter(event=ev, status__in=CONFIRMED)
+                  .select_related('sponsor')
+                  .order_by('sponsor__legal_name'))
+
+    righe = []
+    tot_netto = Decimal('0.00')
+    tot_lordo = Decimal('0.00')
+    for c in confermati:
+        pagamenti = list(c.payments.filter(status=PaymentStatus.SUCCEEDED)
+                         .order_by('completed_at'))
+        if not pagamenti:
+            continue
+        lordo_c = Decimal('0.00')
+        for p in pagamenti:
+            lordo_c += (p.amount_gross or Decimal('0.00'))  # IVA inclusa
+        netto_c = _quota_imponibile(lordo_c, c)  # imponibile
+        righe.append({
+            'contract': c,
+            'numero': c.contract_number,
+            'cliente': c.sponsor.legal_name if c.sponsor_id else '-',
+            'netto': netto_c,
+            'lordo': lordo_c,
+            'n_pagamenti': len(pagamenti),
+            'ultimo': pagamenti[-1].completed_at,
+        })
+        tot_netto += netto_c
+        tot_lordo += lordo_c
+
+    try:
+        nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
+    except Exception:
+        nome_ev = str(ev)
+
+    context = {
+        **admin_site.each_context(request),
+        'title': f'Incassato · {nome_ev}',
+        'evento': ev,
+        'nome_evento': nome_ev,
+        'righe': righe,
+        'tot_netto': tot_netto,
+        'tot_lordo': tot_lordo,
+    }
+    return render(request, 'cruscotto/incassato.html', context)
+
+
+@staff_member_required
 def registra_incasso(request, pk):
     """Registra manualmente un incasso (bonifico o altro) su un contratto."""
     from decimal import Decimal, InvalidOperation

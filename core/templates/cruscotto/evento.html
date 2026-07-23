@@ -46,13 +46,14 @@
       sotto, il <strong>complessivo</strong> (IVA inclusa).
     </p>
     <div class="cr-grid">
-      <div class="cr-card cr-card--green">
+      <a href="{% url 'core:cruscotto_incassato' evento.id %}" class="cr-card cr-card--green"
+         title="Vedi da chi è stato incassato">
         <div class="cr-label">Incassato</div>
         <div class="cr-value">€ {{ incassi.incassato|floatformat:2|intcomma }}</div>
-        <div class="cr-hint">netto · su contratti confermati</div>
+        <div class="cr-hint">netto · <span class="cr-arrow">chi ha pagato →</span></div>
         <div class="cr-lordo">€ {{ incassi.incassato_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
-      </div>
+      </a>
       <a href="{% url 'core:cruscotto_da_incassare' evento.id %}" class="cr-card cr-card--terra"
          title="Vedi il dettaglio dei residui da incassare">
         <div class="cr-label">Da incassare</div>
