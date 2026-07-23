@@ -1,6 +1,44 @@
 {% extends "shared/email_templates/base/email_base.html" %}
 
 {% block content %}
+{% if is_pagamento %}
+<h2 style="color:#b45309; margin:0 0 16px 0; font-size:20px;">
+  Payment reminder
+</h2>
+
+<p>Dear {{ contact.full_name }},</p>
+
+<p>we apologise for writing to you again for a reminder: according to our
+  records, the payment due date for your participation in
+  <strong>{{ event_name }}</strong> (contract
+  <strong>{{ contract.contract_number }}</strong>), which was due on
+  <strong>{{ deadline.due_date|date:"Y-m-d" }}</strong>, has not yet been
+  registered on our end.</p>
+
+<p>It is quite possible that you have already made the payment and our
+  system has simply not yet picked it up: if that is the case, please
+  kindly disregard this message, and we apologise for the inconvenience.</p>
+
+{% if importo_scadenza %}
+<div class="alert-warning">
+  <strong>Amount:</strong> € {{ importo_scadenza|floatformat:2 }} (VAT included)
+</div>
+{% endif %}
+
+<p>If the payment is instead still pending, you can find all details and
+  bank information in your sponsor area:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}pagamenti/" class="button">View your payments</a>
+</p>
+
+<p>We remain of course available for any clarification or need.</p>
+
+<p style="margin-top:24px;">
+  Best regards,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% else %}
 <h2 style="color:#dc2626; margin:0 0 16px 0; font-size:20px;">
   Reminder · Overdue deadline
 </h2>
@@ -14,14 +52,6 @@
   was due on <strong>{{ deadline.due_date|date:"Y-m-d" }}</strong>
   and is overdue by {{ days_overdue }} days.
 </div>
-
-{% if is_pagamento and importo_scadenza %}
-<div class="alert-warning">
-  <strong>Amount due:</strong>
-  € {{ importo_scadenza|floatformat:2 }} (VAT included)
-</div>
-{% endif %}
-
 
 <p>The event <strong>{{ event_name }}</strong> will take place on
   <strong>{{ event.start_date|date:"Y-m-d" }}</strong> and meeting deadlines
@@ -51,4 +81,5 @@
   Best regards,<br>
   <strong>{{ organizer_name }}</strong>
 </p>
+{% endif %}
 {% endblock %}

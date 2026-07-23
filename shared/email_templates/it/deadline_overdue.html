@@ -1,6 +1,44 @@
 {% extends "shared/email_templates/base/email_base.html" %}
 
 {% block content %}
+{% if is_pagamento %}
+<h2 style="color:#b45309; margin:0 0 16px 0; font-size:20px;">
+  Promemoria pagamento
+</h2>
+
+<p>Gentile {{ contact.full_name }},</p>
+
+<p>ci scusiamo se torniamo a scrivervi per un promemoria: dai nostri archivi
+  risulta che la scadenza di pagamento relativa alla vostra partecipazione a
+  <strong>{{ event_name }}</strong> (contratto
+  <strong>{{ contract.contract_number }}</strong>), prevista per il
+  <strong>{{ deadline.due_date|date:"d/m/Y" }}</strong>, non risulti ancora
+  registrata da parte nostra.</p>
+
+<p>È molto probabile che abbiate già provveduto e che il nostro sistema non
+  abbia ancora recepito l'accredito: in tal caso vi preghiamo cortesemente di
+  non tenere conto di questo messaggio, e ce ne scusiamo per il disturbo.</p>
+
+{% if importo_scadenza %}
+<div class="alert-warning">
+  <strong>Importo:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)
+</div>
+{% endif %}
+
+<p>Se invece il pagamento fosse ancora da effettuare, trovate tutti i dettagli
+  e le coordinate bancarie nella vostra area riservata:</p>
+
+<p style="text-align:center; margin:24px 0;">
+  <a href="{{ portal_url }}pagamenti/" class="button">Vedi i tuoi pagamenti</a>
+</p>
+
+<p>Restiamo naturalmente a disposizione per qualsiasi chiarimento o necessità.</p>
+
+<p style="margin-top:24px;">
+  Cordiali saluti,<br>
+  <strong>{{ organizer_name }}</strong>
+</p>
+{% else %}
 <h2 style="color:#dc2626; margin:0 0 16px 0; font-size:20px;">
   Sollecito · Scadenza superata
 </h2>
@@ -14,14 +52,6 @@
   era prevista per il <strong>{{ deadline.due_date|date:"d/m/Y" }}</strong>
   e risulta scaduta da {{ days_overdue }} giorni.
 </div>
-
-{% if is_pagamento and importo_scadenza %}
-<div class="alert-warning">
-  <strong>Importo da versare:</strong>
-  € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)
-</div>
-{% endif %}
-
 
 <p>L'evento <strong>{{ event_name }}</strong> si svolgerà il
   <strong>{{ event.start_date|date:"d/m/Y" }}</strong> e il rispetto
@@ -52,4 +82,5 @@
   Cordiali saluti,<br>
   <strong>{{ organizer_name }}</strong>
 </p>
+{% endif %}
 {% endblock %}
