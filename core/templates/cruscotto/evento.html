@@ -110,27 +110,30 @@
   <div class="cr-section">
     <h2 class="cr-h2">Importi</h2>
     <div class="cr-grid">
-      <div class="cr-card cr-card--green">
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
+         class="cr-card cr-card--green" title="Mostra i contratti firmati di questo evento">
         <div class="cr-label">Confermato</div>
         <div class="cr-value">€ {{ confermati.totale|floatformat:2|intcomma }}</div>
         <div class="cr-hint">netto · IVA esclusa</div>
         <div class="cr-lordo">€ {{ confermati.totale_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
-      </div>
-      <div class="cr-card cr-card--terra">
+      </a>
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
+         class="cr-card cr-card--terra" title="Mostra le bozze/opzioni attive">
         <div class="cr-label">In opzione</div>
         <div class="cr-value">€ {{ opzionati.totale|floatformat:2|intcomma }}</div>
         <div class="cr-hint">netto · IVA esclusa</div>
         <div class="cr-lordo">€ {{ opzionati.totale_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
-      </div>
-      <div class="cr-card cr-card--indigo">
+      </a>
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=sent"
+         class="cr-card cr-card--indigo" title="Mostra i preventivi inviati">
         <div class="cr-label">In trattativa</div>
         <div class="cr-value">€ {{ trattativa.totale|floatformat:2|intcomma }}</div>
         <div class="cr-hint">netto · IVA esclusa</div>
         <div class="cr-lordo">€ {{ trattativa.totale_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
-      </div>
+      </a>
     </div>
   </div>
 
