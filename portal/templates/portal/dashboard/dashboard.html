@@ -77,13 +77,13 @@
     <i class="ti ti-chevron-right text-gray-300 text-xl shrink-0"></i>
   </a>
 
-  <!-- SALDO DA PAGARE -->
+  <!-- PAGAMENTI IN SOSPESO -->
   <a href="{% url 'portal:payments' %}"
      class="flex items-center gap-4 bg-white rounded-xl shadow-sm p-5 mb-8 hover:shadow-md transition-shadow">
     <span class="flex items-center justify-center h-11 w-11 rounded-lg bg-brand-50 text-brand-600 shrink-0"><i class="ti ti-cash text-2xl"></i></span>
     <div class="flex-1 min-w-0">
-      <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Saldo da pagare" %}</div>
-      <div class="text-2xl font-bold text-gray-900 leading-tight">&euro; {{ saldo_da_pagare|floatformat:2 }}<span class="text-sm font-normal text-gray-500"> {% if saldo_da_pagare %}{% trans "importo residuo" %}{% else %}{% trans "nessun importo dovuto" %}{% endif %}</span></div>
+      <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Pagamenti in sospeso" %}</div>
+      <div class="text-2xl font-bold text-gray-900 leading-tight">&euro; {{ saldo_da_pagare|floatformat:2 }}<span class="text-sm font-normal text-gray-500"> {% if saldo_da_pagare %}{% trans "ancora da versare" %}{% else %}{% trans "nessun importo dovuto" %}{% endif %}</span></div>
     </div>
     <i class="ti ti-chevron-right text-gray-300 text-xl shrink-0"></i>
   </a>
