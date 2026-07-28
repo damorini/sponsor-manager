@@ -106,9 +106,12 @@ def _get_materials_for_contract(contract):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
+            # Le scadenze di PAGAMENTO accettano di nuovo l'upload (la contabile
+            # del bonifico) - ma il caricamento NON le marca "Pagato": resta
+            # compito della segreteria dopo la verifica dell'accredito (vedi
+            # material_upload_view).
             'needs_file': (
                 getattr(d, 'submission_kind', 'file') in ('file', 'both')
-                and not (d.deadline_type or '').startswith('pagamento')
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
             'is_physical': getattr(d, 'submission_kind', '') == 'physical',
@@ -280,7 +283,23 @@ def material_upload_view(request, deadline_id):
             logger.exception("Errore upload file %s", f.name)
             errors.append(f"'{f.name}': errore di salvataggio")
 
-    if uploaded_count > 0 and deadline.status != DeadlineStatus.RECEIVED:
+    # Scadenze di PAGAMENTO: il file caricato e' la contabile del bonifico.
+    # NON marcare "Ricevuto/Pagato" (lo fa la segreteria dopo aver verificato
+    # l'accredito, registrando l'incasso): avvisa solo l'amministrazione.
+    is_pagamento = (deadline.deadline_type or '').startswith('pagamento')
+
+    if uploaded_count > 0 and is_pagamento:
+        try:
+            from contracts.tasks.notifications import (
+                send_payment_receipt_uploaded_alert,
+            )
+            send_payment_receipt_uploaded_alert.delay(str(deadline.id))
+        except Exception:
+            logger.exception(
+                "Notifica contabile pagamento non inviata per deadline %s",
+                deadline.id)
+
+    if uploaded_count > 0 and not is_pagamento and deadline.status != DeadlineStatus.RECEIVED:
         deadline.mark_as_received(contact=getattr(request, 'contact', None))
         # Contratto firmato caricato: avvisa subito l'amministrazione
         if deadline.deadline_type == 'contratto_firmato':
@@ -295,11 +314,18 @@ def material_upload_view(request, deadline_id):
                     deadline.id)
 
     if uploaded_count > 0:
-        messages.success(
-            request,
-            f"✓ Caricati {uploaded_count} file. "
-            f"La scadenza '{deadline.title}' è stata marcata come consegnata."
-        )
+        if is_pagamento:
+            messages.success(
+                request,
+                f"✓ Caricati {uploaded_count} file. Grazie: la segreteria "
+                "verificherà l'accredito e aggiornerà lo stato del pagamento."
+            )
+        else:
+            messages.success(
+                request,
+                f"✓ Caricati {uploaded_count} file. "
+                f"La scadenza '{deadline.title}' è stata marcata come consegnata."
+            )
     if errors:
         for err in errors:
             messages.error(request, err)
@@ -531,9 +557,10 @@ def _materials_from_deadlines(deadlines):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
+            # Upload contabile consentito anche sulle scadenze di pagamento
+            # (vedi nota in _get_materials_for_contract).
             'needs_file': (
                 getattr(d, 'submission_kind', 'file') in ('file', 'both')
-                and not (d.deadline_type or '').startswith('pagamento')
                 and (d.deadline_type or '') != 'scadenza_opzione'
             ),
             'template_file_name': (

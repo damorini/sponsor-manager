@@ -263,6 +263,57 @@ def send_signed_contract_uploaded_alert(self, deadline_id):
 
 
 # ============================================================================
+# Avviso: contabile del bonifico caricata dallo sponsor
+# ============================================================================
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_payment_receipt_uploaded_alert(self, deadline_id):
+    """Avvisa l'amministrazione che lo sponsor ha caricato nel portale la
+    contabile del bonifico su una scadenza di pagamento (deadline_type
+    'pagamento_acconto'/'pagamento_saldo'). La scadenza NON viene marcata
+    pagata: tocca alla segreteria verificare l'accredito e registrare
+    l'incasso dal cruscotto."""
+    from contracts.models import Deadline
+    from contracts.services.email_sender import send_email
+
+    try:
+        deadline = Deadline.objects.select_related(
+            'contract__sponsor', 'contract__event').get(pk=deadline_id)
+    except Deadline.DoesNotExist:
+        logger.error("Deadline %s non trovata per alert contabile pagamento", deadline_id)
+        return
+
+    contract = deadline.contract
+    event_name = (
+        contract.event.get_name('it')
+        if hasattr(contract.event, 'get_name') else str(contract.event)
+    )
+    subject = (f"Contabile bonifico caricata · {contract.sponsor.legal_name} "
+               f"· {contract.contract_number}")
+    try:
+        send_email(
+            template_name='payment_receipt_uploaded',
+            context={
+                'contract': contract,
+                'sponsor': contract.sponsor,
+                'event': contract.event,
+                'event_name': event_name,
+                'deadline': deadline,
+            },
+            to=['amministrazione@valet.it'],
+            cc=['morini@valet.it'],
+            subject=subject,
+            language='it',
+            related_to=contract,
+            communication_type='document_request',
+            is_automated=True,
+        )
+    except Exception as e:
+        logger.exception("Errore invio alert contabile pagamento %s", deadline_id)
+        raise self.retry(exc=e)
+
+
+# ============================================================================
 # Conferma pagamento ricevuto
 # ============================================================================
 

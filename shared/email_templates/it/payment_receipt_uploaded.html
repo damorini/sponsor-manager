@@ -1,0 +1,35 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<h2 style="color:#1d6534; margin:0 0 16px 0; font-size:20px;">
+  💶 Contabile bonifico caricata dal cliente
+</h2>
+
+<p>Lo sponsor ha caricato nel portale la contabile del bonifico per una
+scadenza di pagamento. <strong>Il pagamento NON risulta ancora registrato</strong>:
+verificare l'accredito sul conto e registrare l'incasso dal cruscotto.</p>
+
+<table style="border-collapse:collapse; margin:16px 0;">
+  <tr>
+    <td style="padding:4px 12px 4px 0; color:#6b7280;">Sponsor</td>
+    <td style="padding:4px 0;"><strong>{{ sponsor.legal_name }}</strong></td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0; color:#6b7280;">Evento</td>
+    <td style="padding:4px 0;">{{ event_name }}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0; color:#6b7280;">Contratto</td>
+    <td style="padding:4px 0;">{{ contract.contract_number }}</td>
+  </tr>
+  <tr>
+    <td style="padding:4px 12px 4px 0; color:#6b7280;">Scadenza</td>
+    <td style="padding:4px 0;">{{ deadline.title }} · in scadenza il {{ deadline.due_date|date:"d/m/Y" }}</td>
+  </tr>
+</table>
+
+<p>Il file caricato è disponibile nel backoffice, tra i documenti della
+scadenza «{{ deadline.title }}» del contratto {{ contract.contract_number }}.
+Una volta verificato l'accredito, registra l'incasso dal cruscotto
+(la scadenza passerà automaticamente a «Pagato»).</p>
+{% endblock %}

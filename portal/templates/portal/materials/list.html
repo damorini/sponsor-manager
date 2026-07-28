@@ -140,6 +140,12 @@
         <div><span class="text-gray-500">{{ m.payment_label }}:</span> <span class="font-semibold text-gray-900">&euro; {{ m.payment_amount|floatformat:2 }}</span></div>
         <div class="text-xs text-gray-500">{% trans "Totale domanda:" %} &euro; {{ m.deadline.contract.total|floatformat:2 }}</div>
       </div>
+      {% if m.has_documents and not m.is_completed %}
+      <div class="px-5 py-3 border-b border-blue-100 bg-blue-50 text-sm text-blue-800 flex items-center gap-2">
+        <i class="ti ti-hourglass"></i>
+        {% trans "Contabile ricevuta: la segreteria verificherà l'accredito e aggiornerà lo stato del pagamento." %}
+      </div>
+      {% endif %}
       {% endif %}
 
       <!-- Documenti già caricati -->
@@ -234,6 +240,11 @@
 
       <!-- Form upload (solo file / entrambi) -->
       {% if m.deadline.status != 'waived' and m.needs_file and not m.is_completed %}
+      {% if m.is_payment %}
+      <div class="px-5 pt-4 bg-gray-50 text-sm text-gray-600">
+        {% trans "Hai già effettuato il pagamento? Carica qui la contabile del bonifico: ci aiuterà a riconciliarlo più in fretta." %}
+      </div>
+      {% endif %}
       <div class="px-5 pt-4 bg-gray-50">
         <form id="upload-form-{{ m.deadline.id }}" method="post" action="{% url 'portal:material_upload' m.deadline.id %}"
               enctype="multipart/form-data" class="upload-form">
