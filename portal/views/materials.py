@@ -106,13 +106,16 @@ def _get_materials_for_contract(contract):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
-            # Le scadenze di PAGAMENTO accettano di nuovo l'upload (la contabile
-            # del bonifico) - ma il caricamento NON le marca "Pagato": resta
-            # compito della segreteria dopo la verifica dell'accredito (vedi
-            # material_upload_view).
+            # Le scadenze di PAGAMENTO accettano l'upload della contabile del
+            # bonifico - UNA volta sola: dopo il primo caricamento l'area
+            # sparisce (resta la nota "in attesa di verifica"). Il caricamento
+            # NON le marca "Pagato": resta compito della segreteria dopo la
+            # verifica dell'accredito (vedi material_upload_view).
             'needs_file': (
                 getattr(d, 'submission_kind', 'file') in ('file', 'both')
                 and (d.deadline_type or '') != 'scadenza_opzione'
+                and not ((d.deadline_type or '').startswith('pagamento')
+                         and docs.exists())
             ),
             'is_physical': getattr(d, 'submission_kind', '') == 'physical',
             'shipping_instructions': (
@@ -217,6 +220,21 @@ def material_upload_view(request, deadline_id):
             "Questa scadenza è già stata consegnata. Per modifiche contatta la segreteria."
         )
         return redirect('portal:materials_list', contract_id=deadline.contract_id)
+
+    # Scadenza di PAGAMENTO con contabile gia' caricata: un solo invio
+    # consentito, poi tocca alla segreteria (verifica accredito).
+    if (deadline.deadline_type or '').startswith('pagamento'):
+        _dl_ct = ContentType.objects.get_for_model(Deadline)
+        from shared.models import Document as _Document
+        if _Document.objects.filter(
+                content_type=_dl_ct, object_id=deadline.id,
+                deleted_at__isnull=True).exists():
+            messages.warning(
+                request,
+                "La contabile è già stata inviata ed è in verifica presso la "
+                "segreteria. Per modifiche o integrazioni contatta la segreteria."
+            )
+            return redirect('portal:materials_list', contract_id=deadline.contract_id)
 
     files = request.FILES.getlist('files')
     if not files:
@@ -557,11 +575,13 @@ def _materials_from_deadlines(deadlines):
             'content_fields': content_fields,
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
-            # Upload contabile consentito anche sulle scadenze di pagamento
-            # (vedi nota in _get_materials_for_contract).
+            # Upload contabile consentito anche sulle scadenze di pagamento,
+            # una volta sola (vedi nota in _get_materials_for_contract).
             'needs_file': (
                 getattr(d, 'submission_kind', 'file') in ('file', 'both')
                 and (d.deadline_type or '') != 'scadenza_opzione'
+                and not ((d.deadline_type or '').startswith('pagamento')
+                         and docs.exists())
             ),
             'template_file_name': (
                 d.deadline_template.client_template_file.name.rsplit('/', 1)[-1]

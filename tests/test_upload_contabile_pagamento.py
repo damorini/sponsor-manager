@@ -101,6 +101,33 @@ def test_upload_materiale_normale_marca_ancora_ricevuto(
 
 
 @pytest.mark.django_db
+def test_dopo_il_primo_upload_niente_altro(client, user_sponsor, contratto_con_saldo):
+    """Un solo invio della contabile: dopo il primo upload l'area di
+    caricamento sparisce e un secondo POST viene rifiutato."""
+    contract, saldo, _ = contratto_con_saldo
+    client.force_login(user_sponsor)
+    client.post(reverse('portal:material_upload', args=[saldo.id]), {'files': _pdf_finto()})
+
+    # l'area upload non c'e' piu' per la scadenza di pagamento
+    materials = _get_materials_for_contract(contract)
+    m_saldo = next(m for m in materials if m['deadline'].id == saldo.id)
+    assert m_saldo['needs_file'] is False, \
+        "dopo il primo invio della contabile l'upload deve sparire"
+
+    # un secondo POST diretto viene rifiutato senza creare altri Document
+    resp = client.post(
+        reverse('portal:material_upload', args=[saldo.id]),
+        {'files': _pdf_finto('contabile2.pdf')}, follow=True,
+    )
+    assert 'già stata inviata' in resp.content.decode()
+
+    from django.contrib.contenttypes.models import ContentType
+    dl_ct = ContentType.objects.get_for_model(Deadline)
+    assert Document.objects.filter(
+        content_type=dl_ct, object_id=saldo.id, deleted_at__isnull=True).count() == 1
+
+
+@pytest.mark.django_db
 def test_pagina_materiali_mostra_nota_verifica(client, user_sponsor, contratto_con_saldo):
     """Dopo l'upload della contabile la pagina mostra la nota 'in attesa di
     verifica' e non il badge Pagato."""
