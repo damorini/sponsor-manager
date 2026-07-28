@@ -208,11 +208,22 @@ def dashboard_view(request):
             sender=MessageSender.OPERATOR, archived_at__isnull=True)
         .order_by('-created_at'))
 
+    # Card "Scadenze aperte": porta alla pagina scadenze/materiali dell'evento
+    # della scadenza piu' urgente (open_dls e' gia' ordinata per due_date).
+    # Con zero scadenze la card non e' cliccabile (niente da mostrare).
+    scadenze_event_id = None
+    for d in open_dls:
+        ev = contract_event.get(d.contract_id)
+        if ev is not None:
+            scadenze_event_id = ev.id
+            break
+
     return render(request, 'portal/dashboard/dashboard.html', {
         'admin_items': admin_items[:15],
         'tech_items': tech_items[:15],
         'has_events': bool(contract_ids),
         'n_scadenze': len(open_dls),
+        'scadenze_event_id': scadenze_event_id,
         'saldo_da_pagare': saldo_da_pagare,
         'prossimo_evento': prossimo_evento,
         'prossimi_eventi': prossimi_eventi,

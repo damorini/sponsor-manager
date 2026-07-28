@@ -66,16 +66,27 @@
     {% endfor %}
   </div>
 
-  <!-- SCADENZE APERTE -->
-  <a href="#scadenze"
+  <!-- SCADENZE APERTE: se ce ne sono, la card apre la pagina scadenze
+       dell'evento più urgente; senza scadenze non è cliccabile. -->
+  {% if n_scadenze and scadenze_event_id %}
+  <a href="{% url 'portal:event_materials' scadenze_event_id %}"
      class="flex items-center gap-4 bg-white rounded-xl shadow-sm p-5 mb-4 hover:shadow-md transition-shadow">
-    <span class="flex items-center justify-center h-11 w-11 rounded-lg {% if n_scadenze %}bg-red-50 text-red-600{% else %}bg-green-50 text-green-600{% endif %} shrink-0"><i class="ti ti-alert-triangle text-2xl"></i></span>
+    <span class="flex items-center justify-center h-11 w-11 rounded-lg bg-red-50 text-red-600 shrink-0"><i class="ti ti-alert-triangle text-2xl"></i></span>
     <div class="flex-1 min-w-0">
       <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Scadenze aperte" %}</div>
-      <div class="text-2xl font-bold {% if n_scadenze %}text-red-600{% else %}text-green-600{% endif %} leading-tight">{{ n_scadenze }}<span class="text-sm font-normal text-gray-500"> {% if n_scadenze %}{% trans "da completare" %}{% else %}{% trans "tutto in regola" %}{% endif %}</span></div>
+      <div class="text-2xl font-bold text-red-600 leading-tight">{{ n_scadenze }}<span class="text-sm font-normal text-gray-500"> {% trans "da completare" %} &middot; {% trans "vai alle scadenze" %}</span></div>
     </div>
     <i class="ti ti-chevron-right text-gray-300 text-xl shrink-0"></i>
   </a>
+  {% else %}
+  <div class="flex items-center gap-4 bg-white rounded-xl shadow-sm p-5 mb-4">
+    <span class="flex items-center justify-center h-11 w-11 rounded-lg bg-green-50 text-green-600 shrink-0"><i class="ti ti-circle-check text-2xl"></i></span>
+    <div class="flex-1 min-w-0">
+      <div class="text-xs uppercase tracking-wide text-gray-400 font-semibold">{% trans "Scadenze aperte" %}</div>
+      <div class="text-2xl font-bold text-green-600 leading-tight">{{ n_scadenze }}<span class="text-sm font-normal text-gray-500"> {% trans "tutto in regola" %}</span></div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- PAGAMENTI IN SOSPESO -->
   <a href="{% url 'portal:payments' %}"
