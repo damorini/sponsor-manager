@@ -78,25 +78,25 @@
   </div>
 
   <div class="cr-section">
-    <h2 class="cr-h2">Stand</h2>
+    <h2 class="cr-h2">Contratti e stand</h2>
     <div class="cr-grid-sm">
       <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
          class="cr-card cr-card--green" title="Mostra i contratti firmati di questo evento">
         <div class="cr-label">Confermati</div>
-        <div class="cr-value">{{ confermati.n_stand }}</div>
-        <div class="cr-hint">{{ confermati.n_contratti }} contratto/i</div>
+        <div class="cr-value">{{ confermati.n_contratti }}</div>
+        <div class="cr-hint">contratto/i · {{ confermati.n_stand }} stand assegnati</div>
       </a>
       <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
          class="cr-card cr-card--terra" title="Mostra le bozze/opzioni attive">
         <div class="cr-label">Opzionati</div>
-        <div class="cr-value">{{ opzionati.n_stand }}</div>
-        <div class="cr-hint">{{ opzionati.n_contratti }} contratto/i</div>
+        <div class="cr-value">{{ opzionati.n_contratti }}</div>
+        <div class="cr-hint">contratto/i · {{ opzionati.n_stand }} stand</div>
       </a>
       <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=sent"
          class="cr-card cr-card--indigo" title="Mostra i preventivi inviati">
         <div class="cr-label">In trattativa</div>
-        <div class="cr-value">{{ trattativa.n_stand }}</div>
-        <div class="cr-hint">{{ trattativa.n_contratti }} contratto/i (preventivo inviato)</div>
+        <div class="cr-value">{{ trattativa.n_contratti }}</div>
+        <div class="cr-hint">contratto/i (preventivo inviato) · {{ trattativa.n_stand }} stand</div>
       </a>
       <a href="{% url 'admin:venues_stand_changelist' %}?event__id__exact={{ evento.id }}"
          class="cr-card cr-card--neutral" title="Mostra tutti gli stand">

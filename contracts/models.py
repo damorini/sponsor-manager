@@ -996,6 +996,25 @@ class Contract(SoftDeleteModel):
         except Exception:
             pass
 
+    def restore(self):
+        """Annulla il soft-delete e RI-VALUTA lo spazio espositivo: la
+        cancellazione lo aveva liberato (delete -> stand 'disponibile'),
+        quindi il ripristino deve ri-assegnarlo, altrimenti un contratto
+        firmato torna vivo ma il suo stand resta vendibile ad altri.
+
+        NB: le scadenze esonerate dalla cancellazione (_esonera_scadenze)
+        NON vengono riaperte automaticamente (non e' distinguibile un
+        esonero da cestino da uno voluto dall'operatore): dopo un
+        ripristino vanno ricontrollate a mano dall'admin Scadenze."""
+        super().restore()
+        try:
+            if self.stand:
+                self.stand.update_status_from_contract()
+            elif self.stand_block:
+                self.stand_block.update_status_from_contract()
+        except Exception:
+            pass
+
     # ---------------------------------------------------------------------
     # Helper privati
     # ---------------------------------------------------------------------
