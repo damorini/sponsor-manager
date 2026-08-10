@@ -341,6 +341,30 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
         super().save_model(request, obj, form, change)
 
+        # Se il form ha portato il contratto a SIGNED cambiando lo stato a
+        # MANO (invece che con l'azione "Segna come firmato"), esegui la
+        # stessa cascata di mark_as_signed: senza, non si generavano
+        # scadenze di pagamento/materiali, la scadenza 'contratto firmato',
+        # lo stand non passava ad Assegnato e signed_date restava vuota
+        # (successo con CROMA: contratto firmato senza scadenza acconto).
+        if (change
+                and obj.status == ContractStatus.SIGNED
+                and old_status
+                and old_status in (ContractStatus.DRAFT, ContractStatus.SENT,
+                                   ContractStatus.PENDING_PAYMENT)):
+            if not obj.signed_date:
+                obj.signed_date = timezone.now().date()
+                obj.save(update_fields=['signed_date', 'updated_at'])
+            obj._update_venue_status()
+            obj._generate_deadlines()
+            obj._generate_payment_deadlines()
+            obj._generate_signed_contract_deadline()
+            self.message_user(
+                request,
+                "Contratto firmato: scadenze generate e spazio espositivo "
+                "assegnato (cascata completata come per l'azione 'Segna come "
+                "firmato').")
+
         # Se il form ha portato il contratto a CANCELLED (bypassing cancel()),
         # eseguiamo la stessa cascata: libera stand/blocco e azzera scadenze aperte.
         if (change

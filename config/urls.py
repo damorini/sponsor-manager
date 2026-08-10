@@ -9,10 +9,12 @@ Routing:
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic.base import RedirectView
 from django.http import JsonResponse
 from django.db import connection
+
+from shared.views import protected_document_media
 
 
 def health_check(request):
@@ -27,6 +29,12 @@ def health_check(request):
 
 urlpatterns = [
     path('health/', health_check, name='health'),
+
+    # Documenti clienti serviti SOLO tramite Django con controllo di
+    # proprieta' (in produzione Caddy inoltra qui /media/documents/*;
+    # in DEBUG questo pattern vince sul fallback static() piu' sotto).
+    re_path(r'^media/documents/(?P<subpath>.+)$', protected_document_media,
+            name='protected_document_media'),
 
     path('admin/cruscotto/', include('core.urls', namespace='core')),
     # Con questo nome registrato, la login dell'admin mostra da sola il link

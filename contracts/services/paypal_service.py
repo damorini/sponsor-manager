@@ -152,7 +152,27 @@ def create_paypal_order(payment, return_url=None, cancel_url=None):
     if not cancel_url:
         cancel_url = f"{site_url}/portal/checkout/cancel/{payment.id}/"
 
-    # Costruisci request body PayPal
+    # Costruisci request body PayPal.
+    # breakdown+items SOLO se l'importo del pagamento coincide col totale del
+    # contratto: per importi parziali (residuo dopo pagamenti precedenti) o
+    # righe scontate, un breakdown incoerente fa rifiutare l'ordine a PayPal
+    # (422 AMOUNT_MISMATCH) e il checkout resta bloccato per sempre.
+    amount_block = {
+        "currency_code": payment.currency,
+        "value": str(payment.amount_gross),
+    }
+    include_items = (payment.amount_gross == contract.total)
+    if include_items:
+        amount_block["breakdown"] = {
+            "item_total": {
+                "currency_code": payment.currency,
+                "value": str(contract.subtotal),
+            },
+            "tax_total": {
+                "currency_code": payment.currency,
+                "value": str(contract.vat_amount),
+            },
+        }
     request_body = {
         "intent": "CAPTURE",
         "purchase_units": [{
@@ -160,21 +180,9 @@ def create_paypal_order(payment, return_url=None, cancel_url=None):
             "description": f"Sponsor {contract.contract_kind} - {contract.contract_number}",
             "custom_id": str(payment.id),  # nostro id per tracking
             "invoice_id": contract.contract_number,
-            "amount": {
-                "currency_code": payment.currency,
-                "value": str(payment.amount_gross),
-                "breakdown": {
-                    "item_total": {
-                        "currency_code": payment.currency,
-                        "value": str(contract.subtotal),
-                    },
-                    "tax_total": {
-                        "currency_code": payment.currency,
-                        "value": str(contract.vat_amount),
-                    },
-                },
-            },
-            "items": _build_items_from_contract(contract, payment.currency),
+            "amount": amount_block,
+            **({"items": _build_items_from_contract(contract, payment.currency)}
+               if include_items else {}),
             "payee": {
                 "merchant_id": getattr(settings, 'PAYPAL_MERCHANT_ID', None),
             } if getattr(settings, 'PAYPAL_MERCHANT_ID', None) else None,
@@ -242,16 +250,23 @@ def create_paypal_order(payment, return_url=None, cancel_url=None):
 
 
 def _build_items_from_contract(contract, currency):
-    """Costruisce la lista 'items' per PayPal dalle ContractLine."""
+    """Costruisce la lista 'items' per PayPal dalle ContractLine.
+
+    Ogni riga viene rappresentata come UN item con il suo imponibile
+    POST-sconto (line_subtotal): PayPal verifica che la somma degli items
+    coincida con breakdown.item_total (= contract.subtotal), quindi usare
+    quantita' x prezzo pre-sconto farebbe rifiutare gli ordini con sconti."""
     items = []
-    for line in contract.lines.select_related('service').all():
-        # PayPal richiede unit_amount come stringa
+    for line in contract.lines.all():
+        nome = line.service_name_snapshot
+        if line.quantity and line.quantity > 1:
+            nome = f"{nome} x{line.quantity}"
         items.append({
-            "name": line.service_name_snapshot[:127],  # limite PayPal
-            "quantity": str(line.quantity),
+            "name": nome[:127],  # limite PayPal
+            "quantity": "1",
             "unit_amount": {
                 "currency_code": currency,
-                "value": str(line.unit_price),
+                "value": str(line.line_subtotal),
             },
             "category": "DIGITAL_GOODS",  # servizi digitali, no shipping
         })
@@ -294,85 +309,108 @@ def capture_paypal_order(order_id):
         Payment.DoesNotExist se l'ordine non corrisponde a nessun Payment
         RuntimeError se la cattura fallisce
     """
+    from django.db import transaction
     from contracts.payments import Payment, PaymentStatus
 
-    try:
-        payment = Payment.objects.get(paypal_order_id=order_id)
-    except Payment.DoesNotExist:
-        logger.error("Nessun Payment trovato per order_id %s", order_id)
-        raise
+    # Serializza le catture concorrenti sullo stesso ordine (return-URL del
+    # cliente + webhook PayPal possono arrivare quasi insieme): il primo
+    # prende il lock, cattura e marca SUCCEEDED; il secondo resta in attesa
+    # e al risveglio vede SUCCEEDED -> esce dal ramo idempotente, invece di
+    # ricevere ORDER_ALREADY_CAPTURED da PayPal e marcare FAILED un
+    # pagamento in realta' riuscito.
+    with transaction.atomic():
+        try:
+            payment = Payment.objects.select_for_update().get(paypal_order_id=order_id)
+        except Payment.DoesNotExist:
+            logger.error("Nessun Payment trovato per order_id %s", order_id)
+            raise
 
-    # Idempotency: se già succeeded, restituisci dati attuali senza richiamare PayPal
-    if payment.status == PaymentStatus.SUCCEEDED:
-        logger.info("Payment %s già succeeded, skip capture", payment.id)
-        return {
-            'status': 'COMPLETED',
-            'capture_id': payment.paypal_capture_id,
-            'already_processed': True,
-        }
+        # Idempotency: se già succeeded, restituisci dati attuali senza richiamare PayPal
+        if payment.status == PaymentStatus.SUCCEEDED:
+            logger.info("Payment %s già succeeded, skip capture", payment.id)
+            return {
+                'status': 'COMPLETED',
+                'capture_id': payment.paypal_capture_id,
+                'already_processed': True,
+            }
 
-    client = get_paypal_client()
-    orders_controller = client.orders
+        client = get_paypal_client()
+        orders_controller = client.orders
 
-    try:
-        response = orders_controller.capture_order({
-            "id": order_id,
-            "prefer": "return=representation",
-        })
-        capture_data = _response_to_dict(response)
-    except Exception as e:
-        logger.exception("Errore capture order %s", order_id)
-        payment.mark_failed(reason=f"PayPal capture error: {e}")
-        raise RuntimeError(f"PayPal capture failed: {e}") from e
+        try:
+            response = orders_controller.capture_order({
+                "id": order_id,
+                "prefer": "return=representation",
+            })
+            capture_data = _response_to_dict(response)
+        except Exception as e:
+            # ORDER_ALREADY_CAPTURED: qualcun altro ha gia' incassato questo
+            # ordine (es. run precedente morto dopo la capture ma prima del
+            # save). L'addebito e' REALE: trattalo come successo idempotente,
+            # non come fallimento.
+            if 'ALREADY_CAPTURED' in str(e).upper():
+                logger.warning(
+                    "Order %s gia' catturato lato PayPal: marco succeeded "
+                    "payment %s senza nuova capture", order_id, payment.id)
+                payment.mark_succeeded()
+                return {
+                    'status': 'COMPLETED',
+                    'capture_id': payment.paypal_capture_id,
+                    'already_processed': True,
+                }
+            logger.exception("Errore capture order %s", order_id)
+            payment.mark_failed(reason=f"PayPal capture error: {e}")
+            raise RuntimeError(f"PayPal capture failed: {e}") from e
 
-    # Estrai dati cattura
-    status = capture_data.get('status')
-    purchase_units = capture_data.get('purchase_units', [])
-    captures = []
-    if purchase_units:
-        captures = purchase_units[0].get('payments', {}).get('captures', [])
+        # Estrai dati cattura (ancora dentro il lock: la serializzazione deve
+        # coprire anche il salvataggio dell'esito, non solo la chiamata API)
+        status = capture_data.get('status')
+        purchase_units = capture_data.get('purchase_units', [])
+        captures = []
+        if purchase_units:
+            captures = purchase_units[0].get('payments', {}).get('captures', [])
 
-    if status == 'COMPLETED' and captures:
-        capture = captures[0]
-        capture_id = capture.get('id')
+        if status == 'COMPLETED' and captures:
+            capture = captures[0]
+            capture_id = capture.get('id')
 
-        # Estrai dati payer
-        payer = capture_data.get('payer', {})
-        payment.paypal_payer_email = payer.get('email_address', '')
-        payment.paypal_payer_id = payer.get('payer_id', '')
+            # Estrai dati payer
+            payer = capture_data.get('payer', {})
+            payment.paypal_payer_email = payer.get('email_address', '')
+            payment.paypal_payer_id = payer.get('payer_id', '')
 
-        # Estrai fee dalla seller_receivable_breakdown
-        fee_amount = Decimal('0')
-        breakdown = capture.get('seller_receivable_breakdown', {})
-        if 'paypal_fee' in breakdown:
-            fee_amount = Decimal(breakdown['paypal_fee']['value'])
+            # Estrai fee dalla seller_receivable_breakdown
+            fee_amount = Decimal('0')
+            breakdown = capture.get('seller_receivable_breakdown', {})
+            if 'paypal_fee' in breakdown:
+                fee_amount = Decimal(breakdown['paypal_fee']['value'])
 
-        payment.amount_fee = fee_amount
-        payment.paypal_response = capture_data
-        payment.save(update_fields=[
-            'paypal_payer_email', 'paypal_payer_id',
-            'amount_fee', 'paypal_response', 'updated_at'
-        ])
+            payment.amount_fee = fee_amount
+            payment.paypal_response = capture_data
+            payment.save(update_fields=[
+                'paypal_payer_email', 'paypal_payer_id',
+                'amount_fee', 'paypal_response', 'updated_at'
+            ])
 
-        # Marca come succeeded (questo triggera anche il Contract.mark_payment_succeeded)
-        payment.mark_succeeded(paypal_capture_id=capture_id)
+            # Marca come succeeded (questo triggera anche il Contract.mark_payment_succeeded)
+            payment.mark_succeeded(paypal_capture_id=capture_id)
 
-        logger.info(
-            "Payment %s catturato con successo: capture_id=%s amount=%s",
-            payment.id, capture_id, payment.amount_gross
-        )
+            logger.info(
+                "Payment %s catturato con successo: capture_id=%s amount=%s",
+                payment.id, capture_id, payment.amount_gross
+            )
 
-        return {
-            'status': 'COMPLETED',
-            'capture_id': capture_id,
-            'payment_id': str(payment.id),
-            'already_processed': False,
-        }
-    else:
-        # Cattura fallita o in stato pending
-        reason = capture_data.get('status_details', {}).get('reason', 'unknown')
-        payment.mark_failed(reason=f"Capture status: {status}, reason: {reason}")
-        raise RuntimeError(f"Cattura PayPal non completata: status={status}")
+            return {
+                'status': 'COMPLETED',
+                'capture_id': capture_id,
+                'payment_id': str(payment.id),
+                'already_processed': False,
+            }
+        else:
+            # Cattura fallita o in stato pending
+            reason = capture_data.get('status_details', {}).get('reason', 'unknown')
+            payment.mark_failed(reason=f"Capture status: {status}, reason: {reason}")
+            raise RuntimeError(f"Cattura PayPal non completata: status={status}")
 
 
 # ============================================================================

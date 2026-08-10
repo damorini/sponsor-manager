@@ -10,6 +10,13 @@
 		root * /app/staticfiles
 		file_server
 	}
+	# ECCEZIONE: i documenti dei clienti (contabili, contratti firmati,
+	# materiali) NON si servono come file statici — chiunque conoscesse
+	# l'URL li scaricherebbe senza login. Passano a Django, che verifica
+	# staff/proprieta' e li serve come allegato (shared/views.py).
+	handle /media/documents/* {
+		reverse_proxy sponsor_manager_web:8000
+	}
 	handle_path /media/* {
 		root * /app/media
 		file_server

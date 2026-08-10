@@ -51,6 +51,16 @@ DEFAULT_ALLOWED_MIME_TYPES = [
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ]
 
+# Whitelist di ESTENSIONI: il content-type dichiarato dal browser e'
+# falsificabile, l'estensione del nome file no (decide anche il nome con cui
+# il file viene salvato). Un .html "spacciato" per application/pdf viene
+# rifiutato qui.
+ALLOWED_UPLOAD_EXTENSIONS = {
+    '.pdf', '.jpg', '.jpeg', '.png', '.webp', '.svg',
+    '.zip', '.ai', '.eps',
+    '.xls', '.xlsx', '.doc', '.docx',
+}
+
 
 # ============================================================================
 # Helper: lista materiali per un contratto
@@ -265,6 +275,12 @@ def material_upload_view(request, deadline_id):
             )
             continue
 
+        from pathlib import PurePosixPath
+        ext = PurePosixPath(f.name).suffix.lower()
+        if ext not in ALLOWED_UPLOAD_EXTENSIONS:
+            errors.append(f"'{f.name}': estensione non consentita ({ext or 'nessuna'})")
+            continue
+
         mime_type = (
             f.content_type
             or mimetypes.guess_type(f.name)[0]
@@ -275,9 +291,14 @@ def material_upload_view(request, deadline_id):
             continue
 
         try:
+            # Nome su disco RANDOMIZZATO (il nome originale resta visibile
+            # in Document.file_name): path non indovinabile e nessun rischio
+            # da nomi file ostili.
+            import uuid as _uuid
+            stored_name = f"{_uuid.uuid4().hex}{ext}"
             relative_path = (
                 f"documents/contracts/{deadline.contract_id}/"
-                f"deadlines/{deadline.id}/{f.name}"
+                f"deadlines/{deadline.id}/{stored_name}"
             )
             saved_path = default_storage.save(relative_path, f)
 

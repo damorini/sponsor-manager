@@ -5,6 +5,7 @@ tornava vivo mentre il suo stand restava 'disponibile' e vendibile ad altri
 (successo davvero con Galderma A01, 7 AITEB)."""
 import pytest
 from datetime import date
+from decimal import Decimal
 
 from contracts.models import Contract, ContractKind, ContractStatus
 from events.models import Event
@@ -17,7 +18,7 @@ def contratto_con_stand(db, sponsor):
         name={'it': 'Ev Restore Stand', 'en': 'Ev Restore Stand'}, code='RST',
         start_date=date(2026, 12, 1), end_date=date(2026, 12, 2),
     )
-    stand = Stand.objects.create(event=event, code='R-01', base_price=1000)
+    stand = Stand.objects.create(event=event, code='R-01', base_price=Decimal('1000.00'))
     contract = Contract.objects.create(
         sponsor=sponsor, event=event, contract_kind=ContractKind.MAIN,
         status=ContractStatus.SIGNED, contract_number='RST-26-001',

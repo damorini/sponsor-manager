@@ -82,6 +82,14 @@ def start_paypal_checkout(request, contract_id):
     from contracts.views._payment_helpers import compute_due_amount
     amount_gross = compute_due_amount(contract)
 
+    # Niente da pagare (gia' saldato): come nella pagina carta, non avviare
+    # un checkout a importo zero/negativo.
+    if not amount_gross or amount_gross <= 0:
+        messages.success(
+            request,
+            "Questo ordine risulta già pagato: non c'è nulla da saldare.")
+        return redirect('portal:contract_detail', contract_id=contract.id)
+
     # Crea Payment in pending (o riusa esistente non scaduto)
     payment, created = Payment.objects.get_or_create(
         contract=contract,
@@ -92,6 +100,14 @@ def start_paypal_checkout(request, contract_id):
             'currency': 'EUR',
         },
     )
+
+    # Importo cambiato dall'ultima visita (es. acconto pagato nel frattempo):
+    # aggiorna il Payment riusato e scarta l'ordine vecchio, altrimenti si
+    # pagherebbe un importo obsoleto (stessa logica della pagina carta).
+    if not created and payment.amount_gross != amount_gross:
+        payment.amount_gross = amount_gross
+        payment.paypal_order_id = ''
+        payment.save(update_fields=['amount_gross', 'paypal_order_id', 'updated_at'])
 
     # Crea ordine PayPal e ottieni approval URL
     try:

@@ -199,7 +199,21 @@ class Payment(TimeStampedModel):
             )
 
     def mark_failed(self, reason=''):
-        """Marca pagamento come fallito."""
+        """Marca pagamento come fallito.
+
+        MAI degradare un pagamento gia' riuscito: nel race return-URL vs
+        webhook il secondo arrivato riceveva ORDER_ALREADY_CAPTURED da PayPal
+        e sovrascriveva SUCCEEDED con FAILED - il cliente aveva pagato ma il
+        sistema tornava a chiedere l'importo (rischio doppio pagamento).
+        Ricontrolla lo stato dal DB per vedere anche il commit concorrente."""
+        stato_db = type(self).objects.filter(pk=self.pk).values_list(
+            'status', flat=True).first()
+        if stato_db == PaymentStatus.SUCCEEDED or self.status == PaymentStatus.SUCCEEDED:
+            import logging
+            logging.getLogger(__name__).warning(
+                "mark_failed ignorato su payment %s gia' SUCCEEDED (reason: %s)",
+                self.id, reason)
+            return
         self.status = PaymentStatus.FAILED
         self.failed_at = timezone.now()
         self.failure_reason = reason
