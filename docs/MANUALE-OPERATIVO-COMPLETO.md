@@ -4,7 +4,7 @@
 >
 > Questo è il **manuale operativo di sistema** (backoffice + portale + manutenzione). Per la guida rapida utente esiste anche `docs/manuale_utente.html` (apribile nel browser). In caso di dubbio, questo documento è la fonte completa.
 >
-> *Ultimo aggiornamento: luglio 2026.*
+> *Ultimo aggiornamento: agosto 2026.*
 
 ---
 
@@ -159,6 +159,8 @@
 
 ### 4.1 Eventi
 Crea l'evento (nome IT/EN, slug, date, luogo, lingua default, flag ECM, immagine header). L'evento è il contenitore di stand, servizi e contratti.
+- **Duplica per NUOVA EDIZIONE** (azione nel menu): clona l'evento con tutta la struttura — servizi (con varianti, inclusi e template scadenze), stand e blocchi. Il clone nasce in stato *Pianificazione* con stand tutti *disponibili*; contratti/sponsor dell'originale NON vengono toccati né copiati. Dopo la duplicazione: aggiorna nome, date e prezzi.
+- Colonna **"Fatturato (IVA escl.)"** nella lista eventi: somma degli imponibili dei contratti non annullati.
 
 ### 4.2 Catalogo (servizi madre) + Categorie
 - **Catalogo servizi**: voci generiche riutilizzabili. Campi: codice, nome/descrizione IT/EN, categoria, prezzo, IVA, modalità prezzo, ecc.
@@ -188,6 +190,8 @@ Voci vendibili in un evento specifico. Si possono creare **da zero** o **dal cat
 - **Azienda farmaceutica + Codice SIS**: spunta nei *Dati fiscali*; per le aziende flaggate il Codice SIS è **obbligatorio** (rientra nel gate anagrafica del portale: conferma preventivo e acquisti). Filtro dedicato nella lista Sponsor.
 - **Anagrafica di riferimento (Contatti)**: referenti dell'azienda con ruoli funzionali (firmatario, marketing, amministrazione, operativo, CC, educational) e **lingua preferita**.
 - ⚠️ **Il firmatario è indispensabile**: senza un contatto con «È il legale rappresentante firmatario?» il contratto non si può generare e il cliente viene **bloccato alla conferma**. All'invio del preventivo il sistema ti avvisa (banner giallo + warning) se manca.
+- ⚠️ **Dati anagrafici del firmatario OBBLIGATORI** (da luglio 2026): il contratto stampa nato il/a, provincia di nascita, residenza completa (via, civico, città, CAP, provincia), tipo+numero documento e **codice fiscale** del firmatario. **Senza tutti questi campi il contratto NON si genera** (né da admin né alla conferma dal portale, con l'elenco esatto di cosa manca). Il cliente può compilarli da solo nel portale («I miei dati» → checkbox «È il legale rappresentante che firma il contratto?»), oppure li inserisce l'operatore sul Contatto.
+- Colonna **"Accesso portale"** nella lista Sponsor (+ filtro): mostra chi ha fatto login dopo l'invito (✓ verde con data ultimo accesso, "Invitato, mai entrato" in arancio, "—" se nessun contatto invitato).
 - Import contatti/sponsor da Excel (colonne Cognome/Nome separate).
 
 ### 4.6 Contratti (Domande di ammissione)
@@ -203,11 +207,26 @@ Cuore operativo. Per un contratto:
 - **Azione "Genera scadenze dai template"**: per contratti **già firmati** a cui hai aggiunto/modificato scadenze dopo la firma (vedi §11 e Troubleshooting).
 - **Termini di cancellazione / penale**: la percentuale di penale del contratto/domanda si imposta per evento in *Eventi → Dati per contratti → "Penale cancellazione (%)"* (default 50%). Nel PDF il testo si adatta alla forma di pagamento (con o senza acconto).
 
+**Novità luglio/agosto 2026 sui contratti:**
+- **Riga LIBERA** (richieste specifiche non a catalogo): nelle righe del contratto lascia vuoto «Servizio» e compila **«Descrizione libera»** + quantità + prezzo. Nessun controllo di quantità/disponibilità; usabile più volte nello stesso contratto; compare nei PDF come le altre righe.
+- **Ordine delle righe nel documento**: il campo **«Ordine»** della riga (se ≠0) forza la sua posizione nel preventivo/allegato (es. voci relatore in fondo). Con tutte a 0 resta l'ordinamento automatico per importo.
+- **Clausola di pagamento del contratto** (campo *Modalità pagamento* + *Termini*): con **RI.BA.** la frase diventa «SALDO: € … da regolarsi tramite Ri.Ba. \<termini\>» (es. "60 gg F.M."); con **Bonifico (B.B.) con scadenza fissa** diventa «PAGAMENTO: € … tramite B.B. con scadenza \<data in lettere\>». Negli altri casi resta «…valuta fissa al gg/mm/aaaa».
+- **Azioni nel menu**: «**Rigenera PDF contratto**» (dopo aver cambiato firmatario/prezzi/righe — niente più interventi manuali), «**Trasforma preventivo in contratto**», «**Genera riga dallo stand**», «**Genera fattura proforma**» (vedi sotto). «**Annulla domande**» ora apre una **pagina di conferma** con elenco, avvertenze e campo *motivo*.
+- **Colonna "Incassato / Residuo"** nella lista: verde «✓ saldato», ambra parziale, rosso zero — ordinabile.
+- **Cambio stato a mano**: impostare «Firmato» dal menu a tendina ora esegue comunque la **cascata completa** (scadenze, stand assegnato, data firma) come l'azione dedicata. Meglio comunque usare le azioni.
+- **Cambio/rimozione stand** su contratto esistente: la riga del vecchio spazio viene rimossa automaticamente (niente doppio stand nel preventivo).
+- **Flag IVA**: attivarlo/disattivarlo ricalcola subito l'IVA di tutte le righe. **Prezzo o aliquota 0 espliciti** su una riga nuova vengono rispettati (omaggi), non sostituiti dal listino.
+- **Cestino e ripristino**: cancellare libera stand ed esonera le scadenze aperte; il **ripristino ri-assegna automaticamente lo stand**, ma le scadenze esonerate vanno **ricontrollate a mano** (admin Scadenze).
+- **Fattura PROFORMA**: azione «Genera FATTURA PROFORMA» (1 documento a pagamento unico, 2 numerati /1 acconto e /2 saldo se previsto l'acconto). Documento NON fiscale; finisce tra i Documenti del contratto (visibile al cliente in «I miei documenti»), alimenta l'«Export fatture» e **invia in automatico un'email al cliente** che lo avvisa del documento disponibile.
+
 ### 4.7 Pagamenti
 - **Contratto principale = solo bonifico.** Acconto e saldo si pagano con bonifico; l'operatore registra l'incasso con l'azione **"Registra pagamento bonifico ricevuto"**. Il pagamento online **non** è disponibile per il contratto principale.
 - **Pagamento online (PayPal / MyBank / carta) = solo acquisti ecommerce** (servizi dal carrello, contratti *addon*): si registrano da soli e il contratto addon si firma all'incasso. **LIVE dal 7/7/2026** (app PayPal Business VALET, webhook attivo). MyBank = bonifico istantaneo dall'home banking del cliente, comodo per le aziende. Vedi Schema B.
 - Ordini in attesa: il cliente ha il pulsante **«Paga ora con carta o PayPal»** in «I miei acquisti»; un ordine PayPal scaduto/lasciato a metà viene rigenerato da solo.
 - I dati bancari mostrati al cliente vengono dalle variabili `.env` `BANK_TRANSFER_*`; le chiavi PayPal da `PAYPAL_*` (vedi §14).
+- La lista Pagamenti in admin ha la colonna **Cliente** (ragione sociale, ordinabile) accanto al numero contratto.
+- **Contabile del bonifico dal portale**: il cliente può caricare la ricevuta del bonifico sulla scadenza di pagamento (una volta sola). Il caricamento **NON marca "Pagato"**: arriva un'email ad *amministrazione@valet.it* e tocca a te verificare l'accredito e **registrare l'incasso** dal cruscotto («Registra incasso») — solo allora la scadenza va in Pagato.
+- «Conferma bonifico ricevuto» funziona anche su contratti già *Attivi/Completati* (registra l'incasso senza toccare lo stato del contratto).
 
 ### 4.8 Scadenze cliente (Cruscotto)
 `/admin/cruscotto/scadenze-cliente/`: elenco di tutte le scadenze tecniche generate dai template, con stato (da fare / in ritardo / completata) e chi/quando ha consegnato. Filtrabile per evento.
@@ -225,19 +244,30 @@ Cuore operativo. Per un contratto:
 - **Utenti**: account operatori (staff) e gestione accessi.
 
 ### 4.11 Cruscotto
-Home operatore `/admin/cruscotto/`: KPI (soci/sponsor, incassi, eventi, ecc.), **avviso "preventivi da inviare"** (compare anche in cima a tutte le pagine admin), messaggi non letti dai clienti, scadenze.
+Home operatore `/admin/cruscotto/`: KPI (soci/sponsor, incassi, eventi, ecc.), messaggi non letti dai clienti, scadenze, e questi **avvisi automatici**:
+- **Preventivi da inviare** (bozze mai inviate — compare anche in cima alle pagine admin)
+- **Preventivi inviati SENZA RISPOSTA da oltre 7 giorni** (per valutare un sollecito)
+- **Opzioni stand in scadenza entro 7 giorni** (alla scadenza lo spazio torna disponibile in silenzio)
+- **Materiali ricevuti da visionare**
+
+**Cruscotto evento** (`/admin/cruscotto/evento/<id>/`) — dal luglio 2026:
+- ⚠️ **Tutti gli importi sono in IVA ESCLUSA (imponibile)**, con il complessivo IVA inclusa mostrato sotto in piccolo: sommare aziende con e senza IVA su basi diverse rendeva i totali incomprensibili. Gli incassi (che sono denaro lordo reale) vengono convertiti proporzionalmente alla loro quota imponibile.
+- Card **Incassato** cliccabile → pagina «chi ha pagato» (cliente, netto/lordo, n. pagamenti, data ultimo incasso); card **Da incassare** → dettaglio residui con «Registra incasso». Entrambe le pagine hanno il pulsante **⬇ Scarica Excel**.
+- Sezione **Contratti e stand**: il numero grande sono i **contratti** (gli stand come dettaglio — un contratto di sola sponsorizzazione senza stand non fa più sembrare "mancante" un confermato). Card cliccabili verso le liste filtrate, incluse quelle degli **Importi**.
 
 ---
 
 ## 5. PORTALE SPONSOR (lato cliente)
 
-- **Login** con email → Dashboard con prossimi eventi, scadenze aperte, saldo da pagare, messaggi. Chi apre un link del portale **senza un profilo utilizzabile** (mai fatto il primo accesso) vede la pagina di cortesia **«Ci siamo quasi»** con le due strade: accedi con le credenziali ricevute, o scrivi a **helpdesk@valet.it**.
-- **I miei dati**: l'azienda aggiorna anagrafica e **contatti**. Ogni contatto (principale e altri) ha la **scelta lingua** con bandierina (IT/EN); per i contatti esistenti si cambia al volo cliccando la bandiera. Domanda **«Azienda farmaceutica?»**: se spuntata compare il campo **Codice SIS** (obbligatorio).
+- **Login** con email → Dashboard «In evidenza» con prossimi eventi, la card **Scadenze aperte** (se ce ne sono, il click apre la pagina scadenze dell'evento più urgente; con zero scadenze è verde e non cliccabile) e la card **«Pagamenti in sospeso»** (importo ancora da versare, click → pagina Pagamenti). Chi apre un link del portale **senza un profilo utilizzabile** (mai fatto il primo accesso) vede la pagina di cortesia **«Ci siamo quasi»** con le due strade: accedi con le credenziali ricevute, o scrivi a **helpdesk@valet.it**.
+- **Pagamenti**: una card per ogni scadenza acconto/saldo con badge Firmato/Pagato; le voci aperte hanno il pulsante **«Paga ora»** (per il contratto principale = pagina bonifico con IBAN e causale).
+- **I miei dati**: l'azienda aggiorna anagrafica e **contatti**. Ogni contatto (principale e altri) ha la **scelta lingua** con bandierina (IT/EN); per i contatti esistenti si cambia al volo cliccando la bandiera (pulsante **«Modifica»** per gli altri campi). Domanda **«Azienda farmaceutica?»**: se spuntata compare il campo **Codice SIS** (obbligatorio). Checkbox **«È il legale rappresentante che firma il contratto?»** su ogni contatto: aprendola compaiono i **campi anagrafici obbligatori del firmatario** (nascita, residenza, documento, CF) che il cliente può compilare da solo; badge verde «✓ Firmatario» o giallo «⚠ dati incompleti» in tabella.
 - **Conferma preventivo**: protetta dai gate (anagrafica completa → ritorno automatico alla conferma; firmatario registrato). Alla conferma il cliente riceve il **contratto** (unico PDF con Allegato 1) via email e in area riservata, e trova la scadenza **«Invio contratto firmato»** nei Materiali.
 - **Servizi / Catalogo**: visibile solo se l'azienda ha **almeno un contratto firmato/attivo**. I servizi acquistabili sono mostrati come **card per evento** (con varianti/quantità e cutoff). *Gli stand non si scelgono dal portale*: li assegna l'operatore; il cliente li vede nel dettaglio del contratto. Se non ha ancora firmato, c'è il link per rivedere/confermare il preventivo.
 - **Carrello / Wishlist**: un carrello per evento (= contratto addon in bozza). Checkout con **PayPal / MyBank / Carta / Bonifico**; ordini in attesa riprendibili con «Paga ora».
-- **Materiali / Scadenze**: l'azienda carica i file richiesti dalle scadenze tecniche (es. logo, file relatori) **e il contratto firmato** (avviso automatico ad amministrazione al caricamento).
-- **Documenti**: i PDF (preventivo, contratto/domanda) sono scaricabili.
+- **Materiali / Scadenze**: l'azienda carica i file richiesti dalle scadenze tecniche (es. logo, file relatori) **e il contratto firmato** (avviso automatico ad amministrazione al caricamento). Sulle scadenze di **pagamento** può caricare la **contabile del bonifico** (una volta sola): non risulta "Pagato" finché la segreteria non verifica l'accredito e registra l'incasso — il cliente vede la nota «in attesa di verifica».
+- **Documenti**: i PDF (preventivo, contratto/domanda, proforma) sono scaricabili da «I miei documenti».
+- 🔒 **Sicurezza download** (da agosto 2026): i documenti dei clienti NON sono più raggiungibili da chi conosce l'URL — il download richiede il login e verifica che il file appartenga all'azienda (o che sia un operatore). I file caricati sono salvati con nome randomizzato e serviti come allegato; upload limitato a estensioni sicure (PDF, immagini, ZIP, Office, AI/EPS).
 
 ---
 
@@ -311,7 +341,9 @@ File template scaricabili dal Cruscotto (Utility) per catalogo, servizi, stand.
 - **Tecniche**: generate **alla firma** dai *Template scadenze* dei servizi con "Genera scadenze" attivo. Data = inizio evento − giorni del template. Lo sponsor le soddisfa caricando file/compilando campi dal portale. Se il tipo è **"Materiale fisico"**, invece dell'upload il cliente vede le tue **istruzioni di spedizione**.
 - **«Invio contratto firmato»** (contratti principali): creata **alla firma**, scade a **+10 giorni**. Il cliente carica il PDF firmato nei Materiali (o lo manda ad amministrazione@valet.it); al caricamento la scadenza va in *Ricevuto* e parte l'**avviso email ad amministrazione** (CC morini@valet.it).
 - **Pagamento**: acconto (firma + N giorni) e saldo (inizio evento − M giorni), da *Impostazioni segreteria*.
-- **Reminder/solleciti** automatici via Celery beat (giorni configurati nei template; solleciti per le scadute).
+- **Reminder/solleciti** automatici via Celery beat (giorni configurati nei template; solleciti per le scadute). Per le scadenze di **pagamento** il tono delle email è volutamente cortese («forse avete già provveduto e non abbiamo ancora registrato…»); per i materiali resta diretto.
+- **Azione "Sposta scadenze"** (admin Scadenze): seleziona più scadenze e spostale **di N giorni** (anche negativi) o **a una data fissa** in un colpo solo — per proroghe concesse o cambio data evento.
+- Registrare un incasso **riconcilia** le scadenze di pagamento coperte (vanno in *Ricevuto* = "Pagato" per il cliente) e **ferma i loro reminder**; le altre scadenze continuano il loro ciclo normalmente.
 - ⚠️ Le scadenze si generano **all'istante della firma**. Se aggiungi una scadenza **dopo** che il contratto è già firmato: usa l'azione **"Genera scadenze dai template"** sul contratto, oppure salva di nuovo il servizio (la rigenerazione automatica via signal è attiva).
 
 ---

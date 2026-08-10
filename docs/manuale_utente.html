@@ -225,6 +225,10 @@ stateDiagram-v2
   <div class="attenzione"><strong>Non dimenticare di inviare!</strong> Un preventivo <em>creato ma non ancora inviato</em> (contratto principale in Bozza) compare con un <strong>avviso rosso nel Cruscotto</strong> («hai N preventivi creati ma non inviati») e con il badge <strong>«DA INVIARE»</strong> nella lista Contratti. Cliccando l'avviso vai alla lista filtrata, pronto per inviarli.</div>
   <div class="nota"><strong>Riga stand automatica.</strong> Quando assegni uno <strong>Stand</strong> o un <strong>Blocco</strong> al contratto e salvi, la riga con il <strong>prezzo dello spazio</strong> viene aggiunta da sola al totale (se non è già presente). Nella tendina dello spazio compaiono solo gli stand <strong>disponibili</strong> dell'evento (quelli già inseriti in un blocco non appaiono).</div>
   <div class="nota">Quando inserisci una quantità superiore alla <strong>disponibilità</strong> (scorte del servizio o della variante) o alla <strong>quantità massima</strong> impostata, il salvataggio viene <strong>bloccato</strong> con un avviso. Per rendere un servizio "unico" (es. il muletto) imposta <em>Quantità massima = 1</em>.</div>
+  <div class="nota"><strong>Riga libera (senza catalogo).</strong> Puoi aggiungere una riga <strong>senza scegliere un servizio</strong>: lascia vuota la tendina Servizio e compila <strong>Descrizione libera</strong>, quantità e prezzo. Utile per voci una tantum (es. «Sponsorizzazione relatori»); si può usare più volte nello stesso contratto e non tocca scorte o catalogo.</div>
+  <div class="nota"><strong>Ordine delle righe nel preventivo.</strong> Ogni riga ha il campo <strong>Ordine</strong>: numeri più bassi escono prima nel PDF. Lascia 0 per l'ordine naturale; usa 10, 20, 30… per riordinare a piacere.</div>
+  <div class="nota"><strong>Clausola di pagamento personalizzata.</strong> Nella scheda contratto, il campo <em>Metodo di pagamento</em> include anche <strong>RI.BA.</strong> (es. «60 gg F.M.») e <strong>B.B. con scadenza fissa</strong> (con o senza importo): il testo esatto della clausola finisce nel PDF al posto della frase standard sul saldo.</div>
+  <div class="nota"><strong>IVA e importi.</strong> Se togli la spunta <strong>IVA applicabile</strong>, preventivo e proforma escono <strong>senza la riga IVA</strong> e tutti gli importi sono da intendersi imponibili. Un prezzo impostato a <strong>0</strong> viene rispettato (non viene ricaricato dal listino).</div>
 
   <h3>6.6 Varianti del servizio (es. fasce orarie, colori)</h3>
   <ol>
@@ -249,7 +253,20 @@ stateDiagram-v2
   <p>Partono poi le <strong>email</strong> («Grazie per aver confermato il preventivo», col PDF allegato; il contatto operativo riceve anche l'email dedicata col contratto, in CC amministrazione) e si generano le <strong>scadenze</strong>: acconto/saldo, materiali e la nuova <strong>«Invio contratto firmato»</strong> a <strong>+10 giorni</strong>.</p>
   <div class="nota"><strong>Ritorno del contratto firmato.</strong> Il cliente può restituire il contratto firmato in due modi (l'email glielo spiega): via email ad <strong>amministrazione@valet.it</strong> oppure caricandolo nella sezione <strong>Materiali</strong> del portale (l'email ha il pulsante diretto). Se non lo fa, partono i <strong>promemoria automatici</strong> a 10/3/0 giorni e poi i solleciti ogni 3 giorni; quando lo carica, la scadenza va in «Ricevuto» e <strong>amministrazione riceve un avviso email</strong>.</div>
   <div class="nota"><strong>Addendum:</strong> per un contratto di tipo <em>Addendum</em> viene usato lo stesso modulo della Domanda, ma intitolato «Addendum al contratto n° … del …». Gli <strong>acquisti online (Addon)</strong> non hanno preventivo da confermare: il cliente paga e l'acquisto è subito valido (vedi §7).</div>
-  <div class="attenzione">Quando clicchi <strong>Elimina</strong> (su una scheda o sull'azione di gruppo) il sistema chiede <strong>conferma</strong> prima di cancellare. I contratti <strong>già nel cestino</strong> non bloccano l'eliminazione del contratto principale: bloccano solo i collegati <strong>ancora attivi</strong> (da cestinare prima).</div>
+  <div class="attenzione">Quando clicchi <strong>Elimina</strong> (su una scheda o sull'azione di gruppo) il sistema chiede <strong>conferma</strong> prima di cancellare. I contratti <strong>già nel cestino</strong> non bloccano l'eliminazione del contratto principale: bloccano solo i collegati <strong>ancora attivi</strong> (da cestinare prima). Un contratto eliminato per errore si può <strong>ripristinare dal cestino</strong>: tornano anche lo stand assegnato e le scadenze ancora dovute.</div>
+
+  <h3>6.10 Novità luglio/agosto 2026 (in breve)</h3>
+  <ul>
+    <li><strong>Azioni sulla lista Contratti</strong>: <em>Rigenera PDF contratto</em>, <em>Converti in contratto</em>, <em>Genera riga stand</em>, <em>Genera PROFORMA</em> e <em>Annulla</em> (ora con pagina di <strong>conferma</strong> e motivo).</li>
+    <li><strong>Colonna «Incassato / Residuo»</strong> nella lista Contratti: vedi a colpo d'occhio chi ha saldato (✓), chi è parziale e chi non ha pagato.</li>
+    <li><strong>Fattura PROFORMA</strong>: generandola parte <strong>da sola l'email al cliente</strong> («La troverai nella tua area riservata alla voce I MIEI DOCUMENTI»).</li>
+    <li><strong>Stato a mano</strong>: se porti tu un contratto su <em>Firmato</em> dalla scheda, il sistema genera comunque PDF, scadenze e assegnazione stand (la «cascata» non si perde più).</li>
+    <li><strong>Cambio stand</strong>: assegnando uno stand diverso, la riga a preventivo si <strong>aggiorna da sola</strong> e il vecchio stand torna disponibile.</li>
+    <li><strong>Duplica evento</strong>: dalla lista Eventi, seleziona un evento → azione <strong>«Duplica per nuova edizione»</strong>: clona catalogo, varianti, stand e blocchi (senza contratti). Aggiorna poi date e nome.</li>
+    <li><strong>Sposta scadenze</strong>: dalla lista Scadenze, seleziona → azione <strong>«Sposta scadenze»</strong> (di N giorni o a una data fissa).</li>
+    <li><strong>Email di sollecito pagamenti</strong> riscritte con tono <strong>cortese</strong>; registrando l'incasso i promemoria si fermano da soli.</li>
+    <li><strong>Cruscotto</strong>: tutti gli importi sono <strong>IVA esclusa</strong> (indicato in pagina), le card sono <strong>cliccabili</strong>, e ci sono i pulsanti <strong>Scarica Excel</strong> per Da incassare / Incassato.</li>
+  </ul>
 </section>
 
 <section id="portale">
@@ -259,6 +276,15 @@ stateDiagram-v2
   <div class="nota"><strong>Pagamenti online (attivi, soldi veri).</strong> Gli acquisti dal carrello si pagano con <strong>PayPal</strong>, <strong>MyBank</strong> (bonifico istantaneo dal proprio home banking) o <strong>carta di credito/debito</strong>, oltre al bonifico classico. Un ordine rimasto <strong>in attesa di pagamento</strong> mostra in «I miei acquisti» il pulsante <strong>«Paga ora con carta o PayPal»</strong> per riprendere il pagamento in qualsiasi momento (il bonifico resta come alternativa).</div>
   <div class="nota"><strong>I miei acquisti</strong> mostra ogni ordine con il dettaglio riga per riga (descrizione, prezzo unitario, quantità, totale <em>IVA esclusa</em>) e, in fondo, <strong>imponibile, IVA e totale</strong>. Dalla scheda di un articolo del catalogo il cliente ha il pulsante <strong>«Torna al catalogo»</strong>; dal carrello, <strong>«Continua acquisti per questo evento»</strong>.</div>
   <div class="nota"><strong>Lingua preferita (bandierine).</strong> In «I miei dati» il cliente sceglie la lingua del portale e delle comunicazioni cliccando la bandiera <strong>🇮🇹 / 🇬🇧</strong>: quella scelta resta a colori, l'altra diventa grigia. Da questa scelta dipende anche la lingua del <strong>preventivo</strong> (§6.5).</div>
+  <div class="nota"><strong>Novità luglio/agosto 2026 nel portale:</strong>
+    <ul>
+      <li><strong>Card in home</strong>: «Scadenze aperte» porta alla pagina dell'evento con le scadenze (se non ce ne sono, la card è verde e non cliccabile); «<strong>Pagamenti in sospeso</strong>» (ex «Saldo da pagare») elenca gli importi con lo stato chiaro <em>da pagare / pagato</em>.</li>
+      <li><strong>Paga ora</strong>: nella pagina Pagamenti, accanto a ogni scadenza pagabile c'è il pulsante per pagare online.</li>
+      <li><strong>Firmatario dal portale</strong>: in «I miei dati» il cliente può marcare un contatto come firmatario e compilare da solo i <strong>dati anagrafici obbligatori</strong> (nascita, CF, documento, residenza…).</li>
+      <li><strong>Contabile del bonifico</strong>: nei Materiali il cliente può caricare la ricevuta del bonifico (<em>una sola volta</em>, «ci aiuterà a completare la tua posizione contabile»). Il caricamento <strong>non</strong> segna il pagamento come ricevuto: arriva un avviso ad amministrazione e sei tu a registrare l'incasso.</li>
+      <li>🔒 <strong>Documenti protetti</strong>: i PDF dell'area riservata sono scaricabili <strong>solo dal cliente proprietario</strong> (o dagli operatori); i link non funzionano più se girati a estranei.</li>
+    </ul>
+  </div>
   <p>Cosa fa lo sponsor, una volta invitato:</p>
   <div class="diagram">
     <pre class="mermaid">
@@ -411,6 +437,15 @@ flowchart TD
 
   <h3>Nel preventivo manca l'intestazione (header) in alto</h3>
   <p>L'header del preventivo è l'immagine caricata sull'evento nel campo <strong>«Header email congresso»</strong>. Se non l'hai caricata, il preventivo esce senza header (il footer con i dati segreteria c'è sempre). Vedi §6.5.</p>
+
+  <h3>Devo mettere a preventivo una voce che non è a catalogo</h3>
+  <p>Usa la <strong>riga libera</strong>: nella riga del contratto lascia vuota la tendina Servizio e compila <strong>Descrizione libera</strong>, quantità e prezzo (§6.5). Con il campo <strong>Ordine</strong> decidi in che posizione esce nel PDF.</p>
+
+  <h3>Il cliente ha caricato la contabile del bonifico ma il pagamento risulta ancora da pagare</h3>
+  <p>È voluto: il caricamento della ricevuta <strong>non</strong> registra l'incasso, manda solo un avviso ad amministrazione. Verifica l'accredito in banca e poi <strong>registra tu il pagamento</strong> (azione «Registra incasso» / conferma bonifico): a quel punto i promemoria al cliente si fermano da soli.</p>
+
+  <h3>Ho eliminato un contratto per sbaglio</h3>
+  <p>Vai nel <strong>cestino</strong> dei contratti e ripristinalo: tornano anche lo stand assegnato e le scadenze ancora dovute. Controlla comunque la scheda dopo il ripristino (stato stand e scadenze).</p>
 </section>
 
 <footer>
