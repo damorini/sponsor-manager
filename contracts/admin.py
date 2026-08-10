@@ -1357,7 +1357,7 @@ class PaymentAdmin(admin.ModelAdmin):
         return escludi_figli_di_contratti_cestinati(request, qs)
 
     list_display = (
-        'contract_link', 'method_badge', 'amount_gross',
+        'contract_link', 'sponsor_display', 'method_badge', 'amount_gross',
         'amount_fee', 'amount_net_display', 'status_badge',
         'reference_display', 'completed_at_short',
     )
@@ -1416,6 +1416,11 @@ class PaymentAdmin(admin.ModelAdmin):
     def contract_link(self, obj):
         url = reverse('admin:contracts_contract_change', args=[obj.contract_id])
         return format_html('<a href="{}">{}</a>', url, obj.contract.contract_number)
+
+    @admin.display(description='Cliente', ordering='contract__sponsor__legal_name')
+    def sponsor_display(self, obj):
+        sponsor = getattr(obj.contract, 'sponsor', None)
+        return sponsor.legal_name if sponsor else '—'
 
     @admin.display(description='Metodo')
     def method_badge(self, obj):
