@@ -81,8 +81,10 @@ def test_etichetta_stand_in_inglese(sponsor, evento):
         sponsor=sponsor, event=evento, contract_kind=ContractKind.MAIN,
         language='en', contract_number='LG-26-003', stand=stand,
     )
+    # la riga stand viene ormai creata in automatico al save del contratto
+    # (Contract.save -> _sync_stand_line): una chiamata esplicita e' idempotente
     esito, _msg = genera_riga_da_stand(contract)
-    assert esito == 'creata'
+    assert esito in ('creata', 'gia_presente')
     ln = contract.lines.get(notes__contains='stand:A02')
     assert ln.service_name_snapshot == 'Exhibition space - A02'
 

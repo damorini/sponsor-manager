@@ -494,11 +494,21 @@ class Contract(SoftDeleteModel):
         # Cambio LINGUA su un contratto esistente: gli snapshot delle righe
         # (nome/descrizione servizio, etichetta stand) vanno ri-tradotti,
         # altrimenti il preventivo resta nella lingua vecchia.
+        # Nello stesso fetch leggiamo anche stand/blocco e vat_applicable
+        # precedenti, per le sincronizzazioni piu' sotto.
         _riallinea_lingua = False
+        _prev_stand_id = _prev_block_id = None
+        _cambio_iva = False
         if not self._state.adding and self.pk:
-            _prev_lang = (type(self).all_objects.filter(pk=self.pk)
-                          .values_list('language', flat=True).first())
+            _prev = (type(self).all_objects.filter(pk=self.pk)
+                     .values('language', 'stand_id', 'stand_block_id',
+                             'vat_applicable').first()) or {}
+            _prev_lang = _prev.get('language')
             _riallinea_lingua = bool(_prev_lang) and _prev_lang != (self.language or _prev_lang)
+            _prev_stand_id = _prev.get('stand_id')
+            _prev_block_id = _prev.get('stand_block_id')
+            _cambio_iva = ('vat_applicable' in _prev
+                           and _prev.get('vat_applicable') != self.vat_applicable)
 
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
@@ -508,6 +518,18 @@ class Contract(SoftDeleteModel):
             # quando il preventivo viene confermato (status -> SIGNED) o l'opzione
             # viene rimossa, la Deadline 'scadenza_opzione' pending viene eliminata.
             self._sync_option_deadline(kwargs.get('update_fields'))
+            # Cambio di STAND/BLOCCO su contratto esistente: rimuove la riga
+            # dello spazio precedente (prima restava, sommandosi alla nuova:
+            # preventivo con DUE stand). Solo se lo spazio e' davvero cambiato.
+            if (_prev_stand_id != self.stand_id
+                    or _prev_block_id != self.stand_block_id):
+                self._sync_stand_line(kwargs.get('update_fields'))
+            # Cambio del flag IVA su contratto esistente: i line_vat delle
+            # righe sono snapshot calcolati al LORO save - vanno ricalcolati,
+            # altrimenti riattivare l'IVA lascia vat_amount=0 (e viceversa).
+            if _cambio_iva:
+                for _ln in self.lines.all():
+                    _ln.save()  # ricalcola line_vat/line_total col flag nuovo
             if _riallinea_lingua and self.status in (
                     ContractStatus.DRAFT, ContractStatus.SENT,
                     ContractStatus.PENDING_PAYMENT):
@@ -881,10 +903,15 @@ class Contract(SoftDeleteModel):
     def mark_payment_succeeded(self):
         """
         Per addon ecommerce: pagamento ricevuto, contratto firmato automaticamente.
-        Idempotente: se già signed, non fa nulla.
+        Idempotente: se il contratto e' gia' confermato (SIGNED/ACTIVE/
+        COMPLETED) non fa nulla - es. il bonifico del SALDO arriva quando il
+        contratto e' gia' Attivo: il pagamento va registrato senza pretendere
+        una nuova transizione di stato (prima: ValidationError -> pagina di
+        errore in admin con il Payment gia' salvato a meta').
         """
-        if self.status == ContractStatus.SIGNED:
-            return  # già processato (idempotency)
+        if self.status in (ContractStatus.SIGNED, ContractStatus.ACTIVE,
+                           ContractStatus.COMPLETED):
+            return  # già confermato (idempotency)
 
         if self.status != ContractStatus.PENDING_PAYMENT:
             raise ValidationError(
@@ -1574,13 +1601,16 @@ class ContractLine(TimeStampedModel):
             # Variante scelta: salva l'etichetta e usa il suo prezzo.
             if self.service_variant_id and not self.variant_label_snapshot:
                 self.variant_label_snapshot = self.service_variant.label
-            if not self.unit_price:
+            # 'is None', NON falsy: 0 esplicito (omaggio concordato / aliquota
+            # zero) e' una scelta dell'operatore e non va sostituito col
+            # listino - con 'if not' un omaggio tornava a prezzo pieno.
+            if self.unit_price is None:
                 if self.service_variant_id and self.service_variant.base_price is not None:
                     self.unit_price = self.service_variant.base_price
                 else:
                     # Prezzo base; logica avanzata (scaglioni) gestita a livello applicativo
                     self.unit_price = self.service.base_price
-            if not self.vat_rate:
+            if self.vat_rate is None:
                 self.vat_rate = self.service.vat_rate
 
         self.calculate_totals()

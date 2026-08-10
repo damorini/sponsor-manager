@@ -77,8 +77,10 @@ def test_riga_stand_usa_pacchetto_della_tipologia(evento, sponsor):
         contract_kind=ContractKind.MAIN, status=ContractStatus.DRAFT,
         contract_number='TY-26-001',
     )
+    # la riga stand viene ormai creata in automatico al save del contratto
+    # (Contract.save -> _sync_stand_line): una chiamata esplicita e' idempotente
     esito, _msg = genera_riga_da_stand(contract)
-    assert esito == 'creata'
+    assert esito in ('creata', 'gia_presente')
 
     codes = sorted(line.service.code for line in contract.lines.all())
     assert 'SPAZIO_ESPOSITIVO_STAND' in codes      # pacchetto della tipologia giusta

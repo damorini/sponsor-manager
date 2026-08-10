@@ -485,6 +485,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
                'action_registra_bonifico',
                'action_genera_domanda_ammissione', 'action_genera_proforma',
+               'action_rigenera_pdf_contratto',
+               'action_convert_to_contract',
+               'action_generate_stand_line',
                'action_restore']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -1505,10 +1508,22 @@ class PaymentAdmin(admin.ModelAdmin):
         )
         ok = 0
         for payment in eligible:
-            payment.bank_transfer_received_at = timezone.now().date()
-            payment.bank_transfer_confirmed_by_user = request.user
-            payment.mark_succeeded()
-            ok += 1
+            # Per-pagamento: un errore su uno non deve bloccare gli altri
+            # ne' lasciare Payment salvati a meta' con una pagina 500.
+            try:
+                payment.bank_transfer_received_at = timezone.now().date()
+                payment.bank_transfer_confirmed_by_user = request.user
+                payment.mark_succeeded()
+                ok += 1
+            except Exception as e:
+                logger.exception(
+                    "Conferma bonifico fallita per payment %s", payment.id)
+                self.message_user(
+                    request,
+                    f"Pagamento {payment.contract.contract_number}: errore "
+                    f"nella conferma - {e}",
+                    level=messages.ERROR,
+                )
 
         if ok:
             self.message_user(

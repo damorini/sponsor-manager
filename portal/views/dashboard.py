@@ -280,10 +280,12 @@ def build_payment_items(sponsor, today):
         aperta = not pagato and not esonerato
         if aperta:
             totale_da_pagare += (amount or Decimal('0.00'))
+        from contracts.models import ContractKind
         items.append({
             'title': d.portal_title,
             'event': c.event,
             'event_id': c.event_id,
+            'contract_id': c.id,
             'contract_number': c.contract_number,
             'amount': amount,
             'due_date': d.due_date,
@@ -291,6 +293,12 @@ def build_payment_items(sponsor, today):
             'firmato': c.status in firmato_states,
             'pagato': pagato,
             'esonerato': esonerato,
+            # bottone "Paga ora": solo scadenze aperte di contratti MAIN
+            # firmati/attivi (gli stessi requisiti di paga_scadenza_view)
+            'payable': bool(
+                aperta
+                and c.contract_kind == ContractKind.MAIN
+                and c.status in (ContractStatus.SIGNED, ContractStatus.ACTIVE)),
         })
 
     # Aperte prima (per data scadenza), poi le pagate/esonerate.

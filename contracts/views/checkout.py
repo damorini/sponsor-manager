@@ -478,11 +478,28 @@ def _handle_capture_refunded(event_id, resource):
     from contracts.payments import Payment, PaymentStatus
     from decimal import Decimal
 
-    capture_id = resource.get('links', [{}])[0].get('href', '').split('/')[-1]
-    # Cerca payment dal capture_id
-    try:
-        payment = Payment.objects.get(paypal_capture_id=capture_id)
-    except Payment.DoesNotExist:
+    # Il capture_id sta nel link rel='up' (la capture rimborsata): il PRIMO
+    # link e' il 'self' del RIMBORSO, non della capture - usarlo faceva
+    # fallire il lookup e i rimborsi non venivano mai registrati (PayPal
+    # ritrasmetteva il webhook all'infinito sul 404).
+    capture_id = ''
+    for link in resource.get('links', []):
+        if link.get('rel') == 'up':
+            capture_id = link.get('href', '').rstrip('/').split('/')[-1]
+            break
+
+    payment = None
+    if capture_id:
+        payment = Payment.objects.filter(paypal_capture_id=capture_id).first()
+    if payment is None:
+        # Fallback: custom_id del rimborso = payment.id passato all'ordine
+        custom_id = resource.get('custom_id')
+        if custom_id:
+            payment = Payment.objects.filter(id=custom_id).first()
+    if payment is None:
+        logger.error(
+            "Refund webhook %s: nessun Payment per capture_id=%r custom_id=%r",
+            event_id, capture_id, resource.get('custom_id'))
         return HttpResponse('Payment not found', status=404)
 
     if payment.last_webhook_event_id == event_id:
