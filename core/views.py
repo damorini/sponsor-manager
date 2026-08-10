@@ -199,6 +199,46 @@ def cruscotto_home(request):
         if _n not in _materiali_sponsors:
             _materiali_sponsors.append(_n)
 
+    # Avviso: preventivi INVIATI senza risposta da troppi giorni (SENT fermi):
+    # prima si scoprivano solo aprendo a mano il filtro "In attesa di firma".
+    from datetime import timedelta
+    from django.utils import timezone as _tz
+    GIORNI_SENZA_RISPOSTA = 7
+    _limite = _tz.now() - timedelta(days=GIORNI_SENZA_RISPOSTA)
+    _fermi = scope_by_event(request, (Contract.objects
+              .filter(status=ContractStatus.SENT,
+                      contract_kind=ContractKind.MAIN,
+                      deleted_at__isnull=True,
+                      sent_date__lt=_limite)
+              .select_related('sponsor')
+              .order_by('sent_date')), 'event')
+    _fermi_count = _fermi.count()
+    _fermi_sponsors = []
+    for _c in _fermi[:10]:
+        _n = _c.sponsor.legal_name if _c.sponsor_id else '(senza cliente)'
+        if _n not in _fermi_sponsors:
+            _fermi_sponsors.append(_n)
+
+    # Avviso: OPZIONI stand in scadenza entro 7 giorni (bozze con option_until):
+    # alla scadenza lo spazio si libera in silenzio e l'occasione si perde.
+    from datetime import date as _date
+    _oggi = _date.today()
+    _opz = scope_by_event(request, (Contract.objects
+            .filter(status=ContractStatus.DRAFT,
+                    deleted_at__isnull=True,
+                    option_until__isnull=False,
+                    option_until__gte=_oggi,
+                    option_until__lte=_oggi + timedelta(days=7))
+            .select_related('sponsor')
+            .order_by('option_until')), 'event')
+    _opz_count = _opz.count()
+    _opz_sponsors = []
+    for _c in _opz[:10]:
+        _n = _c.sponsor.legal_name if _c.sponsor_id else '(senza cliente)'
+        _riga = f"{_n} (fino al {_c.option_until.strftime('%d/%m')})"
+        if _riga not in _opz_sponsors:
+            _opz_sponsors.append(_riga)
+
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto',
@@ -213,6 +253,13 @@ def cruscotto_home(request):
         'materiali_count': _materiali_count,
         'materiali_sponsors': _materiali_sponsors,
         'materiali_url': _rev('core:cruscotto_scadenze_cliente'),
+        'fermi_count': _fermi_count,
+        'fermi_sponsors': _fermi_sponsors,
+        'fermi_giorni': GIORNI_SENZA_RISPOSTA,
+        'fermi_url': _rev('admin:contracts_contract_changelist') + '?status__exact=sent',
+        'opzioni_count': _opz_count,
+        'opzioni_sponsors': _opz_sponsors,
+        'opzioni_url': _rev('admin:contracts_contract_changelist') + '?status__exact=draft',
     }
     return render(request, 'cruscotto/home.html', context)
 
@@ -743,19 +790,12 @@ def manuale_operativo(request):
     return HttpResponse(html.replace('__MD__', md_safe))
 
 
-@staff_member_required
-def da_incassare_evento(request, pk):
-    """Listato dei residui da incassare per i contratti confermati di un evento."""
-    from datetime import date
+def _righe_da_incassare(ev):
+    """Righe (imponibile) dei residui da incassare per l'evento.
+    Usata dalla pagina cruscotto e dall'export Excel."""
     from decimal import Decimal
-    from django.http import Http404
     from contracts.models import Contract, ContractStatus
     from contracts.payments import PaymentStatus
-
-    try:
-        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
-    except Event.DoesNotExist:
-        raise Http404("Evento non trovato")
 
     CONFIRMED = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
     confermati = (Contract.objects
@@ -795,6 +835,21 @@ def da_incassare_evento(request, pk):
             'tipo_scadenza': tipo_scad,
         })
         tot_residuo += residuo
+    return righe, tot_residuo
+
+
+@staff_member_required
+def da_incassare_evento(request, pk):
+    """Listato dei residui da incassare per i contratti confermati di un evento."""
+    from datetime import date
+    from django.http import Http404
+
+    try:
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    righe, tot_residuo = _righe_da_incassare(ev)
 
     try:
         nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
@@ -814,18 +869,59 @@ def da_incassare_evento(request, pk):
 
 
 @staff_member_required
-def incassato_evento(request, pk):
-    """Dettaglio degli incassi ricevuti (chi ha pagato) sui contratti confermati."""
-    from datetime import date
-    from decimal import Decimal
-    from django.http import Http404
-    from contracts.models import Contract, ContractStatus
-    from contracts.payments import PaymentStatus
+def da_incassare_export(request, pk):
+    """Export Excel della pagina 'Da incassare' (per commercialista/condivisione)."""
+    from django.http import Http404, HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
 
     try:
         ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
     except Event.DoesNotExist:
         raise Http404("Evento non trovato")
+
+    righe, tot_residuo = _righe_da_incassare(ev)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Da incassare"
+    headers = ["Cliente", "Contratto", "Totale (IVA escl.)",
+               "Incassato (IVA escl.)", "Residuo (IVA escl.)",
+               "Prossima scadenza", "Data scadenza"]
+    fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    for i, h in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=h)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = fill
+    r = 2
+    for riga in righe:
+        ws.cell(row=r, column=1, value=riga['cliente'])
+        ws.cell(row=r, column=2, value=riga['numero'])
+        ws.cell(row=r, column=3, value=float(riga['totale']))
+        ws.cell(row=r, column=4, value=float(riga['incassato']))
+        ws.cell(row=r, column=5, value=float(riga['residuo']))
+        ws.cell(row=r, column=6, value=riga['tipo_scadenza'])
+        ws.cell(row=r, column=7,
+                value=riga['scadenza'].strftime('%d/%m/%Y') if riga['scadenza'] else '')
+        r += 1
+    ws.cell(row=r, column=4, value="TOTALE RESIDUO").font = Font(bold=True)
+    ws.cell(row=r, column=5, value=float(tot_residuo)).font = Font(bold=True)
+    for col, w in zip('ABCDEFG', (32, 18, 18, 18, 18, 22, 14)):
+        ws.column_dimensions[col].width = w
+
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="da_incassare_{ev.slug or ev.pk}.xlsx"'
+    wb.save(resp)
+    return resp
+
+
+def _righe_incassato(ev):
+    """Righe degli incassi ricevuti (netto+lordo) per l'evento.
+    Usata dalla pagina cruscotto e dall'export Excel."""
+    from decimal import Decimal
+    from contracts.models import Contract, ContractStatus
+    from contracts.payments import PaymentStatus
 
     CONFIRMED = [ContractStatus.SIGNED, ContractStatus.ACTIVE, ContractStatus.COMPLETED]
     confermati = (Contract.objects
@@ -856,6 +952,20 @@ def incassato_evento(request, pk):
         })
         tot_netto += netto_c
         tot_lordo += lordo_c
+    return righe, tot_netto, tot_lordo
+
+
+@staff_member_required
+def incassato_evento(request, pk):
+    """Dettaglio degli incassi ricevuti (chi ha pagato) sui contratti confermati."""
+    from django.http import Http404
+
+    try:
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    righe, tot_netto, tot_lordo = _righe_incassato(ev)
 
     try:
         nome_ev = ev.get_name() if hasattr(ev, 'get_name') else str(ev)
@@ -872,6 +982,53 @@ def incassato_evento(request, pk):
         'tot_lordo': tot_lordo,
     }
     return render(request, 'cruscotto/incassato.html', context)
+
+
+@staff_member_required
+def incassato_export(request, pk):
+    """Export Excel della pagina 'Incassato'."""
+    from django.http import Http404, HttpResponse
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    try:
+        ev = scope_by_event(request, Event.objects.filter(pk=pk), 'id').get()
+    except Event.DoesNotExist:
+        raise Http404("Evento non trovato")
+
+    righe, tot_netto, tot_lordo = _righe_incassato(ev)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Incassato"
+    headers = ["Cliente", "Contratto", "Incassato netto (IVA escl.)",
+               "Incassato lordo (IVA incl.)", "N. pagamenti", "Ultimo incasso"]
+    fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
+    for i, h in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=i, value=h)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = fill
+    r = 2
+    for riga in righe:
+        ws.cell(row=r, column=1, value=riga['cliente'])
+        ws.cell(row=r, column=2, value=riga['numero'])
+        ws.cell(row=r, column=3, value=float(riga['netto']))
+        ws.cell(row=r, column=4, value=float(riga['lordo']))
+        ws.cell(row=r, column=5, value=riga['n_pagamenti'])
+        ws.cell(row=r, column=6,
+                value=riga['ultimo'].strftime('%d/%m/%Y') if riga['ultimo'] else '')
+        r += 1
+    ws.cell(row=r, column=2, value="TOTALI").font = Font(bold=True)
+    ws.cell(row=r, column=3, value=float(tot_netto)).font = Font(bold=True)
+    ws.cell(row=r, column=4, value=float(tot_lordo)).font = Font(bold=True)
+    for col, w in zip('ABCDEF', (32, 18, 24, 24, 14, 16)):
+        ws.column_dimensions[col].width = w
+
+    resp = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = f'attachment; filename="incassato_{ev.slug or ev.pk}.xlsx"'
+    wb.save(resp)
+    return resp
 
 
 @staff_member_required

@@ -41,6 +41,26 @@
   </a>
   {% endif %}
 
+  {% if fermi_count %}
+  <a href="{{ fermi_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#eef2ff;border-left:6px solid #6366f1;border-radius:10px;padding:14px 18px;color:#312e81;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>⏳ {{ fermi_count }} preventivo/i inviato/i senza risposta da oltre {{ fermi_giorni }} giorni</strong>
+      {% if fermi_sponsors %}<span> — per: {{ fermi_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · clicca per vederli (magari un sollecito?) →</span>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if opzioni_count %}
+  <a href="{{ opzioni_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#fff1e6;border-left:6px solid #ea580c;border-radius:10px;padding:14px 18px;color:#7c2d12;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>⏰ {{ opzioni_count }} opzione/i stand in scadenza entro 7 giorni</strong>
+      {% if opzioni_sponsors %}<span> — {{ opzioni_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · alla scadenza lo spazio torna disponibile →</span>
+    </div>
+  </a>
+  {% endif %}
+
   {% if materiali_count %}
   <a href="{{ materiali_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
     <div style="background:#e7f6ec;border-left:6px solid #1f7a3d;border-radius:10px;padding:14px 18px;color:#0f4d27;box-shadow:0 1px 4px rgba(0,0,0,.08);">

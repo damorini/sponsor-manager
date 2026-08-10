@@ -180,14 +180,16 @@ class ServiceAdmin(admin.ModelAdmin):
                 '<span style="color:#2e7d32;font-size:16px" title="{}">&#9989;</span>',
                 obj.image.name.rsplit('/', 1)[-1],
             )
-        return format_html('<span style="color:#bbb;font-size:16px" title="Nessuna immagine">&#9711;</span>')
+        from django.utils.safestring import mark_safe
+        return mark_safe('<span style="color:#bbb;font-size:16px" title="Nessuna immagine">&#9711;</span>')
 
     @admin.display(description='Scadenze')
     def scadenze_badge(self, obj):
         from django.utils.html import format_html
         n = getattr(obj, '_n_deadlines', obj.deadline_templates.filter(is_active=True).count())
         if n == 0:
-            return format_html('<span style="color:#999">—</span>')
+            from django.utils.safestring import mark_safe
+            return mark_safe('<span style="color:#999">—</span>')
         # Usa il prefetch (se disponibile) per evitare query aggiuntive
         try:
             templates = [t for t in obj.deadline_templates.all() if t.is_active]

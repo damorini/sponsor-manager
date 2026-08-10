@@ -864,7 +864,11 @@ class ContactAdmin(admin.ModelAdmin):
             )
             for r in obj.roles
         ])
-        return format_html(badges)
+        # I pezzi sono gia' escapati da format_html: mark_safe, non
+        # format_html(badges) che tratterebbe eventuali '{}' nei dati come
+        # placeholder (KeyError) ed e' deprecato senza args (Django 6).
+        from django.utils.safestring import mark_safe
+        return mark_safe(badges)
 
 
 class _LettoFilter(admin.SimpleListFilter):

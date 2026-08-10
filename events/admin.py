@@ -5,7 +5,7 @@ Usa il widget multilingua custom per name e description.
 """
 from django import forms
 from catalog.models import CatalogService, Service
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.db.models import Count, Sum, Q
 from django.utils.html import format_html
@@ -71,7 +71,35 @@ class EventAdmin(admin.ModelAdmin):
     date_hierarchy = 'start_date'
     ordering = ('-start_date',)
     readonly_fields = ('created_at', 'updated_at', 'sponsor_dashboard')
-    actions = ['action_archivia', 'action_riattiva']
+    actions = ['action_archivia', 'action_riattiva', 'action_duplica']
+
+    @admin.action(description='Duplica per NUOVA EDIZIONE (servizi, stand, template scadenze)')
+    def action_duplica(self, request, queryset):
+        """Clona l'evento con tutta la struttura (servizi+varianti+template
+        scadenze, stand+blocchi) SENZA toccare l'originale ne' i suoi
+        contratti. Il clone nasce in stato Pianificazione: aggiorna nome,
+        date e prezzi per la nuova edizione."""
+        from django.http import HttpResponseRedirect
+        from django.urls import reverse as _rev
+        from events.clone import duplica_evento
+        if queryset.count() != 1:
+            self.message_user(
+                request, "Seleziona esattamente UN evento da duplicare.",
+                level=messages.WARNING)
+            return
+        try:
+            nuovo = duplica_evento(queryset.first())
+        except Exception as e:
+            self.message_user(
+                request, f"Duplicazione fallita: {e}", level=messages.ERROR)
+            return
+        self.message_user(
+            request,
+            "Evento duplicato (stato: Pianificazione). Aggiorna nome, date e "
+            "prezzi per la nuova edizione.",
+            level=messages.SUCCESS)
+        return HttpResponseRedirect(
+            _rev('admin:events_event_change', args=[nuovo.pk]))
 
     @admin.action(description='Archivia eventi selezionati (spariscono dal portale, niente acquisti)')
     def action_archivia(self, request, queryset):
@@ -217,7 +245,10 @@ class EventAdmin(admin.ModelAdmin):
             )
             for lang in obj.supported_languages
         ])
-        return format_html(badges)
+        # Gia' escapati da format_html: mark_safe (format_html senza args e'
+        # deprecato e tratterebbe '{}' nei dati come placeholder).
+        from django.utils.safestring import mark_safe
+        return mark_safe(badges)
 
     @admin.display(description='Riepilogo evento')
     def sponsor_dashboard(self, obj):

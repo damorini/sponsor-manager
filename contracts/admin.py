@@ -123,7 +123,8 @@ def _deadline_file_esempio(obj):
         url = None
     if url:
         return format_html('<a href="{}" target="_blank" rel="noopener">⬇ Scarica</a>', url)
-    return format_html('<span style="color:#999;">—</span>')
+    from django.utils.safestring import mark_safe
+    return mark_safe('<span style="color:#999;">—</span>')
 
 
 class DeadlineInline(admin.TabularInline):
@@ -246,7 +247,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'contract_number', 'sponsor_link', 'event_link',
         'kind_badge', 'status_badge', 'venue_display',
-        'total_display', 'origin_badge', 'created_at_short',
+        'total_display', 'incassato_display', 'origin_badge', 'created_at_short',
     )
     list_filter = (
         TodoFilter, EventoFilter,
@@ -301,8 +302,17 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             obj.delete()
 
     def get_queryset(self, request):
+        from django.db.models import Sum, Q
         from core.event_scope import scope_by_event
-        return scope_by_event(request, super().get_queryset(request), 'event')
+        qs = scope_by_event(request, super().get_queryset(request), 'event')
+        # Incassato per contratto (somma Payment SUCCEEDED): alimenta la
+        # colonna "Incassato / Residuo" senza query per riga.
+        return qs.annotate(
+            _incassato=Sum(
+                'payments__amount_gross',
+                filter=Q(payments__status='succeeded'),
+            ),
+        )
 
     def get_changeform_initial_data(self, request):
         """Pre-compila evento/sponsor da querystring (es. dal pulsante
@@ -551,6 +561,26 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.display(description='Totale', ordering='total')
     def total_display(self, obj):
         return format_html('<strong>€ {}</strong>', f"{obj.total:,.2f}")
+
+    @admin.display(description='Incassato / Residuo', ordering='_incassato')
+    def incassato_display(self, obj):
+        """A colpo d'occhio: verde = saldato, ambra = parziale, rosso = zero.
+        Solo per contratti confermati (per bozze/preventivi non ha senso)."""
+        from decimal import Decimal
+        if obj.status not in (ContractStatus.SIGNED, ContractStatus.ACTIVE,
+                              ContractStatus.COMPLETED):
+            from django.utils.safestring import mark_safe
+            return mark_safe('<span style="color:#999;">—</span>')
+        incassato = getattr(obj, '_incassato', None) or Decimal('0.00')
+        residuo = max((obj.total or Decimal('0.00')) - incassato, Decimal('0.00'))
+        if residuo <= 0:
+            return format_html(
+                '<span style="color:#1a7f37; font-weight:600;">✓ saldato</span>')
+        colore = '#b45309' if incassato > 0 else '#b91c1c'
+        return format_html(
+            '<span style="color:{};">€ {} <span style="color:#999;">/ resta</span> '
+            '€ {}</span>',
+            colore, f"{incassato:,.2f}", f"{residuo:,.2f}")
 
     @admin.display(description='Origine')
     def origin_badge(self, obj):
@@ -1210,12 +1240,23 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     @admin.action(description='Annulla domande selezionate')
     def action_cancel(self, request, queryset):
-        # ATTENZIONE: in produzione, mostra una conferma esplicita.
-        # Qui per semplicità annulla diretto.
+        # Pagina intermedia di conferma: l'annullamento libera stand e
+        # esonera scadenze - un click sbagliato costa caro.
+        if '_annulla_confermato' not in request.POST:
+            return render(request, 'admin/contracts/contract/action_annulla_conferma.html', {
+                **self.admin_site.each_context(request),
+                'title': 'Conferma annullamento contratti',
+                'queryset': queryset,
+                'action': 'action_cancel',
+                'opts': self.model._meta,
+                'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            })
+
+        reason = (request.POST.get('reason') or '').strip() or 'Annullato da admin'
         ok = 0
         for contract in queryset:
             if contract.status != ContractStatus.CANCELLED:
-                contract.cancel(reason='Annullato da admin')
+                contract.cancel(reason=reason)
                 ok += 1
         if ok:
             self.message_user(
@@ -1298,7 +1339,60 @@ class DeadlineAdmin(admin.ModelAdmin):
                        'file_esempio')
     ordering = ('due_date',)
 
-    actions = ['action_mark_as_received']
+    actions = ['action_mark_as_received', 'action_sposta_scadenze']
+
+    @admin.action(description='Sposta le scadenze selezionate (proroga)')
+    def action_sposta_scadenze(self, request, queryset):
+        """Sposta la data di piu' scadenze in un colpo: di N giorni oppure a
+        una data fissa. Utile per proroghe concesse o cambio data evento
+        (prima si modificavano una a una nel form)."""
+        from datetime import date as _date, timedelta as _td
+
+        if '_sposta_confermato' not in request.POST:
+            return render(request, 'admin/contracts/deadline/action_sposta_scadenze.html', {
+                **self.admin_site.each_context(request),
+                'title': 'Sposta scadenze',
+                'queryset': queryset,
+                'action': 'action_sposta_scadenze',
+                'opts': self.model._meta,
+                'action_checkbox_name': helpers.ACTION_CHECKBOX_NAME,
+            })
+
+        giorni_raw = (request.POST.get('giorni') or '').strip()
+        data_raw = (request.POST.get('data_fissa') or '').strip()
+
+        nuova_data_fissa = None
+        delta = None
+        if data_raw:
+            try:
+                nuova_data_fissa = _date.fromisoformat(data_raw)
+            except ValueError:
+                self.message_user(request, "Data non valida.", level=messages.ERROR)
+                return
+        elif giorni_raw:
+            try:
+                delta = _td(days=int(giorni_raw))
+            except ValueError:
+                self.message_user(request, "Numero di giorni non valido.",
+                                  level=messages.ERROR)
+                return
+        else:
+            self.message_user(
+                request, "Indica i giorni di spostamento oppure una data fissa.",
+                level=messages.WARNING)
+            return
+
+        ok = 0
+        for dl in queryset:
+            dl.due_date = nuova_data_fissa if nuova_data_fissa else (dl.due_date + delta)
+            dl.save(update_fields=['due_date', 'updated_at'])
+            ok += 1
+        self.message_user(
+            request,
+            f"{ok} scadenza/e spostate"
+            + (f" al {nuova_data_fissa.strftime('%d/%m/%Y')}." if nuova_data_fissa
+               else f" di {giorni_raw} giorni."),
+            level=messages.SUCCESS)
 
     @admin.display(description='Cliente', ordering='contract__sponsor__legal_name')
     def cliente(self, obj):

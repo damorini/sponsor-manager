@@ -44,7 +44,6 @@ celerybeat.pid
 
 *.mo
 *.bak*
-*.bak*
 applica_*.py
 fix_*.py
 _add*.py

@@ -1,0 +1,51 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home admin</a>
+  &rsaquo; <a href="{% url 'admin:contracts_contract_changelist' %}">Contratti</a>
+  &rsaquo; Annulla contratti
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>⚠ Conferma annullamento</h1>
+<p>
+  Stai per <strong>ANNULLARE {{ queryset.count }} contratto/i</strong>:
+</p>
+<ul>
+  {% for obj in queryset %}
+  <li><strong>{{ obj.contract_number }}</strong> — {{ obj.sponsor.legal_name }} ({{ obj.get_status_display }})</li>
+  {% endfor %}
+</ul>
+<p style="background:#fdecea; border-left:5px solid #ba2121; padding:10px 14px; border-radius:6px;">
+  L'annullamento <strong>libera lo stand/blocco</strong> assegnato (torna vendibile ad altri)
+  e <strong>esonera tutte le scadenze aperte</strong> (niente più reminder al cliente).
+  L'operazione si può ripristinare solo manualmente.
+</p>
+
+<form method="post">
+  {% csrf_token %}
+  {% for obj in queryset %}
+  <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="{{ action }}">
+  <input type="hidden" name="_annulla_confermato" value="1">
+
+  <p>
+    <label for="id_reason"><strong>Motivo (facoltativo):</strong></label><br>
+    <input type="text" name="reason" id="id_reason" maxlength="200"
+           placeholder="es. rinuncia del cliente"
+           style="padding:6px 10px; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-top:4px; width:340px;">
+  </p>
+
+  <p>
+    <input type="submit" value="Sì, annulla i contratti"
+           class="button default" style="margin-right:8px; background:#ba2121;">
+    <a href="{% url 'admin:contracts_contract_changelist' %}" class="button cancel">No, torna indietro</a>
+  </p>
+</form>
+{% endblock %}

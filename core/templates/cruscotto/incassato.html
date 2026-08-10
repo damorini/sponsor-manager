@@ -71,6 +71,8 @@
 
     <p style="margin-top:24px;">
       <a href="{% url 'core:cruscotto_evento' evento.id %}" class="cr-btn cr-btn--ghost">← Torna al cruscotto evento</a>
+      &nbsp;
+      <a href="{% url 'core:cruscotto_incassato_export' evento.id %}" class="cr-btn cr-btn--primary">⬇ Scarica Excel</a>
     </p>
   </div>
 </div>

@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home admin</a>
+  &rsaquo; <a href="{% url 'admin:contracts_deadline_changelist' %}">Scadenze</a>
+  &rsaquo; Sposta scadenze
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Sposta scadenze</h1>
+<p>Stai spostando <strong>{{ queryset.count }} scadenza/e</strong>:</p>
+<ul>
+  {% for obj in queryset %}
+  <li>{{ obj.title }} — {{ obj.contract.sponsor.legal_name }} · attuale: <strong>{{ obj.due_date|date:"d/m/Y" }}</strong></li>
+  {% endfor %}
+</ul>
+
+<form method="post">
+  {% csrf_token %}
+  {% for obj in queryset %}
+  <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="{{ action }}">
+  <input type="hidden" name="_sposta_confermato" value="1">
+
+  <p>
+    <label for="id_giorni"><strong>Sposta di N giorni</strong> (positivo = in avanti, negativo = indietro):</label><br>
+    <input type="number" name="giorni" id="id_giorni" placeholder="es. 30"
+           style="padding:6px 10px; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-top:4px; width:120px;">
+  </p>
+  <p style="color:#666;">— oppure —</p>
+  <p>
+    <label for="id_data_fissa"><strong>Nuova data fissa</strong> (per tutte le selezionate; se compilata, vince sui giorni):</label><br>
+    <input type="date" name="data_fissa" id="id_data_fissa"
+           style="padding:6px 10px; font-size:14px; border:1px solid #ccc; border-radius:4px; margin-top:4px;">
+  </p>
+
+  <p>
+    <input type="submit" value="Sposta le scadenze" class="button default" style="margin-right:8px;">
+    <a href="{% url 'admin:contracts_deadline_changelist' %}" class="button cancel">Annulla</a>
+  </p>
+</form>
+{% endblock %}

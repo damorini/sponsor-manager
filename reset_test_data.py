@@ -14,6 +14,14 @@ ATTENZIONE: irreversibile. Fai un backup del DB PRIMA (es. pg_dump).
 """
 import os, sys, django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+
+# GUARDIA: questo script e' distruttivo e vive in un repo deployato in
+# produzione (PayPal LIVE, dati clienti reali). Rifiuta di girare con i
+# settings di produzione, sempre e comunque.
+if 'production' in os.environ.get('DJANGO_SETTINGS_MODULE', ''):
+    sys.exit("RIFIUTATO: reset_test_data.py non puo' girare con i settings "
+             "di PRODUZIONE. Usalo solo in sviluppo.")
+
 django.setup()
 
 from django.db import transaction
