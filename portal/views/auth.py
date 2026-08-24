@@ -220,7 +220,9 @@ def _get_user_from_uid(uidb64):
     """Decodifica uidb64 e restituisce User, o None."""
     try:
         uid = urlsafe_base64_decode(uidb64).decode()
-        return User.objects.get(pk=uid, is_active=True, role='sponsor')
+        # Qualsiasi utente attivo: la richiesta di reset invia l'email anche
+        # a operatori/admin del backoffice, quindi il link deve valere per loro.
+        return User.objects.get(pk=uid, is_active=True)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return None
 

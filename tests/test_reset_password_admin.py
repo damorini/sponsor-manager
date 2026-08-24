@@ -51,6 +51,35 @@ def test_reset_funziona_anche_per_operatori(client, operatore):
 
 
 @pytest.mark.django_db
+def test_link_di_reset_valido_anche_per_admin(client, operatore):
+    """Regressione 24/08: _get_user_from_uid filtrava role='sponsor', quindi
+    per operatori/admin il link arrivava ma la pagina diceva 'link scaduto'."""
+    import re
+    mail.outbox.clear()
+    client.post(reverse('portal:password_reset'), {'email': 'op_reset@test.it'})
+    corpo = mail.outbox[0].body + ''.join(
+        alt for alt, _m in mail.outbox[0].alternatives)
+    m = re.search(r'/portal/password-reset/([^/]+)/([^/\s"<]+)/', corpo)
+    assert m, 'link di conferma non trovato nella mail'
+    url = reverse('portal:password_reset_confirm',
+                  kwargs={'uidb64': m.group(1), 'token': m.group(2)})
+
+    # GET: deve mostrare il form, non 'link scaduto'
+    resp = client.get(url)
+    assert resp.status_code == 200
+    html = resp.content.decode()
+    assert 'new_password1' in html
+    assert 'scaduto' not in html.split('STATO: link non valido')[0]
+
+    # POST: imposta davvero la nuova password
+    resp = client.post(url, {'new_password1': 'NuovaPassSicura26!',
+                             'new_password2': 'NuovaPassSicura26!'})
+    assert resp.status_code == 302
+    operatore.refresh_from_db()
+    assert operatore.check_password('NuovaPassSicura26!')
+
+
+@pytest.mark.django_db
 def test_azione_admin_invia_reset(client, operatore):
     from django.contrib.auth import get_user_model
     boss = get_user_model().objects.create_superuser(
