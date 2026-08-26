@@ -152,7 +152,13 @@ class Event(TimeStampedModel):
         max_length=255,
         blank=True,
         verbose_name="Ragione sociale organizzatore",
-        help_text="La tua ragione sociale, usata nei contratti",
+        help_text=(
+            "Compila SOLO se l'organizzatore di questo evento non è VALET: "
+            "il nome inserito sostituisce la ragione sociale nei PDF "
+            "(contratto, domanda di ammissione). Se lasci vuoto viene usata "
+            "la dicitura standard VALET. Attenzione: cambia solo il nome — "
+            "sede, P.IVA e rappresentante nei documenti restano quelli VALET."
+        ),
     )
     contract_signing_location = models.CharField(
         max_length=255,

@@ -161,6 +161,7 @@
 Crea l'evento (nome IT/EN, slug, date, luogo, lingua default, flag ECM, immagine header). L'evento è il contenitore di stand, servizi e contratti.
 - **Duplica per NUOVA EDIZIONE** (azione nel menu): clona l'evento con tutta la struttura — servizi (con varianti, inclusi e template scadenze), stand e blocchi. Il clone nasce in stato *Pianificazione* con stand tutti *disponibili*; contratti/sponsor dell'originale NON vengono toccati né copiati. Dopo la duplicazione: aggiorna nome, date e prezzi.
 - Colonna **"Fatturato (IVA escl.)"** nella lista eventi: somma degli imponibili dei contratti non annullati.
+- **Ragione sociale organizzatore** (scheda evento, dati per i contratti): compilala **solo se l'organizzatore dell'evento non è VALET** — il nome inserito sostituisce la ragione sociale nei PDF (contratto e domanda di ammissione). Se resta **vuota**, nei documenti esce la dicitura standard VALET. ⚠️ Cambia solo il nome: sede, P.IVA e rappresentante nei documenti restano quelli VALET (sono fissi nei template Word).
 
 ### 4.2 Catalogo (servizi madre) + Categorie
 - **Catalogo servizi**: voci generiche riutilizzabili. Campi: codice, nome/descrizione IT/EN, categoria, prezzo, IVA, modalità prezzo, ecc.

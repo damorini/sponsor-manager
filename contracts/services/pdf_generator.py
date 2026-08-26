@@ -237,6 +237,9 @@ def generate_contract_pdf(contract):
         'signer': signer,
         'contact_referente': referente,
         'event': _event_for_template(event),
+        # Ragione sociale organizzatore dell'evento: se vuota, i template
+        # usano la dicitura standard VALET (fallback nel tag Jinja).
+        'organizer_name': (event.organizer_legal_name or '').strip(),
         'lines_by_category': lines_by_category,
         # lista piatta righe (tabella Allegato 2 ECM): valorizzate prima, incluse in coda
         'lines': _righe_valorizzate_prima(ln for _cat, items in lines_by_category for ln in items),
@@ -1375,6 +1378,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         'sponsor': sponsor,
         'signer': signer,
         'event': _event_for_template(event),
+        'organizer_name': (event.organizer_legal_name or '').strip(),
         'lines': lines,
         'imponibile': format_currency_filter(contract.subtotal),
         'iva': format_currency_filter(contract.vat_amount),
@@ -1510,6 +1514,7 @@ def generate_sponsor_contract_pdf(contract):
         'sponsor': sponsor,
         'signer': signer,
         'event': _event_for_template(event),
+        'organizer_name': (event.organizer_legal_name or '').strip(),
         'operational_email': operational_email,
     }
     doc = DocxTemplate(str(template_path))
