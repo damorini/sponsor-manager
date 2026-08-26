@@ -140,6 +140,7 @@ class Command(BaseCommand):
                 ha_idrico = _norm_bool(G("allaccio_idrico"))
                 ha_internet = _norm_bool(G("internet"))
                 descr = str(G("descrizione_preventivo") or "").strip()
+                note_sponsor = str(G("note_sponsor") or "").strip()
 
                 if dry:
                     esiste = Stand.objects.filter(event=evento, code=code).exists()
@@ -162,6 +163,10 @@ class Command(BaseCommand):
                     "has_internet": ha_internet,
                     "quote_description": ({"it": descr} if descr else {}),
                 }
+                # solo se la colonna esiste nel file: i vecchi template senza
+                # 'note_sponsor' non devono cancellare le note gia' salvate
+                if "note_sponsor" in col_idx:
+                    campi["sponsor_notes"] = {"it": note_sponsor} if note_sponsor else {}
                 if larghezza is not None:
                     campi["width_meters"] = larghezza
                 if profondita is not None:

@@ -7,13 +7,26 @@ Stand sono le postazioni espositive fisiche.
 from decimal import Decimal
 
 from django.db import models
-from django.db.models import Q, Sum
-from django.db.models.functions import Length
+from django.db.models import F, Func, IntegerField, Q, Sum, Value
+from django.db.models.functions import Cast, Length, NullIf
 from django.utils import timezone
 
 from core.models import TimeStampedModel
 from core.translatable import TranslatableMixin
 from events.models import Event
+
+
+def _ordine_naturale_codice():
+    """Espressioni per ordinare i codici in modo NATURALE: prima il prefisso
+    testuale (D-, S., ...), poi il numero come INTERO (1,2,...,9,10,11) - non
+    lessicografico ne' per lunghezza (che metteva S-10 dopo tutti i D-)."""
+    prefisso = Func(F('code'), Value(r'\d.*$'), Value(''),
+                    function='REGEXP_REPLACE')
+    numero = Cast(
+        NullIf(Func(F('code'), Value(r'\D'), Value(''), Value('g'),
+                    function='REGEXP_REPLACE'), Value('')),
+        IntegerField())
+    return [prefisso.asc(), numero.asc()]
 
 
 class StandStatus(models.TextChoices):
@@ -59,7 +72,7 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
     stand del blocco passano automaticamente a 'assigned' (logica gestita in
     Contract.mark_as_signed()).
     """
-    TRANSLATABLE_FIELDS = ['quote_description']
+    TRANSLATABLE_FIELDS = ['quote_description', 'sponsor_notes']
 
     event = models.ForeignKey(
         Event,
@@ -117,13 +130,22 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
                   "Non compare nel contratto. L'inglese si compila da solo al salvataggio.",
     )
 
+    sponsor_notes = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Note per lo sponsor (IT/EN)",
+        help_text="Indicazioni per il cliente (es. specifiche per le grafiche): "
+                  "compaiono nel PREVENTIVO e nel CONTRATTO/domanda di ammissione. "
+                  "L'inglese si compila da solo al salvataggio.",
+    )
+
     notes = models.TextField(blank=True, verbose_name="Note")
 
     class Meta:
         verbose_name = "Blocco stand"
         verbose_name_plural = "Blocchi stand"
-        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
-        ordering = ['event', Length('code').asc(), 'code']
+        # Ordine NATURALE del codice: prefisso, poi numero come intero.
+        ordering = ['event'] + _ordine_naturale_codice() + ['code']
         constraints = [
             models.UniqueConstraint(
                 fields=['event', 'code'],
@@ -205,7 +227,7 @@ class Stand(TranslatableMixin, TimeStampedModel):
     Postazione espositiva fisica. Appartiene a un evento e facoltativamente
     a un blocco.
     """
-    TRANSLATABLE_FIELDS = ['quote_description']
+    TRANSLATABLE_FIELDS = ['quote_description', 'sponsor_notes']
 
     event = models.ForeignKey(
         Event,
@@ -301,13 +323,22 @@ class Stand(TranslatableMixin, TimeStampedModel):
                   "Non compare nel contratto. L'inglese si compila da solo al salvataggio.",
     )
 
+    sponsor_notes = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Note per lo sponsor (IT/EN)",
+        help_text="Indicazioni per il cliente (es. specifiche per le grafiche): "
+                  "compaiono nel PREVENTIVO e nel CONTRATTO/domanda di ammissione. "
+                  "L'inglese si compila da solo al salvataggio.",
+    )
+
     notes = models.TextField(blank=True, verbose_name="Note")
 
     class Meta:
         verbose_name = "Stand"
         verbose_name_plural = "Stand"
-        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
-        ordering = ['event', Length('code').asc(), 'code']
+        # Ordine NATURALE del codice: prefisso, poi numero come intero.
+        ordering = ['event'] + _ordine_naturale_codice() + ['code']
         constraints = [
             models.UniqueConstraint(
                 fields=['event', 'code'],

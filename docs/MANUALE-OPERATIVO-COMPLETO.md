@@ -183,6 +183,8 @@ Voci vendibili in un evento specifico. Si possono creare **da zero** o **dal cat
 ### 4.4 Stand e Blocchi
 - **Stand**: codice (unico per evento), dimensioni (larghezza/profondità → area calcolata), tipologia, dotazioni (elettrico/acqua/internet/altezza), prezzo base, **descrizione preventivo IT/EN** (mostrata solo nel preventivo), stato.
 - **Blocchi**: raggruppano più stand venduti insieme; prezzo blocco (se vuoto = somma stand). Uno stand in blocco **non** è vendibile singolarmente.
+- **Note per lo sponsor (IT/EN)** (su Stand e Blocco): indicazioni per il cliente — es. come preparare le grafiche — che compaiono nel **preventivo** (riquadro "Note sullo spazio espositivo") e nella **domanda di ammissione/contratto** (sotto la tabella dei servizi). Sono separate dalle **Note interne**, che il cliente non vede. L'inglese si compila da solo. La colonna `note_sponsor` è anche nel **modello Excel** degli stand (Utility → Scarica il Modello).
+- **Ordinamento naturale dei codici**: gli stand sono elencati per prefisso e poi per numero (S-1…S-9, S-10 — non più S-10 in fondo dopo altri prefissi).
 - Lo **stato** (disponibile/riservato/assegnato) è automatico in base ai contratti.
 - *Nota*: non c'è una mappa interattiva; lo stand si assegna al contratto via ricerca/autocomplete (mostra solo i disponibili).
 

@@ -33,6 +33,10 @@ class StandBlockForm(forms.ModelForm):
         languages=['it', 'en'], required_languages=[], required=False,
         label="Descrizione per preventivo (IT/EN)",
     )
+    sponsor_notes = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=[], required=False,
+        label="Note per lo sponsor (IT/EN)",
+    )
 
     class Meta:
         model = StandBlock
@@ -124,6 +128,12 @@ class StandBlockAdmin(admin.ModelAdmin):
             'fields': ('quote_description',),
             'description': "Questo testo compare SOLO nel preventivo del cliente.",
         }),
+        ('Note per lo sponsor', {
+            'fields': ('sponsor_notes',),
+            'description': "Indicazioni per il cliente (es. come preparare le "
+                           "grafiche): compaiono nel PREVENTIVO e nel "
+                           "CONTRATTO/domanda di ammissione.",
+        }),
         ('Dimensioni e prezzo', {
             'fields': ('total_area_sqm', 'block_price'),
             'description': "Prezzo blocco: lascialo VUOTO per usare in automatico "
@@ -163,6 +173,9 @@ class StandBlockAdmin(admin.ModelAdmin):
                 }),
                 ('Descrizione per il preventivo', {
                     'fields': ('quote_description',),
+                }),
+                ('Note per lo sponsor', {
+                    'fields': ('sponsor_notes',),
                 }),
                 ('Dimensioni e prezzo', {
                     'fields': ('total_area_sqm', 'block_price'),
@@ -243,6 +256,10 @@ class StandAdminForm(forms.ModelForm):
         languages=['it', 'en'], required_languages=[], required=False,
         label="Descrizione per preventivo (IT/EN)",
     )
+    sponsor_notes = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=[], required=False,
+        label="Note per lo sponsor (IT/EN)",
+    )
 
     class Meta:
         model = Stand
@@ -309,9 +326,10 @@ class StandAdmin(admin.ModelAdmin):
     readonly_fields = ('created_at', 'updated_at', 'area_sqm_display')
 
     def get_ordering(self, request):
-        from django.db.models.functions import Length
-        # Ordine NUMERICO del codice (1,2,...,10,11), non lessicografico.
-        return ['event__slug', Length('code').asc(), 'code']
+        from venues.models import _ordine_naturale_codice
+        # Ordine NATURALE del codice: prefisso, poi numero come intero
+        # (S-1..S-9, S-10 insieme agli S, non dopo i D-).
+        return ['event__slug'] + _ordine_naturale_codice() + ['code']
 
     fieldsets = (
         (None, {
@@ -343,9 +361,17 @@ class StandAdmin(admin.ModelAdmin):
             'description': "Compare SOLO nel preventivo del cliente. "
                            "L'inglese si compila da solo al salvataggio.",
         }),
-        ('Note', {
+        ('Note per lo sponsor', {
+            'fields': ('sponsor_notes',),
+            'description': "Indicazioni per il cliente (es. come preparare le "
+                           "grafiche): compaiono nel PREVENTIVO e nel "
+                           "CONTRATTO/domanda di ammissione. L'inglese si "
+                           "compila da solo al salvataggio.",
+        }),
+        ('Note interne', {
             'fields': ('notes',),
             'classes': ('collapse',),
+            'description': "Solo per uso interno: il cliente NON le vede.",
         }),
         ('Sistema', {
             'fields': ('created_at', 'updated_at'),

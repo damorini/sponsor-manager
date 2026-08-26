@@ -777,6 +777,17 @@ def _add_header_footer_to_docx(docx_path, contract):
 # PREVENTIVO: costruzione context segnaposti per il template lettera
 # ============================================================================
 
+def _stand_sponsor_notes(contract):
+    """Note per lo sponsor dello stand/blocco assegnato al contratto, nella
+    lingua del contratto. '' se non ci sono."""
+    _obj = getattr(contract, 'stand', None) or getattr(contract, 'stand_block', None)
+    if _obj is None or not hasattr(_obj, 'translated'):
+        return ''
+    lang = getattr(contract, 'language', None)
+    return (_obj.translated('sponsor_notes', lang)
+            or _obj.translated('sponsor_notes', 'it') or '').strip()
+
+
 def build_quote_context(contract):
     """
     Costruisce il dizionario dei segnaposti per il body_template di un
@@ -1379,6 +1390,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         'signer': signer,
         'event': _event_for_template(event),
         'organizer_name': (event.organizer_legal_name or '').strip(),
+        'stand_notes': _stand_sponsor_notes(contract),
         'lines': lines,
         'imponibile': format_currency_filter(contract.subtotal),
         'iva': format_currency_filter(contract.vat_amount),
@@ -1726,6 +1738,7 @@ def generate_quote_pdf_html(contract):
             'badge_sconto': 'RESERVED DISCOUNT', 'badge_riservato': 'RESERVED PRICE',
             'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total',
             'validity': validity, 'cta': 'View and confirm the quote', 'ref': 'Quote',
+            'note_stand': 'Exhibition space notes',
         }
     else:
         intro = mark_safe(
@@ -1751,6 +1764,7 @@ def generate_quote_pdf_html(contract):
             'badge_sconto': 'SCONTO A VOI RISERVATO', 'badge_riservato': 'PREZZO A VOI RISERVATO',
             'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale',
             'validity': validity, 'cta': 'Vedi e conferma il preventivo', 'ref': 'Preventivo',
+            'note_stand': 'Note sullo spazio espositivo',
         }
 
     from decimal import Decimal as _Dec
@@ -1765,6 +1779,7 @@ def generate_quote_pdf_html(contract):
         'header_url': header_url,
         'brand_color': getattr(settings, 'BRAND_PRIMARY_COLOR', '#1d6534'),
         'quote_valid_until': quote_valid_until,
+        'stand_notes': _stand_sponsor_notes(contract),
         'org': org,
         'sci': sci,
         't': t,

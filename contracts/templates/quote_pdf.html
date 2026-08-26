@@ -88,6 +88,8 @@
     <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>
 
+  {% if stand_notes %}<div class="valid"><strong>{{ t.note_stand }}:</strong> {{ stand_notes|linebreaksbr }}</div>{% endif %}
+
   {% if quote_valid_until %}<div class="valid">{{ t.validity }}</div>{% endif %}
 
   <div class="cta"><a class="btn" href="{{ confirm_url }}">{{ t.cta }}</a></div>

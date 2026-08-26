@@ -197,6 +197,8 @@ def build_template_stand_workbook():
         ("internet", "s/n (default n)"),
         ("altezza_max_m", "Opzionale. Altezza massima in metri"),
         ("descrizione_preventivo", "Opzionale. Descrizione mostrata nel preventivo"),
+        ("note_sponsor", "Opzionale. Note per lo sponsor (es. specifiche per le "
+                         "grafiche): compaiono nel preventivo e nel contratto"),
     ]
 
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -209,15 +211,16 @@ def build_template_stand_workbook():
         cell.comment = Comment(comment, "Sponsor Manager")
 
     esempio1 = ["AITEB2026", "A-01", "", 1500.00, 3, 2, "linear", "available",
-                "s", 3, "n", "s", 2.5, "Stand lineare 3x2 m, fronte corridoio"]
+                "s", 3, "n", "s", 2.5, "Stand lineare 3x2 m, fronte corridoio",
+                "Grafiche pannello frontale: file PDF 300 dpi, 100x250 cm"]
     esempio2 = ["AITEB2026", "A-02", "", 2500.00, 4, 4, "island", "available",
-                "s", 6, "s", "s", 3.0, "Isola 4x4 m, doppio fronte"]
+                "s", 6, "s", "s", 3.0, "Isola 4x4 m, doppio fronte", ""]
     for col, v in enumerate(esempio1, start=1):
         ws.cell(row=2, column=col, value=v)
     for col, v in enumerate(esempio2, start=1):
         ws.cell(row=3, column=col, value=v)
 
-    larghezze = [14, 10, 14, 14, 12, 12, 16, 14, 18, 12, 16, 10, 14, 32]
+    larghezze = [14, 10, 14, 14, 12, 12, 16, 14, 18, 12, 16, 10, 14, 32, 40]
     for i, w in enumerate(larghezze, start=1):
         ws.column_dimensions[chr(64 + i)].width = w
 
