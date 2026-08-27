@@ -122,6 +122,44 @@ class _AutocompleteServiceByEvento(AutocompleteSelect):
         return url
 
 
+class ServiceInclusionFormSet(forms.models.BaseInlineFormSet):
+    """Blocca i servizi inclusi DUPLICATI con un messaggio chiaro.
+
+    Il vincolo unico (parent, child) coinvolge la FK esclusa dal form
+    dell'inline, quindi Django non lo validava: il doppione arrivava al DB
+    e diventava un errore 500 al salvataggio."""
+
+    def clean(self):
+        super().clean()
+        # inclusi gia' salvati nel DB ma NON presenti in questo formset
+        # (succede rispedendo una pagina vecchia: il doppione supererebbe
+        # la validazione di Django, che guarda solo i form della pagina)
+        gia_nel_db = set()
+        if self.instance is not None and self.instance.pk:
+            nel_form = {f.instance.pk for f in self.forms if f.instance.pk}
+            gia_nel_db = set(
+                ServiceInclusion.objects.filter(parent=self.instance)
+                .exclude(pk__in=nel_form)
+                .values_list('child_id', flat=True))
+        visti = set()
+        for form in self.forms:
+            if not getattr(form, 'cleaned_data', None):
+                continue
+            if form.cleaned_data.get('DELETE'):
+                continue
+            child = form.cleaned_data.get('child')
+            if child is None:
+                continue
+            if child.pk in visti or (form.instance.pk is None
+                                     and child.pk in gia_nel_db):
+                form.add_error('child',
+                               "Questo servizio risulta già incluso: "
+                               "ricarica la pagina e modifica la quantità "
+                               "della riga esistente invece di aggiungerlo "
+                               "di nuovo.")
+            visti.add(child.pk)
+
+
 class ServiceInclusionInline(admin.TabularInline):
     """Servizi inclusi (accessori) di un servizio, con la quantita' inclusa.
     La tendina 'child' e' filtrata sull'evento del servizio padre."""
@@ -130,6 +168,7 @@ class ServiceInclusionInline(admin.TabularInline):
     extra = 0
     autocomplete_fields = ['child']
     fields = ('child', 'quantity')
+    formset = ServiceInclusionFormSet
     verbose_name = 'Servizio incluso'
     verbose_name_plural = 'Servizi inclusi (accessori)'
 
