@@ -422,7 +422,8 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
-              'admin/js/contractline_variant_filter.js',)
+              'admin/js/contractline_variant_filter.js',
+              'admin/js/contractline_service_picker.js',)
 
     fieldsets = (
         (None, {
@@ -613,8 +614,38 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 self.admin_site.admin_view(self.send_contract_view),
                 name='contracts_contract_send_contract',
             ),
+            path(
+                '<path:object_id>/servizi-json/',
+                self.admin_site.admin_view(self.servizi_json_view),
+                name='contracts_contract_servizi_json',
+            ),
         ]
         return custom + urls
+
+    def servizi_json_view(self, request, object_id):
+        """Catalogo servizi dell'evento del contratto, in JSON: alimenta la
+        finestra 'Catalogo' accanto alla tendina Servizio delle righe."""
+        from django.http import JsonResponse
+        from .models import Contract
+        contract = Contract.objects.filter(pk=object_id).first()
+        if contract is None or not contract.event_id:
+            return JsonResponse({'services': []})
+        out = []
+        qs = contract.event.services.all().order_by('category', 'code')
+        for s in qs:
+            try:
+                categoria = s.get_category_display()
+            except Exception:
+                categoria = s.category or ''
+            out.append({
+                'id': str(s.pk),
+                'code': s.code or '',
+                'name': s.translated('name', 'it') or '',
+                'price': float(s.base_price or 0),
+                'category': categoria,
+                'active': bool(s.is_active),
+            })
+        return JsonResponse({'services': out})
 
     def _contact_rows(self, contract):
         """Costruisce le righe contatto per la pagina di conferma."""
