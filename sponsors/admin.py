@@ -836,8 +836,14 @@ class ContactAdmin(admin.ModelAdmin):
         for contact in queryset:
             try:
                 user, pwd, created = invite_contact_to_portal(contact, send_email=True)
-                righe.append(f"{contact.full_name} ({user.email}) - email di accesso inviata · "
-                             f"password: {pwd}" + ("" if created else " (rigenerata)"))
+                if pwd is None:
+                    righe.append(
+                        f"{contact.full_name} ({user.email}) - ha GIÀ un accesso attivo: "
+                        "valgono le credenziali esistenti (nessuna email inviata; per "
+                        "rimandargliele usa 'Invia email di RESET PASSWORD' in Utenti)")
+                else:
+                    righe.append(f"{contact.full_name} ({user.email}) - email di accesso inviata · "
+                                 f"password: {pwd}" + ("" if created else " (rigenerata)"))
                 if created:
                     ok_creati += 1
                 else:

@@ -51,46 +51,57 @@ def invite_contact_to_portal(contact: Contact, send_email: bool = True):
             f"Contact {contact.full_name} non ha un'email, impossibile invitare."
         )
 
-    # Se ha già un User collegato, riusa quello
-    if contact.has_portal_access and contact.portal_user_id:
-        try:
-            user = contact.portal_user
-            # Genera nuova password temporanea (reset)
-            temp_password = generate_temp_password()
-            user.set_password(temp_password)
-            user.is_active = True
-            user.save(update_fields=['password', 'is_active'])
-            was_created = False
-        except User.DoesNotExist:
-            user = None
-    else:
-        user = None
-
+    # Utente gia' esistente per questo contatto o per questa email
+    user = None
+    if contact.portal_user_id:
+        user = contact.portal_user
     if user is None:
-        # Verifica che non esista già un User con quella email
-        existing = User.objects.filter(email__iexact=contact.email).first()
-        if existing:
-            # Collega l'User esistente al Contact
-            user = existing
-            user.role = 'sponsor'
-            temp_password = generate_temp_password()
-            user.set_password(temp_password)
-            user.is_active = True
-            user.save()
-            was_created = False
-        else:
-            # Crea nuovo User
-            temp_password = generate_temp_password()
-            user = User.objects.create_user(
-                username=contact.email,
-                email=contact.email,
-                password=temp_password,
-                first_name=contact.first_name or _extract_first_name(contact.full_name),
-                last_name=contact.last_name or _extract_last_name(contact.full_name),
-                role='sponsor',
-                is_active=True,
-            )
-            was_created = True
+        user = User.objects.filter(email__iexact=contact.email).first()
+
+    # PROTEZIONE: mai usare come accesso cliente l'email di un account del
+    # BACKOFFICE (prima l'invito lo declassava a 'sponsor' e ne resettava la
+    # password; e comunque il portale respinge i non-sponsor con 'Ci siamo quasi').
+    if user is not None and (user.is_staff or user.is_superuser
+                             or getattr(user, 'role', 'sponsor') != 'sponsor'):
+        raise ValueError(
+            f"l'email {contact.email} appartiene a un account OPERATORE del "
+            "backoffice e non può essere usata come accesso cliente al portale. "
+            "Registra il contatto con un'email diversa."
+        )
+
+    if user is not None:
+        if user.last_login:
+            # Ha GIA' usato il portale (es. per un altro congresso): le sue
+            # credenziali restano valide, NON tocchiamo la password. Colleghiamo
+            # solo il contatto; nessuna email di invito (per rimandare le
+            # credenziali c'e' l'azione 'Invia email di RESET PASSWORD').
+            if not user.is_active:
+                user.is_active = True
+                user.save(update_fields=['is_active'])
+            contact.has_portal_access = True
+            contact.portal_user = user
+            contact.save(update_fields=['has_portal_access', 'portal_user', 'updated_at'])
+            logger.info("Invito: %s ha gia' un accesso attivo, credenziali invariate", user.email)
+            return user, None, False
+        # Mai entrato: rigenera la password temporanea e reinvia le credenziali
+        temp_password = generate_temp_password()
+        user.set_password(temp_password)
+        user.is_active = True
+        user.save(update_fields=['password', 'is_active'])
+        was_created = False
+    else:
+        # Crea nuovo User
+        temp_password = generate_temp_password()
+        user = User.objects.create_user(
+            username=contact.email,
+            email=contact.email,
+            password=temp_password,
+            first_name=contact.first_name or _extract_first_name(contact.full_name),
+            last_name=contact.last_name or _extract_last_name(contact.full_name),
+            role='sponsor',
+            is_active=True,
+        )
+        was_created = True
 
     # Collega il Contact all'User
     contact.has_portal_access = True
