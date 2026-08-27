@@ -78,4 +78,7 @@ def test_pagina_contratto_carica_il_js(client, staff, contratto):
     client.force_login(staff)
     resp = client.get(reverse('admin:contracts_contract_change', args=[contratto.pk]))
     assert resp.status_code == 200
-    assert 'contractline_service_picker.js' in resp.content.decode()
+    html = resp.content.decode()
+    assert 'contractline_service_picker_v2.js' in html
+    # regressione: il ?v=N nel Media veniva URL-encodato -> 404 del file
+    assert '%3F' not in html.split('contractline_service_picker')[1][:20]

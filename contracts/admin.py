@@ -423,9 +423,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',
-              # ?v=N: cache-busting - senza, il browser puo' tenersi la
-              # versione vecchia del file anche dopo un deploy
-              'admin/js/contractline_service_picker.js?v=3',)
+              # nome con _v2: cache-busting via RINOMINA del file (il query
+              # param ?v=N viene URL-encodato da static() e il file va in 404)
+              'admin/js/contractline_service_picker_v2.js',)
 
     fieldsets = (
         (None, {
