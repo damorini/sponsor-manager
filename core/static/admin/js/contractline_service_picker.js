@@ -146,20 +146,20 @@
   }
 
   // ---- pulsanti accanto alle tendine Servizio ----
+  // Il click e' DELEGATO al documento: le righe nuove vengono clonate dal
+  // template nascosto (__prefix__) e i listener per-pulsante andrebbero persi.
   function aggiungiPulsanti() {
     document.querySelectorAll('select[id^="id_lines-"][id$="-service"]').forEach(function (sel) {
-      if (sel.dataset.vtSvcpick) return;
-      sel.dataset.vtSvcpick = '1';
+      if (sel.id.indexOf('__prefix__') !== -1) return; // riga-template nascosta
+      var cella = sel.closest('td') || sel.parentElement;
+      if (!cella) return;
+      // ricrea sempre il pulsante: i cloni portano con se' copie senza listener
+      cella.querySelectorAll('.vt-svcpick-btn').forEach(function (b) { b.remove(); });
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'vt-svcpick-btn';
       btn.textContent = '📋 Catalogo';
       btn.title = 'Scegli il servizio da una finestra con tutto il catalogo dell’evento';
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        apri(sel);
-      });
-      // dopo il widget select2 se presente, altrimenti dopo la select
       var target = sel.nextElementSibling && sel.nextElementSibling.classList &&
                    sel.nextElementSibling.classList.contains('select2')
                    ? sel.nextElementSibling : sel;
@@ -167,11 +167,27 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.vt-svcpick-btn') : null;
+    if (!btn) return;
+    e.preventDefault();
+    var cella = btn.closest('td') || btn.parentElement;
+    var sel = cella && cella.querySelector('select[id^="id_lines-"][id$="-service"]');
+    if (sel) apri(sel);
+  });
+
+  function avvia() {
     aggiungiPulsanti();
     var $ = window.django && window.django.jQuery;
     if ($) {
-      $(document).on('formset:added', function () { aggiungiPulsanti(); });
+      $(document).on('formset:added', function () {
+        setTimeout(aggiungiPulsanti, 0);
+      });
     }
-  });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', avvia);
+  } else {
+    avvia();
+  }
 })();
