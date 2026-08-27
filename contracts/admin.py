@@ -423,7 +423,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',
-              'admin/js/contractline_service_picker.js',)
+              # ?v=N: cache-busting - senza, il browser puo' tenersi la
+              # versione vecchia del file anche dopo un deploy
+              'admin/js/contractline_service_picker.js?v=3',)
 
     fieldsets = (
         (None, {
