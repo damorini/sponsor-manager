@@ -135,7 +135,10 @@ class TranslatableJSONField(forms.JSONField):
     def __init__(self, languages=None, required_languages=None,
                  use_textarea=False, wysiwyg=False, *args, **kwargs):
         self.languages = languages or ['it', 'en']
-        self.required_languages = required_languages or ['it']
+        # NB: [] significa "nessuna lingua obbligatoria" e va rispettato
+        # (con `or` diventava ['it'] e chiedeva l'italiano anche sui facoltativi)
+        self.required_languages = (required_languages
+                                   if required_languages is not None else ['it'])
         self.use_textarea = use_textarea or wysiwyg
 
         kwargs['widget'] = TranslatableJSONWidget(
@@ -147,7 +150,10 @@ class TranslatableJSONField(forms.JSONField):
 
     def to_python(self, value):
         if not value:
-            return {} if self.required else None
+            # SEMPRE {} (mai None): i JSONField multilingua dei modelli hanno
+            # default=dict e colonna NOT NULL - un None qui (campo lasciato
+            # tutto vuoto) diventava NULL nel DB -> errore 500 al salvataggio.
+            return {}
         if isinstance(value, dict):
             return value
         return super().to_python(value)
