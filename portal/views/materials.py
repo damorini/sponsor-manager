@@ -114,6 +114,11 @@ def _get_materials_for_contract(contract):
             'has_documents': docs.exists(),
             'is_completed': d.status in [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED],
             'content_fields': content_fields,
+            'file_area_label': (getattr(d, 'file_area_label', '')
+                                or (d.deadline_template.file_area_label
+                                    if d.deadline_template_id and
+                                    getattr(d.deadline_template, 'file_area_label', '')
+                                    else '')),
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
             # Le scadenze di PAGAMENTO accettano l'upload della contabile del
@@ -594,6 +599,11 @@ def _materials_from_deadlines(deadlines):
             'has_documents': docs.exists(),
             'is_completed': d.status in [DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED],
             'content_fields': content_fields,
+            'file_area_label': (getattr(d, 'file_area_label', '')
+                                or (d.deadline_template.file_area_label
+                                    if d.deadline_template_id and
+                                    getattr(d.deadline_template, 'file_area_label', '')
+                                    else '')),
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
             # Upload contabile consentito anche sulle scadenze di pagamento,

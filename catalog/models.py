@@ -501,6 +501,15 @@ class DeadlineTemplate(TimeStampedModel):
         help_text="File, campi da compilare, oppure entrambi.",
     )
 
+    file_area_label = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Etichetta area di caricamento",
+        help_text="Testo mostrato DENTRO il riquadro di caricamento file nel "
+                  "portale (es. '📎 Dichiarazione del medico in PDF'). "
+                  "Vuoto = riquadro generico.",
+    )
+
     shipping_instructions = models.TextField(
         blank=True,
         verbose_name="Istruzioni di spedizione",

@@ -103,6 +103,7 @@ class DeadlineTemplateInline(admin.StackedInline):
     fields = (
         ('deadline_type', 'title'),
         ('submission_kind', 'client_template_file'),
+        ('file_area_label',),
         ('days_before_event', 'reminder_days_before', 'is_active'),
         ('campi_compilabili',),
     )
@@ -446,7 +447,7 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
         }),
         ('Scadenza', {
             'fields': ('deadline_type', 'title', 'description', 'submission_kind',
-                       'shipping_instructions',
+                       'file_area_label', 'shipping_instructions',
                        'client_template_file', 'days_before_event', 'display_order'),
         }),
         ('Notifiche', {

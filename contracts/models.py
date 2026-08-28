@@ -331,25 +331,14 @@ class Contract(SoftDeleteModel):
 
     def _contratti_che_tengono(self, **filtro_spazio):
         """
-        Contratti (diversi da self, non annullati) che 'tengono' lo spazio indicato:
-        - stati SENT/SIGNED/ACTIVE/COMPLETED, OPPURE
-        - DRAFT con opzione attiva (option_until >= oggi).
-        I DRAFT senza opzione o con opzione scaduta NON tengono lo spazio.
+        Contratti (diversi da self) che 'tengono' lo spazio indicato.
+        La regola sta tutta in contracts/occupazione.py: anche una BOZZA
+        senza data di opzione tiene il posto.
         """
-        from django.db.models import Q
-        from django.utils import timezone
-        oggi = timezone.now().date()
-        tengono = (
-            Q(status__in=[ContractStatus.SENT, ContractStatus.SIGNED,
-                          ContractStatus.ACTIVE, ContractStatus.COMPLETED])
-            | Q(status=ContractStatus.DRAFT, option_until__isnull=False,
-                option_until__gte=oggi)
-        )
-        return (Contract.objects
-                .filter(**filtro_spazio)
-                .exclude(status=ContractStatus.CANCELLED)
-                .exclude(pk=self.pk)
-                .filter(tengono))
+        from contracts.occupazione import contratti_occupanti
+
+        return contratti_occupanti(
+            Contract.objects.filter(**filtro_spazio).exclude(pk=self.pk))
 
     def clean(self):
         """Validazione: stand e stand_block sono mutuamente esclusivi."""
@@ -389,24 +378,25 @@ class Contract(SoftDeleteModel):
 
         # Unicità stand: bloccato se un ALTRO contratto 'tiene' lo spazio
         # (SENT/firmato, oppure DRAFT con opzione attiva). Vedi _contratti_che_tengono.
+        from contracts.occupazione import descrivi_occupante
         if self.stand:
             altro = self._contratti_che_tengono(stand=self.stand).first()
             if altro:
                 raise ValidationError({'stand': (
                     f"Lo stand '{self.stand.code}' è già impegnato dal contratto "
-                    f"{altro.contract_number or '(in creazione)'} "
-                    f"({altro.sponsor}, stato: {altro.get_status_display()}"
-                    f"{', opzionato fino al ' + altro.option_until.strftime('%d/%m/%Y') if altro.option_until else ''}). "
-                    f"Annulla/libera quel contratto o scegli un altro stand.")})
+                    f"{descrivi_occupante(altro)}. "
+                    f"Per liberarlo: togli lo stand da quel contratto, "
+                    f"oppure annullalo/cestinalo. Se l'opzione è scaduta, "
+                    f"lo spazio torna disponibile da solo.")})
         if self.stand_block:
             altro = self._contratti_che_tengono(stand_block=self.stand_block).first()
             if altro:
                 raise ValidationError({'stand_block': (
                     f"Il blocco '{self.stand_block.code}' è già impegnato dal contratto "
-                    f"{altro.contract_number or '(in creazione)'} "
-                    f"({altro.sponsor}, stato: {altro.get_status_display()}"
-                    f"{', opzionato fino al ' + altro.option_until.strftime('%d/%m/%Y') if altro.option_until else ''}). "
-                    f"Annulla/libera quel contratto o scegli un altro blocco.")})
+                    f"{descrivi_occupante(altro)}. "
+                    f"Per liberarlo: togli il blocco da quel contratto, "
+                    f"oppure annullalo/cestinalo. Se l'opzione è scaduta, "
+                    f"lo spazio torna disponibile da solo.")})
 
         # Validazioni parent_contract
         if self.contract_kind == ContractKind.MAIN and self.parent_contract:
@@ -524,6 +514,9 @@ class Contract(SoftDeleteModel):
             if (_prev_stand_id != self.stand_id
                     or _prev_block_id != self.stand_block_id):
                 self._sync_stand_line(kwargs.get('update_fields'))
+                # Lo spazio LASCIATO va ricalcolato, altrimenti resta
+                # occupato per sempre e non lo puo' piu' comprare nessuno.
+                self._libera_spazio_precedente(_prev_stand_id, _prev_block_id)
             # Cambio del flag IVA su contratto esistente: i line_vat delle
             # righe sono snapshot calcolati al LORO save - vanno ricalcolati,
             # altrimenti riattivare l'IVA lascia vat_amount=0 (e viceversa).
@@ -560,12 +553,16 @@ class Contract(SoftDeleteModel):
 
     def _sync_option_venue(self, update_fields=None):
         """
-        Dopo il salvataggio di una BOZZA con opzione (option_until), aggiorna lo
+        Dopo il salvataggio di una BOZZA con uno spazio dentro, aggiorna lo
         stato dello stand/blocco cosi' risulta riservato gia' in bozza.
-        Guardie:
-        - salta i salvataggi parziali dei soli totali (recalculate_totals) per
-          evitare lavoro inutile e ricorsioni;
-        - agisce solo se c'e' uno stand/blocco e un'opzione impostata.
+
+        NB: vale anche SENZA la data «Spazio opzionato fino al». Se il posto
+        e' su un preventivo, e' occupato: prima questa guardia usciva subito
+        quando option_until era vuoto, lo stand restava 'Disponibile' e
+        finiva nella tendina di un altro contratto (caso D-71 su SIES2027).
+
+        Guardia residua: salta i salvataggi parziali dei soli totali
+        (recalculate_totals) per evitare lavoro inutile e ricorsioni.
         """
         from contracts.models import ContractStatus
         # salta i save mirati ai soli totali / campi non rilevanti
@@ -575,8 +572,6 @@ class Contract(SoftDeleteModel):
             if not (campi & rilevanti):
                 return
         if self.status != ContractStatus.DRAFT:
-            return
-        if not self.option_until:
             return
         if not (self.stand_id or self.stand_block_id):
             return
@@ -1053,6 +1048,31 @@ class Contract(SoftDeleteModel):
         elif self.stand_block:
             self.stand_block.update_status_from_contract()
 
+    def _libera_spazio_precedente(self, prev_stand_id, prev_block_id):
+        """Ricalcola lo stato dello spazio che questo contratto ha lasciato.
+
+        Senza questo, spostare un contratto dallo stand A allo stand B
+        lasciava A occupato per sempre: nessun altro contratto lo tiene, ma
+        il suo campo status resta 'Riservato' e sparisce dalla tendina.
+        """
+        from venues.models import Stand, StandBlock
+
+        try:
+            if prev_stand_id and prev_stand_id != self.stand_id:
+                precedente = Stand.objects.filter(pk=prev_stand_id).first()
+                if precedente:
+                    precedente.update_status_from_contract()
+            if prev_block_id and prev_block_id != self.stand_block_id:
+                precedente = StandBlock.objects.filter(
+                    pk=prev_block_id).first()
+                if precedente:
+                    precedente.update_status_from_contract()
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Errore liberando lo spazio precedente del contratto %s",
+                getattr(self, 'contract_number', '?'))
+
     def _generate_deadlines(self):
         """
         Genera record Deadline concreti dai DeadlineTemplate dei servizi
@@ -1092,6 +1112,7 @@ class Contract(SoftDeleteModel):
                     description=template.description,
                     due_date=due_date,
                     submission_kind=getattr(template, 'submission_kind', 'file'),
+                    file_area_label=getattr(template, 'file_area_label', '') or '',
                     content_schema=[
                         {
                             'key': f.key,
@@ -1739,6 +1760,12 @@ class Deadline(TimeStampedModel):
     # --- Servizi compilabili dal cliente (snapshot dal DeadlineTemplate) ---
     submission_kind = models.CharField(
         max_length=20, default='file', verbose_name="Tipo consegna",
+    )
+    file_area_label = models.CharField(
+        max_length=255, blank=True,
+        verbose_name="Etichetta area di caricamento",
+        help_text="Testo mostrato dentro il riquadro di caricamento file "
+                  "nel portale. Vuoto = riquadro generico.",
     )
     content_schema = models.JSONField(
         default=list, blank=True, verbose_name="Campi richiesti",
