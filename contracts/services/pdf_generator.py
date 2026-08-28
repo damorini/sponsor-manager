@@ -1737,7 +1737,7 @@ def generate_quote_pdf_html(contract):
             'col_prezzo': 'Price', 'col_totale': 'Total (excl. VAT)',
             'badge_sconto': 'RESERVED DISCOUNT', 'badge_riservato': 'RESERVED PRICE',
             'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total',
-            'validity': validity, 'cta': 'View and confirm the quote', 'ref': 'Quote',
+            'validity': validity, 'cta': 'View the quote', 'ref': 'Quote',
             'note_stand': 'Exhibition space notes',
         }
     else:
@@ -1763,7 +1763,7 @@ def generate_quote_pdf_html(contract):
             'col_prezzo': 'Prezzo', 'col_totale': 'Totale (IVA escl.)',
             'badge_sconto': 'SCONTO A VOI RISERVATO', 'badge_riservato': 'PREZZO A VOI RISERVATO',
             'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale',
-            'validity': validity, 'cta': 'Vedi e conferma il preventivo', 'ref': 'Preventivo',
+            'validity': validity, 'cta': 'Vedi il preventivo', 'ref': 'Preventivo',
             'note_stand': 'Note sullo spazio espositivo',
         }
 

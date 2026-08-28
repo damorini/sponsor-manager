@@ -56,13 +56,13 @@ TEXTS = {
                   '<p>Gentile {{ sponsor.legal_name }},<br>grazie per l\'interesse verso <strong>{{ event_name }}</strong>. Abbiamo preparato per voi una proposta dedicata.</p>' +
                   '<p>Trovate <strong>tutti i dettagli</strong> — spazi, servizi e importi — nel <strong>PDF allegato</strong>.</p>' +
                   '{% if contract.option_until %}<div class="alert-warning"><strong>Spazi riservati per voi fino al {{ contract.option_until|date:"d/m/Y" }}.</strong><br>Trascorsa questa data gli spazi tornano disponibili per altri sponsor.</div>{% endif %}' +
-                  btn('{{ site_url }}{% url \'portal:contract_detail\' contract.id %}', 'Vedi e conferma il preventivo') +
+                  btn('{{ site_url }}{% url \'portal:contract_detail\' contract.id %}', 'Vedi il preventivo') +
                   SIGN_IT,
             'en': H('Your sponsorship proposal') +
                   '<p>Dear {{ sponsor.legal_name }},<br>thank you for your interest in <strong>{{ event_name }}</strong>. We have prepared a dedicated proposal for you.</p>' +
                   '<p>You will find <strong>all the details</strong> — spaces, services and amounts — in the <strong>attached PDF</strong>.</p>' +
                   '{% if contract.option_until %}<div class="alert-warning"><strong>Spaces reserved for you until {{ contract.option_until|date:"d/m/Y" }}.</strong><br>After this date the spaces become available again.</div>{% endif %}' +
-                  btn('{{ site_url }}{% url \'portal:contract_detail\' contract.id %}', 'View and confirm the proposal') +
+                  btn('{{ site_url }}{% url \'portal:contract_detail\' contract.id %}', 'View the proposal') +
                   SIGN_EN,
         },
     },
