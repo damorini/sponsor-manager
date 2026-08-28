@@ -8,10 +8,17 @@
  */
 'use strict';
 (function () {
-  var m = window.location.pathname.match(/^(.*\/contracts\/contract\/[^/]+\/)change\/?$/);
-  if (!m) return; // pagina "aggiungi": l'evento non e' ancora noto
-  var ENDPOINT = m[1] + 'servizi-json/';
-  var cache = null;
+  // Funziona sia in MODIFICA che in AGGIUNTA: i servizi vengono letti
+  // dall'EVENTO selezionato nella tendina del form (id_event).
+  var m = window.location.pathname.match(/^(.*\/contracts\/contract\/)/);
+  if (!m) return;
+  var BASE = m[1];
+  var cachePerEvento = {};
+
+  function eventoCorrente() {
+    var sel = document.getElementById('id_event');
+    return sel && sel.value ? sel.value : null;
+  }
 
   function fmtPrezzo(v) {
     try {
@@ -20,10 +27,15 @@
   }
 
   function caricaServizi(cb) {
-    if (cache) { cb(cache); return; }
-    fetch(ENDPOINT, {credentials: 'same-origin'})
+    var evId = eventoCorrente();
+    if (!evId) {
+      alert('Scegli prima l’evento del contratto, poi apri il Catalogo.');
+      return;
+    }
+    if (cachePerEvento[evId]) { cb(cachePerEvento[evId]); return; }
+    fetch(BASE + 'servizi-per-evento/' + evId + '/', {credentials: 'same-origin'})
       .then(function (r) { return r.json(); })
-      .then(function (data) { cache = data.services || []; cb(cache); })
+      .then(function (data) { cachePerEvento[evId] = data.services || []; cb(cachePerEvento[evId]); })
       .catch(function () { alert('Impossibile caricare il catalogo servizi.'); });
   }
 

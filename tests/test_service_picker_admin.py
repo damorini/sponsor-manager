@@ -79,6 +79,20 @@ def test_pagina_contratto_carica_il_js(client, staff, contratto):
     resp = client.get(reverse('admin:contracts_contract_change', args=[contratto.pk]))
     assert resp.status_code == 200
     html = resp.content.decode()
-    assert 'contractline_service_picker_v2.js' in html
+    assert 'contractline_service_picker_v3.js' in html
     # regressione: il ?v=N nel Media veniva URL-encodato -> 404 del file
     assert '%3F' not in html.split('contractline_service_picker')[1][:20]
+
+
+@pytest.mark.django_db
+def test_endpoint_servizi_per_evento(client, staff, contratto):
+    """Alimenta la finestra Catalogo anche in fase di STESURA (contratto non
+    salvato): i servizi si chiedono per EVENTO, non per contratto."""
+    client.force_login(staff)
+    url = reverse('admin:contracts_contract_servizi_evento',
+                  args=[contratto.event_id])
+    resp = client.get(url)
+    assert resp.status_code == 200
+    codici = {s['code'] for s in resp.json()['services']}
+    assert {'WIFI', 'BANNER'} <= codici
+    assert 'ESTRANEO' not in codici

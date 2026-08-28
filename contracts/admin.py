@@ -423,9 +423,9 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
               'admin/js/contractline_variant_filter.js',
-              # nome con _v2: cache-busting via RINOMINA del file (il query
+              # nome con _vN: cache-busting via RINOMINA del file (il query
               # param ?v=N viene URL-encodato da static() e il file va in 404)
-              'admin/js/contractline_service_picker_v2.js',)
+              'admin/js/contractline_service_picker_v3.js',)
 
     fieldsets = (
         (None, {
@@ -617,6 +617,11 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 name='contracts_contract_send_contract',
             ),
             path(
+                'servizi-per-evento/<uuid:event_id>/',
+                self.admin_site.admin_view(self.servizi_per_evento_view),
+                name='contracts_contract_servizi_evento',
+            ),
+            path(
                 '<path:object_id>/servizi-json/',
                 self.admin_site.admin_view(self.servizi_json_view),
                 name='contracts_contract_servizi_json',
@@ -624,17 +629,21 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         ]
         return custom + urls
 
-    def servizi_json_view(self, request, object_id):
-        """Catalogo servizi dell'evento del contratto, in JSON: alimenta la
-        finestra 'Catalogo' accanto alla tendina Servizio delle righe."""
+    def servizi_per_evento_view(self, request, event_id):
+        """Catalogo servizi di un EVENTO in JSON: alimenta la finestra
+        'Catalogo' anche in fase di stesura (contratto non ancora salvato,
+        evento scelto nella tendina del form)."""
         from django.http import JsonResponse
-        from .models import Contract
-        contract = Contract.objects.filter(pk=object_id).first()
-        if contract is None or not contract.event_id:
+        from events.models import Event
+        event = Event.objects.filter(pk=event_id).first()
+        if event is None:
             return JsonResponse({'services': []})
+        return JsonResponse({'services': self._servizi_payload(event)})
+
+    @staticmethod
+    def _servizi_payload(event):
         out = []
-        qs = contract.event.services.all().order_by('category', 'code')
-        for s in qs:
+        for s in event.services.all().order_by('category', 'code'):
             try:
                 categoria = s.get_category_display()
             except Exception:
@@ -647,7 +656,17 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 'category': categoria,
                 'active': bool(s.is_active),
             })
-        return JsonResponse({'services': out})
+        return out
+
+    def servizi_json_view(self, request, object_id):
+        """Catalogo servizi dell'evento del contratto, in JSON (variante per
+        contratto gia' salvato; la finestra usa di norma servizi-per-evento)."""
+        from django.http import JsonResponse
+        from .models import Contract
+        contract = Contract.objects.filter(pk=object_id).first()
+        if contract is None or not contract.event_id:
+            return JsonResponse({'services': []})
+        return JsonResponse({'services': self._servizi_payload(contract.event)})
 
     def _contact_rows(self, contract):
         """Costruisce le righe contatto per la pagina di conferma."""
