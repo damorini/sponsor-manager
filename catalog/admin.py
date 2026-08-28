@@ -11,6 +11,7 @@ from django.contrib.admin.widgets import AutocompleteSelect
 from core.admin_filters import evento_filter, nascondi_archiviati_filter
 from django.urls import reverse
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 
 from core.admin_widgets import TranslatableJSONField, DatalistTextInput
 
@@ -103,7 +104,24 @@ class DeadlineTemplateInline(admin.StackedInline):
         ('deadline_type', 'title'),
         ('submission_kind', 'client_template_file'),
         ('days_before_event', 'reminder_days_before', 'is_active'),
+        ('campi_compilabili',),
     )
+    readonly_fields = ('campi_compilabili',)
+
+    @admin.display(description='Campi da compilare (etichette per il cliente)')
+    def campi_compilabili(self, obj):
+        # Le ETICHETTE dei campi si definiscono nella pagina del template
+        # (inline annidati non esistono in Django): qui il link diretto.
+        if not obj or not obj.pk:
+            return mark_safe(
+                '<em>Salva prima, poi torna qui: comparirà il link per '
+                'definire le etichette dei campi.</em>')
+        n = obj.content_fields.count()
+        url = reverse('admin:catalog_deadlinetemplate_change', args=[obj.pk])
+        return format_html(
+            '{} definite — <a href="{}" target="_blank" rel="noopener">'
+            '✏️ apri per definire le etichette dei campi</a>',
+            n, url)
 
 
 class _AutocompleteServiceByEvento(AutocompleteSelect):

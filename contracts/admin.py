@@ -1372,7 +1372,46 @@ class DeadlineAdmin(admin.ModelAdmin):
                        'file_esempio')
     ordering = ('due_date',)
 
-    actions = ['action_mark_as_received', 'action_sposta_scadenze']
+    actions = ['action_mark_as_received', 'action_sposta_scadenze',
+               'action_aggiorna_campi_da_template']
+
+    @admin.action(description='Aggiorna i campi da compilare dal template')
+    def action_aggiorna_campi_da_template(self, request, queryset):
+        """Ri-fotografa sulle scadenze selezionate i 'campi da compilare'
+        (etichette) definiti sul loro Template scadenza. Serve quando le
+        etichette vengono definite/corrette DOPO che la scadenza e' gia'
+        stata generata dalla firma del contratto."""
+        aggiornate, senza_template = 0, 0
+        for d in queryset:
+            tpl = d.deadline_template
+            if tpl is None:
+                senza_template += 1
+                continue
+            d.submission_kind = getattr(tpl, 'submission_kind', d.submission_kind)
+            d.content_schema = [
+                {
+                    'key': f.key,
+                    'label': f.label,
+                    'type': f.field_type,
+                    'required': f.required,
+                    'help_text': f.help_text,
+                }
+                for f in tpl.content_fields.all().order_by('display_order')
+            ]
+            d.save(update_fields=['submission_kind', 'content_schema', 'updated_at'])
+            aggiornate += 1
+        if aggiornate:
+            self.message_user(
+                request,
+                f"{aggiornate} scadenza/e aggiornate coi campi del template: "
+                "il cliente ora vede le etichette nel portale.",
+                level=messages.SUCCESS)
+        if senza_template:
+            self.message_user(
+                request,
+                f"{senza_template} scadenza/e SENZA template collegato: non aggiornate "
+                "(i campi si definiscono sul Template scadenza del servizio).",
+                level=messages.WARNING)
 
     @admin.action(description='Sposta le scadenze selezionate (proroga)')
     def action_sposta_scadenze(self, request, queryset):
