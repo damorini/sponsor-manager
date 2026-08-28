@@ -95,6 +95,21 @@
     {% trans "Per entrare ti basta fare il primo accesso al portale." %}
   </p>
 
+  {% if request.user.is_authenticated and request.user.is_staff %}
+  <div class="vt-up vt-d3 mb-8 text-left bg-amber-50 border border-amber-300 rounded-2xl p-6">
+    <p class="text-base font-semibold text-amber-900 mb-1">
+      {% trans "Sei collegato come OPERATORE del backoffice" %} ({{ request.user.email }})
+    </p>
+    <p class="text-sm text-amber-800 mb-4">
+      {% trans "Il portale è riservato ai clienti: con un account operatore questa pagina è tutto ciò che vedrai. Per provare il portale come un cliente, esci e accedi con le credenziali di un account cliente (oppure apri il link in una finestra in incognito)." %}
+    </p>
+    <a href="{% url 'portal:logout' %}"
+       class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl">
+      {% trans "Esci da questo account" %} &rarr;
+    </a>
+  </div>
+  {% endif %}
+
   <div class="vt-up vt-d4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
 
     <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm flex flex-col">
