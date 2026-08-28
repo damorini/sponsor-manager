@@ -463,10 +463,15 @@ class Contact(SoftDeleteModel):
             self.first_name = ' '.join(_p[:-1])
         super().save(*args, **kwargs)
         # Login = email: se cambia l'email del contatto, allinea l'utenza collegata.
+        # MAI per gli account del BACKOFFICE (staff/operatori): un contatto
+        # erroneamente collegato a un operatore ne riscriveva email e username.
         if self.portal_user_id and self.email:
             u = self.portal_user
             nuova = self.email.strip()
-            if (u.email or "").strip().lower() != nuova.lower():
+            if (u.is_staff or u.is_superuser
+                    or getattr(u, 'role', 'sponsor') != 'sponsor'):
+                pass
+            elif (u.email or "").strip().lower() != nuova.lower():
                 altri = type(u).objects.filter(
                     email__iexact=nuova).exclude(pk=u.pk).exists()
                 if not altri:
