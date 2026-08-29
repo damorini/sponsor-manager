@@ -348,8 +348,16 @@ def contracts_list_view(request):
         deleted_at__isnull=True,
     ).exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).exclude(contract_kind='addon').exclude(event__status=EventStatus.ARCHIVED).select_related('event', 'stand', 'stand_block')
 
-    # Filtro per evento
+    # Filtro per evento. Il pk e' UUID: un valore malformato nell'URL
+    # (link corrotto, editing a mano) alzerebbe ValidationError -> 500,
+    # quindi lo si ignora come "nessun filtro".
+    import uuid as _uuid
     event_id = request.GET.get('event')
+    if event_id:
+        try:
+            _uuid.UUID(event_id)
+        except (ValueError, TypeError, AttributeError):
+            event_id = None
     if event_id:
         qs = qs.filter(event_id=event_id)
 
@@ -488,7 +496,9 @@ def archived_event_detail_view(request, event_id):
     contracts = list(
         Contract.objects
         .filter(sponsor=sponsor, event=event, deleted_at__isnull=True)
-        .exclude(status=ContractStatus.CANCELLED)
+        # Una BOZZA non e' mai visibile al cliente (stessa regola di
+        # contract_detail/contracts_list): l'archivio non fa eccezione.
+        .exclude(status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED])
         .prefetch_related('lines__service', 'deadlines')
         .order_by('-created_at')
     )
@@ -526,7 +536,10 @@ def event_dashboard_view(request, event_id):
 
     contracts = Contract.objects.filter(
         sponsor=sponsor, event_id=event_id, deleted_at__isnull=True)
-    if not contracts.exists():
+    # L'accesso alla pagina evento richiede almeno un contratto VISIBILE al
+    # cliente: bozze e annullati non contano (coerente con liste e dashboard).
+    if not contracts.exclude(
+            status__in=[ContractStatus.DRAFT, ContractStatus.CANCELLED]).exists():
         return HttpResponseForbidden("Accesso negato.")
 
     has_active_contract = contracts.filter(
@@ -539,8 +552,10 @@ def event_dashboard_view(request, event_id):
     if not has_active_contract:
         pending_contract = (
             contracts.filter(status=ContractStatus.SENT).order_by('-created_at').first()
+            # niente DRAFT nel fallback: il dettaglio di una bozza risponde
+            # 403 al cliente, il link sarebbe un vicolo cieco
             or contracts.filter(
-                status__in=[ContractStatus.DRAFT, ContractStatus.PENDING_PAYMENT]
+                status=ContractStatus.PENDING_PAYMENT
             ).order_by('-created_at').first()
         )
 

@@ -158,7 +158,37 @@ def check_abandoned_carts():
 
         sent_count += 1
 
-    logger.info("check_abandoned_carts: %d recovery email schedulate", sent_count)
+    # SCADENZA DURA: un carrello fermo da oltre 14 giorni viene chiuso e il
+    # suo contratto-bozza ANNULLATO. Le righe di un DRAFT contano come
+    # "impegnate" nel conteggio disponibilita' (quantity_committed): senza
+    # questa pulizia un cliente sparito bloccava per sempre i pezzi
+    # contingentati (es. stand unico) per tutti gli altri sponsor.
+    # Il cliente puo' sempre ricreare il carrello da zero.
+    from contracts.models import Contract, ContractStatus
+    hard_threshold = timezone.now() - timedelta(days=14)
+    scaduti = CartSession.objects.filter(
+        status=CartSessionStatus.ACTIVE,
+        last_activity_at__lt=hard_threshold,
+        contract__deleted_at__isnull=True,
+        contract__status=ContractStatus.DRAFT,
+        contract__contract_kind='addon',
+    ).select_related('contract')
+    expired_count = 0
+    for cart in scaduti:
+        contract = cart.contract
+        contract.status = ContractStatus.CANCELLED
+        contract.cancellation_reason = (
+            'Carrello abbandonato: chiuso automaticamente dopo 14 giorni '
+            'di inattività (i servizi tornano disponibili).')
+        contract.save(update_fields=['status', 'cancellation_reason', 'updated_at'])
+        cart.status = CartSessionStatus.EXPIRED
+        cart.save(update_fields=['status', 'updated_at'])
+        expired_count += 1
+        logger.info("Carrello scaduto e liberato: cart=%s contract=%s",
+                    cart.id, contract.id)
+
+    logger.info("check_abandoned_carts: %d recovery email schedulate, "
+                "%d carrelli scaduti liberati", sent_count, expired_count)
     return sent_count
 
 

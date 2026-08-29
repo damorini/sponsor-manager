@@ -57,7 +57,7 @@
 
         {% if p.payable %}
         <a href="{% url 'portal:paga_scadenza' p.contract_id %}"
-           class="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-700 rounded-full px-3 py-1 transition-colors">
+           class="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-full px-3 py-1 transition-colors">
           <i class="ti ti-credit-card"></i>{% trans "Paga ora" %}
         </a>
         {% endif %}

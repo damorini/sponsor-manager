@@ -34,9 +34,10 @@ class TestWishlistAPI:
         service = Service.objects.create(
             event=event,
             name={'it': 'Test Service', 'en': 'Test Service'},
-            base_price=100.00
+            base_price=100.00,
+            is_self_purchasable=True,  # solo i servizi acquistabili sono wishlistabili
         )
-        
+
         # Aggiungi alla wishlist
         url = reverse('portal:wishlist_add')
         response = client_authenticated.post(

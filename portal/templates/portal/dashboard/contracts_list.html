@@ -39,8 +39,8 @@
           <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completati" %}</option>
         </select>
       </div>
-      <button type="submit" 
-              class="bg-brand-500 hover:bg-brand-700 text-white text-sm font-medium px-4 py-2 rounded-md">
+      <button type="submit"
+              class="bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
         {% trans "Filtra" %}
       </button>
       {% if request.GET.event or request.GET.status %}
@@ -86,11 +86,11 @@
               <!-- Stand assegnato -->
               {% if c.stand %}
               <div class="text-xs text-gray-600 mt-1">
-                📍 Stand {{ c.stand.code }} ({{ c.stand.area_sqm|floatformat:2 }} m²)
+                <i class="ti ti-map-pin"></i> Stand {{ c.stand.code }} ({{ c.stand.area_sqm|floatformat:2 }} m²)
               </div>
               {% elif c.stand_block %}
               <div class="text-xs text-gray-600 mt-1">
-                📍 {% trans "Blocco" %} {{ c.stand_block.code }}
+                <i class="ti ti-map-pin"></i> {% trans "Blocco" %} {{ c.stand_block.code }}
               </div>
               {% endif %}
             </div>
@@ -150,7 +150,11 @@
   
   {% else %}
   <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+    {% if request.GET.event or request.GET.status %}
     <p class="text-gray-500">{% trans "Nessuna domanda di ammissione corrisponde ai filtri selezionati." %}</p>
+    {% else %}
+    <p class="text-gray-500">{% trans "Non risultano ancora documenti. Quando la segreteria preparerà una proposta per la tua azienda, la troverai qui." %}</p>
+    {% endif %}
   </div>
   {% endif %}
 

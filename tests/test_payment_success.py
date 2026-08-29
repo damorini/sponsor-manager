@@ -22,7 +22,20 @@ def addon_cart(db, user_sponsor, sponsor):
     Contact.objects.create(
         portal_user=user_sponsor, sponsor=sponsor,
         full_name='Mario Rossi', email='mario@test.it',
+        roles=['operational'],
     )
+    # anagrafica di fatturazione completa: dal 29/08 le view di avvio
+    # pagamento applicano lo stesso gate acquisti del portale
+    for campo, valore in [
+        ('vat_number', '01234567890'), ('sdi_code', '0000000'),
+        ('pec_email', 'pec@test.it'), ('address_street', 'Via Test 1'),
+        ('address_city', 'Bologna'), ('address_zip', '40100'),
+        ('address_province', 'BO'), ('address_country', 'Italia'),
+        ('website', 'https://test.it'), ('business_description', 'Test'),
+    ]:
+        if not getattr(sponsor, campo, None):
+            setattr(sponsor, campo, valore)
+    sponsor.save()
     event = Event.objects.create(
         name={'it': 'Pay Event', 'en': 'Pay Event'},
         code='PAY', start_date=date(2026, 12, 1), end_date=date(2026, 12, 2),

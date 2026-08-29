@@ -190,8 +190,16 @@ def quote_confirm_view(request, contract_id):
 
     try:
         contract.mark_as_signed()
-    except Exception as e:
-        messages.error(request, f"Impossibile confermare il preventivo: {e}")
+    except Exception:
+        # Il testo dell'eccezione (nomi di tabelle, path, traceback) non deve
+        # arrivare al cliente: log completo per la diagnosi, messaggio neutro.
+        import logging
+        logging.getLogger(__name__).exception(
+            "Errore in mark_as_signed per il contratto %s", contract.pk)
+        messages.error(
+            request,
+            "Impossibile confermare il preventivo per un problema tecnico: "
+            "riprova tra qualche minuto o contatta la segreteria.")
         return redirect('portal:contract_detail', contract_id=contract.id)
 
     # Documenti post-conferma:
@@ -243,11 +251,16 @@ def _compute_payment_due(contract):
             .aggregate(s=Sum('amount_gross'))['s'] or Decimal('0')
         )
 
+    # Una scadenza ESONERATA (WAIVED) equivale a chiusa: non e' "da pagare".
+    # Stessa semantica di build_payment_items (dashboard) - il cliente non deve
+    # vedere "Paga" su un importo che la segreteria ha esonerato.
+    _CHIUSE = (DeadlineStatus.RECEIVED, DeadlineStatus.WAIVED)
+
     # --- acconto ---
     if contract.has_deposit:
         acc_dl = contract.deadlines.filter(deadline_type='pagamento_acconto').first()
         if acc_dl:
-            if acc_dl.status != DeadlineStatus.RECEIVED:
+            if acc_dl.status not in _CHIUSE:
                 paid = _total_paid()
                 return {
                     'type': 'acconto',
@@ -268,14 +281,14 @@ def _compute_payment_due(contract):
     # --- saldo ---
     sal_dl = contract.deadlines.filter(deadline_type='pagamento_saldo').first()
     if sal_dl:
-        if sal_dl.status != DeadlineStatus.RECEIVED:
+        if sal_dl.status not in _CHIUSE:
             paid = _total_paid()
             return {
                 'type': 'saldo',
                 'amount': max(contract.total - paid, Decimal('0')),
                 'due_date': contract.balance_due_date,
             }
-        return None  # saldo RECEIVED → tutto pagato
+        return None  # saldo RECEIVED/esonerato → niente da pagare
     else:
         # nessuna deadline saldo: usa matematica
         paid = _total_paid()
@@ -314,7 +327,7 @@ def paga_scadenza_view(request, contract_id):
 
     if request.method == 'POST' and request.POST.get('metodo') == 'bonifico':
         from contracts.payments import Payment, PaymentMethodChoice, PaymentStatus
-        payment, _ = Payment.objects.get_or_create(
+        payment, created = Payment.objects.get_or_create(
             contract=contract,
             status=PaymentStatus.PENDING,
             payment_method=PaymentMethodChoice.BANK_TRANSFER,
@@ -323,6 +336,11 @@ def paga_scadenza_view(request, contract_id):
                 'currency': 'EUR',
             },
         )
+        # Riuso di un bonifico gia' in attesa (es. registrato per l'acconto):
+        # allinea l'importo a quanto dovuto ORA, come fa il percorso PayPal.
+        if not created and payment.amount_gross != payment_due['amount']:
+            payment.amount_gross = payment_due['amount']
+            payment.save(update_fields=['amount_gross', 'updated_at'])
         messages.success(
             request,
             f"Registrato bonifico in attesa di € {payment_due['amount']:.2f}. "

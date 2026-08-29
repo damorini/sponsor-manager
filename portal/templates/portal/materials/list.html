@@ -1,5 +1,6 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
+{% load portal_labels %}
 
 {% block title %}{% if event_mode %}{% trans "Scadenze" %} · {{ event.get_name }}{% else %}{% trans "Materiali" %} · {{ contract.contract_number }}{% endif %}{% endblock %}
 
@@ -11,8 +12,6 @@
     <a href="{% url 'portal:dashboard' %}" class="hover:text-brand-500">{% trans "In evidenza" %}</a>
     <span class="mx-2">/</span>
     {% if event_mode %}
-    <a href="{% url 'portal:events' %}" class="hover:text-brand-500">{% trans "I miei eventi" %}</a>
-    <span class="mx-2">/</span>
     <span class="text-gray-700">{{ event.get_name }}</span>
     {% else %}
     <a href="{% url 'portal:contract_detail' contract.id %}" class="hover:text-brand-500">
@@ -87,13 +86,13 @@
           <div class="flex items-center gap-2">
             <span class="chev text-gray-400 text-base leading-none">&#9656;</span>
             {% if m.is_completed %}
-              <span class="text-green-600 text-lg">✓</span>
+              <i class="ti ti-circle-check text-green-600 text-lg"></i>
             {% elif m.deadline.is_overdue %}
-              <span class="text-red-600 text-lg">⚠</span>
+              <i class="ti ti-alert-triangle text-red-600 text-lg"></i>
             {% else %}
-              <span class="text-gray-400 text-lg">○</span>
+              <i class="ti ti-circle text-gray-400 text-lg"></i>
             {% endif %}
-            <h3 class="font-semibold text-gray-900">{{ m.deadline.title }}</h3>
+            <h3 class="font-semibold text-gray-900">{{ m.deadline.title|deadline_label }}</h3>
           </div>
           {% if m.deadline.description %}
           <p class="mt-1 text-sm text-gray-600 ml-7">
@@ -103,7 +102,7 @@
           {% if m.template_file_name %}
           <div class="mt-3 ml-7 flex items-center flex-wrap gap-x-3 gap-y-1">
             <a href="{% url 'portal:deadline_template_download' m.deadline.id %}"
-               class="inline-flex items-center gap-2 bg-slate-600 hover:bg-slate-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
+               class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-medium px-5 py-2 rounded-lg text-sm transition-colors">
               <i class="ti ti-download text-base"></i>
               {% trans "Scarica il modello da compilare" %}
             </a>
@@ -188,7 +187,7 @@
       {% if m.is_physical and not m.is_completed %}
       <div class="px-5 py-4 bg-amber-50 border-t border-amber-200">
         <div class="flex items-start gap-3">
-          <span class="text-amber-500 text-xl mt-0.5">📦</span>
+          <i class="ti ti-package text-amber-500 text-xl mt-0.5"></i>
           <div>
             <h4 class="text-sm font-semibold text-amber-900 mb-1">{% trans "Materiale fisico da spedire" %}</h4>
             {% if m.shipping_instructions %}
@@ -281,13 +280,13 @@
       <div class="px-5 py-4 bg-gray-50 flex flex-wrap gap-3">
         {% if m.needs_file %}
         <button type="submit" form="upload-form-{{ m.deadline.id }}"
-                class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
+                class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
           {% trans "Carica file" %}
         </button>
         {% endif %}
         {% if m.needs_content and not m.content_locked %}
         <button type="submit" form="content-form-{{ m.deadline.id }}"
-                class="bg-brand-500 hover:bg-brand-700 text-white font-medium px-5 py-2 rounded-md text-sm transition-colors">
+                class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
           {% trans "Salva i dati" %}
         </button>
         {% endif %}

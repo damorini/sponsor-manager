@@ -42,7 +42,9 @@ DEFAULT_MAX_UPLOAD_SIZE_MB = 20
 
 DEFAULT_ALLOWED_MIME_TYPES = [
     'application/pdf',
-    'image/jpeg', 'image/png', 'image/webp', 'image/svg+xml',
+    # niente image/svg+xml: un SVG puo' contenere <script> (stored XSS se
+    # servito inline); per i vettoriali restano .ai/.eps/.pdf
+    'image/jpeg', 'image/png', 'image/webp',
     'application/zip',
     'application/illustrator', 'application/postscript',
     'application/vnd.ms-excel',
@@ -56,7 +58,7 @@ DEFAULT_ALLOWED_MIME_TYPES = [
 # il file viene salvato). Un .html "spacciato" per application/pdf viene
 # rifiutato qui.
 ALLOWED_UPLOAD_EXTENSIONS = {
-    '.pdf', '.jpg', '.jpeg', '.png', '.webp', '.svg',
+    '.pdf', '.jpg', '.jpeg', '.png', '.webp',
     '.zip', '.ai', '.eps',
     '.xls', '.xlsx', '.doc', '.docx',
 }
@@ -95,6 +97,7 @@ def _get_materials_for_contract(contract):
             content_type=deadline_ct,
             object_id=d.id,
             deleted_at__isnull=True,
+            is_visible_to_sponsor=True,
         ).order_by('-created_at')
 
         content_fields = []
@@ -214,13 +217,25 @@ def material_upload_view(request, deadline_id):
     from contracts.models import Deadline, DeadlineStatus
     from shared.models import Document
 
+    # select_for_update: serializza i doppi submit (doppio click) - senza
+    # lock, due POST paralleli superavano entrambi i controlli qui sotto e
+    # creavano documenti e notifiche duplicate. NB: niente select_related su
+    # deadline_template (FK nullable -> outer join, FOR UPDATE lo vieta).
     deadline = get_object_or_404(
-        Deadline.objects.select_related('contract', 'deadline_template'),
+        Deadline.objects.select_for_update(of=('self',))
+        .select_related('contract'),
         id=deadline_id,
     )
 
     if deadline.contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
+
+    # Il contratto deve essere in uno stato in cui il cliente lavora davvero:
+    # su bozze e annullati niente upload (le deadline restano dai vecchi stati).
+    from contracts.models import ContractStatus as _CS
+    if deadline.contract.status in (_CS.DRAFT, _CS.CANCELLED):
+        return HttpResponseForbidden(
+            "Questo contratto non accetta più materiali.")
 
     if deadline.status == DeadlineStatus.WAIVED:
         messages.warning(
@@ -404,6 +419,10 @@ def material_download_view(request, document_id):
     if deadline.contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
 
+    # Documenti marcati "solo interno" dalla segreteria: mai al cliente.
+    if not document.is_visible_to_sponsor:
+        raise Http404()
+
     relative_path = document.storage_url.replace(settings.MEDIA_URL, '')
     if not default_storage.exists(relative_path):
         raise Http404("File non trovato sul server.")
@@ -478,28 +497,13 @@ def material_delete_view(request, document_id):
     if deadline.contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
 
-    # Modifiche bloccate dal portale: i file inviati si rimuovono solo dalla segreteria (admin).
+    # Modifiche bloccate dal portale: i file inviati si rimuovono solo dalla
+    # segreteria (admin). (Il vecchio codice di cancellazione e' stato rimosso:
+    # era irraggiungibile e avrebbe potuto riattivarsi per sbaglio.)
     messages.warning(
         request,
         "Per rimuovere un file inviato, contatta la segreteria."
     )
-    return redirect('portal:materials_list', contract_id=deadline.contract_id)
-
-    document.deleted_at = timezone.now()
-    document.save(update_fields=['deleted_at', 'updated_at'])
-
-    other_docs = Document.objects.filter(
-        content_type=deadline_ct,
-        object_id=deadline.id,
-        deleted_at__isnull=True,
-    ).exclude(id=document.id)
-
-    if not other_docs.exists() and deadline.status == DeadlineStatus.RECEIVED:
-        deadline.status = DeadlineStatus.PENDING
-        deadline.received_at = None
-        deadline.save(update_fields=['status', 'received_at', 'updated_at'])
-
-    messages.success(request, f"File '{document.file_name}' rimosso.")
     return redirect('portal:materials_list', contract_id=deadline.contract_id)
 
 
@@ -520,6 +524,10 @@ def material_content_view(request, deadline_id):
     )
     if deadline.contract.sponsor_id != request.sponsor.id:
         return HttpResponseForbidden("Accesso negato.")
+    # Niente compilazioni su contratti in bozza o annullati (vedi upload).
+    from contracts.models import ContractStatus as _CS
+    if deadline.contract.status in (_CS.DRAFT, _CS.CANCELLED):
+        return HttpResponseForbidden("Questo contratto non accetta più materiali.")
     if deadline.status == DeadlineStatus.WAIVED:
         messages.warning(request, "Questa richiesta e' stata esonerata.")
         return redirect('portal:materials_list', contract_id=deadline.contract_id)
@@ -580,6 +588,7 @@ def _materials_from_deadlines(deadlines):
             content_type=deadline_ct,
             object_id=d.id,
             deleted_at__isnull=True,
+            is_visible_to_sponsor=True,
         ).order_by('-created_at')
 
         content_fields = []

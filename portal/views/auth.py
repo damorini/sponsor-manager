@@ -41,6 +41,12 @@ def login_view(request):
         return redirect('portal:dashboard')
 
     next_url = request.GET.get('next', '') or request.POST.get('next', '')
+    # Anti open-redirect: accetta solo destinazioni interne. startswith('/')
+    # lasciava passare gli URL protocol-relative (//sito-esterno.com).
+    from django.utils.http import url_has_allowed_host_and_scheme
+    if next_url and not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}):
+        next_url = ''
 
     if request.method == 'POST':
         email = request.POST.get('username', '').strip().lower()
@@ -82,13 +88,13 @@ def login_view(request):
                 request.session['active_contact_id'] = str(contacts[0].pk)
             else:
                 url = reverse('portal:scegli_azienda')
-                if next_url and next_url.startswith('/'):
+                if next_url:
                     from urllib.parse import quote
                     url += '?next=' + quote(next_url)
                 return redirect(url)
 
-            # Redirect a next o dashboard
-            if next_url and next_url.startswith('/'):
+            # Redirect a next (gia' validato sopra) o dashboard
+            if next_url:
                 return redirect(next_url)
             return redirect('portal:dashboard')
         else:
@@ -257,6 +263,11 @@ def scegli_azienda_view(request):
         return accesso_quasi_fatto(request)
 
     next_url = request.POST.get('next', '') or request.GET.get('next', '')
+    # Anti open-redirect (vedi login_view): solo destinazioni interne.
+    from django.utils.http import url_has_allowed_host_and_scheme
+    if next_url and not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}):
+        next_url = ''
 
     if request.method == 'POST':
         cid = (request.POST.get('contact_id') or '').strip()
@@ -265,7 +276,7 @@ def scegli_azienda_view(request):
             request.session['active_contact_id'] = str(scelto.pk)
             logger.info("Azienda attiva scelta: user=%s sponsor=%s",
                         request.user.id, scelto.sponsor_id)
-            if next_url and next_url.startswith('/'):
+            if next_url:
                 return redirect(next_url)
             return redirect('portal:dashboard')
         messages.error(request, "Scelta non valida, riprova.")
@@ -318,7 +329,10 @@ def impersonate_stop(request):
     try:
         staff = User.objects.get(pk=staff_pk, is_staff=True)
     except User.DoesNotExist:
-        return redirect('portal:logout')
+        # logout_view e' POST-only: un redirect GET li' darebbe 405 e
+        # l'operatore resterebbe intrappolato nella sessione cliente.
+        django_logout(request)
+        return redirect('portal:login')
     staff.backend = 'django.contrib.auth.backends.ModelBackend'
     dj_login(request, staff)
     return redirect('/admin/sponsors/sponsor/')

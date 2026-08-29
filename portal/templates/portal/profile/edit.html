@@ -150,6 +150,7 @@
     <h2 class="text-lg font-medium text-gray-900 mb-4">{% trans "Altri contatti aziendali" %}</h2>
 
     {% if contatti %}
+    <div class="overflow-x-auto">
     <table class="w-full text-sm mb-6">
       <thead>
         <tr class="text-left text-gray-500 border-b">
@@ -201,7 +202,7 @@
             {% if c.is_self %}
               <span class="text-xs text-gray-400">{% trans "tu" %}</span>
             {% else %}
-            <form method="post" onsubmit="return confirm('Rimuovere {{ c.full_name|escapejs }} dai contatti?');" class="inline">
+            <form method="post" onsubmit="return confirm('{% trans "Rimuovere" %} {{ c.full_name|escapejs }} {% trans "dai contatti?" %}');" class="inline">
               {% csrf_token %}
               <input type="hidden" name="azione" value="remove_contact">
               <input type="hidden" name="contact_id" value="{{ c.id }}">
@@ -296,11 +297,12 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
     {% else %}
     <p class="text-gray-500 mb-6">{% trans "Nessun altro contatto registrato." %}</p>
     {% endif %}
 
-    <h3 class="text-md font-medium text-gray-800 mb-3">{% trans "Aggiungi un contatto" %}</h3>
+    <h3 class="text-lg font-medium text-gray-800 mb-3">{% trans "Aggiungi un contatto" %}</h3>
     <form method="post" class="space-y-4">
       {% csrf_token %}
       <input type="hidden" name="azione" value="add_contact">

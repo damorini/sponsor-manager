@@ -17,7 +17,8 @@ import logging
 from datetime import date, timedelta
 
 from django.http import HttpResponseForbidden
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
 
 from portal.views.dashboard import sponsor_required
 
@@ -105,9 +106,12 @@ def catalog_event_view(request, event_id):
     sponsor = request.sponsor
     event = get_object_or_404(Event, id=event_id)
 
-    # Evento archiviato: non acquistabile.
+    # Evento archiviato o gia' concluso: non acquistabile.
     if not event.is_active:
         return HttpResponseForbidden("Questo evento è archiviato: non è più possibile acquistare.")
+    if event.end_date and event.end_date < date.today():
+        messages.info(request, "Questo evento si è già concluso: non è più possibile acquistare.")
+        return redirect('portal:catalog')
 
     # Verifica che lo sponsor abbia un contratto attivo per questo evento
     has_contract = Contract.objects.filter(
@@ -143,9 +147,12 @@ def service_detail_view(request, service_id):
         is_self_purchasable=True,
     )
 
-    # Evento archiviato: non acquistabile.
+    # Evento archiviato o gia' concluso: non acquistabile.
     if not service.event.is_active:
         return HttpResponseForbidden("Questo evento è archiviato: non è più possibile acquistare.")
+    if service.event.end_date and service.event.end_date < date.today():
+        messages.info(request, "Questo evento si è già concluso: non è più possibile acquistare.")
+        return redirect('portal:catalog')
 
     # Verifica accesso (sponsor deve avere contratto attivo per l'evento)
     has_contract = Contract.objects.filter(

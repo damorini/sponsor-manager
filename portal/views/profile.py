@@ -192,6 +192,14 @@ def profile_view(request):
                 return redirect('portal:profile')
             ruoli_validi = [r for r, _ in CONTACT_ROLE_CHOICES]
             ruoli = [r for r in request.POST.getlist('mod_roles') if r in ruoli_validi]
+            # Contact.save() ricompone SEMPRE full_name da Nome+Cognome quando
+            # sono valorizzati: scrivere solo full_name veniva sovrascritto in
+            # silenzio (il cliente correggeva il nome e restava quello vecchio).
+            # Si aggiornano quindi i campi REALI, con la stessa regola del
+            # modello (ultima parola = cognome).
+            parti = nome.split()
+            target.first_name = ' '.join(parti[:-1])
+            target.last_name = parti[-1] if parti else ''
             target.full_name = nome
             target.email = email
             target.phone = request.POST.get('mod_phone', '').strip()

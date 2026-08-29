@@ -25,7 +25,7 @@
       <a href="{% url 'portal:contract_detail' contract.id %}" class="px-5 py-2.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100 transition-colors">{% trans "Annulla" %}</a>
       <form method="post" action="{% url 'portal:quote_confirm' contract.id %}">
         {% csrf_token %}
-        <button type="submit" class="inline-flex items-center bg-brand-500 hover:bg-brand-700 text-white font-medium px-6 py-2.5 rounded-md transition-colors"><i class="ti ti-check mr-1"></i>{% trans "Accetta preventivo" %}</button>
+        <button type="submit" class="inline-flex items-center bg-brand-600 hover:bg-brand-700 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors"><i class="ti ti-check mr-1"></i>{% trans "Accetta preventivo" %}</button>
       </form>
     </div>
   </div>

@@ -65,6 +65,10 @@ def protected_document_media(request, subpath):
         raise Http404
 
     if not request.user.is_staff:
+        # Documenti marcati "solo interno" dalla segreteria: mai al cliente,
+        # nemmeno se il path e' suo (stesso criterio delle liste del portale).
+        if not doc.is_visible_to_sponsor:
+            raise Http404
         sponsor_id = _document_sponsor_id(doc)
         if sponsor_id is None or sponsor_id not in _sponsor_ids_for_user(request.user):
             raise Http404

@@ -126,7 +126,7 @@
     <a href="{% url 'portal:events_archived' %}"
        class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'events_archived' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-archive text-base shrink-0"></i>{% trans "Archivio eventi" %}</a>
     <a href="{% url 'portal:contracts_list' %}"
-       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-base shrink-0"></i>{% trans "I miei documenti" %}</a>
+       class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'contracts_list' or un == 'contract_detail' or un == 'materials_list' or un == 'event_materials' or un == 'paga_scadenza' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-file-text text-base shrink-0"></i>{% trans "I miei documenti" %}</a>
     <a href="{% url 'portal:payments' %}"
        class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'payments' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-cash text-base shrink-0"></i>{% trans "Pagamenti" %}</a>
     <a href="{% url 'portal:purchases' %}"
@@ -142,7 +142,7 @@
        class="flex items-center gap-3 px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'catalog' or un == 'catalog_event' or un == 'service_detail' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}"><i class="ti ti-building-store text-base shrink-0"></i>{% trans "Acquista servizi" %}</a>
     {% endif %}
     <a href="{% url 'portal:cart_view' %}"
-       class="flex items-center justify-between px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'cart_view' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}">
+       class="flex items-center justify-between px-3.5 py-1.5 rounded-lg font-medium text-sm {% if un == 'cart_view' or un == 'cart_checkout' %}bg-white text-brand-700 shadow-soft{% else %}text-white/70 hover:bg-white/10 hover:text-white transition-colors{% endif %}">
       <span class="flex items-center gap-3"><i class="ti ti-shopping-cart text-base shrink-0"></i>{% trans "Carrello" %}</span>
       {% if cart_count and cart_count > 0 %}
       <span class="bg-white text-brand-700 text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center">{{ cart_count }}</span>
@@ -165,7 +165,7 @@
         {% csrf_token %}
         <button type="submit" class="flex items-center gap-2 text-sm text-green-200 hover:text-white font-medium"><i class="ti ti-logout text-lg"></i>{% trans "Esci" %}</button>
       </form>
-      <a href="https://www.valet.it/privacy.html" target="_blank" rel="noopener" class="text-xs text-white/50 hover:text-white">{% trans "Privacy" %}</a>
+      <a href="{% url 'portal:privacy_policy' %}" class="text-xs text-white/50 hover:text-white">{% trans "Privacy" %}</a>
     </div>
   </div>
 </aside>
@@ -198,7 +198,7 @@
   {% if anagrafica_da_completare and request.resolver_match.url_name != 'profile' %}
   <div class="max-w-6xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-4">
     <div class="bg-amber-50 border-l-4 border-amber-400 text-amber-800 rounded-md px-4 py-3 text-sm flex flex-wrap items-center gap-x-2 gap-y-1">
-      <span><span class="font-semibold">Completa l'anagrafica</span> della tua azienda per poter acquistare servizi. Campi mancanti: {{ anagrafica_da_completare|join:", " }}.</span>
+      <span><span class="font-semibold">{% trans "Completa l'anagrafica" %}</span> {% trans "della tua azienda per poter acquistare servizi. Campi mancanti:" %} {{ anagrafica_da_completare|join:", " }}.</span>
       <a href="{% url 'portal:profile' %}" class="underline font-semibold whitespace-nowrap">{% trans "Vai a I miei dati" %} &rarr;</a>
     </div>
   </div>
@@ -312,7 +312,7 @@
         btn.style.opacity = '.75';
         btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:.5rem;">'
           + '<span style="width:1rem;height:1rem;border:2px solid currentColor;border-right-color:transparent;border-radius:9999px;display:inline-block;animation:pwspin .6s linear infinite;"></span>'
-          + 'Attendere…</span>';
+          + '{% trans "Attendere" %}…</span>';
       }
       setTimeout(function () {
         form.dataset.submitting = '';

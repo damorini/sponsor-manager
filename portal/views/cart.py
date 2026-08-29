@@ -52,23 +52,13 @@ def _get_or_create_cart_contract(sponsor, event, contact):
     from contracts.payments import CartSession, CartSessionStatus
 
     with transaction.atomic():
-        # Lock: nessun altro processo puo' SELECT/UPDATE questa riga
-        # fino al termine della transazione.
-        existing_cart = CartSession.objects.select_for_update().filter(
-            contract__sponsor=sponsor,
-            contract__event=event,
-            contract__contract_kind=ContractKind.ADDON,
-            contract__status=ContractStatus.DRAFT,
-            status=CartSessionStatus.ACTIVE,
-        ).select_related('contract').first()
-
-        if existing_cart:
-            existing_cart.last_activity_at = timezone.now()
-            existing_cart.save(update_fields=['last_activity_at', 'updated_at'])
-            return existing_cart.contract, existing_cart, False
-
-        # Trova il contratto principale (per parent_contract)
-        parent = Contract.objects.filter(
+        # Lock ANTI-DOPPIO-CARRELLO: select_for_update blocca solo righe
+        # ESISTENTI, quindi quando il carrello non c'e' ancora due richieste
+        # simultanee lo creerebbero entrambe. Si serializza sul contratto
+        # MAIN (che esiste sempre, altrimenti niente carrello): il secondo
+        # processo attende il lock e al risveglio TROVA il carrello creato
+        # dal primo.
+        parent = Contract.objects.select_for_update().filter(
             sponsor=sponsor,
             event=event,
             status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
@@ -81,6 +71,19 @@ def _get_or_create_cart_contract(sponsor, event, contact):
                 "Nessun contratto standard attivo per questo evento. "
                 "Impossibile creare carrello addon."
             )
+
+        existing_cart = CartSession.objects.select_for_update().filter(
+            contract__sponsor=sponsor,
+            contract__event=event,
+            contract__contract_kind=ContractKind.ADDON,
+            contract__status=ContractStatus.DRAFT,
+            status=CartSessionStatus.ACTIVE,
+        ).select_related('contract').first()
+
+        if existing_cart:
+            existing_cart.last_activity_at = timezone.now()
+            existing_cart.save(update_fields=['last_activity_at', 'updated_at'])
+            return existing_cart.contract, existing_cart, False
 
         # Crea nuovo Contract draft + CartSession
         contract = Contract.objects.create(
@@ -131,7 +134,9 @@ def cart_view(request):
 
         lines_data = []
         for line in contract.lines.all():
-            cutoff = line.service.self_purchase_cutoff_days
+            # riga senza servizio (aggiunta a mano da admin): niente cutoff
+            cutoff = (line.service.self_purchase_cutoff_days
+                      if line.service_id else None)
             if cutoff is None:
                 is_valid = True
                 cutoff_remaining = None
@@ -191,9 +196,14 @@ def cart_add_view(request):
     )
     event = service.event
 
-    # Evento archiviato: niente acquisti.
+    # Evento archiviato O gia' concluso: niente acquisti. (Il filtro sulla
+    # data esisteva solo nella lista catalogo: via URL diretto o dai link
+    # delle email di recovery si poteva ancora comprare a evento finito.)
     if not event.is_active:
         messages.error(request, "Questo evento è archiviato: non è più possibile acquistare.")
+        return redirect('portal:catalog')
+    if event.end_date and event.end_date < date.today():
+        messages.error(request, "Questo evento si è già concluso: non è più possibile acquistare.")
         return redirect('portal:catalog')
 
     # Se il servizio ha varianti attive, una va scelta
@@ -224,7 +234,13 @@ def cart_add_view(request):
         messages.error(request, str(e))
         return redirect('portal:catalog')
 
-    existing_line = contract.lines.filter(service=service, service_variant=variant).first()
+    # NB: escludere le righe INCLUSE (accessori a 0 EUR, marker '[incluso:'):
+    # senza l'exclude, comprare un servizio che e' anche "incluso" di un altro
+    # gia' nel carrello incrementava la riga omaggio -> acquisto a 0 EUR.
+    existing_line = (contract.lines
+                     .filter(service=service, service_variant=variant)
+                     .exclude(notes__contains='[incluso:')
+                     .first())
 
     # Disponibilita': applica SIA il limite del servizio SIA quello della variante
     limiti = []
@@ -236,6 +252,10 @@ def cart_add_view(request):
         avail_var = variant.quantity_available(exclude_contract_id=contract.id)
         in_cart_var = existing_line.quantity if existing_line else 0
         limiti.append(avail_var - in_cart_var)
+    # Quantita' massima per riga impostata dall'admin sul servizio
+    if service.max_quantity is not None:
+        gia_in_riga = existing_line.quantity if existing_line else 0
+        limiti.append(service.max_quantity - gia_in_riga)
     if limiti:
         max_addable = max(0, min(limiti))
         if max_addable <= 0:
@@ -372,6 +392,39 @@ def cart_update_quantity_view(request, line_id):
         new_quantity = 1
     new_quantity = max(1, min(new_quantity, 100))
 
+    # Stessi limiti di cart_add: disponibilita' del servizio/variante e
+    # quantita' massima per riga. Senza questo blocco, dalla pagina carrello
+    # si scavalcava il controllo scorte (pagando pezzi inesistenti).
+    from django.db.models import Sum as _Sum
+    srv = line.service
+    var = line.service_variant
+    limiti = []
+    if srv is not None and srv.total_available is not None:
+        av = srv.quantity_available(exclude_contract_id=line.contract_id)
+        altri = (line.contract.lines.filter(service=srv).exclude(id=line.id)
+                 .aggregate(s=_Sum('quantity'))['s'] or 0)
+        limiti.append(av - altri)
+    if var is not None and var.total_available is not None:
+        avv = var.quantity_available(exclude_contract_id=line.contract_id)
+        altriv = (line.contract.lines.filter(service=srv, service_variant=var)
+                  .exclude(id=line.id).aggregate(s=_Sum('quantity'))['s'] or 0)
+        limiti.append(avv - altriv)
+    if srv is not None and srv.max_quantity is not None:
+        limiti.append(srv.max_quantity)
+    if limiti:
+        massimo = max(0, min(limiti))
+        if massimo < 1:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False,
+                                     'error': 'Servizio non più disponibile.'},
+                                    status=400)
+            messages.error(request, "Servizio non più disponibile in questa quantità.")
+            return redirect('portal:cart_view')
+        if new_quantity > massimo:
+            new_quantity = massimo
+            messages.warning(
+                request, f"Disponibili solo {massimo}; ho adeguato la quantità.")
+
     line.quantity = new_quantity
     line.save()  # save() ricalcola i totali della riga e del contratto
 
@@ -417,9 +470,16 @@ def cart_checkout_view(request, contract_id):
     today = date.today()
     days_to_event = (contract.event.start_date - today).days
 
+    # Evento gia' concluso: il carrello non e' piu' pagabile.
+    if contract.event.end_date and contract.event.end_date < today:
+        messages.error(request,
+                       "Questo evento si è già concluso: il carrello non è più pagabile.")
+        return redirect('portal:cart_view')
+
     invalid_lines = []
     for line in contract.lines.all():
-        cutoff = line.service.self_purchase_cutoff_days
+        cutoff = (line.service.self_purchase_cutoff_days
+                  if line.service_id else None)
         if cutoff is not None and days_to_event < cutoff:
             invalid_lines.append(line)
 

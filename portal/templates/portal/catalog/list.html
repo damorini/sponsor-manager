@@ -82,7 +82,7 @@
             </button>
             {% elif service.is_within_cutoff %}
             <a href="{% url 'portal:service_detail' service.id %}" 
-               class="block text-center bg-brand-500 hover:bg-brand-700 text-white text-sm font-medium py-2 rounded transition-colors">
+               class="block text-center bg-brand-600 hover:bg-brand-700 text-white text-sm font-semibold py-2 rounded-lg transition-colors">
               {% trans "Vedi dettaglio" %}
             </a>
             {% else %}

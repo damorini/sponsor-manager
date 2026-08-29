@@ -22,14 +22,32 @@ def wishlist_view(request):
         wishlist = request.user.wishlist_obj
     except Wishlist.DoesNotExist:
         wishlist = Wishlist.objects.create(user=request.user)
-    
-    services = wishlist.services.all().values(
-        'id', 'name', 'description', 'base_price', 'category'
+
+    # Stesso filtro della pagina HTML (solo eventi con contratto non annullato)
+    # e testi tradotti: name/description sono JSONField multilingua, il dict
+    # grezzo non va mai esposto.
+    from contracts.models import Contract, ContractStatus
+    eventi_validi = set(
+        Contract.objects
+        .filter(sponsor=request.sponsor, deleted_at__isnull=True)
+        .exclude(status=ContractStatus.CANCELLED)
+        .values_list('event_id', flat=True)
     )
-    
+    servizi = [
+        {
+            'id': str(s.id),
+            'name': s.translated('name'),
+            'description': s.translated('description'),
+            'base_price': str(s.base_price),
+            'category': s.category,
+        }
+        for s in wishlist.services.all()
+        if s.event_id in eventi_validi
+    ]
+
     return JsonResponse({
-        'count': wishlist.services.count(),
-        'services': list(services)
+        'count': len(servizi),
+        'services': servizi,
     })
 
 
@@ -52,10 +70,11 @@ def wishlist_add_api(request):
         return JsonResponse({'error': 'service_id required'}, status=400)
     
     try:
-        service = Service.objects.get(id=service_id)
+        service = Service.objects.get(id=service_id, is_active=True,
+                                      is_self_purchasable=True)
     except Service.DoesNotExist:
         return JsonResponse({'error': 'Service not found'}, status=404)
-    
+
     wishlist, _ = Wishlist.objects.get_or_create(user=request.user)
     wishlist.add_service(service)
     

@@ -27,6 +27,84 @@ from django.views.decorators.http import require_POST, require_http_methods
 logger = logging.getLogger(__name__)
 
 
+def _gate_acquisti(request, contract):
+    """Replica, per le view di AVVIO pagamento (decorate solo con
+    login_required), il gate acquisti di sponsor_required: serve un contatto
+    OPERATIVO e l'anagrafica di fatturazione completa. Ritorna un redirect
+    oppure None. NON va applicato alle view di ritorno/capture: un pagamento
+    gia' avviato su PayPal deve poter essere completato comunque."""
+    if request.session.get('impersonator_id'):
+        return None  # anteprima operatore: nessun blocco
+    sponsor = contract.sponsor
+    if not sponsor.contacts.filter(roles__contains=['operational']).exists():
+        messages.warning(
+            request,
+            "Per acquistare servizi indica prima almeno un contatto "
+            "OPERATIVO nella tua anagrafica.")
+        return redirect('portal:profile')
+    mancanti = sponsor.campi_anagrafica_mancanti()
+    if mancanti:
+        messages.warning(
+            request,
+            "Per completare il pagamento serve prima l'anagrafica di "
+            "fatturazione completa. Campi mancanti: " + ", ".join(mancanti) + ".")
+        return redirect('portal:profile')
+    return None
+
+
+def _blocco_carrello_non_valido(request, contract):
+    """Ricontrollo finale sui CARRELLI (ADDON in DRAFT) prima di avviare un
+    pagamento: evento non concluso, cutoff e disponibilita' delle righe.
+    Le pagine carrello/checkout fanno gia' questi controlli, ma una tab
+    rimasta aperta (o un POST diretto) li scavalcherebbe pagando pezzi
+    scaduti o inesistenti. Ritorna un redirect oppure None."""
+    from datetime import date
+    from django.db.models import Sum
+    from contracts.models import ContractStatus
+
+    if contract.status != ContractStatus.DRAFT:
+        return None
+    event = contract.event
+    today = date.today()
+    if event.end_date and event.end_date < today:
+        messages.error(
+            request,
+            "Questo evento si è già concluso: il carrello non è più pagabile.")
+        return redirect('portal:cart_view')
+    days_to_event = (event.start_date - today).days
+    for line in contract.lines.all():
+        srv = line.service
+        if srv is None:
+            continue
+        cutoff = srv.self_purchase_cutoff_days
+        if cutoff is not None and days_to_event < cutoff:
+            messages.error(
+                request,
+                "Alcuni servizi nel carrello sono scaduti: ricontrolla il carrello.")
+            return redirect('portal:cart_view')
+        limiti = []
+        if srv.total_available is not None:
+            av = srv.quantity_available(exclude_contract_id=contract.id)
+            altri = (contract.lines.filter(service=srv).exclude(id=line.id)
+                     .aggregate(s=Sum('quantity'))['s'] or 0)
+            limiti.append(av - altri)
+        var = line.service_variant
+        if var is not None and var.total_available is not None:
+            avv = var.quantity_available(exclude_contract_id=contract.id)
+            altriv = (contract.lines
+                      .filter(service=srv, service_variant=var)
+                      .exclude(id=line.id)
+                      .aggregate(s=Sum('quantity'))['s'] or 0)
+            limiti.append(avv - altriv)
+        if limiti and line.quantity > max(0, min(limiti)):
+            messages.error(
+                request,
+                "Alcuni servizi nel carrello superano la disponibilità: "
+                "ricontrolla il carrello prima di pagare.")
+            return redirect('portal:cart_view')
+    return None
+
+
 # ============================================================================
 # Avvio checkout PayPal Standard (redirect su paypal.com)
 # ============================================================================
@@ -73,6 +151,12 @@ def start_paypal_checkout(request, contract_id):
     if contract.status not in _payable_statuses:
         messages.error(request, "Questo contratto non è più pagabile.")
         return redirect('portal:contract_detail', contract_id=contract.id)
+
+    # Gate anagrafica + validita' finale del carrello (vedi helper)
+    blocco = _gate_acquisti(request, contract) or \
+        _blocco_carrello_non_valido(request, contract)
+    if blocco is not None:
+        return blocco
 
     # Se draft, passa a pending_payment
     if contract.status == ContractStatus.DRAFT:
@@ -245,6 +329,12 @@ def card_checkout_page(request, contract_id):
     if contract.status not in _payable_statuses:
         messages.error(request, "Contratto non più pagabile.")
         return redirect('portal:contract_detail', contract_id=contract.id)
+
+    # Gate anagrafica + validita' finale del carrello (vedi helper)
+    blocco = _gate_acquisti(request, contract) or \
+        _blocco_carrello_non_valido(request, contract)
+    if blocco is not None:
+        return blocco
 
     # Passa a pending_payment se necessario
     if contract.status == ContractStatus.DRAFT:
@@ -602,6 +692,12 @@ def bank_transfer_order(request, contract_id):
     if not contract.lines.exists():
         messages.warning(request, "Il carrello \u00e8 vuoto.")
         return redirect('portal:cart_view')
+
+    # Gate anagrafica + validita' finale del carrello (vedi helper)
+    blocco = _gate_acquisti(request, contract) or \
+        _blocco_carrello_non_valido(request, contract)
+    if blocco is not None:
+        return blocco
 
     if contract.status == ContractStatus.DRAFT:
         contract.mark_as_pending_payment()
