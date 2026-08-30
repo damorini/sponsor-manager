@@ -16,6 +16,7 @@ from django.db import models
 from django.utils.text import slugify
 
 from core.models import TimeStampedModel
+from core.translatable import TranslatableMixin
 
 
 class EventType(models.TextChoices):
@@ -42,10 +43,15 @@ def default_supported_languages():
     return ['it']
 
 
-class Event(TimeStampedModel):
+class Event(TranslatableMixin, TimeStampedModel):
     """
     Un congresso o evento. Tutto orbita attorno a questa entità.
     """
+    # Nome e descrizione si auto-traducono IT->EN al salvataggio (come per
+    # servizi e stand): senza questa dichiarazione il segnale di
+    # core/signals.py saltava gli eventi e l'inglese restava vuoto.
+    TRANSLATABLE_FIELDS = ['name', 'description']
+
     slug = models.SlugField(
         max_length=100,
         unique=True,
