@@ -85,6 +85,20 @@ def test_azione_rapida_ricevuta_ed_esonera(client, staff, contratto):
 
 
 @pytest.mark.django_db
+def test_chips_scorciatoie_nelle_liste(client, staff, contratto):
+    """Le scorciatoie 'Cose da fare' sono visibili sopra le liste, non solo
+    nel pannello filtri (che parte chiuso)."""
+    client.force_login(staff)
+    html = client.get(reverse('admin:contracts_contract_changelist')).content.decode()
+    assert 'vt-chips' in html
+    assert '?todo=da_inviare' in html
+    assert '?trash=cestino' in html
+    html = client.get(reverse('admin:contracts_deadline_changelist')).content.decode()
+    assert 'vt-chips' in html
+    assert '?status__exact=overdue' in html
+
+
+@pytest.mark.django_db
 def test_lista_scadenze_mostra_azioni_rapide(client, staff, contratto):
     Deadline.objects.create(
         contract=contratto, deadline_type='tecnica', title='Logo QA',

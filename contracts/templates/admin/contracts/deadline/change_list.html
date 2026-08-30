@@ -1,0 +1,18 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+{# Scorciatoie visibili per la lista scadenze (i filtri di destra partono
+   chiusi): un click per gli stati che si usano ogni giorno. #}
+<div class="vt-chips">
+  <span class="vt-chips-label">Vedi subito:</span>
+  <a href="?status__exact=overdue" class="vt-chip {% if request.GET.status__exact == 'overdue' %}on{% endif %}">🔴 In ritardo</a>
+  <a href="?status__exact=pending" class="vt-chip {% if request.GET.status__exact == 'pending' %}on{% endif %}">⏳ Da ricevere</a>
+  <a href="?status__exact=reminder_sent" class="vt-chip {% if request.GET.status__exact == 'reminder_sent' %}on{% endif %}">📨 Sollecitate</a>
+  <a href="?status__exact=received" class="vt-chip {% if request.GET.status__exact == 'received' %}on{% endif %}">✅ Ricevute</a>
+  <a href="?status__exact=waived" class="vt-chip {% if request.GET.status__exact == 'waived' %}on{% endif %}">🚫 Esonerate</a>
+  {% if request.GET.status__exact %}
+  <a href="?" class="vt-chip vt-chip--trash">✕ Tutte</a>
+  {% endif %}
+</div>
+{{ block.super }}
+{% endblock %}

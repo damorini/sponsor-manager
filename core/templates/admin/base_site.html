@@ -525,6 +525,33 @@
     #vt-event-switcher { margin: 6px 0 0 0; display: flex; }
     #vt-event-switcher select { max-width: 100%; flex: 1; }
   }
+
+  /* ===== Scorciatoie a "chip" sopra le liste (Cose da fare visibili,
+     senza aprire il pannello filtri) ===== */
+  .vt-chips { margin: 14px 0 4px; display: flex; flex-wrap: wrap;
+              gap: 8px; align-items: center; }
+  .vt-chips-label { font-size: 11px; text-transform: uppercase;
+                    letter-spacing: .06em; font-weight: 700; opacity: .6; }
+  .vt-chip { display: inline-block; padding: 5px 14px; border-radius: 999px;
+             border: 1.5px solid rgba(181,97,44,.5); color: #B5612C;
+             font-size: 12.5px; font-weight: 600; text-decoration: none;
+             white-space: nowrap; }
+  .vt-chip:hover { background: rgba(181,97,44,.12); }
+  .vt-chip.on { background: #B5612C; border-color: #B5612C; color: #fff; }
+  .vt-chip--trash { border-color: rgba(140,140,140,.5); color: #8a8a8a; }
+  .vt-chip--trash.on { background: #6d6d6d; border-color: #6d6d6d; color: #fff; }
+
+  /* Bottoni-form negli object tools (Segna come firmato, Genera proforma...)
+     identici alle altre "pillole" della barra azioni */
+  .object-tools li form { display: inline; margin: 0; padding: 0; }
+  .object-tools li form button.button {
+    background: var(--object-tools-bg, #B5612C); color: #fff; border: none;
+    border-radius: 15px; padding: 6px 12px; font-size: 11px; font-weight: 600;
+    letter-spacing: .03em; text-transform: uppercase; cursor: pointer;
+  }
+  .object-tools li form button.button:hover {
+    background: var(--object-tools-hover-bg, #C76B3A);
+  }
 </style>
 <form id="vt-event-switcher" class="{% if evento_attivo %}vt-ev-on{% endif %}"
       method="post" action="{% url 'core:imposta_evento_attivo' %}">
