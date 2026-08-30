@@ -3,19 +3,82 @@
 
 {% block object-tools-items %}
   {% if original and original.pk %}
-  <li>
-    <a href="{% url 'admin:contracts_contract_preview_quote' original.pk %}"
-       target="_blank" rel="noopener"
-       class="historylink" title="{% trans 'Genera il PDF del preventivo e aprilo in una nuova scheda, SENZA inviarlo' %}">
-      🔍 {% trans "Anteprima preventivo" %}
-    </a>
-  </li>
-  <li>
-    <a href="{% url 'admin:contracts_contract_send_quote' original.pk %}"
-       class="addlink" title="{% trans 'Genera e invia il preventivo scegliendo i destinatari' %}">
-      ✉️ {% trans "Genera e invia preventivo" %}
-    </a>
-  </li>
+    {% with st=original.status kind=original.contract_kind %}
+
+    {# --- Fase preventivo: anteprima e invio (solo bozze/inviati, non carrelli) --- #}
+    {% if kind != 'addon' and st == 'draft' or kind != 'addon' and st == 'sent' %}
+    <li>
+      <a href="{% url 'admin:contracts_contract_preview_quote' original.pk %}"
+         target="_blank" rel="noopener"
+         class="historylink" title="{% trans 'Genera il PDF del preventivo e aprilo in una nuova scheda, SENZA inviarlo' %}">
+        🔍 {% trans "Anteprima preventivo" %}
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'admin:contracts_contract_send_quote' original.pk %}"
+         class="addlink" title="{% trans 'Genera e invia il preventivo scegliendo i destinatari' %}">
+        ✉️ {% trans "Genera e invia preventivo" %}
+      </a>
+    </li>
+    {% endif %}
+
+    {# --- I passi successivi del flusso, direttamente qui (prima erano solo
+         nel menu "Azione" della lista): mini-form POST verso la changelist
+         con l'azione e QUESTO contratto selezionato. Le eventuali pagine
+         intermedie (es. data firma) funzionano invariate. --- #}
+    {% if st == 'sent' %}
+    <li>
+      <form method="post" action="{% url 'admin:contracts_contract_changelist' %}" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="action_mark_as_signed">
+        <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+        <button type="submit" class="button" title="{% trans 'Segna il contratto come FIRMATO: genera PDF, scadenze e assegna lo stand' %}">
+          ✍️ {% trans "Segna come firmato" %}
+        </button>
+      </form>
+    </li>
+    <li>
+      <form method="post" action="{% url 'admin:contracts_contract_changelist' %}" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="action_convert_to_contract">
+        <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+        <button type="submit" class="button" title="{% trans 'Trasforma il preventivo in contratto' %}">
+          📄 {% trans "Trasforma in contratto" %}
+        </button>
+      </form>
+    </li>
+    {% endif %}
+
+    {% if st == 'signed' or st == 'active' or st == 'completed' %}
+    <li>
+      <a href="{% url 'core:cruscotto_registra_incasso' original.pk %}?next={{ request.path|urlencode }}"
+         class="addlink" title="{% trans 'Registra un bonifico/incasso ricevuto: riconcilia da solo le scadenze di pagamento' %}">
+        💶 {% trans "Registra incasso" %}
+      </a>
+    </li>
+    <li>
+      <form method="post" action="{% url 'admin:contracts_contract_changelist' %}" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="action_genera_proforma">
+        <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+        <button type="submit" class="button" title="{% trans "Genera la fattura PROFORMA: il cliente riceve anche l'email automatica" %}">
+          🧾 {% trans "Genera proforma" %}
+        </button>
+      </form>
+    </li>
+    <li>
+      <form method="post" action="{% url 'admin:contracts_contract_changelist' %}" style="display:inline">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="action_rigenera_pdf_contratto">
+        <input type="hidden" name="_selected_action" value="{{ original.pk }}">
+        <button type="submit" class="button" title="{% trans 'Rigenera il PDF del contratto (visibile anche nel portale)' %}">
+          🔄 {% trans "Rigenera PDF" %}
+        </button>
+      </form>
+    </li>
+    {% endif %}
+
+    {% endwith %}
   {% endif %}
   {{ block.super }}
 {% endblock %}

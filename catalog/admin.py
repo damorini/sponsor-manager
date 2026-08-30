@@ -243,11 +243,29 @@ class ServiceAdmin(admin.ModelAdmin):
 
     @admin.display(description='Scadenze')
     def scadenze_badge(self, obj):
+        """Badge ONESTO sul doppio requisito: le scadenze partono solo con la
+        spunta 'Genera scadenze' E almeno un template attivo. Le configurazioni
+        a meta' sono evidenziate, non nascoste dietro un verde rassicurante."""
         from django.utils.html import format_html
         n = getattr(obj, '_n_deadlines', obj.deadline_templates.filter(is_active=True).count())
-        if n == 0:
+        if n == 0 and not obj.triggers_deadlines:
             from django.utils.safestring import mark_safe
             return mark_safe('<span style="color:#999">—</span>')
+        if n and not obj.triggers_deadlines:
+            return format_html(
+                '<span style="background:#fff3e0;color:#e65100;padding:2px 7px;'
+                'border-radius:10px;font-size:11px;white-space:nowrap" '
+                'title="Ci sono {} template ma la spunta GENERA SCADENZE è spenta: '
+                'alla vendita NON verrà creata nessuna scadenza.">'
+                '⚠ {} scad. SPENTE</span>', n, n)
+        if obj.triggers_deadlines and n == 0:
+            from django.utils.safestring import mark_safe
+            return mark_safe(
+                '<span style="background:#ffebee;color:#c62828;padding:2px 7px;'
+                'border-radius:10px;font-size:11px;white-space:nowrap" '
+                'title="La spunta Genera scadenze è attiva ma non c\'è nessun '
+                'Template scadenza attivo: alla vendita non succederà nulla.">'
+                '⚠ spunta senza template</span>')
         # Usa il prefetch (se disponibile) per evitare query aggiuntive
         try:
             templates = [t for t in obj.deadline_templates.all() if t.is_active]
@@ -273,6 +291,48 @@ class ServiceAdmin(admin.ModelAdmin):
         # EVENTO ATTIVO: la lista mostra solo i servizi di quell'evento.
         qs = scope_lista_evento_attivo(request, qs, 'event')
         return qs.prefetch_related('deadline_templates')
+
+    def get_form(self, request, obj=None, **kwargs):
+        # Help text in italiano semplice sui due campi che si confondono
+        form = super().get_form(request, obj, **kwargs)
+        if 'max_quantity' in form.base_fields:
+            form.base_fields['max_quantity'].help_text = (
+                "Quanti pezzi puo' comprare UN singolo cliente in un ordine "
+                "(es. 1 = pezzo unico per cliente). Vuoto = nessun limite.")
+        if 'total_available' in form.base_fields:
+            form.base_fields['total_available'].help_text = (
+                "Scorte TOTALI del servizio, per tutti i clienti insieme: "
+                "esaurite queste, il servizio risulta esaurito. "
+                "Vuoto = illimitato.")
+        return form
+
+    def save_related(self, request, form, formsets, change):
+        """Dopo il salvataggio (inline compresi), avvisa SUBITO se la
+        configurazione delle scadenze automatiche e' a meta': il doppio
+        requisito silenzioso (spunta + template) ha gia' fatto perdere tempo."""
+        super().save_related(request, form, formsets, change)
+        obj = form.instance
+        try:
+            n_attivi = obj.deadline_templates.filter(is_active=True).count()
+        except Exception:
+            return
+        from django.contrib import messages as _msg
+        if obj.triggers_deadlines and n_attivi == 0:
+            self.message_user(
+                request,
+                "⚠ Hai attivato «Genera scadenze» ma non c'è nessun Template "
+                "scadenza attivo: alla vendita NON verrà creata nessuna "
+                "scadenza. Aggiungi almeno una riga nella sezione «Template "
+                "scadenze» (o togli la spunta).",
+                level=_msg.WARNING)
+        elif n_attivi and not obj.triggers_deadlines:
+            self.message_user(
+                request,
+                f"⚠ Ci sono {n_attivi} Template scadenza ma la spunta «Genera "
+                "scadenze» è SPENTA: alla vendita non verrà creata nessuna "
+                "scadenza. Attiva la spunta nella sezione «Scadenze "
+                "automatiche» se le vuoi.",
+                level=_msg.WARNING)
 
     form = ServiceAdminForm
 
@@ -351,16 +411,21 @@ class ServiceAdmin(admin.ModelAdmin):
         ('Disponibilità', {
             'fields': ('is_active', 'max_quantity', 'total_available', 'display_order'),
         }),
-        ('Ecommerce sponsor', {
+        ('Acquisto dal portale (shop del cliente)', {
             'fields': ('is_self_purchasable', 'self_purchase_cutoff_days'),
-            'description': "is_self_purchasable: appare nel portale sponsor. "
-                           "cutoff: NULL = sempre, 0 = fino al giorno stesso, "
-                           "N = chiude N giorni prima dell'evento.",
+            'description': "«Acquistabile online»: se attivo, il cliente vede e "
+                           "compra questo servizio da solo nel portale (carrello). "
+                           "«Giorni di chiusura»: vuoto = acquistabile fino alla "
+                           "fine dell'evento; 0 = fino al giorno dell'evento; "
+                           "es. 15 = gli acquisti chiudono 15 giorni prima "
+                           "dell'inizio dell'evento.",
         }),
         ('Scadenze automatiche', {
             'fields': ('triggers_deadlines',),
-            'description': "Se attivato, vendere questo servizio crea le "
-                           "scadenze definite nei DeadlineTemplate sotto.",
+            'description': "⚠ Servono ENTRAMBE le cose: questa spunta E almeno "
+                           "un Template scadenza attivo (sezione sotto). Con una "
+                           "sola delle due, alla vendita non viene creata "
+                           "nessuna scadenza.",
         }),
         ('Sistema', {
             'fields': ('created_at', 'updated_at'),
@@ -395,6 +460,14 @@ class ServiceAdmin(admin.ModelAdmin):
 
     @admin.display(description='Shop')
     def ecommerce_badge(self, obj):
+        if obj.is_self_purchasable and not obj.is_active:
+            # spunta shop attiva ma servizio DISATTIVO: nel portale non appare
+            return format_html(
+                '<span style="background:#eee; color:#888; padding:2px 8px; '
+                'border-radius:3px; font-size:0.85em;" '
+                'title="Acquistabile online ma il servizio è DISATTIVO: '
+                'nel portale non compare.">🛒 spento</span>'
+            )
         if obj.is_self_purchasable:
             return format_html(
                 '<span style="background:#41ad7c; color:white; padding:2px 8px; '

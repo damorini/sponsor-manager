@@ -249,17 +249,17 @@ def cruscotto_home(request):
         'unread_msg_url': _rev('admin:sponsors_portalmessage_changelist') + '?mitt=sponsor&letto=no',
         'bozze_count': _bozze_count,
         'bozze_sponsors': _bozze_sponsors,
-        'bozze_url': _rev('admin:contracts_contract_changelist') + '?status__exact=draft',
+        'bozze_url': _rev('admin:contracts_contract_changelist') + '?todo=da_inviare',
         'materiali_count': _materiali_count,
         'materiali_sponsors': _materiali_sponsors,
         'materiali_url': _rev('core:cruscotto_scadenze_cliente'),
         'fermi_count': _fermi_count,
         'fermi_sponsors': _fermi_sponsors,
         'fermi_giorni': GIORNI_SENZA_RISPOSTA,
-        'fermi_url': _rev('admin:contracts_contract_changelist') + '?status__exact=sent',
+        'fermi_url': _rev('admin:contracts_contract_changelist') + '?todo=senza_risposta',
         'opzioni_count': _opz_count,
         'opzioni_sponsors': _opz_sponsors,
-        'opzioni_url': _rev('admin:contracts_contract_changelist') + '?status__exact=draft',
+        'opzioni_url': _rev('admin:contracts_contract_changelist') + '?todo=opzioni_in_scadenza',
     }
     return render(request, 'cruscotto/home.html', context)
 
@@ -1051,6 +1051,14 @@ def registra_incasso(request, pk):
         messages.error(request, "Il contratto non è in uno stato confermato.")
         return redirect('core:cruscotto_da_incassare', pk=c.event_id)
 
+    # Ritorno alla pagina di provenienza (scheda contratto, lista scadenze...):
+    # solo destinazioni interne.
+    from django.utils.http import url_has_allowed_host_and_scheme
+    next_url = request.POST.get('next', '') or request.GET.get('next', '')
+    if next_url and not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}):
+        next_url = ''
+
     error = None
     if request.method == 'POST':
         try:
@@ -1077,8 +1085,12 @@ def registra_incasso(request, pk):
             payment.save()  # triggera reconcile_payment_deadlines() in Payment.save()
             messages.success(
                 request,
-                f"Incasso di € {amount:.2f} registrato per {c.contract_number}."
+                f"Incasso di € {amount:.2f} registrato per {c.contract_number}. "
+                "Le scadenze di pagamento coperte sono state aggiornate e i "
+                "promemoria al cliente si fermano da soli."
             )
+            if next_url:
+                return redirect(next_url)
             return redirect('core:cruscotto_da_incassare', pk=c.event_id)
 
     try:
@@ -1090,6 +1102,23 @@ def registra_incasso(request, pk):
         (PaymentMethodChoice.BANK_TRANSFER, 'Bonifico bancario'),
         (PaymentMethodChoice.MANUAL, 'Manuale / altro'),
     ]
+
+    # Riepilogo per NON far indovinare l'importo all'operatore: totale lordo,
+    # incassato finora, residuo, e la prossima scadenza attesa (acconto/saldo).
+    from django.db.models import Sum as _Sum
+    incassato = (Payment.objects
+                 .filter(contract=c, status=PaymentStatus.SUCCEEDED)
+                 .aggregate(s=_Sum('amount_gross'))['s'] or Decimal('0'))
+    residuo = max(c.total - incassato, Decimal('0'))
+    atteso = None  # (etichetta, importo) della prossima tranche
+    if c.has_deposit and c.deposit_amount:
+        if incassato < c.deposit_amount:
+            atteso = ('Acconto residuo', c.deposit_amount - incassato)
+        elif residuo > 0:
+            atteso = ('Saldo residuo', residuo)
+    elif residuo > 0:
+        atteso = ('Saldo residuo', residuo)
+
     context = {
         **admin_site.each_context(request),
         'title': f'Registra incasso · {c.contract_number}',
@@ -1097,6 +1126,13 @@ def registra_incasso(request, pk):
         'nome_evento': nome_ev,
         'method_choices': method_choices,
         'error': error,
+        'next_url': next_url,
+        'riepilogo': {
+            'totale': c.total,
+            'incassato': incassato,
+            'residuo': residuo,
+        },
+        'atteso': atteso,
     }
     return render(request, 'cruscotto/registra_incasso.html', context)
 
@@ -1133,8 +1169,14 @@ def _esegui_import_excel(request, comando, redirect_name):
             else:
                 call_command(comando, file=tmp.name, stdout=out)
             risultato = out.getvalue()
-            etichetta = "[ANTEPRIMA] " if dry else ""
-            messages.success(request, f"{etichetta}Import completato.")
+            if dry:
+                messages.warning(
+                    request,
+                    "ANTEPRIMA completata: NESSUN dato è stato salvato. "
+                    "Controlla il riepilogo qui sotto e, se è tutto giusto, "
+                    "ripeti il caricamento in modalità definitiva.")
+            else:
+                messages.success(request, "Import completato: dati salvati.")
             # passo il dettaglio testuale via session per mostrarlo
             request.session['import_risultato'] = risultato
         except Exception as e:

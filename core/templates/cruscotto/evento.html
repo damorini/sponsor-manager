@@ -62,31 +62,49 @@
         <div class="cr-lordo">€ {{ incassi.da_incassare_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </a>
-      <div class="cr-card{% if incassi.bonifici_in_attesa %} cr-card--blue{% endif %}"
-           style="{% if not incassi.bonifici_in_attesa %}opacity:.7{% endif %}">
+      {% if incassi.bonifici_in_attesa %}
+      <a href="{% url 'admin:contracts_payment_changelist' %}?evento={{ evento.id }}&status__exact=pending&payment_method__exact=bank_transfer"
+         class="cr-card cr-card--blue"
+         title="Vedi i bonifici in attesa e confermali (azione 'Conferma bonifico ricevuto')">
         <div class="cr-label">Bonifici in attesa</div>
         <div class="cr-value">{{ incassi.bonifici_in_attesa }}</div>
-        <div class="cr-hint">da confermare</div>
+        <div class="cr-hint">da confermare · <span class="cr-arrow">conferma →</span></div>
+      </a>
+      {% else %}
+      <div class="cr-card" style="opacity:.7">
+        <div class="cr-label">Bonifici in attesa</div>
+        <div class="cr-value">0</div>
+        <div class="cr-hint">nessuno da confermare</div>
       </div>
-      <div class="cr-card{% if incassi.email_fallite %} cr-card--red{% endif %}"
-           style="{% if not incassi.email_fallite %}opacity:.7{% endif %}">
+      {% endif %}
+      {% if incassi.email_fallite %}
+      <a href="{% url 'admin:shared_communication_changelist' %}?status__exact=failed"
+         class="cr-card cr-card--red"
+         title="Vedi quali comunicazioni non sono partite">
         <div class="cr-label">Email fallite</div>
         <div class="cr-value">{{ incassi.email_fallite }}</div>
-        <div class="cr-hint">comunicazioni non inviate</div>
+        <div class="cr-hint">non inviate · <span class="cr-arrow">vedi quali →</span></div>
+      </a>
+      {% else %}
+      <div class="cr-card" style="opacity:.7">
+        <div class="cr-label">Email fallite</div>
+        <div class="cr-value">0</div>
+        <div class="cr-hint">tutte inviate</div>
       </div>
+      {% endif %}
     </div>
   </div>
 
   <div class="cr-section">
     <h2 class="cr-h2">Contratti e stand</h2>
     <div class="cr-grid-sm">
-      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&todo=confermati"
          class="cr-card cr-card--green" title="Mostra i contratti firmati di questo evento">
         <div class="cr-label">Confermati</div>
         <div class="cr-value">{{ confermati.n_contratti }}</div>
         <div class="cr-hint">contratto/i · {{ confermati.n_stand }} stand assegnati</div>
       </a>
-      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&todo=opzionati"
          class="cr-card cr-card--terra" title="Mostra le bozze/opzioni attive">
         <div class="cr-label">Opzionati</div>
         <div class="cr-value">{{ opzionati.n_contratti }}</div>
@@ -110,7 +128,7 @@
   <div class="cr-section">
     <h2 class="cr-h2">Importi</h2>
     <div class="cr-grid">
-      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=signed"
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&todo=confermati"
          class="cr-card cr-card--green" title="Mostra i contratti firmati di questo evento">
         <div class="cr-label">Confermato</div>
         <div class="cr-value">€ {{ confermati.totale|floatformat:2|intcomma }}</div>
@@ -118,7 +136,7 @@
         <div class="cr-lordo">€ {{ confermati.totale_lordo|floatformat:2|intcomma }}
           <span class="cr-lordo-lbl">complessivo · IVA inclusa</span></div>
       </a>
-      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&status__exact=draft"
+      <a href="{% url 'admin:contracts_contract_changelist' %}?event__id__exact={{ evento.id }}&todo=opzionati"
          class="cr-card cr-card--terra" title="Mostra le bozze/opzioni attive">
         <div class="cr-label">In opzione</div>
         <div class="cr-value">€ {{ opzionati.totale|floatformat:2|intcomma }}</div>

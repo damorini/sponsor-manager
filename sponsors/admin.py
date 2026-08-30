@@ -628,8 +628,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         # nella scheda), non i parziali del solo evento.
         return scope_anagrafica_by_event(request, qs, 'contracts')
 
-    @admin.display(description='Nome breve')
-    @admin.display(description="Entra")
+    @admin.display(description="Entra nel portale")
     def impersona_link(self, obj):
         from django.urls import reverse
         from django.utils.html import format_html
@@ -750,7 +749,7 @@ class ContactAdmin(admin.ModelAdmin):
         return scope_anagrafica_by_event(
             request, super().get_queryset(request), 'sponsor__contracts')
 
-    list_select_related = ('sponsor',)
+    list_select_related = ('sponsor', 'portal_user')
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',
                        'privacy_accepted_at', 'privacy_policy_version',
@@ -819,9 +818,27 @@ class ContactAdmin(admin.ModelAdmin):
     def col_lingua(self, obj):
         return obj.preferred_language
 
-    @admin.display(description='Portale', boolean=True, ordering='has_portal_access')
+    @admin.display(description='Portale', ordering='has_portal_access')
     def col_portale(self, obj):
-        return obj.has_portal_access
+        """Stato REALE dell'accesso, non un semplice si'/no: distingue chi e'
+        stato invitato ma non e' mai entrato (probabile credenziali perse)."""
+        if not obj.has_portal_access or not obj.portal_user_id:
+            return format_html('<span style="color:#999;">—</span>')
+        u = obj.portal_user
+        if not u.is_active:
+            return format_html(
+                '<span style="background:#ffebee;color:#c62828;padding:1px 7px;'
+                'border-radius:9px;font-size:11px;">disattivato</span>')
+        if u.last_login is None:
+            return format_html(
+                '<span style="background:#fff3e0;color:#e65100;padding:1px 7px;'
+                'border-radius:9px;font-size:11px;" title="Invitato ma non ha '
+                'mai fatto il login: forse ha perso le credenziali (azione '
+                'Invia email di RESET PASSWORD in Utenti)">mai entrato</span>')
+        return format_html(
+            '<span style="background:#e8f5e9;color:#2e7d32;padding:1px 7px;'
+            'border-radius:9px;font-size:11px;" title="Ultimo accesso: {}">'
+            'attivo</span>', u.last_login.strftime('%d/%m/%Y'))
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
     def sponsor_link(self, obj):
@@ -832,18 +849,26 @@ class ContactAdmin(admin.ModelAdmin):
     def action_invita_al_portale(self, request, queryset):
         from portal.services.invitation import invite_contact_to_portal
         ok_creati, ok_reset, errori = 0, 0, []
-        righe = []
+        # Un messaggio PER contatto (leggibile), non un unico blocco con le
+        # password in mezzo al testo.
         for contact in queryset:
             try:
                 user, pwd, created = invite_contact_to_portal(contact, send_email=True)
                 if pwd is None:
-                    righe.append(
-                        f"{contact.full_name} ({user.email}) - ha GIÀ un accesso attivo: "
-                        "valgono le credenziali esistenti (nessuna email inviata; per "
-                        "rimandargliele usa 'Invia email di RESET PASSWORD' in Utenti)")
+                    self.message_user(
+                        request,
+                        f"ℹ {contact.full_name} ({user.email}): ha GIÀ un accesso "
+                        "attivo, valgono le credenziali esistenti. Nessuna email "
+                        "inviata (se le ha perse: azione 'Invia email di RESET "
+                        "PASSWORD' in Utenti).",
+                        level='INFO')
                 else:
-                    righe.append(f"{contact.full_name} ({user.email}) - email di accesso inviata · "
-                                 f"password: {pwd}" + ("" if created else " (rigenerata)"))
+                    self.message_user(
+                        request,
+                        f"✉ {contact.full_name} ({user.email}): invito inviato. "
+                        f"Password provvisoria: {pwd}"
+                        + ("" if created else " (rigenerata)"),
+                        level='SUCCESS')
                 if created:
                     ok_creati += 1
                 else:
@@ -851,11 +876,9 @@ class ContactAdmin(admin.ModelAdmin):
             except Exception as e:
                 errori.append(f"{contact.full_name}: {e}")
 
-        if ok_creati or ok_reset:
-            msg = "Inviti completati. " + " | ".join(righe)
-            self.message_user(request, msg, level='SUCCESS')
         if errori:
-            self.message_user(request, "Errori: " + " | ".join(errori), level='ERROR')
+            for e in errori:
+                self.message_user(request, "Errore: " + e, level='ERROR')
 
     @admin.display(description='Ruoli')
     def roles_display(self, obj):

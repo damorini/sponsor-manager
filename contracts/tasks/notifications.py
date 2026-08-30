@@ -290,6 +290,13 @@ def send_payment_receipt_uploaded_alert(self, deadline_id):
     )
     subject = (f"Contabile bonifico caricata · {contract.sponsor.legal_name} "
                f"· {contract.contract_number}")
+    # Link diretto alla pagina "Registra incasso" del cruscotto: verificato
+    # l'accredito, la segreteria registra in un click (importo precompilabile).
+    from django.conf import settings as _settings
+    from django.urls import reverse as _reverse
+    _site = (getattr(_settings, 'SITE_URL', '') or '').rstrip('/')
+    registra_url = _site + _reverse('core:cruscotto_registra_incasso',
+                                    args=[contract.pk])
     try:
         send_email(
             template_name='payment_receipt_uploaded',
@@ -299,6 +306,7 @@ def send_payment_receipt_uploaded_alert(self, deadline_id):
                 'event': contract.event,
                 'event_name': event_name,
                 'deadline': deadline,
+                'registra_url': registra_url,
             },
             to=['amministrazione@valet.it'],
             cc=['morini@valet.it'],

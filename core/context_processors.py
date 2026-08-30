@@ -36,15 +36,29 @@ def admin_badges(request):
             ).count()
 
             from contracts.models import Contract, ContractStatus, ContractKind
-            bozze_count = Contract.objects.filter(
+            # Il numero del banner deve corrispondere ESATTAMENTE alle righe
+            # che l'operatore trova cliccando: stesso RBAC della changelist
+            # (eventi gestiti) e stesso evento attivo di sessione. Prima il
+            # conteggio era globale e la lista filtrata: "2 da inviare" poteva
+            # aprire una lista vuota.
+            bozze_qs = Contract.objects.filter(
                 status=ContractStatus.DRAFT,
                 contract_kind=ContractKind.MAIN,
                 deleted_at__isnull=True,
-            ).count()
+            )
+            from core.event_scope import can_see_all
+            if not can_see_all(user):
+                bozze_qs = bozze_qs.filter(
+                    event__in=user.managed_events.all())
+            if active_id:
+                bozze_qs = bozze_qs.filter(event_id=active_id)
+            bozze_count = bozze_qs.count()
             if bozze_count:
                 from django.urls import reverse
+                # ?todo=da_inviare = SOLO i preventivi principali in bozza
+                # (il vecchio ?status__exact=draft mostrava anche i carrelli)
                 bozze_url = (reverse('admin:contracts_contract_changelist')
-                             + '?status__exact=draft')
+                             + '?todo=da_inviare')
     except Exception:
         pass
     return {

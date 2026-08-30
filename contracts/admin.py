@@ -127,26 +127,84 @@ def _deadline_file_esempio(obj):
     return mark_safe('<span style="color:#999;">—</span>')
 
 
+_DQ_BTN = ('display:inline-block;margin:0 3px 2px 0;padding:2px 9px;'
+           'border:1px solid {col};border-radius:6px;background:#fff;'
+           'color:{col};font-size:11px;font-weight:600;cursor:pointer;'
+           'white-space:nowrap;text-decoration:none;')
+
+
+def _deadline_azioni_rapide_html(obj, next_url=None):
+    """Pulsanti a UN click per la scadenza (lista admin e inline contratto).
+    - scadenze normali: '✓ Ricevuta' + 'Esonera' (POST via JS, vedi
+      deadline_quick_actions_v1.js);
+    - scadenze di PAGAMENTO: link '💶 Registra incasso' (la registrazione
+      marca da sola la scadenza) + 'Esonera'."""
+    from django.utils.safestring import mark_safe as _ms
+    from .models import DeadlineStatus as _DS
+    if obj is None or not obj.pk:
+        return '—'
+    if obj.status in (_DS.RECEIVED, _DS.WAIVED):
+        return _ms('<span style="color:#999;">—</span>')
+    parti = []
+    dtype = (obj.deadline_type or '')
+    if dtype.startswith('pagamento'):
+        url = reverse('core:cruscotto_registra_incasso', args=[obj.contract_id])
+        if next_url:
+            from urllib.parse import quote
+            url += '?next=' + quote(next_url)
+        parti.append(format_html(
+            '<a href="{}" style="{}">💶 Registra incasso</a>',
+            url, _DQ_BTN.format(col='#1d6534')))
+    else:
+        parti.append(format_html(
+            '<button type="button" class="dq-btn" data-url="{}" style="{}" '
+            'title="Segna come ricevuta (un click)">✓ Ricevuta</button>',
+            reverse('admin:contracts_deadline_segna_ricevuta', args=[obj.pk]),
+            _DQ_BTN.format(col='#1d6534')))
+    parti.append(format_html(
+        '<button type="button" class="dq-btn" data-url="{}" style="{}" '
+        'data-confirm="Esonerare {}? Il cliente non riceverà più promemoria per questa scadenza." '
+        'title="Esonera: la scadenza non è più dovuta">Esonera</button>',
+        reverse('admin:contracts_deadline_esonera', args=[obj.pk]),
+        _DQ_BTN.format(col='#9C4A1F'), obj.title))
+    return _ms(''.join(parti))
+
+
 class DeadlineInline(admin.TabularInline):
-    """Scadenze viewable inline (sola lettura, perchè generate automatico)."""
+    """Scadenze inline nel contratto: sola lettura sui dati (generate in
+    automatico) ma con azioni rapide e link di apertura."""
     model = Deadline
     extra = 0
-    fields = ('title', 'due_date', 'status', 'completed_at', 'reminder_count', 'file_esempio')
-    readonly_fields = ('title', 'due_date', 'completed_at', 'reminder_count', 'file_esempio')
+    show_change_link = True
+    fields = ('title', 'due_date', 'status', 'completed_at', 'reminder_count',
+              'file_esempio', 'azioni_rapide')
+    readonly_fields = ('title', 'due_date', 'completed_at', 'reminder_count',
+                       'file_esempio', 'azioni_rapide')
     can_delete = False
 
     @admin.display(description='File di esempio')
     def file_esempio(self, obj):
         return _deadline_file_esempio(obj)
 
+    @admin.display(description='Azioni rapide')
+    def azioni_rapide(self, obj):
+        # dopo l'azione si torna sulla scheda contratto (next)
+        next_url = (reverse('admin:contracts_contract_change',
+                            args=[obj.contract_id]) if obj and obj.pk else None)
+        return _deadline_azioni_rapide_html(obj, next_url=next_url)
+
     def has_add_permission(self, request, obj=None):
         return False
 
 
 class PaymentInline(admin.TabularInline):
-    """Pagamenti del contratto, sola lettura."""
+    """Pagamenti ONLINE del contratto (PayPal/carta), sola lettura.
+    I bonifici e gli incassi manuali stanno SOLO nell'inline 'Registra
+    incasso' qui sotto: prima comparivano in entrambi e sembravano doppi."""
     model = Payment
     extra = 0
+    verbose_name = "Pagamento online (PayPal/carta)"
+    verbose_name_plural = "Pagamenti online (PayPal/carta)"
     fields = (
         'payment_method', 'amount_gross', 'amount_fee',
         'status', 'paypal_order_id', 'bank_transfer_reference', 'completed_at',
@@ -154,6 +212,11 @@ class PaymentInline(admin.TabularInline):
     readonly_fields = fields
     can_delete = False
     show_change_link = True
+
+    def get_queryset(self, request):
+        from contracts.payments import PaymentMethodChoice
+        return super().get_queryset(request).exclude(payment_method__in=[
+            PaymentMethodChoice.BANK_TRANSFER, PaymentMethodChoice.MANUAL])
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -215,16 +278,49 @@ class TodoFilter(admin.SimpleListFilter):
         return (
             ('da_inviare', 'Preventivi da inviare'),
             ('in_attesa_firma', 'In attesa di firma'),
+            ('senza_risposta', 'Inviati senza risposta da 7+ giorni'),
+            ('confermati', 'Confermati (firmati/attivi/completati)'),
+            ('opzioni_in_scadenza', 'Opzioni in scadenza (7 giorni)'),
+            ('opzionati', 'Spazi opzionati (bozze con stand)'),
             ('firmati_senza_scadenze', 'Firmati senza scadenze'),
             ('carrelli', 'Carrelli abbandonati'),
         )
 
     def queryset(self, request, qs):
+        from datetime import date, timedelta
         v = self.value()
         if v == 'da_inviare':
             return qs.filter(contract_kind=ContractKind.MAIN, status=ContractStatus.DRAFT)
         if v == 'in_attesa_firma':
             return qs.filter(status=ContractStatus.SENT)
+        if v == 'senza_risposta':
+            # identico all'avviso della home cruscotto: inviati fermi da 7+ gg
+            from django.utils import timezone as _tz
+            from datetime import timedelta as _td
+            return qs.filter(
+                status=ContractStatus.SENT, contract_kind=ContractKind.MAIN,
+                sent_date__lt=_tz.now() - _td(days=7))
+        if v == 'confermati':
+            # stessa definizione delle card "Confermati" del cruscotto
+            return qs.filter(status__in=[
+                ContractStatus.SIGNED, ContractStatus.ACTIVE,
+                ContractStatus.COMPLETED])
+        if v == 'opzioni_in_scadenza':
+            # identico all'avviso della home cruscotto: bozze con opzione
+            # che scade tra oggi e +7 giorni
+            oggi = date.today()
+            return qs.filter(
+                status=ContractStatus.DRAFT,
+                option_until__gte=oggi,
+                option_until__lte=oggi + timedelta(days=7))
+        if v == 'opzionati':
+            # identico alla card "Opzionati" della pagina evento: bozze con
+            # uno spazio assegnato e opzione non scaduta
+            from django.db.models import Q
+            return qs.filter(
+                status=ContractStatus.DRAFT,
+                option_until__gte=date.today(),
+            ).filter(Q(stand__isnull=False) | Q(stand_block__isnull=False))
         if v == 'firmati_senza_scadenze':
             return qs.filter(
                 status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
@@ -316,12 +412,19 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     def get_changeform_initial_data(self, request):
         """Pre-compila evento/sponsor da querystring (es. dal pulsante
-        '+ Nuovo contratto' di una lista filtrata o della scheda Sponsor)."""
+        '+ Nuovo contratto' di una lista filtrata o della scheda Sponsor).
+        In mancanza, usa l'EVENTO ATTIVO scelto nell'header: chi lavora su
+        un congresso non deve risceglierlo a ogni nuovo preventivo."""
         initial = super().get_changeform_initial_data(request)
         for k in ('event', 'sponsor'):
             v = request.GET.get(k)
             if v:
                 initial.setdefault(k, v)
+        if 'event' not in initial:
+            from core.event_scope import get_active_event_id
+            active_id = get_active_event_id(request)
+            if active_id:
+                initial['event'] = active_id
         return initial
 
     def get_search_results(self, request, queryset, search_term):
@@ -375,6 +478,34 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 "assegnato (cascata completata come per l'azione 'Segna come "
                 "firmato').")
 
+        # Stato portato a MANO su INVIATO: stessa cascata dell'invio vero
+        # (data invio + spazio riservato), altrimenti l'avviso "fermi da 7gg"
+        # non parte mai e lo stand resta Disponibile.
+        if (change
+                and obj.status == ContractStatus.SENT
+                and old_status == ContractStatus.DRAFT):
+            if not obj.sent_date:
+                obj.sent_date = timezone.now()
+                obj.save(update_fields=['sent_date', 'updated_at'])
+            obj._update_venue_status()
+
+        # Firmatario scelto ma con anagrafica incompleta: meglio saperlo ORA
+        # che alla conferma del cliente (che verrebbe bloccata).
+        try:
+            _signer = obj.sponsor_signer_contact
+            if _signer is not None:
+                _mancanti = _signer.dati_firmatario_mancanti()
+                if _mancanti:
+                    self.message_user(
+                        request,
+                        f"⚠ Il firmatario {_signer.full_name} non ha ancora: "
+                        + ", ".join(_mancanti)
+                        + ". Senza questi dati il contratto non potrà essere "
+                        "generato alla conferma.",
+                        level=messages.WARNING)
+        except Exception:
+            pass
+
         # Se il form ha portato il contratto a CANCELLED (bypassing cancel()),
         # eseguiamo la stessa cascata: libera stand/blocco e azzera scadenze aperte.
         if (change
@@ -425,11 +556,16 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
               'admin/js/contractline_variant_filter.js',
               # nome con _vN: cache-busting via RINOMINA del file (il query
               # param ?v=N viene URL-encodato da static() e il file va in 404)
-              'admin/js/contractline_service_picker_v3.js',)
+              'admin/js/contractline_service_picker_v3.js',
+              'admin/js/deadline_quick_actions_v1.js',)
 
     fieldsets = (
         (None, {
             'fields': ('contract_number_display', 'event', 'sponsor', 'sponsor_signer_contact'),
+            'description': "Firmatario: senza un firmatario con i dati "
+                           "anagrafici completi (nascita, residenza, documento, "
+                           "CF) il cliente NON può confermare il preventivo e "
+                           "il contratto non si genera.",
         }),
         ('Tipo e origine', {
             'fields': ('contract_kind', 'parent_contract', 'origin', 'language'),
@@ -1373,6 +1509,7 @@ class DeadlineAdmin(admin.ModelAdmin):
     list_display = (
         'title', 'contract_link', 'cliente', 'due_date', 'status_badge',
         'completata_da', 'days_until_due_display', 'reminder_count', 'file_esempio',
+        'azioni_rapide',
     )
     list_filter = (evento_filter('contract__event'), 'status', 'deadline_type')
     search_fields = (
@@ -1393,6 +1530,59 @@ class DeadlineAdmin(admin.ModelAdmin):
 
     actions = ['action_mark_as_received', 'action_sposta_scadenze',
                'action_aggiorna_campi_da_template']
+
+    class Media:
+        js = ('admin/js/deadline_quick_actions_v1.js',)
+
+    # ---- Azioni rapide a UN click sulla riga (senza menu "Azione") ----
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path(
+                '<path:object_id>/segna-ricevuta/',
+                self.admin_site.admin_view(self.segna_ricevuta_view),
+                name='contracts_deadline_segna_ricevuta',
+            ),
+            path(
+                '<path:object_id>/esonera/',
+                self.admin_site.admin_view(self.esonera_view),
+                name='contracts_deadline_esonera',
+            ),
+        ]
+        return custom + urls
+
+    def _azione_rapida(self, request, object_id, esito):
+        from django.http import Http404, HttpResponseNotAllowed, JsonResponse
+        from .models import DeadlineStatus as _DS
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+        deadline = self.get_object(request, object_id)
+        if deadline is None or not self.has_change_permission(request, deadline):
+            raise Http404
+        if esito == 'ricevuta':
+            deadline.mark_as_received()
+            self.message_user(
+                request, f"'{deadline.title}' segnata come RICEVUTA.",
+                level=messages.SUCCESS)
+        else:
+            deadline.status = _DS.WAIVED
+            deadline.save(update_fields=['status', 'updated_at'])
+            self.message_user(
+                request,
+                f"'{deadline.title}' ESONERATA: il cliente non riceverà più promemoria.",
+                level=messages.SUCCESS)
+        return JsonResponse({'ok': True})
+
+    def segna_ricevuta_view(self, request, object_id):
+        return self._azione_rapida(request, object_id, 'ricevuta')
+
+    def esonera_view(self, request, object_id):
+        return self._azione_rapida(request, object_id, 'esonera')
+
+    @admin.display(description='Azioni rapide')
+    def azioni_rapide(self, obj):
+        return _deadline_azioni_rapide_html(obj)
 
     @admin.action(description='Aggiorna i campi da compilare dal template')
     def action_aggiorna_campi_da_template(self, request, queryset):

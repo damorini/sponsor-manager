@@ -30,6 +30,18 @@ verificare l'accredito sul conto e registrare l'incasso dal cruscotto.</p>
 
 <p>Il file caricato è disponibile nel backoffice, tra i documenti della
 scadenza «{{ deadline.title }}» del contratto {{ contract.contract_number }}.
-Una volta verificato l'accredito, registra l'incasso dal cruscotto
+Una volta verificato l'accredito, registra l'incasso
 (la scadenza passerà automaticamente a «Pagato»).</p>
+
+{% if registra_url %}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:22px 0;">
+  <tr><td align="center">
+    <a href="{{ registra_url }}"
+       style="background:#1d6534; color:#ffffff; text-decoration:none;
+              padding:12px 28px; border-radius:8px; font-weight:700; display:inline-block;">
+      💶 Registra l'incasso ora
+    </a>
+  </td></tr>
+</table>
+{% endif %}
 {% endblock %}

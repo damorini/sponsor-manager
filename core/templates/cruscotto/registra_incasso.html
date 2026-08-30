@@ -36,17 +36,58 @@
     </div>
     {% endif %}
 
+    {# Riepilogo: l'operatore arriva da pagine con importi NETTI, qui serve il
+       LORDO — glielo diciamo e glielo compiliamo noi. #}
+    <div style="background:#f4f8f4; border:1px solid #cfe3cf; border-radius:8px;
+                padding:12px 16px; margin-bottom:16px; font-size:14px;">
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <span>Totale contratto: <strong>€ {{ riepilogo.totale|floatformat:2|intcomma }}</strong></span>
+        <span>Già incassato: <strong>€ {{ riepilogo.incassato|floatformat:2|intcomma }}</strong></span>
+        <span>Residuo: <strong>€ {{ riepilogo.residuo|floatformat:2|intcomma }}</strong></span>
+      </div>
+      <div style="font-size:12px; color:#666; margin-top:4px;">
+        Importi <strong>IVA inclusa</strong> (lordi): qui va inserito il lordo, non il netto del cruscotto.
+      </div>
+    </div>
+
     <form method="post">
       {% csrf_token %}
+      {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
 
       <div style="margin-bottom:16px;">
         <label style="display:block; font-size:13px; color:#555; margin-bottom:4px;">
           Importo lordo (€) *
         </label>
-        <input type="number" name="amount_gross" step="0.01" min="0.01" required
+        <input type="number" name="amount_gross" id="amount_gross" step="0.01" min="0.01" required
                style="width:100%; padding:8px 12px; border:1px solid #ccc; border-radius:6px;
                       font-size:15px; font-family:inherit;"
                placeholder="Es. 300.00">
+        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+          {% if atteso %}
+          <button type="button" class="ri-fill"
+                  data-importo="{{ atteso.1|floatformat:2 }}"
+                  style="border:1px solid #1d6534; color:#1d6534; background:#fff;
+                         border-radius:6px; padding:4px 12px; font-size:13px; cursor:pointer;">
+            {{ atteso.0 }}: usa € {{ atteso.1|floatformat:2|intcomma }}
+          </button>
+          {% endif %}
+          {% if riepilogo.residuo > 0 %}
+          <button type="button" class="ri-fill"
+                  data-importo="{{ riepilogo.residuo|floatformat:2 }}"
+                  style="border:1px solid #6d4c41; color:#6d4c41; background:#fff;
+                         border-radius:6px; padding:4px 12px; font-size:13px; cursor:pointer;">
+            Tutto il residuo: usa € {{ riepilogo.residuo|floatformat:2|intcomma }}
+          </button>
+          {% endif %}
+        </div>
+        <script>
+          document.addEventListener('click', function (e) {
+            var b = e.target.closest ? e.target.closest('.ri-fill') : null;
+            if (!b) return;
+            document.getElementById('amount_gross').value =
+              b.dataset.importo.replace(',', '.');
+          });
+        </script>
       </div>
 
       <div style="margin-bottom:16px;">
@@ -89,7 +130,7 @@
                        font-family:inherit; cursor:pointer; font-weight:600;">
           Registra incasso
         </button>
-        <a href="{% url 'core:cruscotto_da_incassare' contratto.event_id %}"
+        <a href="{% if next_url %}{{ next_url }}{% else %}{% url 'core:cruscotto_da_incassare' contratto.event_id %}{% endif %}"
            class="cr-btn cr-btn--ghost">Annulla</a>
       </div>
     </form>
