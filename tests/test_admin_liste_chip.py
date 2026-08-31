@@ -91,7 +91,16 @@ def test_la_lista_contratti_si_apre_e_non_stampa_il_commento(
     testo = risposta.content.decode()
     assert "Cose da fare" in testo
     assert "Da inviare" in testo
-    assert "Scorciatoie" not in testo, (
+    # Il sintomo esatto: il TESTO del commento che finiva a schermo.
+    # Non basta cercare "Scorciatoie": quella parola sta anche in un
+    # commento CSS dentro <style>, innocuo, e l'asserzione passerebbe o
+    # fallirebbe per motivi che non c'entrano.
+    # "SEMPRE VISIBILI" compare SOLO dentro quel commento: e' il
+    # marcatore giusto. Attenzione a scegliere stringhe generiche
+    # ("Scorciatoie" sta anche in un commento CSS, "pannello filtri di
+    # destra" in un commento JavaScript): passerebbero o fallirebbero
+    # per motivi che col difetto non c'entrano.
+    assert "SEMPRE VISIBILI" not in testo, (
         "il commento del template sta finendo nella pagina")
     assert "{#" not in testo
 
@@ -104,7 +113,8 @@ def test_la_lista_scadenze_si_apre_e_non_stampa_il_commento(
     assert risposta.status_code == 200
     testo = risposta.content.decode()
     assert "Vedi subito" in testo
-    assert "Scorciatoie visibili" not in testo
+    assert "un click per gli stati" not in testo, (
+        "il commento del template sta finendo nella pagina")
     assert "{#" not in testo
 
 
