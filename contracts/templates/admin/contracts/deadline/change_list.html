@@ -1,8 +1,15 @@
 {% extends "admin/change_list.html" %}
 
-{% block content %}
-{# Scorciatoie visibili per la lista scadenze (i filtri di destra partono
-   chiusi): un click per gli stati che si usano ogni giorno. #}
+{% comment %}
+Scorciatoie visibili per la lista scadenze (i filtri di destra partono
+chiusi): un click per gli stati che si usano ogni giorno.
+
+Stanno dentro object-tools, dopo il bottone "Aggiungi": vedi la stessa
+nota su contract/change_list.html.
+{% endcomment %}
+
+{% block object-tools %}
+  {{ block.super }}
 <div class="vt-chips">
   <span class="vt-chips-label">Vedi subito:</span>
   <a href="?status__exact=overdue" class="vt-chip {% if request.GET.status__exact == 'overdue' %}on{% endif %}">🔴 In ritardo</a>
@@ -14,5 +21,4 @@
   <a href="?" class="vt-chip vt-chip--trash">✕ Tutte</a>
   {% endif %}
 </div>
-{{ block.super }}
 {% endblock %}

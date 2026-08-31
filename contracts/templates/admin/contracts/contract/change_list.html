@@ -1,20 +1,29 @@
 {% extends "admin/change_list.html" %}
 
-{% block content %}
-{# Scorciatoie "Cose da fare" SEMPRE VISIBILI (il pannello filtri di destra
-   parte chiuso e nessuno le scopriva). Ogni chip = un filtro todo. #}
-<div class="vt-chips">
-  <span class="vt-chips-label">Cose da fare:</span>
-  <a href="?todo=da_inviare" class="vt-chip {% if request.GET.todo == 'da_inviare' %}on{% endif %}">📤 Da inviare</a>
-  <a href="?todo=in_attesa_firma" class="vt-chip {% if request.GET.todo == 'in_attesa_firma' %}on{% endif %}">✍️ In attesa di firma</a>
-  <a href="?todo=senza_risposta" class="vt-chip {% if request.GET.todo == 'senza_risposta' %}on{% endif %}">⏳ Fermi da 7+ giorni</a>
-  <a href="?todo=opzioni_in_scadenza" class="vt-chip {% if request.GET.todo == 'opzioni_in_scadenza' %}on{% endif %}">⏰ Opzioni in scadenza</a>
-  <a href="?todo=confermati" class="vt-chip {% if request.GET.todo == 'confermati' %}on{% endif %}">✅ Confermati</a>
-  <a href="?todo=carrelli" class="vt-chip {% if request.GET.todo == 'carrelli' %}on{% endif %}">🛒 Carrelli</a>
-  <a href="?trash=cestino" class="vt-chip vt-chip--trash {% if request.GET.trash == 'cestino' %}on{% endif %}">🗑 Cestino</a>
-  {% if request.GET.todo or request.GET.trash %}
-  <a href="?" class="vt-chip vt-chip--trash">✕ Tutti</a>
-  {% endif %}
-</div>
-{{ block.super }}
+{% comment %}
+Scorciatoie "Cose da fare" SEMPRE VISIBILI (il pannello filtri di destra
+parte chiuso e nessuno le scopriva). Ogni chip = un filtro todo.
+
+NB: i chip stanno DENTRO il blocco object-tools, subito DOPO il bottone
+"Aggiungi contratto". Django dà a .object-tools float:right con
+margin-top:-48px: se i chip vengono prima nel DOM, su schermi stretti il
+bottone ci galleggia sopra e li copre. Stando dopo, il clear:both di
+.vt-chips li tiene sempre sotto.
+{% endcomment %}
+
+{% block object-tools %}
+  {{ block.super }}
+  <div class="vt-chips">
+    <span class="vt-chips-label">Cose da fare:</span>
+    <a href="?todo=da_inviare" class="vt-chip {% if request.GET.todo == 'da_inviare' %}on{% endif %}">📤 Da inviare</a>
+    <a href="?todo=in_attesa_firma" class="vt-chip {% if request.GET.todo == 'in_attesa_firma' %}on{% endif %}">✍️ In attesa di firma</a>
+    <a href="?todo=senza_risposta" class="vt-chip {% if request.GET.todo == 'senza_risposta' %}on{% endif %}">⏳ Fermi da 7+ giorni</a>
+    <a href="?todo=opzioni_in_scadenza" class="vt-chip {% if request.GET.todo == 'opzioni_in_scadenza' %}on{% endif %}">⏰ Opzioni in scadenza</a>
+    <a href="?todo=confermati" class="vt-chip {% if request.GET.todo == 'confermati' %}on{% endif %}">✅ Confermati</a>
+    <a href="?todo=carrelli" class="vt-chip {% if request.GET.todo == 'carrelli' %}on{% endif %}">🛒 Carrelli</a>
+    <a href="?trash=cestino" class="vt-chip vt-chip--trash {% if request.GET.trash == 'cestino' %}on{% endif %}">🗑 Cestino</a>
+    {% if request.GET.todo or request.GET.trash %}
+    <a href="?" class="vt-chip vt-chip--trash">✕ Tutti</a>
+    {% endif %}
+  </div>
 {% endblock %}

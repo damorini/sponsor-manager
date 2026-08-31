@@ -528,8 +528,16 @@
 
   /* ===== Scorciatoie a "chip" sopra le liste (Cose da fare visibili,
      senza aprire il pannello filtri) ===== */
-  .vt-chips { margin: 14px 0 4px; display: flex; flex-wrap: wrap;
-              gap: 8px; align-items: center; }
+  /* clear:both tiene i chip sotto il bottone "Aggiungi": Django dà a
+     .object-tools float:right con margin-top:-48px, e su schermi stretti
+     il bottone finiva sopra i chip. */
+  .vt-chips { clear: both; margin: 14px 0 4px; display: flex;
+              flex-wrap: wrap; gap: 8px; align-items: center; }
+  @media (max-width: 1100px) {
+    /* Meno larghezza: i chip vanno a capo e devono restare distanti
+       dal bottone, che qui e' piu' vicino al titolo. */
+    .vt-chips { margin-top: 20px; }
+  }
   .vt-chips-label { font-size: 11px; text-transform: uppercase;
                     letter-spacing: .06em; font-weight: 700; opacity: .6; }
   .vt-chip { display: inline-block; padding: 5px 14px; border-radius: 999px;

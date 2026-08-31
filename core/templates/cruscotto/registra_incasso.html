@@ -36,8 +36,10 @@
     </div>
     {% endif %}
 
-    {# Riepilogo: l'operatore arriva da pagine con importi NETTI, qui serve il
-       LORDO — glielo diciamo e glielo compiliamo noi. #}
+    {% comment %}
+    Riepilogo: l'operatore arriva da pagine con importi NETTI, qui serve
+    il LORDO — glielo diciamo e glielo compiliamo noi.
+    {% endcomment %}
     <div style="background:#f4f8f4; border:1px solid #cfe3cf; border-radius:8px;
                 padding:12px 16px; margin-bottom:16px; font-size:14px;">
       <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">

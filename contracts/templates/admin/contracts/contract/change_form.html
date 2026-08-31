@@ -22,10 +22,12 @@
     </li>
     {% endif %}
 
-    {# --- I passi successivi del flusso, direttamente qui (prima erano solo
-         nel menu "Azione" della lista): mini-form POST verso la changelist
-         con l'azione e QUESTO contratto selezionato. Le eventuali pagine
-         intermedie (es. data firma) funzionano invariate. --- #}
+    {% comment %}
+    I passi successivi del flusso, direttamente qui (prima erano solo nel
+    menu "Azione" della lista): mini-form POST verso la changelist con
+    l'azione e QUESTO contratto selezionato. Le eventuali pagine
+    intermedie (es. data firma) funzionano invariate.
+    {% endcomment %}
     {% if st == 'sent' %}
     <li>
       <form method="post" action="{% url 'admin:contracts_contract_changelist' %}" style="display:inline">
