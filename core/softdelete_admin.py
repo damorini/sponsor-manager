@@ -71,16 +71,23 @@ class SoftDeleteAdminMixin:
         """La pagina di conferma di Django BLOCCA l'eliminazione se altri
         oggetti la "proteggono" (FK on_delete=PROTECT), contando anche le
         righe gia' soft-cancellate e i record senza cestino come i pagamenti
-        (il collector lavora a livello DB). Ma qui l'eliminazione e' SOFT:
-        le righe restano nel database e nessuna FK viene rotta.
+        (il collector lavora a livello DB). Quando l'eliminazione e' SOFT
+        quei blocchi sono fantasmi: le righe restano nel database e nessuna
+        FK viene rotta.
 
-        Regola: blocca SOLO chi e' (a) un oggetto col cestino e (b) ancora
-        attivo — es. un carrello figlio non ancora cancellato. Gli oggetti
-        gia' nel cestino non contano; i record senza soft-delete (pagamenti,
-        log) non contano perche' restano comunque in DB. E l'elenco mostrato
-        contiene solo i veri bloccanti, non i "fantasmi" del cestino."""
+        ATTENZIONE: vale SOLO per il soft delete. Se anche un solo oggetto e'
+        gia' nel cestino l'eliminazione sara' DEFINITIVA, quindi i vincoli
+        PROTECT sono reali e vanno mostrati: nasconderli farebbe fallire
+        l'operazione con un errore 500 (es. contratto con pagamenti).
+
+        Regola (solo soft): blocca chi e' (a) un oggetto col cestino e (b)
+        ancora attivo — es. un carrello figlio non ancora cancellato."""
         deleted_objects, model_count, perms_needed, protected = (
             super().get_deleted_objects(objs, request))
+        sara_definitiva = any(
+            getattr(o, 'deleted_at', None) is not None for o in objs)
+        if sara_definitiva:
+            return deleted_objects, model_count, perms_needed, protected
         if protected:
             from django.contrib.admin.utils import NestedObjects
             from django.db import router
@@ -118,13 +125,25 @@ class SoftDeleteAdminMixin:
             pass  # la cancellazione del record resta comunque prioritaria
         obj.delete(hard=True)
 
+    @staticmethod
+    def _motivo_protezione(err):
+        """Traduce il ProtectedError del DB in una frase comprensibile."""
+        nomi = set()
+        for o in getattr(err, 'protected_objects', []) or []:
+            nomi.add(o._meta.verbose_name)
+        return ", ".join(sorted(nomi)) or "altri record collegati"
+
     def delete_queryset(self, request, queryset):
         """Soft delete in blocco; per i record GIA' nel cestino, definitivo."""
-        n_cestino, n_definitivi = 0, 0
+        from django.db.models import ProtectedError
+        n_cestino, n_definitivi, bloccati = 0, 0, []
         for obj in queryset:
             if getattr(obj, 'deleted_at', None) is not None:
-                self._elimina_definitivamente(obj)
-                n_definitivi += 1
+                try:
+                    self._elimina_definitivamente(obj)
+                    n_definitivi += 1
+                except ProtectedError as e:
+                    bloccati.append(f"{obj} (collegato a: {self._motivo_protezione(e)})")
             else:
                 obj.delete()  # soft (override del modello)
                 n_cestino += 1
@@ -138,11 +157,30 @@ class SoftDeleteAdminMixin:
                 request,
                 f"{n_definitivi} elemento/i erano già nel cestino: eliminati "
                 "DEFINITIVAMENTE dal database (operazione non reversibile).")
+        if bloccati:
+            self.message_user(
+                request,
+                "NON eliminati (restano nel cestino) perché il database li "
+                "protegge: " + " | ".join(bloccati)
+                + ". Per eliminarli davvero bisogna prima rimuovere i record "
+                  "collegati (es. gli incassi registrati).",
+                level='WARNING')
 
     def delete_model(self, request, obj):
         """Eliminazione dal singolo record: stessa regola del blocco."""
+        from django.db.models import ProtectedError
         if getattr(obj, 'deleted_at', None) is not None:
-            self._elimina_definitivamente(obj)
+            try:
+                self._elimina_definitivamente(obj)
+            except ProtectedError as e:
+                self.message_user(
+                    request,
+                    "NON eliminato (resta nel cestino): il database lo protegge "
+                    f"perché è collegato a {self._motivo_protezione(e)}. "
+                    "Per eliminarlo davvero bisogna prima rimuovere quei record "
+                    "(es. gli incassi registrati).",
+                    level='WARNING')
+                return
             self.message_user(
                 request,
                 "Era già nel cestino: eliminato DEFINITIVAMENTE dal database "

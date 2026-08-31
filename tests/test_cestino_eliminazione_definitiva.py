@@ -79,6 +79,36 @@ def test_dal_cestino_elimina_davvero(client, staff, sponsor, evento):
 
 
 @pytest.mark.django_db
+def test_contratto_con_incassi_non_esplode(client, staff, sponsor, evento):
+    """Un contratto nel cestino con PAGAMENTI registrati e' protetto dal DB
+    (Payment.contract = PROTECT): l'eliminazione definitiva deve essere
+    fermata con un avviso, non con un errore 500."""
+    from decimal import Decimal
+    from contracts.payments import (Payment, PaymentMethodChoice, PaymentStatus)
+    c = Contract.objects.create(
+        sponsor=sponsor, event=evento, contract_kind=ContractKind.MAIN,
+        status=ContractStatus.SIGNED, contract_number='CEST-26-004',
+        total=Decimal('100.00'))
+    Payment.objects.create(
+        contract=c, payment_method=PaymentMethodChoice.BANK_TRANSFER,
+        amount_gross=Decimal('50.00'), status=PaymentStatus.SUCCEEDED)
+    c.delete()  # nel cestino
+
+    client.force_login(staff)
+    url = reverse('admin:contracts_contract_changelist') + '?trash=cestino'
+    # la conferma avvisa che ci sono record protetti
+    resp = client.post(url, {'action': 'delete_selected',
+                             ACTION_CHECKBOX_NAME: [str(c.pk)]})
+    assert resp.status_code == 200
+    testo = resp.content.decode().lower()
+    assert 'impossibile' in testo or 'protett' in testo
+    # e comunque nessun crash, il contratto resta nel cestino
+    resp = _elimina(client, [c.pk], dal_cestino=True)
+    assert resp.status_code == 200
+    assert Contract.all_objects.filter(pk=c.pk).exists()
+
+
+@pytest.mark.django_db
 def test_pagina_conferma_avvisa_che_e_definitiva(client, staff, sponsor, evento):
     c = Contract.objects.create(
         sponsor=sponsor, event=evento, contract_kind=ContractKind.MAIN,
