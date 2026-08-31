@@ -50,6 +50,11 @@ class SoftDeleteAdminMixin:
     Ricorda di aggiungere DeletedListFilter a list_filter e 'action_restore' ad actions.
     """
 
+    # Pagine di conferma che spiegano la regola cestino/eliminazione definitiva
+    delete_confirmation_template = 'admin/softdelete_delete_confirmation.html'
+    delete_selected_confirmation_template = (
+        'admin/softdelete_delete_selected_confirmation.html')
+
     def get_queryset(self, request):
         trash = request.GET.get('trash')
         if trash in ('cestino', 'tutti'):
@@ -91,15 +96,62 @@ class SoftDeleteAdminMixin:
             ]
         return deleted_objects, model_count, perms_needed, protected
 
+    # ---- Eliminazione: soft se attivo, DEFINITIVA se gia' nel cestino ----
+    #
+    # Prima, eliminare dal cestino rifaceva un soft delete su un record gia'
+    # cancellato: Django confermava "eliminato" ma la riga restava li'. Ora
+    # il cestino si comporta come ci si aspetta: la seconda eliminazione e'
+    # quella definitiva.
+
+    @staticmethod
+    def _elimina_definitivamente(obj):
+        """Hard delete del record + documenti/comunicazioni collegati via
+        GenericForeignKey (che il cascade del DB non tocca, e resterebbero
+        orfani e invisibili nel database)."""
+        from django.contrib.contenttypes.models import ContentType
+        try:
+            from shared.models import Communication, Document
+            ct = ContentType.objects.get_for_model(obj.__class__)
+            Document.all_objects.filter(content_type=ct, object_id=obj.pk).delete()
+            Communication.objects.filter(content_type=ct, object_id=obj.pk).delete()
+        except Exception:
+            pass  # la cancellazione del record resta comunque prioritaria
+        obj.delete(hard=True)
+
     def delete_queryset(self, request, queryset):
-        """Soft delete in blocco (l'azione standard farebbe hard delete)."""
-        n = 0
+        """Soft delete in blocco; per i record GIA' nel cestino, definitivo."""
+        n_cestino, n_definitivi = 0, 0
         for obj in queryset:
-            obj.delete()  # soft (override del modello)
-            n += 1
-        self.message_user(
-            request,
-            f"{n} elemento/i spostato/i nel cestino (recuperabili dal filtro 'Nel cestino').")
+            if getattr(obj, 'deleted_at', None) is not None:
+                self._elimina_definitivamente(obj)
+                n_definitivi += 1
+            else:
+                obj.delete()  # soft (override del modello)
+                n_cestino += 1
+        if n_cestino:
+            self.message_user(
+                request,
+                f"{n_cestino} elemento/i spostato/i nel cestino "
+                "(recuperabili dal filtro 'Nel cestino').")
+        if n_definitivi:
+            self.message_user(
+                request,
+                f"{n_definitivi} elemento/i erano già nel cestino: eliminati "
+                "DEFINITIVAMENTE dal database (operazione non reversibile).")
+
+    def delete_model(self, request, obj):
+        """Eliminazione dal singolo record: stessa regola del blocco."""
+        if getattr(obj, 'deleted_at', None) is not None:
+            self._elimina_definitivamente(obj)
+            self.message_user(
+                request,
+                "Era già nel cestino: eliminato DEFINITIVAMENTE dal database "
+                "(operazione non reversibile).")
+        else:
+            obj.delete()
+            self.message_user(
+                request,
+                "Spostato nel cestino (recuperabile dal filtro 'Nel cestino').")
 
     @admin.action(description="Ripristina dal cestino")
     def action_restore(self, request, queryset):

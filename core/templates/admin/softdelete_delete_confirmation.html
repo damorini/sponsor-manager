@@ -1,0 +1,21 @@
+{% extends "admin/delete_confirmation.html" %}
+
+{% comment %}
+Conferma eliminazione del SINGOLO record per i modelli col cestino.
+{% endcomment %}
+
+{% block content %}
+<div style="background:#fff7e6; border-left:4px solid #C8A04E; border-radius:6px;
+            padding:12px 16px; margin:0 0 16px;">
+  {% if object.deleted_at %}
+  <p style="margin:0;"><strong>Attenzione:</strong> questo elemento è <strong>già nel cestino</strong>.
+     Confermando viene eliminato <strong>DEFINITIVAMENTE</strong> dal database, insieme a righe,
+     scadenze e documenti collegati. <strong>L'operazione non è reversibile.</strong></p>
+  {% else %}
+  <p style="margin:0;">Questo elemento viene spostato nel <strong>cestino</strong> e resta
+     recuperabile (filtro «Nel cestino» nella lista). Per eliminarlo davvero, ripeti
+     l'eliminazione dal cestino.</p>
+  {% endif %}
+</div>
+{{ block.super }}
+{% endblock %}

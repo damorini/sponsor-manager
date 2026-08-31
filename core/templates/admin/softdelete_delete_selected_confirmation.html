@@ -1,0 +1,20 @@
+{% extends "admin/delete_selected_confirmation.html" %}
+
+{% comment %}
+Conferma eliminazione per i modelli col cestino (Contratti, Sponsor).
+Spiega la doppia regola PRIMA di confermare: dal cestino si cancella davvero.
+{% endcomment %}
+
+{% block content %}
+<div style="background:#fff7e6; border-left:4px solid #C8A04E; border-radius:6px;
+            padding:12px 16px; margin:0 0 16px;">
+  <p style="margin:0 0 6px;"><strong>Come funziona l'eliminazione</strong></p>
+  <ul style="margin:0; padding-left:20px;">
+    <li>Elementi <strong>attivi</strong>: vengono spostati nel <strong>cestino</strong> e restano recuperabili.</li>
+    <li>Elementi <strong>già nel cestino</strong>: vengono eliminati <strong>DEFINITIVAMENTE</strong> dal
+        database, insieme a righe, scadenze e documenti collegati.
+        <strong>Questa operazione non è reversibile.</strong></li>
+  </ul>
+</div>
+{{ block.super }}
+{% endblock %}

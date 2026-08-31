@@ -539,17 +539,11 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 self.message_user(
                     request, "Prezzo/sconto stand applicati alla riga.")
 
-    def delete_model(self, request, obj):
-        """Cancellazione singola: usa Contract.delete() (soft-delete) che
-        libera anche lo stand/blocco assegnato."""
-        obj.delete()
-
-    def delete_queryset(self, request, queryset):
-        """Cancellazione multipla ('Elimina selezionati'): itera per-record
-        cosi' scatta Contract.delete() (soft-delete + liberazione stand),
-        invece del bulk queryset.delete() che salterebbe la logica."""
-        for obj in queryset:
-            obj.delete()
+    # NB: delete_model / delete_queryset NON sono ridefiniti qui: li fornisce
+    # SoftDeleteAdminMixin, che itera per-record (quindi Contract.delete()
+    # scatta e libera stand/blocco) e, per i record GIA' nel cestino, esegue
+    # l'eliminazione DEFINITIVA. Ridefinendoli qui si vinceva sul mixin e dal
+    # cestino l'eliminazione non aveva alcun effetto visibile.
 
     class Media:
         js = ('admin/js/contract_event_filter.js', 'admin/js/contract_contact_filter.js',
