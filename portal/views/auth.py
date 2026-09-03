@@ -169,6 +169,10 @@ def password_reset_confirm_view(request, uidb64, token):
         form = SetPasswordForm(user, request.POST)
         if form.is_valid():
             form.save()
+            # ricorda dove deve accedere ORA che la password e' cambiata:
+            # backoffice per gli operatori, portale per i clienti
+            request.session['reset_is_staff'] = bool(
+                getattr(user, 'is_staff', False))
             return redirect('portal:password_reset_complete')
     else:
         form = SetPasswordForm(user) if valid_link else None
@@ -180,8 +184,13 @@ def password_reset_confirm_view(request, uidb64, token):
 
 
 def password_reset_complete_view(request):
-    """Conferma password aggiornata."""
-    return render(request, 'portal/auth/password_reset_complete.html')
+    """Conferma password aggiornata: il pulsante porta al posto giusto
+    (backoffice per gli operatori, portale per i clienti)."""
+    is_staff = bool(request.session.pop('reset_is_staff', False))
+    return render(request, 'portal/auth/password_reset_complete.html', {
+        'is_staff': is_staff,
+        'login_url': '/admin/' if is_staff else reverse('portal:login'),
+    })
 
 
 # ============================================================================
@@ -200,9 +209,21 @@ def _send_password_reset_email(request, user):
     })
     reset_url = request.build_absolute_uri(reset_path)
 
+    # La pagina per impostare la password e' UNA sola (quella del portale),
+    # ma il posto dove si accede DOPO cambia: gli operatori del backoffice
+    # entrano da /admin/, i clienti dal portale. Senza questa distinzione
+    # l'email mandava un operatore al portale, dove verrebbe respinto.
+    is_staff = bool(getattr(user, 'is_staff', False))
+    login_url = request.build_absolute_uri(
+        '/admin/' if is_staff else reverse('portal:login'))
+
     lang = getattr(getattr(user, 'contact_profile', None), 'preferred_language', 'it') or 'it'
-    subject = ("Reset your password · Sponsor portal" if lang == 'en'
-               else "Reimposta la password · Portale sponsor")
+    if is_staff:
+        subject = ("Reset your password · Backoffice" if lang == 'en'
+                   else "Reimposta la password · Backoffice")
+    else:
+        subject = ("Reset your password · Sponsor portal" if lang == 'en'
+                   else "Reimposta la password · Portale sponsor")
 
     try:
         send_email(
@@ -210,6 +231,8 @@ def _send_password_reset_email(request, user):
             context={
                 'user': user,
                 'reset_url': reset_url,
+                'is_staff': is_staff,
+                'login_url': login_url,
             },
             to=[user.email],
             subject=subject,

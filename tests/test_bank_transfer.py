@@ -43,11 +43,16 @@ def addon_cart(db, user_sponsor, sponsor):
         if not getattr(sponsor, campo, None):
             setattr(sponsor, campo, valore)
     sponsor.save()
+    # Date RELATIVE a oggi: con date fisse il test invecchia e, passata la
+    # data, il blocco "evento concluso" lo fa fallire senza che nulla si sia
+    # rotto davvero.
+    from datetime import timedelta
+    inizio = date.today() + timedelta(days=90)
     event = Event.objects.create(
         name={'it': 'BT Event', 'en': 'BT Event'},
         code='BT',
-        start_date=date(2026, 9, 1),
-        end_date=date(2026, 9, 2),
+        start_date=inizio,
+        end_date=inizio + timedelta(days=1),
     )
     service = Service.objects.create(
         event=event,
