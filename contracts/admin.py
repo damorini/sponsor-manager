@@ -127,6 +127,33 @@ def _deadline_file_esempio(obj):
     return mark_safe('<span style="color:#999;">—</span>')
 
 
+def _deadline_file_ricevuto(obj):
+    """File che il CLIENTE ha caricato su questa scadenza (contabile del
+    bonifico, banner, liberatoria...). Restano agganciati alla scadenza:
+    senza questa colonna si vedevano solo nell'elenco generale Documenti."""
+    from django.contrib.contenttypes.models import ContentType
+    from django.utils.safestring import mark_safe
+    from shared.models import Document
+    vuoto = mark_safe('<span style="color:#999;">—</span>')
+    if not (obj and obj.pk):
+        return vuoto
+    docs = list(Document.objects.filter(
+        content_type=ContentType.objects.get_for_model(Deadline),
+        object_id=obj.pk,
+    ).order_by('-created_at')[:5])
+    if not docs:
+        return vuoto
+    parti = []
+    for d in docs:
+        nome = d.file_name or d.title or 'documento'
+        breve = nome if len(nome) <= 34 else nome[:31] + '…'
+        parti.append(format_html(
+            '<a href="{}" target="_blank" rel="noopener" title="{}" '
+            'style="display:block;white-space:nowrap;">📎 {}</a>',
+            reverse('core:documento_apri', args=[d.pk]), nome, breve))
+    return mark_safe(''.join(parti))
+
+
 _DQ_BTN = ('display:inline-block;margin:0 3px 2px 0;padding:2px 9px;'
            'border:1px solid {col};border-radius:6px;background:#fff;'
            'color:{col};font-size:11px;font-weight:600;cursor:pointer;'
@@ -177,14 +204,18 @@ class DeadlineInline(admin.TabularInline):
     extra = 0
     show_change_link = True
     fields = ('title', 'due_date', 'status', 'completed_at', 'reminder_count',
-              'file_esempio', 'azioni_rapide')
+              'file_esempio', 'file_ricevuto', 'azioni_rapide')
     readonly_fields = ('title', 'due_date', 'completed_at', 'reminder_count',
-                       'file_esempio', 'azioni_rapide')
+                       'file_esempio', 'file_ricevuto', 'azioni_rapide')
     can_delete = False
 
     @admin.display(description='File di esempio')
     def file_esempio(self, obj):
         return _deadline_file_esempio(obj)
+
+    @admin.display(description='File ricevuto dal cliente')
+    def file_ricevuto(self, obj):
+        return _deadline_file_ricevuto(obj)
 
     @admin.display(description='Azioni rapide')
     def azioni_rapide(self, obj):
@@ -1503,7 +1534,7 @@ class DeadlineAdmin(admin.ModelAdmin):
     list_display = (
         'title', 'contract_link', 'cliente', 'due_date', 'status_badge',
         'completata_da', 'days_until_due_display', 'reminder_count', 'file_esempio',
-        'azioni_rapide',
+        'file_ricevuto', 'azioni_rapide',
     )
     list_filter = (evento_filter('contract__event'), 'status', 'deadline_type')
     search_fields = (
@@ -1515,11 +1546,15 @@ class DeadlineAdmin(admin.ModelAdmin):
     @admin.display(description='File di esempio')
     def file_esempio(self, obj):
         return _deadline_file_esempio(obj)
+
+    @admin.display(description='File ricevuto dal cliente')
+    def file_ricevuto(self, obj):
+        return _deadline_file_ricevuto(obj)
     autocomplete_fields = ['contract', 'contract_line', 'completed_by_contact']
     date_hierarchy = 'due_date'
     readonly_fields = ('created_at', 'updated_at', 'last_reminder_sent_at',
                        'reminder_count', 'content_schema', 'submitted_content',
-                       'file_esempio')
+                       'file_esempio', 'file_ricevuto')
     ordering = ('due_date',)
 
     actions = ['action_mark_as_received', 'action_sposta_scadenze',
