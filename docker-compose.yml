@@ -41,6 +41,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: sponsor_manager_db
+    restart: unless-stopped
     environment:
       POSTGRES_DB: sponsor_manager
       POSTGRES_USER: sponsor
@@ -60,6 +61,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: sponsor_manager_redis
+    restart: unless-stopped
     volumes:
       - redis_data:/data
     healthcheck:
@@ -74,6 +76,7 @@ services:
   web:
     build: .
     container_name: sponsor_manager_web
+    restart: unless-stopped
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py compilemessages -l en --ignore=venv &&
@@ -104,6 +107,7 @@ services:
   celery_worker:
     build: .
     container_name: sponsor_manager_celery_worker
+    restart: unless-stopped
     command: celery -A config worker -l info
     environment:
       <<: *app-env
@@ -124,6 +128,7 @@ services:
   celery_beat:
     build: .
     container_name: sponsor_manager_celery_beat
+    restart: unless-stopped
     command: celery -A config beat -l info
     environment:
       <<: *app-env
@@ -142,6 +147,7 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: sponsor_manager_caddy
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
