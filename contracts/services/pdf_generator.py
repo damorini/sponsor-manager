@@ -1739,6 +1739,7 @@ def generate_quote_pdf_html(contract):
             'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total',
             'validity': validity, 'cta': 'View the quote', 'ref': 'Quote',
             'note_stand': 'Exhibition space notes',
+            'your_ref': 'Your reference',
         }
     else:
         intro = mark_safe(
@@ -1765,6 +1766,7 @@ def generate_quote_pdf_html(contract):
             'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale',
             'validity': validity, 'cta': 'Vedi il preventivo', 'ref': 'Preventivo',
             'note_stand': 'Note sullo spazio espositivo',
+            'your_ref': 'Vostro riferimento',
         }
 
     from decimal import Decimal as _Dec

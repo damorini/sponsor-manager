@@ -145,6 +145,17 @@ class Contract(SoftDeleteModel):
         help_text="Generato dall'app, formato es. '2026-FE-001'",
     )
 
+    customer_reference = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name="Vostro riferimento (PO)",
+        help_text="Riferimento che il CLIENTE chiede di riportare sui documenti: "
+                  "numero di ordine d'acquisto (PO), CIG, commessa. Se compilato "
+                  "viene stampato come 'Vostro riferimento: ...' su preventivo, "
+                  "contratto e domanda di ammissione. Lascialo vuoto per le "
+                  "aziende che non lo richiedono: in quel caso non compare nulla.",
+    )
+
     sponsor_signer_contact = models.ForeignKey(
         Contact,
         on_delete=models.SET_NULL,

@@ -586,11 +586,16 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     fieldsets = (
         (None, {
-            'fields': ('contract_number_display', 'event', 'sponsor', 'sponsor_signer_contact'),
+            'fields': ('contract_number_display', 'event', 'sponsor',
+                       'sponsor_signer_contact', 'customer_reference'),
             'description': "Firmatario: senza un firmatario con i dati "
                            "anagrafici completi (nascita, residenza, documento, "
                            "CF) il cliente NON può confermare il preventivo e "
-                           "il contratto non si genera.",
+                           "il contratto non si genera.<br>"
+                           "<strong>Vostro riferimento (PO)</strong>: compilalo solo "
+                           "se l'azienda chiede di riportare un suo numero d'ordine "
+                           "(PO), un CIG o una commessa sui documenti; se vuoto, "
+                           "sui PDF non compare nulla.",
         }),
         ('Tipo e origine', {
             'fields': ('contract_kind', 'parent_contract', 'origin', 'language'),
