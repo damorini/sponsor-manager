@@ -39,6 +39,12 @@ app.autodiscover_tasks()
 # ============================================================================
 
 app.conf.beat_schedule = {
+    # 00:05 — Opzioni spazio scadute: stand/blocchi tornano Disponibili
+    'libera_spazi_opzione_scaduta_daily': {
+        'task': 'contracts.tasks.scheduled.libera_spazi_opzione_scaduta',
+        'schedule': crontab(hour=0, minute=5),
+    },
+
     # 07:00 — Alert urgenze per operatore
     'send_operator_alerts_daily': {
         'task': 'contracts.tasks.scheduled.send_operator_alerts',

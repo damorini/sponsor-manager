@@ -17,6 +17,23 @@ from django.utils.html import format_html
 from .models import Stand, StandBlock, StandStatus, StandType
 
 
+def _solo_spazi_liberi(queryset, campo):
+    """Tendina di scelta spazio nel contratto: toglie gli stand/blocchi
+    Assegnati o Non disponibili e quelli che un contratto tiene ADESSO
+    (Contract.q_tiene_spazio: anche una bozza appena salvata). Il controllo e'
+    fatto dal vivo, non sullo stato salvato: cosi' lo spazio ricompare il
+    giorno dopo la scadenza dell'opzione senza aspettare altro."""
+    from django.db.models import Exists, OuterRef
+    from contracts.models import Contract, ContractStatus
+    tenuto = (Contract.objects
+              .filter(**{campo: OuterRef('pk')})
+              .exclude(status=ContractStatus.CANCELLED)
+              .filter(Contract.q_tiene_spazio()))
+    return (queryset
+            .exclude(status__in=[StandStatus.ASSIGNED, StandStatus.UNAVAILABLE])
+            .exclude(Exists(tenuto)))
+
+
 class StandBlockForm(forms.ModelForm):
     """Form del blocco: permette di SCEGLIERE quali stand (gia' esistenti e
     disponibili) fanno parte del blocco, tramite selettore a doppia lista."""
@@ -100,13 +117,13 @@ class StandBlockAdmin(admin.ModelAdmin):
     search_fields = ('code', 'name', 'event__name', 'event__slug')
 
     def get_search_results(self, request, queryset, search_term):
-        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
-        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
-        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione
+        # spazio nel contratto) mostra solo gli stand/blocchi liberi: vedi
+        # _solo_spazi_liberi (anche le bozze appena salvate li tengono).
         queryset, may_dup = super().get_search_results(
             request, queryset, search_term)
         if "/autocomplete/" in request.path:
-            queryset = queryset.filter(status=StandStatus.AVAILABLE)
+            queryset = _solo_spazi_liberi(queryset, 'stand_block')
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
@@ -309,13 +326,14 @@ class StandAdmin(admin.ModelAdmin):
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
 
     def get_search_results(self, request, queryset, search_term):
-        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
-        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
-        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione
+        # spazio nel contratto) mostra solo gli stand/blocchi liberi: vedi
+        # _solo_spazi_liberi (anche le bozze appena salvate li tengono).
         queryset, may_dup = super().get_search_results(
             request, queryset, search_term)
         if "/autocomplete/" in request.path:
-            queryset = queryset.filter(status=StandStatus.AVAILABLE, stand_block__isnull=True)
+            queryset = _solo_spazi_liberi(
+                queryset.filter(stand_block__isnull=True), 'stand')
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)

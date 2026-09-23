@@ -202,16 +202,13 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
         if active_contract:
             new_status = StandStatus.ASSIGNED
         else:
-            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
-            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
-            _oggi = timezone.now().date()
+            # Riservato se un contratto non firmato tiene lo spazio: inviato,
+            # oppure bozza senza opzione o con opzione non ancora scaduta
+            # (regola unica in Contract.q_tiene_spazio).
             reserved_contract = self.contracts.filter(
                 deleted_at__isnull=True,
-            ).filter(
-                Q(status=ContractStatus.SENT)
-                | Q(status=ContractStatus.DRAFT,
-                    option_until__isnull=False,
-                    option_until__gte=_oggi)
+            ).exclude(status=ContractStatus.CANCELLED).filter(
+                Contract.q_tiene_spazio()
             ).first()
             new_status = StandStatus.RESERVED if reserved_contract else StandStatus.AVAILABLE
 
@@ -388,16 +385,13 @@ class Stand(TranslatableMixin, TimeStampedModel):
         if active_contract:
             self.status = StandStatus.ASSIGNED
         else:
-            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
-            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
-            _oggi = timezone.now().date()
+            # Riservato se un contratto non firmato tiene lo spazio: inviato,
+            # oppure bozza senza opzione o con opzione non ancora scaduta
+            # (regola unica in Contract.q_tiene_spazio).
             reserved = self.contracts.filter(
                 deleted_at__isnull=True,
-            ).filter(
-                Q(status=ContractStatus.SENT)
-                | Q(status=ContractStatus.DRAFT,
-                    option_until__isnull=False,
-                    option_until__gte=_oggi)
+            ).exclude(status=ContractStatus.CANCELLED).filter(
+                Contract.q_tiene_spazio()
             ).first()
             self.status = StandStatus.RESERVED if reserved else StandStatus.AVAILABLE
 

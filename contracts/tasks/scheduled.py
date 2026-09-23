@@ -342,3 +342,28 @@ def check_promotional_campaigns():
             n += 1
     logger.info("check_promotional_campaigns: %d campagne messe in coda", n)
     return n
+
+
+# ============================================================================
+# Opzioni spazio scadute: lo stand/blocco torna Disponibile
+# ============================================================================
+
+@shared_task
+def libera_spazi_opzione_scaduta():
+    """Ricalcola lo stato degli stand/blocchi 'Riservati': quando l'opzione
+    della bozza che li teneva e' scaduta tornano Disponibili anche nelle liste
+    (la tendina del contratto li mostra gia' da sola, vedi venues/admin.py)."""
+    from venues.models import Stand, StandBlock, StandStatus
+
+    liberati = 0
+    for block in StandBlock.objects.filter(status=StandStatus.RESERVED):
+        block.update_status_from_contract()
+        if block.status == StandStatus.AVAILABLE:
+            liberati += 1
+    for stand in Stand.objects.filter(status=StandStatus.RESERVED,
+                                      stand_block__isnull=True):
+        stand.update_status_from_contract()
+        if stand.status == StandStatus.AVAILABLE:
+            liberati += 1
+    logger.info("libera_spazi_opzione_scaduta: %d spazi tornati disponibili", liberati)
+    return liberati

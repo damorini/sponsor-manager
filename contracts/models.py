@@ -340,27 +340,35 @@ class Contract(SoftDeleteModel):
         most_common = Counter(rates).most_common(1)[0][0]
         return int(most_common)
 
-    def _contratti_che_tengono(self, **filtro_spazio):
+    @staticmethod
+    def q_tiene_spazio():
         """
-        Contratti (diversi da self, non annullati) che 'tengono' lo spazio indicato:
+        Regola UNICA per dire se un contratto 'tiene' il suo stand/blocco:
         - stati SENT/SIGNED/ACTIVE/COMPLETED, OPPURE
-        - DRAFT con opzione attiva (option_until >= oggi).
-        I DRAFT senza opzione o con opzione scaduta NON tengono lo spazio.
+        - DRAFT appena salvato: senza opzione lo tiene finche' non viene
+          annullato/cestinato o non cambia spazio; con opzione lo tiene fino
+          alla data dell'opzione compresa. Opzione scaduta -> spazio libero.
+        Usata dal controllo al salvataggio, dallo stato dello stand e dalla
+        tendina di scelta dello spazio: devono dire tutti la stessa cosa.
         """
         from django.db.models import Q
         from django.utils import timezone
         oggi = timezone.now().date()
-        tengono = (
+        return (
             Q(status__in=[ContractStatus.SENT, ContractStatus.SIGNED,
                           ContractStatus.ACTIVE, ContractStatus.COMPLETED])
-            | Q(status=ContractStatus.DRAFT, option_until__isnull=False,
-                option_until__gte=oggi)
+            | Q(status=ContractStatus.DRAFT, option_until__isnull=True)
+            | Q(status=ContractStatus.DRAFT, option_until__gte=oggi)
         )
+
+    def _contratti_che_tengono(self, **filtro_spazio):
+        """Contratti (diversi da self, non annullati/cestinati) che tengono lo
+        spazio indicato secondo q_tiene_spazio()."""
         return (Contract.objects
                 .filter(**filtro_spazio)
                 .exclude(status=ContractStatus.CANCELLED)
                 .exclude(pk=self.pk)
-                .filter(tengono))
+                .filter(self.q_tiene_spazio()))
 
     def clean(self):
         """Validazione: stand e stand_block sono mutuamente esclusivi."""
@@ -524,7 +532,8 @@ class Contract(SoftDeleteModel):
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
             super().save(*args, **kwargs)
-            self._sync_option_venue(kwargs.get('update_fields'))
+            self._sync_option_venue(kwargs.get('update_fields'),
+                                    _prev_stand_id, _prev_block_id)
             # Sincronizza la scadenza-opzione anche sui contratti esistenti:
             # quando il preventivo viene confermato (status -> SIGNED) o l'opzione
             # viene rimossa, la Deadline 'scadenza_opzione' pending viene eliminata.
@@ -569,34 +578,36 @@ class Contract(SoftDeleteModel):
         # Esauriti i tentativi: rilancia l'ultimo errore.
         raise last_err
 
-    def _sync_option_venue(self, update_fields=None):
+    def _sync_option_venue(self, update_fields=None,
+                           prev_stand_id=None, prev_block_id=None):
         """
-        Dopo il salvataggio di una BOZZA con opzione (option_until), aggiorna lo
-        stato dello stand/blocco cosi' risulta riservato gia' in bozza.
-        Guardie:
-        - salta i salvataggi parziali dei soli totali (recalculate_totals) per
-          evitare lavoro inutile e ricorsioni;
-        - agisce solo se c'e' uno stand/blocco e un'opzione impostata.
+        Dopo il salvataggio ricalcola lo stato dello stand/blocco del contratto,
+        cosi' una BOZZA appena salvata lo toglie subito dalla tendina degli
+        spazi liberi (vedi Contract.q_tiene_spazio). Se lo spazio e' cambiato,
+        ricalcola anche quello di prima, che torna libero.
+        Salta i salvataggi parziali dei soli totali (recalculate_totals) per
+        evitare lavoro inutile e ricorsioni.
         """
-        from contracts.models import ContractStatus
-        # salta i save mirati ai soli totali / campi non rilevanti
+        from venues.models import Stand, StandBlock
         if update_fields is not None:
             campi = set(update_fields)
             rilevanti = {'status', 'option_until', 'stand', 'stand_block'}
             if not (campi & rilevanti):
                 return
-        if self.status != ContractStatus.DRAFT:
-            return
-        if not self.option_until:
-            return
-        if not (self.stand_id or self.stand_block_id):
-            return
         try:
             self._update_venue_status()
+            if prev_stand_id and prev_stand_id != self.stand_id:
+                _st = Stand.objects.filter(pk=prev_stand_id).first()
+                if _st:
+                    _st.update_status_from_contract()
+            if prev_block_id and prev_block_id != self.stand_block_id:
+                _bl = StandBlock.objects.filter(pk=prev_block_id).first()
+                if _bl:
+                    _bl.update_status_from_contract()
         except Exception:
             import logging
             logging.getLogger(__name__).exception(
-                "Errore aggiornamento stato spazio per opzione, contract %s",
+                "Errore aggiornamento stato spazio, contract %s",
                 getattr(self, 'contract_number', '?'),
             )
 
