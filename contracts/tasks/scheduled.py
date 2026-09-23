@@ -249,8 +249,22 @@ def send_operator_alerts():
         bounced_at__gt=yesterday,
     )[:20])
 
+    # 4-6. Cose lasciate a meta' / che il cliente non vede (core/controlli.py)
+    from core import controlli
+    contatti_da_invitare = list(controlli.contatti_da_invitare()
+                                .select_related('sponsor')
+                                .order_by('sponsor__legal_name')[:20])
+    cliente_senza_accesso = list(controlli.contratti_cliente_senza_accesso()
+                                 .select_related('sponsor')
+                                 .order_by('sponsor__legal_name')[:20])
+    senza_scadenze_pagamento = list(controlli.contratti_senza_scadenze_pagamento()
+                                    .select_related('sponsor')
+                                    .order_by('sponsor__legal_name')[:20])
+
     # Se nulla di urgente, esci silenzioso
-    if not overdue_deadlines and not pending_payments and not failed_emails:
+    if not (overdue_deadlines or pending_payments or failed_emails
+            or contatti_da_invitare or cliente_senza_accesso
+            or senza_scadenze_pagamento):
         logger.info("send_operator_alerts: nulla di urgente, skip email")
         return
 
@@ -272,6 +286,9 @@ def send_operator_alerts():
         'overdue_deadlines': overdue_deadlines,
         'pending_payments': pending_payments,
         'failed_emails': failed_emails,
+        'contatti_da_invitare': contatti_da_invitare,
+        'cliente_senza_accesso': cliente_senza_accesso,
+        'senza_scadenze_pagamento': senza_scadenze_pagamento,
     }
 
     counts = []
@@ -281,6 +298,12 @@ def send_operator_alerts():
         counts.append(f"{len(pending_payments)} pagamenti da confermare")
     if failed_emails:
         counts.append(f"{len(failed_emails)} email non recapitate")
+    if cliente_senza_accesso:
+        counts.append(f"{len(cliente_senza_accesso)} contratti che il cliente non vede")
+    if contatti_da_invitare:
+        counts.append(f"{len(contatti_da_invitare)} inviti portale da mandare")
+    if senza_scadenze_pagamento:
+        counts.append(f"{len(senza_scadenze_pagamento)} contratti senza scadenze di pagamento")
     subject = f"⚠ Alert Sponsor Manager: {', '.join(counts)}"
 
     try:

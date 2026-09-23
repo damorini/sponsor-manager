@@ -314,6 +314,8 @@ class TodoFilter(admin.SimpleListFilter):
             ('opzioni_in_scadenza', 'Opzioni in scadenza (7 giorni)'),
             ('opzionati', 'Spazi opzionati (bozze con stand)'),
             ('firmati_senza_scadenze', 'Firmati senza scadenze'),
+            ('senza_scadenze_pagamento', 'Firmati con importo ma senza scadenze di pagamento'),
+            ('cliente_senza_accesso', 'Il cliente non li vede (nessun accesso al portale)'),
             ('carrelli', 'Carrelli abbandonati'),
         )
 
@@ -357,6 +359,13 @@ class TodoFilter(admin.SimpleListFilter):
                 status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
                 deadlines__isnull=True,
             ).distinct()
+        if v == 'senza_scadenze_pagamento':
+            # identico all'avviso della home cruscotto (core/controlli.py)
+            from core.controlli import contratti_senza_scadenze_pagamento
+            return contratti_senza_scadenze_pagamento(qs)
+        if v == 'cliente_senza_accesso':
+            from core.controlli import contratti_cliente_senza_accesso
+            return contratti_cliente_senza_accesso(qs)
         if v == 'carrelli':
             return qs.filter(contract_kind=ContractKind.ADDON, status=ContractStatus.DRAFT)
         return qs
