@@ -644,7 +644,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         }),
         ('Piano pagamento (acconto/saldo)', {
             'fields': (
-                'deposit_percent',
+                ('deposit_percent', 'deposit_amount_override'),
                 ('deposit_due_date_override', 'balance_due_date_override'),
                 'piano_acconto_display', 'piano_saldo_display',
                 'piano_scad_acconto_display', 'piano_scad_saldo_display',

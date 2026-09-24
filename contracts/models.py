@@ -260,6 +260,15 @@ class Contract(SoftDeleteModel):
         verbose_name="Acconto %",
         help_text="Percentuale di acconto (es. 30 per il 30%). Vuoto = pagamento unico (tutto a saldo).",
     )
+    deposit_amount_override = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Importo acconto (manuale)",
+        help_text="Solo per casi eccezionali: importo esatto dell'acconto (IVA inclusa) "
+                  "quando la percentuale non arriva al centesimo. Vuoto = calcolato dalla percentuale.",
+    )
 
     deposit_due_date_override = models.DateField(
         null=True,
@@ -757,6 +766,8 @@ class Contract(SoftDeleteModel):
         from decimal import Decimal
         if not self.deposit_percent:
             return Decimal('0.00')
+        if self.deposit_amount_override is not None:
+            return self.deposit_amount_override
         return (self.total * self.deposit_percent / Decimal('100')).quantize(Decimal('0.01'))
 
     @property
