@@ -13,7 +13,26 @@ from django.urls import reverse
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import Event, EventStatus, PromotionalCampaign, PromotionalCampaignOptOut
+from .models import (Event, EventSetupDay, EventStatus, PromotionalCampaign,
+                     PromotionalCampaignOptOut)
+
+
+class EventSetupDayInline(admin.TabularInline):
+    """Giorni di allestimento e disallestimento, uno per riga. Il giorno
+    della settimana si ricava dalla data (e si aggiorna subito scegliendola)."""
+    model = EventSetupDay
+    extra = 0
+    fields = ('kind', 'date', 'giorno', 'start_time', 'end_time', 'notes')
+    readonly_fields = ('giorno',)
+    verbose_name = "Giorno"
+    verbose_name_plural = "Allestimento e disallestimento"
+
+    class Media:
+        js = ('admin/js/giorno_settimana.js',)
+
+    @admin.display(description="Giorno della settimana")
+    def giorno(self, obj):
+        return obj.giorno_settimana if obj and obj.date else '-'
 
 
 class EventAdminForm(forms.ModelForm):
@@ -72,6 +91,7 @@ class EventAdmin(admin.ModelAdmin):
     ordering = ('-start_date',)
     readonly_fields = ('created_at', 'updated_at', 'sponsor_dashboard')
     actions = ['action_archivia', 'action_riattiva', 'action_duplica']
+    inlines = [EventSetupDayInline]
 
     @admin.action(description='Duplica per NUOVA EDIZIONE (servizi, stand, template scadenze)')
     def action_duplica(self, request, queryset):

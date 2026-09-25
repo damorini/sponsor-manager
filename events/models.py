@@ -361,6 +361,50 @@ class Event(TranslatableMixin, TimeStampedModel):
         return self.status != EventStatus.ARCHIVED
 
 
+GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì',
+                    'Venerdì', 'Sabato', 'Domenica']
+
+
+class SetupKind(models.TextChoices):
+    ALLESTIMENTO = 'allestimento', 'Allestimento'
+    DISALLESTIMENTO = 'disallestimento', 'Disallestimento'
+
+
+class EventSetupDay(TimeStampedModel):
+    """Un giorno di allestimento o disallestimento dell'evento, con orario.
+    Il giorno della settimana non si scrive: si ricava dalla data."""
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='setup_days',
+        verbose_name="Evento")
+    kind = models.CharField(
+        "Tipo", max_length=20, choices=SetupKind.choices,
+        default=SetupKind.ALLESTIMENTO)
+    date = models.DateField("Data")
+    start_time = models.TimeField("Orario di inizio")
+    end_time = models.TimeField("Orario di fine")
+    notes = models.CharField(
+        "Note", max_length=255, blank=True,
+        help_text="Facoltativo, es. 'solo stand preallestiti', 'ingresso carico merci'.")
+
+    class Meta:
+        verbose_name = "Giorno di allestimento/disallestimento"
+        verbose_name_plural = "Allestimento e disallestimento"
+        ordering = ['date', 'start_time']
+
+    def __str__(self):
+        return (f"{self.get_kind_display()} {self.giorno_settimana} "
+                f"{self.date:%d/%m/%Y} {self.start_time:%H:%M}-{self.end_time:%H:%M}")
+
+    @property
+    def giorno_settimana(self):
+        return GIORNI_SETTIMANA[self.date.weekday()] if self.date else ''
+
+    def clean(self):
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError(
+                {'end_time': "L'orario di fine deve essere successivo a quello di inizio."})
+
+
 class PromotionalCampaign(TimeStampedModel):
     """
     Campagna email ricorrente per proporre servizi extra/visibilità agli
