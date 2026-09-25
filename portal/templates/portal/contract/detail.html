@@ -138,7 +138,7 @@
                 </div>
                 {% if line.service_description_snapshot %}
                 <div class="text-xs text-gray-500 mt-1">
-                  {{ line.service_description_snapshot|truncatechars:100 }}
+                  {{ line.service_description_snapshot|linebreaksbr }}
                 </div>
                 {% endif %}
                 {% if line.is_prezzo_revisionato %}

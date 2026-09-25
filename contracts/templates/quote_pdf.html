@@ -76,7 +76,7 @@
     <tr>
       <td>
         <div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">&ndash; {{ line.variant_label_snapshot }}</span>{% endif %}</div>
-        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}
+        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot|linebreaksbr }}</div>{% endif %}
         {% if line.is_prezzo_revisionato %}<div><span class="badge-sconto">{% if line.is_sconto_esplicito %}{{ t.badge_sconto }} &euro; {{ line.sconto_eur|floatformat:2 }}{% else %}{{ t.badge_riservato }} &euro; {{ line.prezzo_riservato|floatformat:2 }}{% endif %}</span></div>{% endif %}
       </td>
       <td class="qty">{{ line.quantity }}</td>
