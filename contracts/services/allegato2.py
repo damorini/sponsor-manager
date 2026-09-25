@@ -15,10 +15,13 @@ sistema ne prepara una copia personalizzata:
 """
 import copy
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 FONT = 'Arial'
+# Allegato 2 un punto sotto il contratto (9): stile 'clausole di polizza'.
+CORPO = 8
 W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
 
 
@@ -106,23 +109,30 @@ def _uniforma_stile(d):
 
     def _paragrafo(p):
         stile = p.style.name if p.style is not None else ''
+        from docx.shared import Pt
+        pf = p.paragraph_format
         if stile == 'Title':
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             for r in p.runs:
-                _stile_run(r, 14, True)
+                _stile_run(r, 12, True)
         elif stile == 'Subtitle':
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
             for r in p.runs:
-                _stile_run(r, 11, True)
+                _stile_run(r, 10, True)
                 r.font.italic = False
         elif stile.startswith('Heading'):
+            pf.space_before, pf.space_after = Pt(5), Pt(1)
+            pf.keep_with_next = True
             for r in p.runs:
-                _stile_run(r, 9, True)
+                _stile_run(r, CORPO, True)
         else:
             if p.alignment is None or p.alignment == WD_ALIGN_PARAGRAPH.LEFT:
                 p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            # spaziature strette: il testo e' fitto come in una polizza
+            pf.space_before, pf.space_after = Pt(0), Pt(2)
+            pf.line_spacing = 1.0
             for r in p.runs:
-                _stile_run(r, 9)
+                _stile_run(r, CORPO)
 
     for p in d.paragraphs:
         _paragrafo(p)
@@ -132,7 +142,7 @@ def _uniforma_stile(d):
                 for p in cella.paragraphs:
                     for r in p.runs:
                         # prima riga = intestazione: in grassetto
-                        _stile_run(r, 9, True if n == 0 and len(t.rows) > 1 else None)
+                        _stile_run(r, CORPO, True if n == 0 and len(t.rows) > 1 else None)
 
 
 def _titolo(d, contract, titolo):
@@ -187,7 +197,7 @@ def _riquadro_dati(d, contract, ctx):
         _stile_run(p.add_run(f"{etichetta}: "), 10, True)
         _stile_run(p.add_run(str(valore or '-')), 10, False)
         ultimo = p
-    _nuovo_dopo(ultimo)                         # riga vuota di stacco
+    return _nuovo_dopo(ultimo)                  # riga vuota di stacco
 
 
 GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
@@ -231,7 +241,7 @@ def _tabella_orari(d, contract):
                 p = ps[0]
                 for r in list(p.runs):
                     r._r.getparent().remove(r._r)
-                _stile_run(p.add_run(testo), 9)
+                _stile_run(p.add_run(testo), CORPO)
             if g is not None and (g.notes or '').strip():
                 _riga_nota(t, modello, ('Note' if en else 'Nota') + ': ',
                            g.notes.strip())
@@ -274,8 +284,8 @@ def _riga_nota(t, modello, etichetta, testo):
     p = cella.paragraphs[0]
     for r in list(p.runs):
         r._r.getparent().remove(r._r)
-    _stile_run(p.add_run(etichetta), 9, True)
-    _stile_run(p.add_run(testo), 9, True)
+    _stile_run(p.add_run(etichetta), CORPO, True)
+    _stile_run(p.add_run(testo), CORPO, True)
 
 
 def _frase_accesso(t, contract):
@@ -297,7 +307,7 @@ def _frase_accesso(t, contract):
     else:
         testo = ("Per lo stand confermato potrete accedere al padiglione (per le "
                  f"fasi di montaggio e smontaggio) tramite l'accesso n° {porta}.")
-    _stile_run(p.add_run(testo), 9, True)
+    _stile_run(p.add_run(testo), CORPO, True)
 
 
 def _svuota_intestazioni(d):
@@ -324,6 +334,80 @@ def _svuota_intestazioni(d):
                 continue
 
 
+_ORDINE_DOPO_COLS = ('formProt', 'vAlign', 'noEndnote', 'titlePg', 'textDirection',
+                     'bidi', 'rtlGutter', 'docGrid', 'printerSettings', 'sectPrChange')
+
+
+def _imposta_sezione(sectpr, colonne, continua):
+    """Numero di colonne e interruzione 'continua' (stessa pagina)."""
+    from docx.oxml import OxmlElement
+    for tag in ('cols', 'type'):
+        for vecchio in sectpr.findall(W + tag):
+            sectpr.remove(vecchio)
+    cols = OxmlElement('w:cols')
+    cols.set(W + 'num', str(colonne))
+    cols.set(W + 'space', '284')                 # 0,5 cm fra le colonne
+    dopo = next((c for c in sectpr if c.tag.split('}')[1] in _ORDINE_DOPO_COLS), None)
+    if dopo is not None:
+        dopo.addprevious(cols)
+    else:
+        sectpr.append(cols)
+    if continua:
+        tipo = OxmlElement('w:type')
+        tipo.set(W + 'val', 'continuous')
+        pgsz = sectpr.find(W + 'pgSz')
+        if pgsz is not None:
+            pgsz.addprevious(tipo)
+        else:
+            sectpr.insert(0, tipo)
+
+
+def _due_colonne(d, fine_intestazione):
+    """Il corpo dell'allegato su due colonne; titolo, riquadro dati e la parte
+    delle firme restano a tutta larghezza. Sezioni 'continue': nessun salto
+    di pagina, stessa intestazione (i riferimenti a header/footer sono copiati
+    anche nella prima sezione)."""
+    body = d.element.body
+    sect_finale = body.find(W + 'sectPr')
+    if sect_finale is None or fine_intestazione is None:
+        return
+    # inizio della parte firme: primo "Data ____" o prima tabella con "Firma"
+    inizio_firme = None
+    for el in body.iterchildren():
+        tag = el.tag.split('}')[1]
+        testo = ''.join(t.text or '' for t in el.iter(W + 't')).strip()
+        if tag == 'p' and re.match(r'^(Data|Date)\s*_{3,}', testo):
+            inizio_firme = el
+            break
+        if tag == 'tbl' and ('Firma' in testo or 'Signature' in testo):
+            inizio_firme = el
+            break
+    from docx.oxml import OxmlElement
+
+    def _chiudi_sezione_su(p_el, colonne, continua):
+        ppr = p_el.find(W + 'pPr')
+        if ppr is None:
+            ppr = OxmlElement('w:pPr')
+            p_el.insert(0, ppr)
+        sp = copy.deepcopy(sect_finale)
+        _imposta_sezione(sp, colonne, continua)
+        ppr.append(sp)
+
+    # sezione 1: fino al riquadro dati, una colonna
+    _chiudi_sezione_su(fine_intestazione._p, 1, False)
+    if inizio_firme is not None:
+        precedente = inizio_firme.getprevious()
+        if precedente is None or precedente.tag != W + 'p':
+            precedente = OxmlElement('w:p')
+            inizio_firme.addprevious(precedente)
+        # sezione 2: il corpo, due colonne
+        _chiudi_sezione_su(precedente, 2, True)
+        # sezione finale: firme, una colonna
+        _imposta_sezione(sect_finale, 1, True)
+    else:
+        _imposta_sezione(sect_finale, 2, True)
+
+
 def prepara_docx(percorso, contract):
     """Personalizza IN-PLACE la copia del Word dell'allegato per il contratto.
     Ogni passo e' protetto: un Word 'strano' esce comunque, al limite meno
@@ -333,11 +417,17 @@ def prepara_docx(percorso, contract):
     _compila_segnaposto(percorso, ctx)
     d = Document(str(percorso))
     titolo = (getattr(contract.event, 'contract_annex_title', '') or '').strip()
+    fine_intestazione = {}
+
+    def _riquadro():
+        fine_intestazione['p'] = _riquadro_dati(d, contract, ctx)
+
     for passo in (lambda: _uniforma_stile(d),
                   lambda: _titolo(d, contract, titolo),
-                  lambda: _riquadro_dati(d, contract, ctx),
+                  _riquadro,
                   lambda: _tabella_orari(d, contract),
-                  lambda: _svuota_intestazioni(d)):
+                  lambda: _svuota_intestazioni(d),
+                  lambda: _due_colonne(d, fine_intestazione.get('p'))):
         try:
             passo()
         except Exception as e:

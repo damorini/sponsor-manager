@@ -86,7 +86,7 @@
               <!-- Stand assegnato -->
               {% if c.stand %}
               <div class="text-xs text-gray-600 mt-1">
-                <i class="ti ti-map-pin"></i> Stand {{ c.stand.code }} ({{ c.stand.area_sqm|floatformat:2 }} m²)
+                <i class="ti ti-map-pin"></i> Stand {{ c.stand.code }} ({{ c.stand.area_testo }} m²)
               </div>
               {% elif c.stand_block %}
               <div class="text-xs text-gray-600 mt-1">

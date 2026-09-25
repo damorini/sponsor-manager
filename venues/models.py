@@ -29,6 +29,17 @@ def _ordine_naturale_codice():
     return [prefisso.asc(), numero.asc()]
 
 
+def misura(valore):
+    """Numero in metri senza zeri inutili e con la virgola: 24.0000 -> '24',
+    2.50 -> '2,5'. Stringa vuota se manca."""
+    if valore is None or valore == '':
+        return ''
+    from decimal import Decimal
+    d = Decimal(str(valore))
+    d = d.quantize(Decimal(1)) if d == d.to_integral_value() else d.normalize()
+    return format(d, 'f').replace('.', ',')
+
+
 class StandStatus(models.TextChoices):
     AVAILABLE = 'available', 'Disponibile'
     RESERVED = 'reserved', 'Riservato'
@@ -365,6 +376,19 @@ class Stand(TranslatableMixin, TimeStampedModel):
         if self.width_meters and self.depth_meters:
             return self.width_meters * self.depth_meters
         return None
+
+    @property
+    def area_testo(self):
+        """Area leggibile: '24', '7,5' (senza zeri inutili)."""
+        return misura(self.area_sqm)
+
+    @property
+    def dimensioni_testo(self):
+        """'6 × 4 m (24 m²)' oppure '' se mancano le misure."""
+        if not (self.width_meters and self.depth_meters):
+            return ''
+        return (f"{misura(self.width_meters)} × {misura(self.depth_meters)} m "
+                f"({self.area_testo} m²)")
 
     @property
     def is_in_block(self):

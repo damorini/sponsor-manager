@@ -664,7 +664,8 @@ def _add_header_footer_to_docx(docx_path, contract):
                 else:
                     target = header.add_paragraph()
                 target.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                target.add_run().add_picture(str(img_path), width=Mm(usable_mm))
+                # al 75% della larghezza utile: header piu' basso, meno pagine
+                target.add_run().add_picture(str(img_path), width=Mm(usable_mm * 0.75))
                 changed = True
         except Exception:
             pass

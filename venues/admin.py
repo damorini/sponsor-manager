@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
+from .models import misura
 from .models import Stand, StandBlock, StandStatus, StandType
 
 
@@ -85,8 +86,7 @@ class StandBlockForm(forms.ModelForm):
         # cosi' il filtro integrato della casella puo' restringere per evento.
         f.label_from_instance = lambda st: (
             f"{st.code} \u00b7 {st.event}"
-            + (f" ({st.width_meters}\u00d7{st.depth_meters}m)"
-               if st.width_meters and st.depth_meters else "")
+            + (f" ({st.dimensioni_testo})" if st.dimensioni_testo else "")
         )
 
     def clean_stands(self):
@@ -239,7 +239,7 @@ class StandBlockAdmin(admin.ModelAdmin):
     @admin.display(description='Area totale')
     def total_area_display(self, obj):
         if obj.total_area_sqm:
-            return f"{obj.total_area_sqm} m\u00b2"
+            return f"{misura(obj.total_area_sqm)} m\u00b2"
         return '\u2014'
 
     @admin.display(description='Prezzo')
@@ -415,12 +415,12 @@ class StandAdmin(admin.ModelAdmin):
     @admin.display(description='Dimensioni')
     def dimensions_display(self, obj):
         if obj.width_meters and obj.depth_meters:
-            return f"{obj.width_meters}\u00d7{obj.depth_meters} m ({obj.area_sqm} m\u00b2)"
+            return obj.dimensioni_testo
         return '\u2014'
 
     @admin.display(description='Area')
     def area_sqm_display(self, obj):
-        return f"{obj.area_sqm} m\u00b2" if obj.area_sqm else '\u2014'
+        return f"{obj.area_testo} m\u00b2" if obj.area_sqm else '\u2014'
 
     @admin.display(description='Dotazioni')
     def amenities_display(self, obj):

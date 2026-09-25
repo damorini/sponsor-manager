@@ -178,3 +178,33 @@ def test_senza_porta_niente_frase(contratto, tmp_path):
     testo = '\n'.join(p.text for p in Document(str(percorso)).paragraphs)
     assert 'Accesso al padiglione' not in testo
     assert "tramite l'accesso" not in testo
+
+
+def test_misure_stand_senza_zeri(db):
+    from venues.models import misura
+    assert misura(Decimal('24.0000')) == '24'
+    assert misura(Decimal('2.50')) == '2,5'
+    assert misura(Decimal('7.5000')) == '7,5'
+    assert misura(None) == ''
+
+
+def test_allegato_2_due_colonne(contratto, tmp_path):
+    from contracts.services.allegato2 import prepara_docx
+    d0 = Document()
+    d0.add_paragraph('REGOLAMENTO TECNICO', style='Title')
+    for i in range(1, 4):
+        d0.add_paragraph(f'{i}. ARTICOLO', style='Heading 1')
+        d0.add_paragraph('Testo della clausola ' * 20)
+    d0.add_paragraph('Data ____________________')
+    t = d0.add_table(rows=1, cols=2)
+    t.rows[0].cells[0].text = 'Firma dell’Organizzatore'
+    percorso = tmp_path / 'a2.docx'
+    d0.save(str(percorso))
+    prepara_docx(percorso, contratto)
+    d = Document(str(percorso))
+    W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    colonne = [s._sectPr.find(W + 'cols').get(W + 'num') for s in d.sections]
+    assert colonne == ['1', '2', '1']          # intestazione, corpo, firme
+    corpo = [r.font.size.pt for p in d.paragraphs
+             if p.text.startswith('Testo della clausola') for r in p.runs]
+    assert corpo and all(x == 8 for x in corpo)
