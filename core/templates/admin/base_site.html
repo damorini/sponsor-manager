@@ -590,10 +590,24 @@
   {% if bozze_count and request.resolver_match.url_name != 'cruscotto_home' %}
   <ul class="messagelist">
     <li class="warning" style="background-color:#fff7e6; border-left:4px solid #C8A04E;">
-      <a href="{{ bozze_url }}" style="color:inherit; text-decoration:none;">
+      {% if request.resolver_match.url_name == 'contracts_contract_changelist' and request.GET.todo == 'da_inviare' %}
         ⚠ <strong>Hai {{ bozze_count }} preventivo/i creato/i ma ancora DA INVIARE.</strong>
+        Li trovi nella tabella qui sotto: apri il preventivo e premi «✉️ Genera e invia preventivo».
+      {% elif bozze_singola and request.resolver_match.url_name == 'contracts_contract_change' and request.resolver_match.kwargs.object_id == bozze_singola.pk|stringformat:"s" %}
+        ⚠ <strong>Questo preventivo è ancora DA INVIARE.</strong>
+        Premi «✉️ Genera e invia preventivo» in alto a destra.
+      {% elif bozze_singola %}
+      <a href="{{ bozze_url }}" style="color:inherit; text-decoration:none;">
+        ⚠ <strong>Hai 1 preventivo creato ma ancora DA INVIARE</strong>
+        per {{ bozze_singola.sponsor }}.
+        Clicca qui per aprirlo e inviarlo.
+      </a>
+      {% else %}
+      <a href="{{ bozze_url }}" style="color:inherit; text-decoration:none;">
+        ⚠ <strong>Hai {{ bozze_count }} preventivi creati ma ancora DA INVIARE.</strong>
         Clicca qui per vederli e inviarli.
       </a>
+      {% endif %}
     </li>
   </ul>
   {% endif %}

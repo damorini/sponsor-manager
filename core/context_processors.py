@@ -12,6 +12,7 @@ def admin_badges(request):
     count = 0
     bozze_count = 0
     bozze_url = ''
+    bozze_singola = None
     evento_attivo = None
     eventi_switcher = []
     try:
@@ -53,7 +54,16 @@ def admin_badges(request):
             if active_id:
                 bozze_qs = bozze_qs.filter(event_id=active_id)
             bozze_count = bozze_qs.count()
-            if bozze_count:
+            if bozze_count == 1:
+                # Uno solo: si va dritti alla sua scheda, dove c'e' il
+                # pulsante "Genera e invia preventivo" (la lista filtrata
+                # obbligava a un clic in piu' e, se ci si era gia', il
+                # link sembrava non fare nulla).
+                from django.urls import reverse
+                bozze_singola = bozze_qs.select_related('sponsor').first()
+                bozze_url = reverse('admin:contracts_contract_change',
+                                    args=[bozze_singola.pk])
+            elif bozze_count:
                 from django.urls import reverse
                 # ?todo=da_inviare = SOLO i preventivi principali in bozza
                 # (il vecchio ?status__exact=draft mostrava anche i carrelli)
@@ -65,6 +75,7 @@ def admin_badges(request):
         'portal_unread_count': count,
         'bozze_count': bozze_count,
         'bozze_url': bozze_url,
+        'bozze_singola': bozze_singola,
         'evento_attivo': evento_attivo,
         'eventi_switcher': eventi_switcher,
     }

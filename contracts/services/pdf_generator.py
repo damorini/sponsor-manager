@@ -1732,6 +1732,9 @@ def generate_quote_pdf_html(contract):
         t = {
             'eyebrow': 'Sponsorship proposal', 'intro': intro, 'attn': attn,
             'section_title': 'Summary of spaces and services on option',
+            'section_intro': 'Below you will find the description of the spaces on '
+                             'option and of the related services, including those '
+                             'already included in your participation.',
             'empty': 'No items selected.', 'incl': 'Included',
             'col_descrizione': 'Description', 'col_qta': 'Qty',
             'col_prezzo': 'Price', 'col_totale': 'Total (excl. VAT)',
@@ -1759,6 +1762,9 @@ def generate_quote_pdf_html(contract):
         t = {
             'eyebrow': 'Proposta di sponsorizzazione', 'intro': intro, 'attn': attn,
             'section_title': 'Riepilogo spazi e servizi in opzione',
+            'section_intro': 'Di seguito trovate la descrizione degli spazi opzionati '
+                             'e dei servizi collegati, compresi quelli già inclusi '
+                             'nella Vostra partecipazione.',
             'empty': 'Nessuna voce selezionata.', 'incl': 'Incluso',
             'col_descrizione': 'Descrizione', 'col_qta': 'Q.tà',
             'col_prezzo': 'Prezzo', 'col_totale': 'Totale (IVA escl.)',
