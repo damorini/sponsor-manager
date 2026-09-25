@@ -15,7 +15,6 @@ sistema ne prepara una copia personalizzata:
 """
 import copy
 import logging
-import re
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +245,7 @@ def _tabella_orari(d, contract):
                 _riga_nota(t, modello, ('Note' if en else 'Nota') + ': ',
                            g.notes.strip())
         _frase_accesso(t, contract)
-        _adatta_a_colonna(d, t)
+        _adatta_a_colonna(d, t, [0.30, 0.40, 0.30])
         return True
     return False
 
@@ -263,12 +262,15 @@ def _larghezza_colonna(d):
     return (utile - SPAZIO_COLONNE) // 2
 
 
-def _adatta_a_colonna(d, t):
-    """La tabella orari nasce larga quanto la pagina: la stringe alla colonna
-    (proporzioni 30/40/30), altrimenti nel corpo a due colonne esce dai bordi."""
+def _adatta_a_colonna(d, t, quote=None):
+    """Stringe una tabella alla larghezza della colonna (le tabelle del Word
+    nascono larghe quanto la pagina e nel corpo a due colonne uscirebbero dai
+    bordi). quote = proporzioni delle colonne; default parti uguali."""
     from docx.oxml import OxmlElement
     larga = _larghezza_colonna(d)
-    quote = [0.30, 0.40, 0.30]
+    grid0 = t._tbl.find(W + 'tblGrid')
+    n_col = len(grid0.findall(W + 'gridCol')) if grid0 is not None else len(t.columns)
+    quote = quote or [1.0 / n_col] * n_col
     colonne = [int(larga * q) for q in quote]
     tbl = t._tbl
     tblpr = tbl.tblPr
@@ -439,25 +441,14 @@ def _imposta_sezione(sectpr, colonne, continua):
 
 
 def _due_colonne(d, fine_intestazione):
-    """Il corpo dell'allegato su due colonne; titolo, riquadro dati e la parte
-    delle firme restano a tutta larghezza. Sezioni 'continue': nessun salto
+    """Il corpo dell'allegato su due colonne (firme comprese); titolo e
+    riquadro dati restano a tutta larghezza. Sezione 'continua': nessun salto
     di pagina, stessa intestazione (i riferimenti a header/footer sono copiati
     anche nella prima sezione)."""
     body = d.element.body
     sect_finale = body.find(W + 'sectPr')
     if sect_finale is None or fine_intestazione is None:
         return
-    # inizio della parte firme: primo "Data ____" o prima tabella con "Firma"
-    inizio_firme = None
-    for el in body.iterchildren():
-        tag = el.tag.split('}')[1]
-        testo = ''.join(t.text or '' for t in el.iter(W + 't')).strip()
-        if tag == 'p' and re.match(r'^(Data|Date)\s*_{3,}', testo):
-            inizio_firme = el
-            break
-        if tag == 'tbl' and ('Firma' in testo or 'Signature' in testo):
-            inizio_firme = el
-            break
     from docx.oxml import OxmlElement
 
     def _chiudi_sezione_su(p_el, colonne, continua):
@@ -471,17 +462,20 @@ def _due_colonne(d, fine_intestazione):
 
     # sezione 1: fino al riquadro dati, una colonna
     _chiudi_sezione_su(fine_intestazione._p, 1, False)
-    if inizio_firme is not None:
-        precedente = inizio_firme.getprevious()
-        if precedente is None or precedente.tag != W + 'p':
-            precedente = OxmlElement('w:p')
-            inizio_firme.addprevious(precedente)
-        # sezione 2: il corpo, due colonne
-        _chiudi_sezione_su(precedente, 2, True)
-        # sezione finale: firme, una colonna
-        _imposta_sezione(sect_finale, 1, True)
-    else:
-        _imposta_sezione(sect_finale, 2, True)
+    # sezione 2 (finale): tutto il resto su due colonne, firme comprese. Una
+    # terza sezione a tutta larghezza per le firme veniva mandata a pagina
+    # nuova da LibreOffice, lasciando mezza colonna bianca.
+    _imposta_sezione(sect_finale, 2, True)
+    from docx.table import Table
+    for el in body.iterchildren(W + 'tbl'):
+        tb = Table(el, d)
+        intest = ' '.join(c.text.lower() for c in tb.rows[0].cells)
+        if 'orario' in intest or 'time' in intest:
+            continue                    # tabella orari: gia' 30/40/30
+        try:
+            _adatta_a_colonna(d, tb)
+        except Exception:
+            pass
 
 
 def prepara_docx(percorso, contract):
