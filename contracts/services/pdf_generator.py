@@ -1411,7 +1411,7 @@ def _penale_cancellazione(contract):
 
 def _prepara_allegato_2(contract, cartella):
     """PDF dell'ALLEGATO 2 (es. Regolamento tecnico) caricato sull'evento, o
-    None se non previsto. Il Word riceve in testa «ALLEGATO 2 – titolo» e viene
+    None se non previsto. Il Word viene personalizzato per il contratto e
     convertito; un PDF viene accodato cosi' com'e'."""
     event = contract.event
     campo = getattr(event, 'contract_annex_file', None)
@@ -1427,22 +1427,12 @@ def _prepara_allegato_2(contract, cartella):
     if sorgente.suffix.lower() == '.pdf':
         return sorgente
     import shutil
-    from docx import Document as _Docx
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.shared import Pt
+    from contracts.services.allegato2 import prepara_docx
     destinazione = Path(cartella) / f"allegato2_{contract.contract_number}.docx"
     shutil.copyfile(sorgente, destinazione)
-    etichetta = 'ANNEX 2' if (contract.language or 'it') == 'en' else 'ALLEGATO 2'
-    titolo = (event.contract_annex_title or '').strip()
-    d = _Docx(str(destinazione))
-    primo = d.paragraphs[0] if d.paragraphs else d.add_paragraph()
-    intest = primo.insert_paragraph_before()
-    intest.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    r = intest.add_run(f"{etichetta} – {titolo}" if titolo else etichetta)
-    r.bold = True
-    r.font.size = Pt(14)
-    intest.paragraph_format.space_after = Pt(12)
-    d.save(str(destinazione))
+    # titolo, riquadro Azienda/Stand/Contratto, orari di allestimento, stile e
+    # intestazioni del contratto (vedi allegato2.py)
+    prepara_docx(destinazione, contract)
     return _convert_docx_to_pdf(destinazione)
 
 
