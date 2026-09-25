@@ -91,6 +91,55 @@ SIGNER_FIELDS = [
 ]
 
 
+_PAESI = {'italia': 'IT', 'italy': 'IT'}
+
+
+def _pulisci(field, val):
+    """Sigle scritte come le vuole il database: province in maiuscolo
+    (rm -> RM), paese come codice a 2 lettere (Italia -> IT)."""
+    if field.endswith('province'):
+        return val.upper()
+    if field == 'address_country':
+        return _PAESI.get(val.lower(), val.upper())
+    return val
+
+
+def _max_len(model, field):
+    try:
+        return getattr(model._meta.get_field(field), 'max_length', None)
+    except Exception:
+        return None
+
+
+def _errori_lunghezza(obj, campi):
+    """Messaggi chiari per i valori troppo lunghi (prima finivano in un
+    errore del database e il salvataggio falliva senza spiegazioni)."""
+    errori = []
+    for field, label in campi:
+        limite = _max_len(type(obj), field)
+        val = getattr(obj, field, None)
+        if not limite or not isinstance(val, str) or len(val) <= limite:
+            continue
+        if field.endswith('province'):
+            errori.append(_("%(campo)s: inserire la sigla di 2 lettere (es. RM), "
+                            "non il nome per esteso.") % {'campo': label})
+        elif field == 'address_country':
+            errori.append(_("%(campo)s: inserire il codice di 2 lettere (es. IT), "
+                            "non il nome per esteso.") % {'campo': label})
+        else:
+            errori.append(_("%(campo)s: massimo %(n)s caratteri.")
+                          % {'campo': label, 'n': limite})
+    return errori
+
+
+def _aiuto_sigla(field):
+    if field.endswith('province'):
+        return _("Sigla di 2 lettere, es. RM")
+    if field == 'address_country':
+        return _("Codice di 2 lettere, es. IT")
+    return ''
+
+
 def _applica_dati_firmatario(target, request, prefix):
     """Legge dal POST (con prefisso, es. 'nuovo_' o 'mod_') i campi
     anagrafici del firmatario e li imposta sul Contact. Usata sia per un
@@ -103,7 +152,8 @@ def _applica_dati_firmatario(target, request, prefix):
             val = (request.POST.get(f'{prefix}id_document_type') or '').strip()
             target.id_document_type = val if val in dict(target.ID_DOCUMENT_TYPES) else 'CI'
         else:
-            setattr(target, field, request.POST.get(f'{prefix}{field}', '').strip())
+            setattr(target, field, _pulisci(
+                field, request.POST.get(f'{prefix}{field}', '').strip()))
 
 
 @sponsor_required
@@ -150,6 +200,11 @@ def profile_view(request):
                     _applica_dati_firmatario(nuovo, request, 'nuovo_')
                 # Validazione (email univoca per persona: vedi Contact.clean)
                 from django.core.exceptions import ValidationError
+                errori = _errori_lunghezza(nuovo, SIGNER_FIELDS)
+                if errori:
+                    for m in errori:
+                        messages.error(request, m)
+                    return redirect('portal:profile')
                 try:
                     nuovo.clean()
                 except ValidationError as ve:
@@ -210,6 +265,11 @@ def profile_view(request):
             if is_signer:
                 _applica_dati_firmatario(target, request, 'mod_')
             from django.core.exceptions import ValidationError
+            errori = _errori_lunghezza(target, SIGNER_FIELDS)
+            if errori:
+                for m in errori:
+                    messages.error(request, m)
+                return redirect('portal:profile')
             try:
                 target.clean()
             except ValidationError as ve:
@@ -275,7 +335,7 @@ def profile_view(request):
         for field, _label in SPONSOR_FIELDS:
             if hasattr(sponsor, field):
                 val = request.POST.get(f'sponsor_{field}', '').strip()
-                setattr(sponsor, field, val)
+                setattr(sponsor, field, _pulisci(field, val))
         # domanda "Azienda farmaceutica": flag + Codice SIS (mostrato solo se flaggato)
         sponsor.is_pharma_company = request.POST.get('sponsor_is_pharma_company') == 'on'
         sponsor.sis_code = request.POST.get('sponsor_sis_code', '').strip()
@@ -316,6 +376,12 @@ def profile_view(request):
         if next_url and not url_has_allowed_host_and_scheme(
                 next_url, allowed_hosts={request.get_host()}):
             next_url = ''
+        errori = (_errori_lunghezza(sponsor, SPONSOR_FIELDS)
+                  + _errori_lunghezza(contact, CONTACT_FIELDS))
+        if errori:
+            for m in errori:
+                messages.error(request, m)
+            return redirect('portal:profile')
         try:
             sponsor.save()
             contact.save()
@@ -348,11 +414,14 @@ def profile_view(request):
     }
     sponsor_fields = [
         {'name': f'sponsor_{f}', 'label': lbl, 'value': getattr(sponsor, f, '') or '',
-         'required': f in _required, 'help': _help.get(f, '')}
+         'required': f in _required,
+         'help': _help.get(f, '') or _aiuto_sigla(f),
+         'maxlength': _max_len(_Sponsor, f)}
         for f, lbl in SPONSOR_FIELDS if hasattr(sponsor, f)
     ]
     contact_fields = [
-        {'name': f'contact_{f}', 'label': lbl, 'value': getattr(contact, f, '') or ''}
+        {'name': f'contact_{f}', 'label': lbl, 'value': getattr(contact, f, '') or '',
+         'maxlength': _max_len(Contact, f)}
         for f, lbl in CONTACT_FIELDS if hasattr(contact, f)
     ]
     # contatti aziendali esistenti (tutti i Contact dello sponsor)
@@ -387,7 +456,8 @@ def profile_view(request):
             'signer_fields': [
                 {'name': f, 'label': lbl,
                  'value': (c.birth_date.isoformat() if f == 'birth_date' and c.birth_date
-                           else getattr(c, f, '') or '')}
+                           else getattr(c, f, '') or ''),
+                 'maxlength': _max_len(Contact, f), 'help': _aiuto_sigla(f)}
                 for f, lbl in SIGNER_FIELDS
             ],
         })
@@ -408,7 +478,10 @@ def profile_view(request):
         'contact_fields': contact_fields,
         'contatti': contatti_view,
         'role_choices': CONTACT_ROLE_CHOICES,
-        'signer_fields_new': [{'name': f, 'label': lbl, 'value': ''} for f, lbl in SIGNER_FIELDS],
+        'signer_fields_new': [{'name': f, 'label': lbl, 'value': '',
+                               'maxlength': _max_len(Contact, f),
+                               'help': _aiuto_sigla(f)}
+                              for f, lbl in SIGNER_FIELDS],
         'id_document_types': Contact.ID_DOCUMENT_TYPES,
         'manca_operativo': manca_operativo,
         # Benvenuto solo al primo accesso (finche' non l'ha visto/chiuso).
