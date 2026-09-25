@@ -1301,6 +1301,63 @@ def _format_admission_services_table(docx_path):
     doc.save(str(docx_path))
 
 
+def _arricchisci_righe_domanda(docx_path, lines, language):
+    """
+    Completa le righe della tabella servizi della Domanda di Ammissione DOPO
+    il render (il template resta intatto):
+      - sotto il nome, la DESCRIZIONE della voce, una riga per a-capo (per lo
+        stand l'elenco di cio' che include; per badge e iscrizioni cosa
+        consentono);
+      - per i servizi INCLUSI (a EUR 0) la dicitura 'Incluso' al posto di
+        prezzo unitario e importo, come nel preventivo.
+    Le righe senza descrizione restano su una riga sola. Best-effort: se la
+    tabella non corrisponde alle righe attese, non tocca nulla.
+    """
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.shared import Pt, RGBColor
+    from docx.text.paragraph import Paragraph
+
+    lines = list(lines)
+    incluso = 'Included' if (language or 'it') == 'en' else 'Incluso'
+    doc = Document(str(docx_path))
+    for t in doc.tables:
+        header = ' '.join(c.text.strip().lower() for c in t.rows[0].cells)
+        if ('descrizione dei servizi' not in header
+                and 'description of the services' not in header):
+            continue
+        righe = [r for r in t.rows[1:] if r.cells[0].text.strip()]
+        if len(righe) != len(lines):
+            logger.warning("Domanda: %s righe in tabella, %s attese: "
+                           "descrizioni non aggiunte", len(righe), len(lines))
+            return
+        for row, ln in zip(righe, lines):
+            cella = row.cells[1]
+            if (ln.service_name_snapshot or '').strip() not in cella.text:
+                logger.warning("Domanda: riga non corrispondente (%s)",
+                               ln.service_name_snapshot)
+                return
+            if getattr(ln, 'is_included', False):
+                row.cells[2].text = incluso
+                row.cells[3].text = incluso
+            testo = (ln.service_description_snapshot or '').strip()
+            voci = [v.strip() for v in testo.splitlines() if v.strip()]
+            dopo = cella.paragraphs[0]
+            for voce in voci:
+                nuovo_p = OxmlElement('w:p')
+                dopo._p.addnext(nuovo_p)
+                par = Paragraph(nuovo_p, dopo._parent)
+                par.paragraph_format.space_before = Pt(0)
+                par.paragraph_format.space_after = Pt(0)
+                run = par.add_run(voce)
+                run.font.bold = False
+                run.font.size = Pt(7)
+                run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                dopo = par
+        break
+    doc.save(str(docx_path))
+
+
 def _rimuovi_riga_iva_domanda(docx_path):
     """Per i clienti ESENTI IVA: elimina la riga 'IVA ...' dalla tabella totali
     della domanda (post-render docxtpl). Best-effort e idempotente.
@@ -1419,6 +1476,14 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
     full_docx_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(full_docx_path))
+
+    # Descrizione sotto ogni voce e 'Incluso' al posto dei prezzi dei servizi
+    # inclusi (come nel preventivo).
+    try:
+        _arricchisci_righe_domanda(full_docx_path, lines, contract.language)
+    except Exception as e:
+        logger.warning("Descrizioni domanda non aggiunte per %s: %s",
+                       contract.contract_number, e)
 
     # Impagina la tabella servizi in modo professionale (font uniforme,
     # numeri a destra, intestazione evidenziata) sul docx generato.
