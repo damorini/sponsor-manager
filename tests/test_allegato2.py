@@ -138,3 +138,43 @@ def test_allegato_2_personalizzato(contratto, tmp_path):
     assert 'vecchia intestazione' not in ' '.join(
         p.text for p in d.sections[0].header.paragraphs)
     assert all(r.font.name == 'Arial' for p in d.paragraphs for r in p.runs if r.text)
+
+
+def test_porta_accesso_e_note_giorni(contratto, tmp_path):
+    from datetime import time
+    from events.models import EventSetupDay
+    from venues.models import Stand
+    from contracts.services.allegato2 import prepara_docx
+    ev = contratto.event
+    EventSetupDay.objects.create(
+        event=ev, kind='allestimento', date=date(2027, 2, 25),
+        start_time=time(8), end_time=time(12),
+        notes='NON PER ALLESTIMENTO - solo posizionamento materiale')
+    EventSetupDay.objects.create(event=ev, kind='disallestimento', date=date(2027, 2, 27),
+                                 start_time=time(17), end_time=time(23))
+    contratto.stand = Stand.objects.create(event=ev, code='1-B', access_door='3',
+                                           base_price=Decimal('1000'))
+    contratto.save()
+    percorso = tmp_path / 'a2.docx'
+    percorso.write_bytes(_docx_regolamento().read())
+    prepara_docx(percorso, contratto)
+
+    d = Document(str(percorso))
+    testo = '\n'.join(p.text for p in d.paragraphs)
+    assert 'Accesso al padiglione n°: 3' in testo
+    assert "tramite l'accesso n° 3." in testo
+    righe = [[c.text for c in r.cells] for r in d.tables[0].rows]
+    # riga del giorno, poi la sua nota su tutta la larghezza, poi il giorno dopo
+    assert righe[1] == ['Allestimento', 'Giovedì 25/02/2027', '08:00 – 12:00']
+    assert righe[2][0] == 'Nota: NON PER ALLESTIMENTO - solo posizionamento materiale'
+    assert righe[3][0] == 'Disallestimento'
+
+
+def test_senza_porta_niente_frase(contratto, tmp_path):
+    from contracts.services.allegato2 import prepara_docx
+    percorso = tmp_path / 'a2.docx'
+    percorso.write_bytes(_docx_regolamento().read())
+    prepara_docx(percorso, contratto)
+    testo = '\n'.join(p.text for p in Document(str(percorso)).paragraphs)
+    assert 'Accesso al padiglione' not in testo
+    assert "tramite l'accesso" not in testo

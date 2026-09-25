@@ -292,6 +292,14 @@ class Stand(TranslatableMixin, TimeStampedModel):
         verbose_name="Altezza max (m)",
     )
 
+    access_door = models.CharField(
+        max_length=50, blank=True,
+        verbose_name="Porta di accesso al padiglione",
+        help_text="Numero o nome dell'accesso da usare per montaggio e "
+                  "smontaggio (es. 3). Compare nel Regolamento tecnico "
+                  "(Allegato 2) del contratto.",
+    )
+
     # Posizione su planimetria
     map_x = models.IntegerField(null=True, blank=True, verbose_name="Coord. X")
     map_y = models.IntegerField(null=True, blank=True, verbose_name="Coord. Y")

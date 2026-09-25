@@ -30,6 +30,19 @@ def _etichetta_stand(contract):
     return blocco.code if blocco else '-'
 
 
+def _porta_accesso(contract):
+    """Porta di accesso dello stand; per un blocco, la prima indicata sui
+    suoi stand."""
+    stand = getattr(contract, 'stand', None)
+    if stand:
+        return (stand.access_door or '').strip()
+    blocco = getattr(contract, 'stand_block', None)
+    if blocco:
+        for s in blocco.stands.exclude(access_door='').order_by('code'):
+            return s.access_door.strip()
+    return ''
+
+
 def _date_evento(event):
     inizio, fine = event.start_date, event.end_date
     if not inizio:
@@ -49,6 +62,7 @@ def contesto(contract):
         'evento': ev.name,
         'date_evento': _date_evento(contract.event),
         'sede': ev.location,
+        'accesso': _porta_accesso(contract),
     }
 
 
@@ -141,6 +155,9 @@ def _riquadro_dati(d, contract, ctx):
     righe = [('Exhibiting company' if en else 'Azienda espositrice', ctx['azienda']),
              ('Stand no.' if en else 'Stand n.', ctx['stand']),
              ('Contract no.' if en else 'Contratto n.', ctx['contratto'])]
+    if ctx.get('accesso'):
+        righe.append(('Hall access no.' if en else 'Accesso al padiglione n°',
+                      ctx['accesso']))
     # ultimo paragrafo "di titolo" nelle prime righe (Title/Subtitle/ALLEGATO)
     dopo = None
     for p in d.paragraphs[:5]:
@@ -207,8 +224,6 @@ def _tabella_orari(d, contract):
                     tipo = 'Set-up' if g.kind == 'allestimento' else 'Dismantling'
                 testi = [tipo, f"{nome} {g.date:%d/%m/%Y}",
                          f"{g.start_time:%H:%M} – {g.end_time:%H:%M}"]
-                if g.notes:
-                    testi[2] += f" ({g.notes})"
             for cella, testo in zip(riga.cells, testi):
                 ps = cella.paragraphs
                 for extra in ps[1:]:
@@ -217,8 +232,72 @@ def _tabella_orari(d, contract):
                 for r in list(p.runs):
                     r._r.getparent().remove(r._r)
                 _stile_run(p.add_run(testo), 9)
+            if g is not None and (g.notes or '').strip():
+                _riga_nota(t, modello, ('Note' if en else 'Nota') + ': ',
+                           g.notes.strip())
+        _frase_accesso(t, contract)
         return True
     return False
+
+
+def _riga_nota(t, modello, etichetta, testo):
+    """Riga su tutta la larghezza sotto il giorno, con la nota in grassetto
+    su fondo chiaro: le note (es. 'NON PER ALLESTIMENTO') non devono sfuggire."""
+    from docx.oxml import OxmlElement
+    from docx.table import _Row
+    tr = copy.deepcopy(modello)
+    celle = tr.findall(W + 'tc')
+    for extra in celle[1:]:
+        tr.remove(extra)
+    tc = celle[0]
+    tcpr = tc.find(W + 'tcPr')
+    if tcpr is None:
+        tcpr = OxmlElement('w:tcPr')
+        tc.insert(0, tcpr)
+    for vecchio in tcpr.findall(W + 'gridSpan') + tcpr.findall(W + 'tcW'):
+        tcpr.remove(vecchio)
+    span = OxmlElement('w:gridSpan')
+    span.set(W + 'val', str(len(celle)))
+    tcpr.append(span)
+    shd = OxmlElement('w:shd')
+    shd.set(W + 'val', 'clear')
+    shd.set(W + 'color', 'auto')
+    shd.set(W + 'fill', 'FFF4CC')
+    for vecchio in tcpr.findall(W + 'shd'):
+        tcpr.remove(vecchio)
+    tcpr.append(shd)
+    t._tbl.append(tr)
+    riga = _Row(tr, t)
+    cella = riga.cells[0]
+    for extra in cella.paragraphs[1:]:
+        extra._p.getparent().remove(extra._p)
+    p = cella.paragraphs[0]
+    for r in list(p.runs):
+        r._r.getparent().remove(r._r)
+    _stile_run(p.add_run(etichetta), 9, True)
+    _stile_run(p.add_run(testo), 9, True)
+
+
+def _frase_accesso(t, contract):
+    """Subito dopo la tabella orari: la porta di accesso dello stand."""
+    porta = _porta_accesso(contract)
+    if not porta:
+        return
+    from docx.oxml import OxmlElement
+    from docx.text.paragraph import Paragraph
+    from docx.shared import Pt
+    en = (contract.language or 'it') == 'en'
+    el = OxmlElement('w:p')
+    t._tbl.addnext(el)
+    p = Paragraph(el, t._parent)
+    p.paragraph_format.space_before = Pt(8)
+    if en:
+        testo = ("For the confirmed stand you can access the hall (for set-up and "
+                 f"dismantling) through entrance no. {porta}.")
+    else:
+        testo = ("Per lo stand confermato potrete accedere al padiglione (per le "
+                 f"fasi di montaggio e smontaggio) tramite l'accesso n° {porta}.")
+    _stile_run(p.add_run(testo), 9, True)
 
 
 def _svuota_intestazioni(d):

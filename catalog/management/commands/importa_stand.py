@@ -167,6 +167,9 @@ class Command(BaseCommand):
                 # 'note_sponsor' non devono cancellare le note gia' salvate
                 if "note_sponsor" in col_idx:
                     campi["sponsor_notes"] = {"it": note_sponsor} if note_sponsor else {}
+                # idem per la porta di accesso (colonna facoltativa)
+                if "porta_accesso" in col_idx:
+                    campi["access_door"] = str(G("porta_accesso") or "").strip()[:50]
                 if larghezza is not None:
                     campi["width_meters"] = larghezza
                 if profondita is not None:

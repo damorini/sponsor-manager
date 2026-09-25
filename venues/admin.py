@@ -367,6 +367,9 @@ class StandAdmin(admin.ModelAdmin):
                 'has_internet',
             ),
         }),
+        ('Accesso per montaggio e smontaggio', {
+            'fields': ('access_door',),
+        }),
         ('Posizionamento', {
             'fields': (('map_x', 'map_y'),),
             'classes': ('collapse',),
