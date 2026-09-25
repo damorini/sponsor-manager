@@ -440,16 +440,47 @@ def _imposta_sezione(sectpr, colonne, continua):
             sectpr.insert(0, tipo)
 
 
+def _inizio_parte_finale(d, dopo_el):
+    """Primo elemento della parte finale a tutta larghezza: l'ULTIMO articolo
+    (es. «26. Legge applicabile e foro competente»), con firme e dichiarazione
+    ex 1341-1342 che lo seguono. Se il Word non ha titoli di articolo, si
+    parte dal primo «Data ____»."""
+    body = d.element.body
+    elementi = list(body.iterchildren())
+    try:
+        da = elementi.index(dopo_el) + 1
+    except ValueError:
+        da = 0
+    ultimo_titolo = None
+    for el in elementi[da:]:
+        if el.tag != W + 'p':
+            continue
+        stile = el.find(f'{W}pPr/{W}pStyle')
+        if stile is not None and stile.get(W + 'val', '').lower().replace(' ', '') in (
+                'heading1', 'titolo1'):
+            ultimo_titolo = el
+    if ultimo_titolo is not None:
+        return ultimo_titolo
+    import re
+    for el in elementi[da:]:
+        testo = ''.join(t.text or '' for t in el.iter(W + 't')).strip()
+        if el.tag == W + 'p' and re.match(r'^(Data|Date)\s*_{3,}', testo):
+            return el
+    return None
+
+
 def _due_colonne(d, fine_intestazione):
-    """Il corpo dell'allegato su due colonne (firme comprese); titolo e
-    riquadro dati restano a tutta larghezza. Sezione 'continua': nessun salto
-    di pagina, stessa intestazione (i riferimenti a header/footer sono copiati
-    anche nella prima sezione)."""
+    """Tre parti: titolo e riquadro dati a tutta larghezza; il corpo degli
+    articoli su due colonne (LibreOffice le pareggia in altezza alla fine);
+    l'ultimo articolo, le firme e la dichiarazione ex 1341-1342 di nuovo a
+    tutta larghezza. Sezioni 'continue': nessun salto di pagina, stessa
+    intestazione (i riferimenti a header/footer sono copiati in ogni sezione)."""
+    from docx.oxml import OxmlElement
+    from docx.table import Table
     body = d.element.body
     sect_finale = body.find(W + 'sectPr')
     if sect_finale is None or fine_intestazione is None:
         return
-    from docx.oxml import OxmlElement
 
     def _chiudi_sezione_su(p_el, colonne, continua):
         ppr = p_el.find(W + 'pPr')
@@ -460,14 +491,11 @@ def _due_colonne(d, fine_intestazione):
         _imposta_sezione(sp, colonne, continua)
         ppr.append(sp)
 
-    # sezione 1: fino al riquadro dati, una colonna
-    _chiudi_sezione_su(fine_intestazione._p, 1, False)
-    # sezione 2 (finale): tutto il resto su due colonne, firme comprese. Una
-    # terza sezione a tutta larghezza per le firme veniva mandata a pagina
-    # nuova da LibreOffice, lasciando mezza colonna bianca.
-    _imposta_sezione(sect_finale, 2, True)
-    from docx.table import Table
-    for el in body.iterchildren(W + 'tbl'):
+    finale = _inizio_parte_finale(d, fine_intestazione._p)
+    # tabelle del corpo (non della parte finale): strette alla colonna
+    for el in list(body.iterchildren(W + 'tbl')):
+        if finale is not None and _viene_dopo(body, el, finale):
+            continue
         tb = Table(el, d)
         intest = ' '.join(c.text.lower() for c in tb.rows[0].cells)
         if 'orario' in intest or 'time' in intest:
@@ -476,6 +504,23 @@ def _due_colonne(d, fine_intestazione):
             _adatta_a_colonna(d, tb)
         except Exception:
             pass
+
+    # sezione 1: fino al riquadro dati, una colonna
+    _chiudi_sezione_su(fine_intestazione._p, 1, False)
+    if finale is None:
+        _imposta_sezione(sect_finale, 2, True)
+        return
+    # sezione 2: il corpo, due colonne, chiusa su un paragrafo vuoto dedicato
+    separatore = OxmlElement('w:p')
+    finale.addprevious(separatore)
+    _chiudi_sezione_su(separatore, 2, True)
+    # sezione finale: ultimo articolo e firme, una colonna
+    _imposta_sezione(sect_finale, 1, True)
+
+
+def _viene_dopo(body, el, riferimento):
+    elementi = list(body.iterchildren())
+    return elementi.index(el) > elementi.index(riferimento)
 
 
 def prepara_docx(percorso, contract):

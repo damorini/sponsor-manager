@@ -204,7 +204,7 @@ def test_allegato_2_due_colonne(contratto, tmp_path):
     d = Document(str(percorso))
     W = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
     colonne = [s._sectPr.find(W + 'cols').get(W + 'num') for s in d.sections]
-    assert colonne == ['1', '2']               # intestazione, poi corpo e firme
+    assert colonne == ['1', '2', '1']          # intestazione, corpo, ultimo articolo e firme
     corpo = [r.font.size.pt for p in d.paragraphs
              if p.text.startswith('Testo della clausola') for r in p.runs]
     assert corpo and all(x == 8 for x in corpo)
