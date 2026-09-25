@@ -1390,6 +1390,33 @@ def _rimuovi_riga_iva_domanda(docx_path):
     return removed
 
 
+def _pct_pulita(v):
+    """Percentuale 'pulita' per i testi (40 anziche' 40.00)."""
+    try:
+        d = Decimal(str(v))
+    except Exception:
+        return str(v)
+    return str(int(d)) if d == d.to_integral_value() else str(d.normalize())
+
+
+def _penale_cancellazione(contract):
+    """(percentuale penale, ha_caparra). Con caparra (acconto+saldo) la penale
+    e' pari alla caparra; con pagamento unico/differito e' la % dell'evento
+    (default 50). Stessa regola per Domanda di ammissione e contratto."""
+    has_deposit = bool(contract.has_deposit)
+    if has_deposit and contract.deposit_percent:
+        return _pct_pulita(contract.deposit_percent), has_deposit
+    return _pct_pulita(contract.event.cancellation_penalty_percent or 50), has_deposit
+
+
+def _conta_pagine_pdf(percorso):
+    try:
+        from pypdf import PdfReader
+        return len(PdfReader(str(percorso)).pages)
+    except Exception:
+        return None
+
+
 def generate_admission_request_pdf(contract, as_allegato=False):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
@@ -1434,12 +1461,8 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         return str(int(d)) if d == d.to_integral_value() else str(d.normalize())
 
     has_deposit = bool(contract.has_deposit)
-    # Penale cancellazione: se c'e' caparra (acconto+saldo) e' pari alla caparra;
-    # se il pagamento e' unico/differito e' la % impostata sull'evento (default 50).
-    if has_deposit and contract.deposit_percent:
-        _penale = contract.deposit_percent
-    else:
-        _penale = event.cancellation_penalty_percent or 50
+    # Penale cancellazione: stessa regola del contratto (_penale_cancellazione).
+    _penale, _ = _penale_cancellazione(contract)
 
     context = {
         'contract': contract,
@@ -1586,38 +1609,9 @@ def generate_sponsor_contract_pdf(contract):
     ref = _get_operational_contact(contract)
     operational_email = (getattr(ref, 'email', '') or getattr(signer, 'email', '') or '')
 
-    context = {
-        'contract': contract,
-        'sponsor': sponsor,
-        'signer': signer,
-        'event': _event_for_template(event),
-        'organizer_name': (event.organizer_legal_name or '').strip(),
-        'operational_email': operational_email,
-    }
-    doc = DocxTemplate(str(template_path))
-    doc.render(context, jinja_env=get_jinja_env())
-
-    docx_filename = f"contratto_sponsor_{contract.contract_number}_{event.id}.docx"
-    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
-    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
-    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
-    doc.save(str(full_docx_path))
-
-    try:
-        _add_header_footer_to_docx(full_docx_path, contract)
-    except Exception as e:
-        logger.warning("Header/footer contratto sponsor non applicati per %s: %s",
-                       contract.contract_number, e)
-
-    contract_pdf = _convert_docx_to_pdf(full_docx_path)
-    if not contract_pdf:
-        return _create_document_record(
-            contract, full_docx_path, relative_docx_path, file_name=docx_filename,
-            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            document_type='sponsor_contract',
-        )
-
-    # ALLEGATO 1: la Domanda di ammissione (riusa quella gia' generata, se c'e')
+    # ALLEGATO 1 generato PRIMA del contratto: serve contarne le pagine,
+    # perche' il contratto dichiara di quante pagine si compone il documento
+    # (contratto + allegato).
     domanda_pdf = None
     try:
         # versione della domanda intitolata "ALLEGATO 1" (parte integrante)
@@ -1630,6 +1624,54 @@ def generate_sponsor_contract_pdf(contract):
     except Exception as e:
         logger.warning("Domanda (Allegato 1) non disponibile per %s: %s",
                        contract.contract_number, e)
+    pagine_allegato = (_conta_pagine_pdf(domanda_pdf) or 0) if domanda_pdf else 0
+
+    penale_percent, has_deposit = _penale_cancellazione(contract)
+    context = {
+        'contract': contract,
+        'sponsor': sponsor,
+        'signer': signer,
+        'event': _event_for_template(event),
+        'organizer_name': (event.organizer_legal_name or '').strip(),
+        'operational_email': operational_email,
+        'penale_percent': penale_percent,
+        'has_deposit': has_deposit,
+        'numero_pagine': 8,
+    }
+
+    docx_filename = f"contratto_sponsor_{contract.contract_number}_{event.id}.docx"
+    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+
+    contract_pdf = None
+    for _giro in range(3):
+        doc = DocxTemplate(str(template_path))
+        doc.render(context, jinja_env=get_jinja_env())
+        doc.save(str(full_docx_path))
+        try:
+            _add_header_footer_to_docx(full_docx_path, contract)
+        except Exception as e:
+            logger.warning("Header/footer contratto sponsor non applicati per %s: %s",
+                           contract.contract_number, e)
+        contract_pdf = _convert_docx_to_pdf(full_docx_path)
+        if not contract_pdf:
+            break
+        pagine_contratto = _conta_pagine_pdf(contract_pdf)
+        if not pagine_contratto:
+            break
+        totale = pagine_contratto + pagine_allegato
+        if totale == context['numero_pagine']:
+            break
+        # il numero dichiarato non torna: si rigenera con quello reale
+        context['numero_pagine'] = totale
+
+    if not contract_pdf:
+        return _create_document_record(
+            contract, full_docx_path, relative_docx_path, file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='sponsor_contract',
+        )
 
     final_pdf = contract_pdf
     final_name = contract_pdf.name
