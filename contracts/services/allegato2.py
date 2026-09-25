@@ -246,8 +246,84 @@ def _tabella_orari(d, contract):
                 _riga_nota(t, modello, ('Note' if en else 'Nota') + ': ',
                            g.notes.strip())
         _frase_accesso(t, contract)
+        _adatta_a_colonna(d, t)
         return True
     return False
+
+
+SPAZIO_COLONNE = 284                            # twip (0,5 cm)
+
+
+def _larghezza_colonna(d):
+    """Larghezza di una delle due colonne, in twip."""
+    sp = d.element.body.find(W + 'sectPr')
+    pgsz, pgmar = sp.find(W + 'pgSz'), sp.find(W + 'pgMar')
+    utile = (int(pgsz.get(W + 'w')) - int(pgmar.get(W + 'left'))
+             - int(pgmar.get(W + 'right')))
+    return (utile - SPAZIO_COLONNE) // 2
+
+
+def _adatta_a_colonna(d, t):
+    """La tabella orari nasce larga quanto la pagina: la stringe alla colonna
+    (proporzioni 30/40/30), altrimenti nel corpo a due colonne esce dai bordi."""
+    from docx.oxml import OxmlElement
+    larga = _larghezza_colonna(d)
+    quote = [0.30, 0.40, 0.30]
+    colonne = [int(larga * q) for q in quote]
+    tbl = t._tbl
+    tblpr = tbl.tblPr
+    for vecchio in tblpr.findall(W + 'tblW') + tblpr.findall(W + 'tblLayout')             + tblpr.findall(W + 'tblInd'):
+        tblpr.remove(vecchio)
+    tblw = OxmlElement('w:tblW')
+    tblw.set(W + 'w', str(larga))
+    tblw.set(W + 'type', 'dxa')
+    tblpr.append(tblw)
+    layout = OxmlElement('w:tblLayout')
+    layout.set(W + 'type', 'fixed')
+    tblpr.append(layout)
+    grid = tbl.find(W + 'tblGrid')
+    if grid is not None:
+        for vecchia in list(grid):
+            grid.remove(vecchia)
+        for w in colonne:
+            gc = OxmlElement('w:gridCol')
+            gc.set(W + 'w', str(w))
+            grid.append(gc)
+    for tr in tbl.findall(W + 'tr'):
+        pos = 0
+        for tc in tr.findall(W + 'tc'):
+            tcpr = tc.find(W + 'tcPr')
+            if tcpr is None:
+                tcpr = OxmlElement('w:tcPr')
+                tc.insert(0, tcpr)
+            span = tcpr.find(W + 'gridSpan')
+            n = int(span.get(W + 'val')) if span is not None else 1
+            for vecchio in tcpr.findall(W + 'tcW'):
+                tcpr.remove(vecchio)
+            tcw = OxmlElement('w:tcW')
+            tcw.set(W + 'w', str(sum(colonne[pos:pos + n])))
+            tcw.set(W + 'type', 'dxa')
+            tcpr.insert(0, tcw)
+            pos += n
+
+
+def _margine_sopra(d, contract):
+    """Margine superiore che contiene davvero l'intestazione (immagine
+    dell'evento al 75%): senza, nelle sezioni a colonne LibreOffice la
+    sovrappone al testo."""
+    img = getattr(contract.event, 'email_header_image', None)
+    if not img:
+        return
+    from PIL import Image
+    from docx.shared import Mm
+    with Image.open(img.path) as im:
+        w, h = im.size
+    for sez in d.sections:
+        utile = sez.page_width - sez.left_margin - sez.right_margin
+        altezza = int(utile * 0.75 * h / w)
+        minimo = sez.header_distance + altezza + Mm(3)
+        if sez.top_margin < minimo:
+            sez.top_margin = minimo
 
 
 def _riga_nota(t, modello, etichetta, testo):
@@ -427,6 +503,7 @@ def prepara_docx(percorso, contract):
                   _riquadro,
                   lambda: _tabella_orari(d, contract),
                   lambda: _svuota_intestazioni(d),
+                  lambda: _margine_sopra(d, contract),
                   lambda: _due_colonne(d, fine_intestazione.get('p'))):
         try:
             passo()
