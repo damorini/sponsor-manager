@@ -36,6 +36,16 @@ class EventSetupDayInline(admin.TabularInline):
 
 
 class EventAdminForm(forms.ModelForm):
+
+    def clean(self):
+        cd = super().clean()
+        if cd.get('contract_annex_enabled') and not (
+                cd.get('contract_annex_file')
+                or getattr(self.instance, 'contract_annex_file', None)):
+            self.add_error('contract_annex_file',
+                           "Carica il file dell'allegato oppure togli la spunta.")
+        return cd
+
     name = TranslatableJSONField(
         languages=['it', 'en'],
         required_languages=['it'],
@@ -172,6 +182,14 @@ class EventAdmin(admin.ModelAdmin):
         ('Dati per contratti', {
             'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location', 'cancellation_penalty_percent'),
             'classes': ('collapse',),
+        }),
+        ('Allegato 2 al contratto (es. Regolamento tecnico)', {
+            'fields': ('contract_annex_enabled', 'contract_annex_title',
+                       'contract_annex_file'),
+            'description': "Spunta «Inserisci allegato al contratto» e carica il "
+                           "file: ogni contratto di sponsorizzazione generato da qui "
+                           "in avanti lo avra' in fondo come ALLEGATO 2. I contratti "
+                           "gia' generati si aggiornano con «Rigenera PDF CONTRATTO».",
         }),
         ('Segreteria Scientifica', {
             'fields': ('scientific_secretariat', 'scientific_secretariat_logo'),

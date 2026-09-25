@@ -11,6 +11,7 @@ ottenere la traduzione con fallback alla lingua di default dell'evento.
 """
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from datetime import datetime, date
 from django.db import models
 from django.utils.text import slugify
@@ -190,6 +191,26 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Testo libero con tutti i dati della segreteria scientifica "
                   "(nome, indirizzo, contatti...). Appare in basso a destra nel "
                   "PDF del preventivo. Lascia vuoto per non mostrarla.",
+    )
+    contract_annex_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Inserisci allegato al contratto",
+        help_text="Se spuntato, il file qui sotto viene aggiunto come ALLEGATO 2 "
+                  "in fondo al contratto di sponsorizzazione (dopo la Domanda di "
+                  "ammissione, che e' l'Allegato 1).",
+    )
+    contract_annex_title = models.CharField(
+        max_length=120, blank=True, default="Regolamento tecnico",
+        verbose_name="Titolo dell'allegato",
+        help_text="Stampato in testa all'allegato: «ALLEGATO 2 – <titolo>».",
+    )
+    contract_annex_file = models.FileField(
+        upload_to='events/contract_annex/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(['docx', 'pdf'])],
+        verbose_name="File dell'allegato (Word .docx o PDF)",
+        help_text="Il Word viene convertito in PDF alla generazione di ogni "
+                  "contratto. I vecchi file .doc vanno prima salvati come .docx.",
     )
     scientific_secretariat_logo = models.FileField(
         upload_to='events/scientific_secretariat/',

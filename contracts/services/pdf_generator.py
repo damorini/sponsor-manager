@@ -1409,6 +1409,43 @@ def _penale_cancellazione(contract):
     return _pct_pulita(contract.event.cancellation_penalty_percent or 50), has_deposit
 
 
+def _prepara_allegato_2(contract, cartella):
+    """PDF dell'ALLEGATO 2 (es. Regolamento tecnico) caricato sull'evento, o
+    None se non previsto. Il Word riceve in testa «ALLEGATO 2 – titolo» e viene
+    convertito; un PDF viene accodato cosi' com'e'."""
+    event = contract.event
+    campo = getattr(event, 'contract_annex_file', None)
+    if not getattr(event, 'contract_annex_enabled', False) or not campo:
+        return None
+    try:
+        sorgente = Path(campo.path)
+    except Exception:
+        return None
+    if not sorgente.exists():
+        logger.warning("Allegato 2 dell'evento %s mancante su disco", event.pk)
+        return None
+    if sorgente.suffix.lower() == '.pdf':
+        return sorgente
+    import shutil
+    from docx import Document as _Docx
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Pt
+    destinazione = Path(cartella) / f"allegato2_{contract.contract_number}.docx"
+    shutil.copyfile(sorgente, destinazione)
+    etichetta = 'ANNEX 2' if (contract.language or 'it') == 'en' else 'ALLEGATO 2'
+    titolo = (event.contract_annex_title or '').strip()
+    d = _Docx(str(destinazione))
+    primo = d.paragraphs[0] if d.paragraphs else d.add_paragraph()
+    intest = primo.insert_paragraph_before()
+    intest.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = intest.add_run(f"{etichetta} – {titolo}" if titolo else etichetta)
+    r.bold = True
+    r.font.size = Pt(14)
+    intest.paragraph_format.space_after = Pt(12)
+    d.save(str(destinazione))
+    return _convert_docx_to_pdf(destinazione)
+
+
 def _conta_pagine_pdf(percorso):
     try:
         from pypdf import PdfReader
@@ -1626,6 +1663,18 @@ def generate_sponsor_contract_pdf(contract):
                        contract.contract_number, e)
     pagine_allegato = (_conta_pagine_pdf(domanda_pdf) or 0) if domanda_pdf else 0
 
+    cartella_contratto = (Path(settings.MEDIA_ROOT) / 'documents' / 'contracts'
+                          / str(contract.id))
+    cartella_contratto.mkdir(parents=True, exist_ok=True)
+    allegato2_pdf = None
+    try:
+        allegato2_pdf = _prepara_allegato_2(contract, cartella_contratto)
+    except Exception as e:
+        logger.warning("Allegato 2 non aggiunto per %s: %s",
+                       contract.contract_number, e)
+    if allegato2_pdf:
+        pagine_allegato += _conta_pagine_pdf(allegato2_pdf) or 0
+
     penale_percent, has_deposit = _penale_cancellazione(contract)
     context = {
         'contract': contract,
@@ -1675,14 +1724,16 @@ def generate_sponsor_contract_pdf(contract):
 
     final_pdf = contract_pdf
     final_name = contract_pdf.name
-    if domanda_pdf:
+    allegati = [p for p in (domanda_pdf, allegato2_pdf) if p]
+    if allegati:
         try:
             from pypdf import PdfWriter
             merged_name = f"contratto_sponsor_completo_{contract.contract_number}_{event.id}.pdf"
             merged_path = full_docx_path.parent / merged_name
             writer = PdfWriter()
             writer.append(str(contract_pdf))
-            writer.append(str(domanda_pdf))
+            for allegato in allegati:
+                writer.append(str(allegato))
             with open(merged_path, 'wb') as fh:
                 writer.write(fh)
             writer.close()
