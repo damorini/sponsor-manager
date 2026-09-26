@@ -60,6 +60,21 @@ def _block_stand_type(block):
     return tipi.pop() if len(tipi) == 1 else ""
 
 
+def _voci_degli_stand(stands, desc):
+    """Le voci incluse («· Area nuda», «· Pagina ADV»...) degli stand di un
+    blocco, ognuna UNA volta sola, nell'ordine in cui compaiono."""
+    from core.elenco import voci_elenco
+    viste, voci = set(), []
+    for st in stands:
+        testo = desc(st)
+        for v in (voci_elenco(testo) or [r.strip() for r in testo.splitlines() if r.strip()]):
+            chiave = ' '.join(v.lower().split())
+            if chiave not in viste:
+                viste.add(chiave)
+                voci.append(v)
+    return '\n'.join(f"· {v}" for v in voci)
+
+
 def _stand_price_and_label(contract):
     """
     Ritorna (prezzo, etichetta, marcatore, descrizione, stand_type) per lo
@@ -89,8 +104,19 @@ def _stand_price_and_label(contract):
         return (stand.base_price, f"{base_label} - {stand.code}",
                 f"stand:{stand.code}", _desc(stand), stand.stand_type or "")
     if block:
-        return (block.effective_price, f"{base_label} - {block_word} {block.code}",
-                f"block:{block.code}", _desc(block), _block_stand_type(block))
+        stands = list(block.stands.all().order_by('code'))
+        label = f"{base_label} - {block_word} {block.code}"
+        codici = [st.code for st in stands]
+        if codici:
+            elenco = (codici[0] if len(codici) == 1 else
+                      ", ".join(codici[:-1]) + (" and " if lang == 'en' else " e ")
+                      + codici[-1])
+            label += (f", corresponding to stand{'s' if len(codici) > 1 else ''} "
+                      f"no. {elenco} of the official floor plan" if lang == 'en' else
+                      f" corrispondente agli stand n° {elenco} della planimetria ufficiale")
+        return (block.effective_price, label[:255], f"block:{block.code}",
+                _desc(block) or _voci_degli_stand(stands, _desc),
+                _block_stand_type(block))
     raise ValueError("Il contratto non ha ne' uno stand ne' un blocco assegnato.")
 
 
