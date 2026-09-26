@@ -188,15 +188,58 @@ def _riquadro_dati(d, contract, ctx):
         return Paragraph(el, par._parent)
 
     ultimo = _nuovo_dopo(dopo)                  # riga vuota di stacco
-    for etichetta, valore in righe:
-        p = _nuovo_dopo(ultimo)
-        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        p.paragraph_format.space_before = Pt(0)
-        p.paragraph_format.space_after = Pt(0)
-        _stile_run(p.add_run(f"{etichetta}: "), 10, True)
-        _stile_run(p.add_run(str(valore or '-')), 10, False)
-        ultimo = p
-    return _nuovo_dopo(ultimo)                  # riga vuota di stacco
+    # Azienda su una riga; Stand / Contratto / Accesso in una tabellina a una
+    # riga, una casella per voce
+    azienda, *voci = righe
+    p = _nuovo_dopo(ultimo)
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(3)
+    _stile_run(p.add_run(f"{azienda[0]}: "), 10, True)
+    _stile_run(p.add_run(str(azienda[1] or '-')), 10, False)
+    tabella = _tabellina_voci(d, voci)
+    p._p.addnext(tabella)
+    stacco = OxmlElement('w:p')
+    tabella.addnext(stacco)
+    return Paragraph(stacco, dopo._parent)       # riga vuota di stacco
+
+
+def _tabellina_voci(d, voci):
+    """Tabella a una riga (bordi sottili, tutta larghezza) con una casella per
+    voce: «Stand n.: 1-A | Contratto n.: ... | Accesso al padiglione n°: 3»."""
+    from docx.oxml import OxmlElement
+    from docx.shared import Pt
+    t = d.add_table(rows=1, cols=len(voci))
+    tbl = t._tbl
+    tbl.getparent().remove(tbl)                 # la posiziona il chiamante
+    tblpr = tbl.tblPr
+    bordi = OxmlElement('w:tblBorders')
+    for lato in ('top', 'left', 'bottom', 'right', 'insideV'):
+        b = OxmlElement(f'w:{lato}')
+        b.set(W + 'val', 'single')
+        b.set(W + 'sz', '4')
+        b.set(W + 'color', '808080')
+        bordi.append(b)
+    tblpr.append(bordi)
+    sp = d.element.body.find(W + 'sectPr')
+    pgsz, pgmar = sp.find(W + 'pgSz'), sp.find(W + 'pgMar')
+    utile = (int(pgsz.get(W + 'w')) - int(pgmar.get(W + 'left'))
+             - int(pgmar.get(W + 'right')))
+    for vecchio in tblpr.findall(W + 'tblW'):
+        tblpr.remove(vecchio)
+    tblw = OxmlElement('w:tblW')
+    tblw.set(W + 'w', str(utile))
+    tblw.set(W + 'type', 'dxa')
+    tblpr.append(tblw)
+    for gc in tbl.find(W + 'tblGrid').findall(W + 'gridCol'):
+        gc.set(W + 'w', str(utile // len(voci)))
+    for cella, (etichetta, valore) in zip(t.rows[0].cells, voci):
+        par = cella.paragraphs[0]
+        par.paragraph_format.space_before = Pt(2)
+        par.paragraph_format.space_after = Pt(2)
+        _stile_run(par.add_run(f"{etichetta}: "), 10, True)
+        _stile_run(par.add_run(str(valore or '-')), 10, False)
+    return tbl
 
 
 GIORNI = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica']
@@ -539,6 +582,8 @@ def _due_colonne(d, fine_intestazione):
     for el in list(body.iterchildren(W + 'tbl')):
         if finale is not None and _viene_dopo(body, el, finale):
             continue
+        if not _viene_dopo(body, el, fine_intestazione._p):
+            continue                    # tabellina dati in testa: tutta larghezza
         tb = Table(el, d)
         intest = ' '.join(c.text.lower() for c in tb.rows[0].cells)
         if 'orario' in intest or 'time' in intest:
