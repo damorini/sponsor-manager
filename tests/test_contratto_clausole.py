@@ -1,6 +1,7 @@
 """Contratto di sponsorizzazione (IT): art. 3 con termini di cancellazione e
 3.3 (penale = caparra, come nella Domanda), 7.5-7.7, art. 8 e 9, pagine
 dichiarate, dichiarazione ex artt. 1341-1342 c.c. con doppia firma."""
+import re
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -25,10 +26,10 @@ def test_numerazione_e_articoli_nuovi(lingua):
     nome, titolo, art1341, _firma = MODELLI[lingua]
     t = [p.text.strip() for p in Document(str(CARTELLA / nome)).paragraphs]
     assert titolo in t
-    inizi = [x.split(' ')[0] for x in t if x[:2] in ('3.', '7.', '8.', '9.')]
-    for n in ('3.3', '7.5', '7.6', '7.7', '8.1', '9.1'):
+    inizi = [x.split(' ')[0] for x in t if re.match(r'^\d+\.\d', x)]
+    for n in ('3.3', '4.1', '4.2', '8.5', '8.6', '8.7', '12.1', '13.1'):
         assert n in inizi, n
-    assert inizi.count('7.4') == 1
+    assert inizi.count('8.4') == 1
     testo = ' '.join(t)
     assert '{{ penale_percent }}%' in testo
     assert '{{ numero_pagine }} pag' in testo

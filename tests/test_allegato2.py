@@ -129,7 +129,7 @@ def test_allegato_2_personalizzato(contratto, tmp_path):
     testo = '\n'.join([p.text for p in d.paragraphs]
                       + [c.text for tb in d.tables for c in tb.rows[0].cells])
     assert 'ALLEGATO 2 – Regolamento tecnico' in testo
-    assert 'Azienda espositrice: ' + contratto.sponsor.legal_name in testo
+    assert 'Sponsor: ' + contratto.sponsor.legal_name in testo
     assert 'Stand n.: 1-A' in testo
     assert 'Contratto n.: AL2-27-001' in testo
     assert '25/02/2027 – 27/02/2027' in testo

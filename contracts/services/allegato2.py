@@ -161,7 +161,7 @@ def _riquadro_dati(d, contract, ctx):
     """Azienda / Stand / Contratto n. subito sotto il titolo del documento."""
     from docx.shared import Pt
     en = (contract.language or 'it') == 'en'
-    righe = [('Exhibiting company' if en else 'Azienda espositrice', ctx['azienda']),
+    righe = [('Sponsor', ctx['azienda']),
              ('Stand no.' if en else 'Stand n.', ctx['stand']),
              ('Contract no.' if en else 'Contratto n.', ctx['contratto'])]
     if ctx.get('accesso'):
