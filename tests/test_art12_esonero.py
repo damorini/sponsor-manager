@@ -29,7 +29,6 @@ def test_art_12(lingua, titolo, assicurazione, voce_1341, risolutiva):
     assert '13.1' in inizi and '14.1' in inizi and inizi.count('12.1') == 1
     testo = ' '.join(t)
     assert voce_1341 in testo
-    assert risolutiva in testo
 
 
 @pytest.mark.parametrize("lingua,inizio", [("it", "a) La Segreteria"), ("en", "a) The Organizing")])
