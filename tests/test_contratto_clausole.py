@@ -120,3 +120,14 @@ def test_53_risoluzione_via_pec(lingua, attesi):
 def test_43_movimentazione_a_mano(lingua, frase):
     t = [p.text for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
     assert frase in next(x for x in t if x.startswith("4.3 "))
+
+
+@pytest.mark.parametrize("lingua,frase", [
+    ("it", "art. 21, paragrafo 3, del Regolamento (UE) 2017/745"),
+    ("en", "art. 21, paragraph 3, of Regulation (EU) 2017/745"),
+])
+def test_104_dispositivi_medici(lingua, frase):
+    t = [p.text for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
+    p = next(x for x in t if x.startswith("10.4 "))
+    assert frase in p and "2007/47" not in p
+    assert t[t.index(p) + 1] == ""
