@@ -1822,6 +1822,16 @@ def generate_sponsor_contract_pdf(contract):
             logger.warning("Merge contratto+domanda (Allegato 1) fallito per %s: %s",
                            contract.contract_number, e)
 
+    # «CONTRATTO pag. 1 di 5», «ALLEGATO 1 pag. 1 di 3»... su ogni pagina
+    try:
+        from contracts.services.numerazione_pagine import numera
+        parti = [contract_pdf] + (allegati if final_pdf != contract_pdf else [])
+        numera(final_pdf, [_conta_pagine_pdf(x) or 0 for x in parti],
+               'en' if (contract.language or 'it') == 'en' else 'it')
+    except Exception as e:
+        logger.warning("Numerazione pagine non applicata per %s: %s",
+                       contract.contract_number, e)
+
     relative_pdf_path = f"documents/contracts/{contract.id}/{final_name}"
     document = _create_document_record(
         contract, final_pdf, relative_pdf_path, file_name=final_name,
