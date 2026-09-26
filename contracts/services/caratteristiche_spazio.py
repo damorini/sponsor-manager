@@ -149,27 +149,56 @@ def tabella_docx(doc, scheda, en, larghezza_twip, size=9, font=None, titolo=True
     return tbl
 
 
-def paragrafi_indicazioni(doc, dopo_el, scheda, en, size=9, font=None):
-    """«Indicazioni specifiche:» e le righe del testo, subito dopo dopo_el.
-    Ritorna l'ultimo elemento inserito."""
+def paragrafi_indicazioni(doc, dopo_el, scheda, en, size=9, font=None, larghezza=None):
+    """«Indicazioni specifiche» in un riquadro con sfondo leggero, subito dopo
+    dopo_el (con una riga sottile di stacco, altrimenti due tabelle attaccate
+    si fondono). Ritorna l'ultimo elemento inserito."""
     from docx.oxml import OxmlElement
+    from docx.shared import Pt
     from docx.text.paragraph import Paragraph
     testo = scheda.get('indicazioni') or ''
-    if not testo:
-        return dopo_el
     righe = [r.strip() for r in testo.splitlines() if r.strip()]
-    ultimo = dopo_el
+    if not righe:
+        return dopo_el
+    larghezza = larghezza or larghezza_utile(doc)
+    stacco = OxmlElement('w:p')
+    dopo_el.addnext(stacco)
+    sp = Paragraph(stacco, doc)
+    _paragrafo_stretto(sp, 0, 0)
+    _run(sp, '', 4, False, font)
+    t = doc.add_table(rows=1, cols=1)
+    tbl = t._tbl
+    tbl.getparent().remove(tbl)
+    tblpr = tbl.tblPr
+    bordi = OxmlElement('w:tblBorders')
+    for lato in ('top', 'left', 'bottom', 'right'):
+        b = OxmlElement(f'w:{lato}')
+        b.set(W + 'val', 'single')
+        b.set(W + 'sz', '4')
+        b.set(W + 'color', 'D6C9A8')
+        bordi.append(b)
+    tblpr.append(bordi)
+    for vecchio in tblpr.findall(W + 'tblW'):
+        tblpr.remove(vecchio)
+    tblw = OxmlElement('w:tblW')
+    tblw.set(W + 'w', str(larghezza))
+    tblw.set(W + 'type', 'dxa')
+    tblpr.append(tblw)
+    tbl.find(W + 'tblGrid').find(W + 'gridCol').set(W + 'w', str(larghezza))
+    cella = t.rows[0].cells[0]
+    tcw = cella._tc.get_or_add_tcPr().get_or_add_tcW()
+    tcw.set(W + 'w', str(larghezza))
+    tcw.set(W + 'type', 'dxa')
+    _fondo(cella, 'FBF7EC')
+    par = cella.paragraphs[0]
+    _paragrafo_stretto(par, 3, 1)
+    _run(par, 'Specific notes' if en else 'Indicazioni specifiche', size, True, font)
     for n, riga in enumerate(righe):
-        el = OxmlElement('w:p')
-        ultimo.addnext(el)
-        ultimo = el
-        par = Paragraph(el, doc)
-        _paragrafo_stretto(par, 4 if n == 0 else 0, 0)
-        if n == 0:
-            _run(par, ('Specific notes: ' if en else 'Indicazioni specifiche: '),
-                 size, True, font)
+        par = cella.add_paragraph()
+        _paragrafo_stretto(par, 0, 3 if n == len(righe) - 1 else 0)
         _run(par, riga, size, False, font)
-    return ultimo
+    stacco.addnext(tbl)
+    return tbl
 
 
 def larghezza_utile(doc):
@@ -180,8 +209,9 @@ def larghezza_utile(doc):
 
 
 def aggiungi_riepilogo_domanda(docx_path, contract):
-    """Domanda di ammissione / Allegato 1: in fondo, dopo le firme, il
-    RIEPILOGO TECNICO DELLO SPAZIO con le indicazioni specifiche."""
+    """Domanda di ammissione / Allegato 1: il RIEPILOGO TECNICO DELLO SPAZIO
+    con le indicazioni specifiche, subito PRIMA di data e firme («Bologna, ...»);
+    se la riga della data non c'e', in fondo."""
     from docx import Document
     from docx.oxml import OxmlElement
     from docx.shared import Pt
@@ -192,14 +222,17 @@ def aggiungi_riepilogo_domanda(docx_path, contract):
     en = (contract.language or 'it') == 'en'
     doc = Document(str(docx_path))
     body = doc.element.body
-    sectpr = body.find(W + 'sectPr')
+    data = [p for p in doc.paragraphs if p.text.strip().startswith('Bologna,')]
+    ancora = data[-1]._p if data else body.find(W + 'sectPr')
     larghezza = larghezza_utile(doc)
     for scheda in tutte:
         stacco = OxmlElement('w:p')
-        sectpr.addprevious(stacco)
+        ancora.addprevious(stacco)
         Paragraph(stacco, doc).paragraph_format.space_before = Pt(10)
         tbl = tabella_docx(doc, scheda, en, larghezza, size=9)
-        sectpr.addprevious(tbl)
+        ancora.addprevious(tbl)
         paragrafi_indicazioni(doc, tbl, scheda, en, size=9)
+    if data:                                   # respiro fra riepilogo e data
+        ancora.addprevious(OxmlElement('w:p'))
     doc.save(str(docx_path))
     return True

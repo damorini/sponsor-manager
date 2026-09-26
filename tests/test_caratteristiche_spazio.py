@@ -28,6 +28,14 @@ def contratto(db, sponsor, contact):
                                    status=ContractStatus.SIGNED, contract_number='SPA-001')
 
 
+def _riquadro_indicazioni(d):
+    for t in d.tables:
+        c = t.rows[0].cells[0]
+        if len(t.columns) == 1 and c.paragraphs[0].text == 'Indicazioni specifiche':
+            return [p.text for p in c.paragraphs[1:]], c
+    return None, None
+
+
 def _tabella_riepilogo(d):
     for t in d.tables:
         if t.rows and 'RIEPILOGO TECNICO DELLO SPAZIO' in t.rows[0].cells[0].text:
@@ -61,15 +69,18 @@ def test_tabellina_nel_regolamento(contratto, tmp_path, settings):
     assert voci['Allaccio elettrico'] == '3 kW'
     assert 'Allaccio idrico' not in voci and 'Internet' not in voci
     assert 'Accesso al padiglione n°' not in voci       # e' gia' nella tabellina sopra
-    testo = '\n'.join(p.text for p in d.paragraphs)
-    assert 'Indicazioni specifiche: Pilastro sul lato corto' in testo
-    assert 'Niente appendimenti a soffitto' in testo
+    righe, cella = _riquadro_indicazioni(d)
+    assert righe == ['Pilastro sul lato corto', 'Niente appendimenti a soffitto']
+    assert cella._tc.tcPr.find(
+        '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}shd') is not None
 
 
 def test_tabellina_nella_domanda(contratto, tmp_path):
     from contracts.services.caratteristiche_spazio import aggiungi_riepilogo_domanda
     d0 = Document()
     d0.add_paragraph('DOMANDA DI AMMISSIONE')
+    d0.add_paragraph('Condizioni')
+    d0.add_paragraph('Bologna, ___________')
     d0.add_paragraph('Firma')
     percorso = tmp_path / 'dom.docx'
     d0.save(str(percorso))
@@ -78,9 +89,14 @@ def test_tabellina_nella_domanda(contratto, tmp_path):
     voci, t = _tabella_riepilogo(d)
     assert voci['Accesso al padiglione n°'] == '3'
     assert 'Allaccio idrico' not in voci
-    testi = [p.text for p in d.paragraphs]
-    assert testi.index('Firma') < testi.index(
-        'Indicazioni specifiche: Pilastro sul lato corto')
+    righe, cella = _riquadro_indicazioni(d)
+    assert righe[0] == 'Pilastro sul lato corto'
+    # riepilogo e riquadro stanno prima della riga della data
+    corpo = list(d.element.body)
+    i_tab = max(corpo.index(t._tbl), corpo.index(cella._tc.getparent().getparent()))
+    i_data = next(i for i, el in enumerate(corpo)
+                  if el.tag.endswith('}p') and 'Bologna,' in ''.join(el.itertext()))
+    assert i_tab < i_data
 
 
 def test_nel_pass(contratto):

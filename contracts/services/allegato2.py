@@ -253,8 +253,8 @@ def _riquadro_dati(d, contract, ctx):
         _stile_run(sp.add_run(''), 4, False)
         tbl = cs.tabella_docx(d, scheda, en, cs.larghezza_utile(d), size=9, font=FONT)
         el.addnext(tbl)
-        ultimo_el = cs.paragrafi_indicazioni(dopo._parent, tbl, scheda, en,
-                                             size=9, font=FONT)
+        ultimo_el = cs.paragrafi_indicazioni(d, tbl, scheda, en, size=9, font=FONT,
+                                             larghezza=cs.larghezza_utile(d))
     stacco = OxmlElement('w:p')
     ultimo_el.addnext(stacco)
     return Paragraph(stacco, dopo._parent)       # riga vuota di stacco

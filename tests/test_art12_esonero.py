@@ -30,3 +30,11 @@ def test_art_12(lingua, titolo, assicurazione, voce_1341, risolutiva):
     testo = ' '.join(t)
     assert voce_1341 in testo
     assert risolutiva in testo
+
+
+@pytest.mark.parametrize("lingua,inizio", [("it", "a) La Segreteria"), ("en", "a) The Organizing")])
+def test_premessa_a_non_in_grassetto(lingua, inizio):
+    d = Document(str(CARTELLA / f"template_contratto_sponsor_non_ecm_{lingua}.docx"))
+    p = next(p for p in d.paragraphs if p.text.strip().startswith(inizio))
+    assert p.runs[0].text == "a) " and p.runs[0].bold
+    assert all(not r.bold for r in p.runs[1:])
