@@ -212,6 +212,17 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Il Word viene convertito in PDF alla generazione di ogni "
                   "contratto. I vecchi file .doc vanno prima salvati come .docx.",
     )
+    magazzino_indirizzo = models.TextField(
+        blank=True, verbose_name="Indirizzo del magazzino di consegna",
+        help_text="Dove gli Sponsor spediscono i materiali per lo stand. Compare "
+                  "nel Regolamento tecnico (Allegato 2) alla voce INDIRIZZO.",
+    )
+    magazzino_dettagli = models.TextField(
+        blank=True, verbose_name="Giorni, orari e indicazioni per la consegna",
+        help_text="Es. giorni e orari di ricevimento, referente, indicazioni "
+                  "per il corriere. Compare nel Regolamento tecnico sotto "
+                  "l'indirizzo del magazzino.",
+    )
     scientific_secretariat_logo = models.FileField(
         upload_to='events/scientific_secretariat/',
         null=True,

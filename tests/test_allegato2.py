@@ -232,3 +232,35 @@ def test_contatti_su_una_riga(contratto, tmp_path):
     assert all(r.font.size.pt <= 8 for r in riga.runs if r.text)
     normale = next(p for p in d.paragraphs if p.text.startswith('Testo normale'))
     assert normale.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
+
+
+def test_magazzino_di_consegna(contratto, tmp_path):
+    from contracts.services.allegato2 import prepara_docx
+    ev = contratto.event
+    ev.magazzino_indirizzo = 'Magazzino Rossi, Via Calzoni 1/5 - Bologna'
+    ev.magazzino_dettagli = 'Ricevimento dal 22 al 24/02/2027\nore 9:00 - 17:00'
+    ev.save()
+    d0 = Document()
+    d0.add_paragraph('REGOLAMENTO TECNICO', style='Title')
+    d0.add_paragraph('INDIRIZZO: {{ magazzino_indirizzo }}')
+    d0.add_paragraph('{{ magazzino_dettagli }}')
+    d0.add_paragraph('DESTINATARIO: {{ azienda }}')
+    percorso = tmp_path / 'a2.docx'
+    d0.save(str(percorso))
+    prepara_docx(percorso, contratto)
+    testo = '\n'.join(p.text for p in Document(str(percorso)).paragraphs)
+    assert 'INDIRIZZO: Magazzino Rossi, Via Calzoni 1/5 - Bologna' in testo
+    assert 'Ricevimento dal 22 al 24/02/2027' in testo
+    assert 'ore 9:00 - 17:00' in testo
+    assert 'DESTINATARIO: ' + contratto.sponsor.legal_name in testo
+
+
+def test_magazzino_non_indicato(contratto, tmp_path):
+    from contracts.services.allegato2 import prepara_docx
+    d0 = Document()
+    d0.add_paragraph('INDIRIZZO: {{ magazzino_indirizzo }}')
+    percorso = tmp_path / 'a2.docx'
+    d0.save(str(percorso))
+    prepara_docx(percorso, contratto)
+    assert 'INDIRIZZO: da comunicare' in '\n'.join(
+        p.text for p in Document(str(percorso)).paragraphs)

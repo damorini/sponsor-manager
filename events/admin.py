@@ -191,6 +191,12 @@ class EventAdmin(admin.ModelAdmin):
                            "in avanti lo avra' in fondo come ALLEGATO 2. I contratti "
                            "gia' generati si aggiornano con «Rigenera PDF CONTRATTO».",
         }),
+        ('Magazzino di consegna (Regolamento tecnico)', {
+            'fields': ('magazzino_indirizzo', 'magazzino_dettagli'),
+            'description': "Indirizzo e indicazioni del magazzino a cui gli "
+                           "Sponsor spediscono i materiali: vengono riportati nel "
+                           "Regolamento tecnico (Allegato 2) di ogni contratto.",
+        }),
         ('Segreteria Scientifica', {
             'fields': ('scientific_secretariat', 'scientific_secretariat_logo'),
             'classes': ('collapse',),

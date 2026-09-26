@@ -65,7 +65,20 @@ def contesto(contract):
         'date_evento': _date_evento(contract.event),
         'sede': ev.location,
         'accesso': _porta_accesso(contract),
+        'magazzino_indirizzo': _testo_a_righe(
+            getattr(contract.event, 'magazzino_indirizzo', '')) or 'da comunicare',
+        'magazzino_dettagli': _testo_a_righe(
+            getattr(contract.event, 'magazzino_dettagli', '')),
     }
+
+
+def _testo_a_righe(testo):
+    """Testo su piu' righe per docxtpl: Listing mantiene gli a capo."""
+    testo = (testo or '').strip()
+    if not testo:
+        return ''
+    from docxtpl import Listing
+    return Listing(testo)
 
 
 def _compila_segnaposto(percorso, ctx):
