@@ -1501,6 +1501,19 @@ def _conta_pagine_pdf(percorso):
         return None
 
 
+RAGIONE_SOCIALE_VALET = "VALET Società a Responsabilità Limitata"
+
+
+def _beneficiario_bonifico(organizzatore):
+    """Intestatario del bonifico nella Domanda: la ragione sociale completa di
+    VALET se l'organizzatore e' VALET (comunque scritto) o non indicato;
+    altrimenti il nome dell'organizzatore dell'evento."""
+    nome = (organizzatore or '').strip()
+    if not nome or nome.lower().startswith('valet'):
+        return RAGIONE_SOCIALE_VALET
+    return nome
+
+
 def generate_admission_request_pdf(contract, as_allegato=False):
     """
     Genera la DOMANDA DI AMMISSIONE (PDF + .docx) per un contratto/preventivo,
@@ -1554,6 +1567,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         'signer': signer,
         'event': _event_for_template(event),
         'organizer_name': (event.organizer_legal_name or '').strip(),
+        'beneficiario': _beneficiario_bonifico(event.organizer_legal_name),
         'stand_notes': _stand_sponsor_notes(contract),
         'lines': lines,
         'imponibile': format_currency_filter(contract.subtotal),

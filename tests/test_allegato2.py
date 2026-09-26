@@ -166,7 +166,8 @@ def test_porta_accesso_e_note_giorni(contratto, tmp_path):
     righe = [[c.text for c in r.cells] for r in d.tables[0].rows]
     # riga del giorno, poi la sua nota su tutta la larghezza, poi il giorno dopo
     assert righe[1] == ['Allestimento', 'Giovedì 25/02/2027', '08:00 – 12:00']
-    assert righe[2][0] == 'Nota: NON PER ALLESTIMENTO - solo posizionamento materiale'
+    assert righe[2][0] == ('↳ Nota per giovedì 25/02/2027: '
+                           'NON PER ALLESTIMENTO - solo posizionamento materiale')
     assert righe[3][0] == 'Disallestimento'
 
 

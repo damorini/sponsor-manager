@@ -242,8 +242,12 @@ def _tabella_orari(d, contract):
                     r._r.getparent().remove(r._r)
                 _stile_run(p.add_run(testo), CORPO)
             if g is not None and (g.notes or '').strip():
-                _riga_nota(t, modello, ('Note' if en else 'Nota') + ': ',
-                           g.notes.strip())
+                # la nota vale per QUESTO giorno: stesso fondo della riga sopra,
+                # nessuna linea fra le due, e il giorno ripetuto nell'etichetta
+                _evidenzia_riga(tr, fondo=True, bordo_sotto=False)
+                etichetta = (f"Note for {nome} {g.date:%d/%m/%Y}: " if en else
+                             f"↳ Nota per {nome.lower()} {g.date:%d/%m/%Y}: ")
+                _riga_nota(t, modello, etichetta, g.notes.strip())
         _frase_accesso(t, contract)
         _adatta_a_colonna(d, t, [0.30, 0.40, 0.30])
         return True
@@ -328,6 +332,44 @@ def _margine_sopra(d, contract):
             sez.top_margin = minimo
 
 
+COLORE_NOTA = 'FFF4CC'
+
+
+def _bordo(tcpr, lato, nessuno):
+    from docx.oxml import OxmlElement
+    bordi = tcpr.find(W + 'tcBorders')
+    if bordi is None:
+        bordi = OxmlElement('w:tcBorders')
+        tcpr.append(bordi)
+    for vecchio in bordi.findall(W + lato):
+        bordi.remove(vecchio)
+    if nessuno:
+        b = OxmlElement(f'w:{lato}')
+        b.set(W + 'val', 'nil')
+        bordi.append(b)
+
+
+def _evidenzia_riga(tr, fondo=True, bordo_sotto=True):
+    """Fondo evidenziato (e, se richiesto, niente bordo inferiore) sulle
+    celle di una riga: la riga del giorno che ha una nota."""
+    from docx.oxml import OxmlElement
+    for tc in tr.findall(W + 'tc'):
+        tcpr = tc.find(W + 'tcPr')
+        if tcpr is None:
+            tcpr = OxmlElement('w:tcPr')
+            tc.insert(0, tcpr)
+        if fondo:
+            for vecchio in tcpr.findall(W + 'shd'):
+                tcpr.remove(vecchio)
+            shd = OxmlElement('w:shd')
+            shd.set(W + 'val', 'clear')
+            shd.set(W + 'color', 'auto')
+            shd.set(W + 'fill', COLORE_NOTA)
+            tcpr.append(shd)
+        if not bordo_sotto:
+            _bordo(tcpr, 'bottom', True)
+
+
 def _riga_nota(t, modello, etichetta, testo):
     """Riga su tutta la larghezza sotto il giorno, con la nota in grassetto
     su fondo chiaro: le note (es. 'NON PER ALLESTIMENTO') non devono sfuggire."""
@@ -350,10 +392,11 @@ def _riga_nota(t, modello, etichetta, testo):
     shd = OxmlElement('w:shd')
     shd.set(W + 'val', 'clear')
     shd.set(W + 'color', 'auto')
-    shd.set(W + 'fill', 'FFF4CC')
+    shd.set(W + 'fill', COLORE_NOTA)
     for vecchio in tcpr.findall(W + 'shd'):
         tcpr.remove(vecchio)
     tcpr.append(shd)
+    _bordo(tcpr, 'top', True)            # attaccata alla riga del suo giorno
     t._tbl.append(tr)
     riga = _Row(tr, t)
     cella = riga.cells[0]
@@ -363,7 +406,7 @@ def _riga_nota(t, modello, etichetta, testo):
     for r in list(p.runs):
         r._r.getparent().remove(r._r)
     _stile_run(p.add_run(etichetta), CORPO, True)
-    _stile_run(p.add_run(testo), CORPO, True)
+    _stile_run(p.add_run(testo), CORPO, False)
 
 
 def _frase_accesso(t, contract):
