@@ -10,10 +10,10 @@ CARTELLA = Path(settings.BASE_DIR) / 'contracts' / 'templates_pdf'
 
 
 @pytest.mark.parametrize('lingua,titolo,assicurazione,voce_1341,risolutiva', [
-    ('it', '12. Esonero di responsabilità ed obblighi assicurativi', 'polizza assicurativa',
+    ('it', '12. ESONERO DI RESPONSABILITÀ ED OBBLIGHI ASSICURATIVI', 'polizza assicurativa',
      '12. Esonero di responsabilità ed obblighi assicurativi; 13. Modifiche o variazioni; '
      '14. Legge applicabile e foro competente.', '9, 10, 11, 12, 13, 14 '),
-    ('en', '12. Exemption from liability and insurance obligations', 'insurance policy',
+    ('en', '12. EXEMPTION FROM LIABILITY AND INSURANCE OBLIGATIONS', 'insurance policy',
      '12. Exemption from liability and insurance obligations; 13. Amendments or '
      'variations; 14. Governing law and jurisdiction.', '11, 12, 13 and 14 '),
 ])

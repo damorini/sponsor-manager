@@ -13,10 +13,10 @@ from docx import Document
 CARTELLA = Path(settings.BASE_DIR) / 'contracts' / 'templates_pdf'
 MODELLI = {
     'it': ('template_contratto_sponsor_non_ecm_it.docx',
-           '3. Corrispettivo, modalità di pagamento e termini di cancellazione',
+           '3. CORRISPETTIVO, MODALITÀ DI PAGAMENTO E TERMINI DI CANCELLAZIONE',
            'articoli 1341 e 1342 del Codice Civile', 'Segreteria Organizzativa'),
     'en': ('template_contratto_sponsor_non_ecm_en.docx',
-           '3. Consideration, payment terms and cancellation terms',
+           '3. CONSIDERATION, PAYMENT TERMS AND CANCELLATION TERMS',
            'articles 1341 and 1342 of the Italian Civil Code', 'Organizing Secretariat'),
 }
 
@@ -64,9 +64,9 @@ def test_penale_uguale_alla_caparra(sponsor):
 
 
 @pytest.mark.parametrize('lingua,titolo,voce_1341', [
-    ('it', '7. Rinvio, riduzione o sospensione della manifestazione',
+    ('it', '7. RINVIO, RIDUZIONE O SOSPENSIONE DELLA MANIFESTAZIONE',
      '7. Rinvio, riduzione o sospensione della manifestazione;'),
-    ('en', '7. Postponement, reduction or suspension of the Event',
+    ('en', '7. POSTPONEMENT, REDUCTION OR SUSPENSION OF THE EVENT',
      '7. Postponement, reduction or suspension of the Event;'),
 ])
 def test_art_7_rinvio_e_documentazione_in_8_3(lingua, titolo, voce_1341):
@@ -80,10 +80,10 @@ def test_art_7_rinvio_e_documentazione_in_8_3(lingua, titolo, voce_1341):
 
 
 @pytest.mark.parametrize("lingua,titolo,attesi", [
-    ("it", "3.3 Rinuncia alla partecipazione e cancellazioni",
+    ("it", "3.3 RINUNCIA ALLA PARTECIPAZIONE E CANCELLAZIONI",
      ["almeno 30 giorni prima", "art. 1385, secondo comma", "art. 1382 del Codice Civile",
       "pari al 100%", "Restano ferme le disposizioni dell’art. 7"]),
-    ("en", "3.3 Withdrawal from participation and cancellations",
+    ("en", "3.3 WITHDRAWAL FROM PARTICIPATION AND CANCELLATIONS",
      ["at least 30 days before", "art. 1385, second paragraph", "art. 1382 of the Italian",
       "equal to 100%", "The provisions of art. 7"]),
 ])

@@ -12,15 +12,15 @@ CARTELLA = Path(settings.BASE_DIR) / 'contracts' / 'templates_pdf'
 
 
 @pytest.mark.parametrize('lingua,titoli,art76', [
-    ('it', ['4. Assegnazione degli spazi espositivi', '5. Durata',
-            '9. Altoparlanti', '10. Azioni promo-pubblicitarie', '11. Riconsegna',
-            '12. Esonero di responsabilità', '13. Modifiche o variazioni',
-            '14. Legge applicabile'],
+    ('it', ['4. ASSEGNAZIONE DEGLI SPAZI ESPOSITIVI', '5. DURATA',
+            '9. ALTOPARLANTI', '10. AZIONI PROMO-PUBBLICITARIE', '11. RICONSEGNA',
+            '12. ESONERO DI RESPONSABILITÀ', '13. MODIFICHE O VARIAZIONI',
+            '14. LEGGE APPLICABILE'],
      'l’art. 6 dell’Allegato 2'),
-    ('en', ['4. Allocation of exhibition spaces', '5. Term and Termination',
-            '9. Loudspeakers', '10. Promotional', '11. Return of the space',
-            '12. Exemption from liability', '13. Amendments or variations',
-            '14. Governing law'],
+    ('en', ['4. ALLOCATION OF EXHIBITION SPACES', '5. TERM AND TERMINATION',
+            '9. LOUDSPEAKERS', '10. PROMOTIONAL', '11. RETURN OF THE SPACE',
+            '12. EXEMPTION FROM LIABILITY', '13. AMENDMENTS OR VARIATIONS',
+            '14. GOVERNING LAW'],
      'Art. 6 of Annex 2 applies'),
 ])
 def test_articoli_e_riferimenti(lingua, titoli, art76):
