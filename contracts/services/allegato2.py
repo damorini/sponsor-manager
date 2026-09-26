@@ -649,6 +649,20 @@ def _contatti_su_una_riga(d):
                 r.font.size = Pt(round(nuovo * 2) / 2)
 
 
+def _etichette_a_sinistra(d):
+    """Righe brevi «ETICHETTA: valore» con l'etichetta maiuscola in grassetto
+    (es. «TITOLO DELLA MANIFESTAZIONE: ...»): a sinistra, non giustificate,
+    altrimenti gli spazi si allargano in modo innaturale."""
+    import re
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    for p in d.paragraphs:
+        runs = [r for r in p.runs if r.text.strip()]
+        if not runs or not runs[0].bold:
+            continue
+        if re.match(r"^[A-ZÀÈÉÌÒÙ’' ]{3,40}:", p.text.strip()) and len(p.text) < 160:
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
 def prepara_docx(percorso, contract):
     """Personalizza IN-PLACE la copia del Word dell'allegato per il contratto.
     Ogni passo e' protetto: un Word 'strano' esce comunque, al limite meno
@@ -670,7 +684,8 @@ def prepara_docx(percorso, contract):
                   lambda: _svuota_intestazioni(d),
                   lambda: _margine_sopra(d, contract),
                   lambda: _due_colonne(d, fine_intestazione.get('p')),
-                  lambda: _contatti_su_una_riga(d)):
+                  lambda: _contatti_su_una_riga(d),
+                  lambda: _etichette_a_sinistra(d)):
         try:
             passo()
         except Exception as e:

@@ -264,3 +264,21 @@ def test_magazzino_non_indicato(contratto, tmp_path):
     prepara_docx(percorso, contratto)
     assert 'INDIRIZZO: da comunicare' in '\n'.join(
         p.text for p in Document(str(percorso)).paragraphs)
+
+
+def test_etichette_maiuscole_a_sinistra(contratto, tmp_path):
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from contracts.services.allegato2 import prepara_docx
+    d0 = Document()
+    p = d0.add_paragraph()
+    p.add_run('TITOLO DELLA MANIFESTAZIONE: ').bold = True
+    p.add_run('{{ evento }}')
+    d0.add_paragraph('Testo normale della clausola ' * 10)
+    percorso = tmp_path / 'a2.docx'
+    d0.save(str(percorso))
+    prepara_docx(percorso, contratto)
+    ps = Document(str(percorso)).paragraphs
+    riga = next(x for x in ps if x.text.startswith('TITOLO DELLA MANIFESTAZIONE'))
+    assert riga.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert next(x for x in ps if x.text.startswith('Testo normale')).alignment \
+        == WD_ALIGN_PARAGRAPH.JUSTIFY
