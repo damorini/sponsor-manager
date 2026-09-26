@@ -170,6 +170,8 @@ class Command(BaseCommand):
                 # idem per la porta di accesso (colonna facoltativa)
                 if "porta_accesso" in col_idx:
                     campi["access_door"] = str(G("porta_accesso") or "").strip()[:50]
+                if "altre_caratteristiche" in col_idx:
+                    campi["caratteristiche"] = str(G("altre_caratteristiche") or "").strip()
                 if larghezza is not None:
                     campi["width_meters"] = larghezza
                 if profondita is not None:

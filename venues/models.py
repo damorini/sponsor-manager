@@ -311,6 +311,14 @@ class Stand(TranslatableMixin, TimeStampedModel):
                   "(Allegato 2) del contratto.",
     )
 
+    caratteristiche = models.TextField(
+        blank=True, verbose_name="Altre caratteristiche dello spazio",
+        help_text="Tutto quello che lo Sponsor deve sapere oltre a misure, altezza, "
+                  "kW, acqua e internet (es. lati liberi, pavimentazione, pilastri, "
+                  "carico ammesso). Compare nel Regolamento tecnico e nel PASS "
+                  "allestimento.",
+    )
+
     # Posizione su planimetria
     map_x = models.IntegerField(null=True, blank=True, verbose_name="Coord. X")
     map_y = models.IntegerField(null=True, blank=True, verbose_name="Coord. Y")

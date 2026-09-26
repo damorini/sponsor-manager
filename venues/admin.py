@@ -370,6 +370,9 @@ class StandAdmin(admin.ModelAdmin):
         ('Accesso per montaggio e smontaggio', {
             'fields': ('access_door',),
         }),
+        ('Altre caratteristiche dello spazio', {
+            'fields': ('caratteristiche',),
+        }),
         ('Posizionamento', {
             'fields': (('map_x', 'map_y'),),
             'classes': ('collapse',),

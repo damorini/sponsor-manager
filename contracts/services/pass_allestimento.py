@@ -62,11 +62,20 @@ def contesto(contract):
         'date_evento': _date_evento(ev),
         'sede': _event_for_template(ev).location,
         'giorni': giorni(contract, lingua),
+        'spazio': _spazio(contract),
         'montaggio_indirizzo': _righe(getattr(ev, 'montaggio_indirizzo', '')),
         'montaggio_dettagli': _righe(getattr(ev, 'montaggio_dettagli', '')),
         'magazzino_indirizzo': _righe(getattr(ev, 'magazzino_indirizzo', '')),
         'magazzino_dettagli': _righe(getattr(ev, 'magazzino_dettagli', '')),
     }
+
+
+def _spazio(contract):
+    from contracts.services.caratteristiche_spazio import schede
+    return [{'codice': s['codice'],
+             'voci': [v for v in s['voci']
+                      if v[0] not in ('Accesso al padiglione n°', 'Hall access no.')]}
+            for s in schede(contract)]
 
 
 def destinatario(contract):
