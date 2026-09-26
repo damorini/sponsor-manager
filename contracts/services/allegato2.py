@@ -619,7 +619,7 @@ def _contatti_su_una_riga(d):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt
     from contracts.services.pdf_generator import _larghezza_testo_twip
-    larga = _larghezza_colonna(d) - 60
+    larga = _larghezza_colonna(d) - 250          # margine di sicurezza
     for p in d.paragraphs:
         testo = p.text.strip()
         if not re.match(r'^[^:@]{3,80}:\s*\S+@\S+$', testo):
@@ -627,7 +627,9 @@ def _contatti_su_una_riga(d):
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
         runs = [r for r in p.runs if r.text]
         punti = max((r.font.size.pt if r.font.size else CORPO) for r in runs)
-        serve = _larghezza_testo_twip(testo, punti)
+        # il grassetto (l'etichetta) e' circa il 10% piu' largo
+        serve = sum(_larghezza_testo_twip(r.text, punti) * (1.1 if r.bold else 1.0)
+                    for r in runs)
         if serve > larga:
             nuovo = max(6.5, punti * larga / serve)
             for r in runs:
