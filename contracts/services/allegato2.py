@@ -65,6 +65,10 @@ def contesto(contract):
         'date_evento': _date_evento(contract.event),
         'sede': ev.location,
         'accesso': _porta_accesso(contract),
+        'montaggio_indirizzo': _testo_a_righe(
+            getattr(contract.event, 'montaggio_indirizzo', '')) or 'da comunicare',
+        'montaggio_dettagli': _testo_a_righe(
+            getattr(contract.event, 'montaggio_dettagli', '')),
         'magazzino_indirizzo': _testo_a_righe(
             getattr(contract.event, 'magazzino_indirizzo', '')) or 'da comunicare',
         'magazzino_dettagli': _testo_a_righe(
@@ -466,25 +470,39 @@ def _riga_nota(t, modello, etichetta, testo):
 
 
 def _frase_accesso(t, contract):
-    """Subito dopo la tabella orari: la porta di accesso dello stand."""
-    porta = _porta_accesso(contract)
-    if not porta:
-        return
+    """Subito dopo la tabella orari: l'indirizzo da cui si entra per montaggio
+    e smontaggio (se indicato sull'evento) e la porta di accesso dello stand."""
     from docx.oxml import OxmlElement
     from docx.text.paragraph import Paragraph
     from docx.shared import Pt
     en = (contract.language or 'it') == 'en'
-    el = OxmlElement('w:p')
-    t._tbl.addnext(el)
-    p = Paragraph(el, t._parent)
-    p.paragraph_format.space_before = Pt(8)
-    if en:
-        testo = ("For the confirmed stand you can access the hall (for set-up and "
-                 f"dismantling) through entrance no. {porta}.")
-    else:
-        testo = ("Per lo stand confermato potrete accedere al padiglione (per le "
-                 f"fasi di montaggio e smontaggio) tramite l'accesso n° {porta}.")
-    _stile_run(p.add_run(testo), CORPO, True)
+    porta = _porta_accesso(contract)
+    indirizzo = ' - '.join(r.strip() for r in (
+        getattr(contract.event, 'montaggio_indirizzo', '') or '').splitlines() if r.strip())
+    dettagli = [r.strip() for r in (
+        getattr(contract.event, 'montaggio_dettagli', '') or '').splitlines() if r.strip()]
+
+    pezzi = []                                  # [(etichetta in grassetto, testo)]
+    if indirizzo:
+        pezzi.append(('Set-up and dismantling access address: ' if en else
+                      'Indirizzo di accesso per montaggio e smontaggio: ', indirizzo))
+        pezzi += [('', r) for r in dettagli]
+    if porta:
+        pezzi.append((("For the confirmed stand you can access the hall (for set-up and "
+                       f"dismantling) through entrance no. {porta}.") if en else
+                      ("Per lo stand confermato potrete accedere al padiglione (per le "
+                       f"fasi di montaggio e smontaggio) tramite l'accesso n° {porta}."), ''))
+    dopo = t._tbl
+    for i, (etichetta, testo) in enumerate(pezzi):
+        el = OxmlElement('w:p')
+        dopo.addnext(el)
+        dopo = el
+        p = Paragraph(el, t._parent)
+        p.paragraph_format.space_before = Pt(8 if i == 0 else 2)
+        if etichetta:
+            _stile_run(p.add_run(etichetta), CORPO, True)
+        if testo:
+            _stile_run(p.add_run(testo), CORPO, False)
 
 
 def _svuota_intestazioni(d):

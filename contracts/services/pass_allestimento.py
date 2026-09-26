@@ -62,6 +62,8 @@ def contesto(contract):
         'date_evento': _date_evento(ev),
         'sede': _event_for_template(ev).location,
         'giorni': giorni(contract, lingua),
+        'montaggio_indirizzo': _righe(getattr(ev, 'montaggio_indirizzo', '')),
+        'montaggio_dettagli': _righe(getattr(ev, 'montaggio_dettagli', '')),
         'magazzino_indirizzo': _righe(getattr(ev, 'magazzino_indirizzo', '')),
         'magazzino_dettagli': _righe(getattr(ev, 'magazzino_dettagli', '')),
     }

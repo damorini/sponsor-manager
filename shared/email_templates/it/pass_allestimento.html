@@ -65,6 +65,20 @@
 {% else %}
 <p>Le date e gli orari vi saranno comunicati dalla Segreteria Organizzativa.</p>
 {% endif %}
+{% if montaggio_indirizzo %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:16px 0; border-left:4px solid #d97706; background-color:#fff7ed;">
+  <tr>
+    <td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
+      <strong>ACCESSO PER MONTAGGIO E SMONTAGGIO</strong><br>
+      Attenzione: per montaggio e smontaggio l'ingresso non è quello della manifestazione.
+      Si entra da:<br>
+      <strong>{% for r in montaggio_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+      {% if montaggio_dettagli %}<br>{% for r in montaggio_dettagli %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% endif %}
+    </td>
+  </tr>
+</table>
+{% endif %}
 {% if accesso %}
 <p style="margin-top:12px;"><strong>Per lo stand confermato potrete accedere al padiglione (per le fasi di
   montaggio e smontaggio) tramite l'accesso n° {{ accesso }}.</strong></p>

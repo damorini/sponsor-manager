@@ -65,6 +65,20 @@
 {% else %}
 <p>Dates and times will be communicated by the Organizing Secretariat.</p>
 {% endif %}
+{% if montaggio_indirizzo %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:16px 0; border-left:4px solid #d97706; background-color:#fff7ed;">
+  <tr>
+    <td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
+      <strong>SET-UP AND DISMANTLING ACCESS</strong><br>
+      Please note: for set-up and dismantling the entrance is not the congress entrance.
+      Access is from:<br>
+      <strong>{% for r in montaggio_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+      {% if montaggio_dettagli %}<br>{% for r in montaggio_dettagli %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% endif %}
+    </td>
+  </tr>
+</table>
+{% endif %}
 {% if accesso %}
 <p style="margin-top:12px;"><strong>For your confirmed stand you may enter the hall (for set-up and
   dismantling) through access no. {{ accesso }}.</strong></p>

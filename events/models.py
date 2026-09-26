@@ -212,6 +212,17 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Il Word viene convertito in PDF alla generazione di ogni "
                   "contratto. I vecchi file .doc vanno prima salvati come .docx.",
     )
+    montaggio_indirizzo = models.TextField(
+        blank=True, verbose_name="Indirizzo di accesso per montaggio e smontaggio",
+        help_text="Da dove entrano Sponsor e allestitori coi mezzi, se diverso "
+                  "dall'ingresso del congresso (es. «Via Calzoni 1/5 - Bologna»). "
+                  "Compare nel Regolamento tecnico e nella mail del PASS allestimento.",
+    )
+    montaggio_dettagli = models.TextField(
+        blank=True, verbose_name="Indicazioni per l'accesso al montaggio",
+        help_text="Facoltativo, es. lunghezza massima dei mezzi, varco, parcheggio, "
+                  "documenti da esibire.",
+    )
     magazzino_indirizzo = models.TextField(
         blank=True, verbose_name="Indirizzo del magazzino di consegna",
         help_text="Dove gli Sponsor spediscono i materiali per lo stand. Compare "
