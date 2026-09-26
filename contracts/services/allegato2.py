@@ -217,46 +217,22 @@ def _riquadro_dati(d, contract, ctx):
     tabella = _tabellina_voci(d, voci)
     p._p.addnext(tabella)
     ultimo_el = tabella
-    for titolo, righe_spazio in _caratteristiche_spazio(contract):
-        el = OxmlElement('w:p')
+    from contracts.services import caratteristiche_spazio as cs
+    en = (contract.language or 'it') == 'en'
+    for scheda in cs.schede(contract, con_accesso=False):
+        el = OxmlElement('w:p')                  # piccolo stacco sopra la tabellina
         ultimo_el.addnext(el)
-        ultimo_el = el
-        cp = Paragraph(el, dopo._parent)
-        cp.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        cp.paragraph_format.space_before = Pt(4)
-        cp.paragraph_format.space_after = Pt(0)
-        _stile_run(cp.add_run(titolo), 9, True)
-        for i, (etichetta, valore) in enumerate(righe_spazio):
-            if i:
-                _stile_run(cp.add_run('  ·  '), 9, False)
-            _stile_run(cp.add_run(f"{etichetta}: "), 9, True)
-            _stile_run(cp.add_run(str(valore).replace('\n', ' – ')), 9, False)
+        sp = Paragraph(el, dopo._parent)
+        sp.paragraph_format.space_before = Pt(0)
+        sp.paragraph_format.space_after = Pt(0)
+        _stile_run(sp.add_run(''), 4, False)
+        tbl = cs.tabella_docx(d, scheda, en, cs.larghezza_utile(d), size=9, font=FONT)
+        el.addnext(tbl)
+        ultimo_el = cs.paragrafi_indicazioni(dopo._parent, tbl, scheda, en,
+                                             size=9, font=FONT)
     stacco = OxmlElement('w:p')
     ultimo_el.addnext(stacco)
     return Paragraph(stacco, dopo._parent)       # riga vuota di stacco
-
-
-ETICHETTE_ACCESSO = ('Accesso al padiglione n°', 'Hall access no.')
-
-
-def _caratteristiche_spazio(contract):
-    """[(titolo, [(etichetta, valore)])]: una riga per stand; l'accesso e'
-    gia' nella tabellina sopra."""
-    from contracts.services.caratteristiche_spazio import schede
-    en = (contract.language or 'it') == 'en'
-    tutte = schede(contract)
-    out = []
-    for s in tutte:
-        voci = [v for v in s['voci'] if v[0] not in ETICHETTE_ACCESSO]
-        if not voci:
-            continue
-        if len(tutte) > 1:
-            titolo = (f"Stand {s['codice']} features: " if en else
-                      f"Caratteristiche dello stand {s['codice']}: ")
-        else:
-            titolo = 'Space features: ' if en else 'Caratteristiche dello spazio: '
-        out.append((titolo, voci))
-    return out
 
 
 def _tabellina_voci(d, voci):

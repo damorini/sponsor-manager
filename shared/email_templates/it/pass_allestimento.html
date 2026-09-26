@@ -52,6 +52,7 @@
   </tr>
   {% endfor %}
 </table>
+{% if s.indicazioni %}<p style="font-size:13px; margin:0 0 14px 0;"><strong>Indicazioni specifiche:</strong><br>{{ s.indicazioni|linebreaksbr }}</p>{% endif %}
 {% endfor %}
 {% endif %}
 

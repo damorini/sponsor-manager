@@ -1626,6 +1626,16 @@ def generate_admission_request_pdf(contract, as_allegato=False):
             logger.warning("Riga IVA non rimossa dalla domanda per %s: %s",
                            contract.contract_number, e)
 
+    # RIEPILOGO TECNICO DELLO SPAZIO (misure, altezza, kW...) e indicazioni
+    # specifiche dello stand, dopo le firme (non per gli addendum).
+    if not is_addendum:
+        try:
+            from contracts.services.caratteristiche_spazio import aggiungi_riepilogo_domanda
+            aggiungi_riepilogo_domanda(full_docx_path, contract)
+        except Exception as e:
+            logger.warning("Riepilogo tecnico non aggiunto alla domanda per %s: %s",
+                           contract.contract_number, e)
+
     # Addendum: stesso modello, ma il titolo diventa "ADDENDUM AL CONTRATTO N° ...".
     if is_addendum:
         try:

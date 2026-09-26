@@ -366,13 +366,11 @@ class StandAdmin(admin.ModelAdmin):
                 ('has_power', 'power_kw'),
                 'has_water',
                 'has_internet',
+                'caratteristiche',
             ),
         }),
         ('Accesso per montaggio e smontaggio', {
             'fields': ('access_door',),
-        }),
-        ('Altre caratteristiche dello spazio', {
-            'fields': ('caratteristiche',),
         }),
         ('Posizionamento', {
             'fields': (('map_x', 'map_y'),),

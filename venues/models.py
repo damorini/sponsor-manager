@@ -312,11 +312,11 @@ class Stand(TranslatableMixin, TimeStampedModel):
     )
 
     caratteristiche = models.TextField(
-        blank=True, verbose_name="Altre caratteristiche dello spazio",
-        help_text="Tutto quello che lo Sponsor deve sapere oltre a misure, altezza, "
-                  "kW, acqua e internet (es. lati liberi, pavimentazione, pilastri, "
-                  "carico ammesso). Compare nel Regolamento tecnico e nel PASS "
-                  "allestimento.",
+        blank=True, verbose_name="Indicazioni specifiche",
+        help_text="Note tecniche su questo spazio (es. lati liberi, pilastri, "
+                  "vincoli di allestimento). Compaiono sotto il RIEPILOGO TECNICO "
+                  "DELLO SPAZIO nella Domanda di ammissione (Allegato 1), nel "
+                  "Regolamento tecnico (Allegato 2) e nel PASS allestimento.",
     )
 
     # Posizione su planimetria

@@ -72,10 +72,7 @@ def contesto(contract):
 
 def _spazio(contract):
     from contracts.services.caratteristiche_spazio import schede
-    return [{'codice': s['codice'],
-             'voci': [v for v in s['voci']
-                      if v[0] not in ('Accesso al padiglione n°', 'Hall access no.')]}
-            for s in schede(contract)]
+    return schede(contract, con_accesso=False)
 
 
 def destinatario(contract):

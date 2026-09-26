@@ -201,9 +201,9 @@ def build_template_stand_workbook():
                          "grafiche): compaiono nel preventivo e nel contratto"),
         ("porta_accesso", "Opzionale. Porta di accesso al padiglione per montaggio "
                           "e smontaggio (es. 3): compare nel Regolamento tecnico"),
-        ("altre_caratteristiche", "Opzionale. Altre caratteristiche dello spazio "
-                                  "(es. lati liberi, pavimentazione, pilastri): "
-                                  "compaiono nel Regolamento tecnico e nel PASS"),
+        ("indicazioni_specifiche", "Opzionale. Indicazioni specifiche dello spazio "
+                                   "(es. lati liberi, pilastri): sotto il riepilogo "
+                                   "tecnico in Allegato 1, Allegato 2 e PASS"),
     ]
 
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -322,7 +322,7 @@ def export_stand_workbook(event):
     headers = ["evento_slug", "code", "blocco_code", "prezzo_base", "larghezza_m",
                "profondita_m", "tipologia", "stato", "allaccio_elettrico", "potenza_kw",
                "allaccio_idrico", "internet", "altezza_max_m", "descrizione_preventivo",
-               "porta_accesso", "altre_caratteristiche"]
+               "porta_accesso", "indicazioni_specifiche"]
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
     for i, name in enumerate(headers, start=1):
