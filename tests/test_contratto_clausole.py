@@ -27,9 +27,10 @@ def test_numerazione_e_articoli_nuovi(lingua):
     t = [p.text.strip() for p in Document(str(CARTELLA / nome)).paragraphs]
     assert titolo in t
     inizi = [x.split(' ')[0] for x in t if re.match(r'^\d+\.\d', x)]
-    for n in ('3.3', '4.1', '4.2', '8.5', '8.6', '8.7', '12.1', '13.1'):
+    for n in ('3.3', '4.1', '4.2', '8.4', '8.5', '8.6', '12.1', '13.1'):
         assert n in inizi, n
     assert inizi.count('8.4') == 1
+    assert '8.7' not in inizi   # l'8.3 sul foro e' stato tolto (resta il 13.1)
     testo = ' '.join(t)
     assert '{{ penale_percent }}%' in testo
     assert '{{ numero_pagine }} pag' in testo
