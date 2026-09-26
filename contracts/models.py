@@ -176,6 +176,10 @@ class Contract(SoftDeleteModel):
     issued_date = models.DateField(null=True, blank=True, verbose_name="Data emissione")
     sent_date = models.DateTimeField(null=True, blank=True, verbose_name="Inviato il")
     signed_date = models.DateField(null=True, blank=True, verbose_name="Data firma")
+    pass_allestimento_inviato_il = models.DateTimeField(
+        null=True, blank=True, editable=False,
+        verbose_name="PASS allestimento inviato il",
+        help_text="Data e ora dell'ultimo invio del PASS allestimento allo Sponsor.")
     cancelled_date = models.DateTimeField(null=True, blank=True, verbose_name="Annullato il")
     cancellation_reason = models.TextField(blank=True, verbose_name="Motivo annullamento")
 

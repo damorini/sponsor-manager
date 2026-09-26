@@ -20,6 +20,7 @@ from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from core.admin_filters import evento_filter
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
+from contracts.admin_pass import PassAllestimentoAdminMixin, PassAllestimentoFilter
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
@@ -372,7 +373,7 @@ class TodoFilter(admin.SimpleListFilter):
 
 
 @admin.register(Contract)
-class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
+class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.display(description="Numero contratto")
     def contract_number_display(self, obj):
         # Mostra il numero; sui nuovi (non salvati) avvisa che e automatico
@@ -383,10 +384,10 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'contract_number', 'sponsor_link', 'event_link',
         'kind_badge', 'status_badge', 'venue_display',
-        'total_display', 'incassato_display', 'origin_badge', 'created_at_short',
+        'total_display', 'incassato_display', 'pass_col', 'origin_badge', 'created_at_short',
     )
     list_filter = (
-        TodoFilter, EventoFilter,
+        TodoFilter, EventoFilter, PassAllestimentoFilter,
         'status', 'contract_kind', 'origin', 'language',
         'vat_applicable', DeletedListFilter,
     )
@@ -672,6 +673,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
                'action_registra_bonifico',
+               'action_invia_pass_allestimento',
                'action_genera_domanda_ammissione', 'action_genera_proforma',
                'action_rigenera_pdf_contratto',
                'action_convert_to_contract',
