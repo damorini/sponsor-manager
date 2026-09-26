@@ -1342,7 +1342,10 @@ def _arricchisci_righe_domanda(docx_path, lines, language):
                 row.cells[2].text = incluso
                 row.cells[3].text = incluso
             testo = (ln.service_description_snapshot or '').strip()
-            voci = [v.strip() for v in testo.splitlines() if v.strip()]
+            from core.elenco import voci_elenco
+            elenco = voci_elenco(testo)
+            voci = (['•  ' + v for v in elenco] if elenco else
+                    [v.strip() for v in testo.splitlines() if v.strip()])
             dopo = cella.paragraphs[0]
             for voce in voci:
                 nuovo_p = OxmlElement('w:p')

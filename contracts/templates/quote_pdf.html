@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+{% load elenco %}<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
 <style>
   @page {
     size: A4;
@@ -21,6 +21,8 @@
   .svc td { padding:6px 0; border-bottom:1px solid #eef0f2; vertical-align:top; }
   .svc .name { font-weight:700; color:#111827; margin-bottom:1px; }
   .svc .desc { color:#6b7280; font-size:10px; font-weight:400; line-height:1.35; }
+  .svc .desc ul.elenco { margin:2px 0 0; padding-left:14px; color:#374151; }
+  .svc .desc ul.elenco li { margin:0 0 1px; }
   .svc .price { text-align:right; white-space:nowrap; font-weight:700; padding-left:14px; width:100px; }
   .svc .qty { text-align:right; white-space:nowrap; font-weight:400; color:#374151; padding-left:12px; width:44px; }
   .svc .chead td { border-bottom:1.5px solid {{ brand_color }}; color:{{ brand_color }}; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:0 0 4px; }
@@ -76,7 +78,7 @@
     <tr>
       <td>
         <div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">&ndash; {{ line.variant_label_snapshot }}</span>{% endif %}</div>
-        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot|linebreaksbr }}</div>{% endif %}
+        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot|elenco_puntato }}</div>{% endif %}
         {% if line.is_prezzo_revisionato %}<div><span class="badge-sconto">{% if line.is_sconto_esplicito %}{{ t.badge_sconto }} &euro; {{ line.sconto_eur|floatformat:2 }}{% else %}{{ t.badge_riservato }} &euro; {{ line.prezzo_riservato|floatformat:2 }}{% endif %}</span></div>{% endif %}
       </td>
       <td class="qty">{{ line.quantity }}</td>

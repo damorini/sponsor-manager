@@ -52,7 +52,7 @@ def test_descrizioni_e_inclusi(sponsor):
 
     r_stand = next(r for k, r in righe.items() if k.startswith('Spazio espositivo'))
     testi = [p.text for p in r_stand.cells[1].paragraphs]
-    assert testi[1:] == ['· Area nuda', '· Logo su sito']
+    assert testi[1:] == ['•  Area nuda', '•  Logo su sito']   # elenco puntato
     assert r_stand.cells[3].text.strip() != 'Incluso'
 
     r_badge = next(r for k, r in righe.items() if k.startswith('Badge Full'))

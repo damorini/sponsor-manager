@@ -45,7 +45,7 @@ def test_frase_sotto_il_riepilogo(sponsor, evento, lingua, frase, settings, tmp_
 
 
 def test_descrizione_riga_va_a_capo(sponsor, evento, settings, tmp_path):
-    """I servizi inclusi scritti uno per riga restano uno per riga."""
+    """I servizi inclusi scritti uno per riga diventano un elenco puntato."""
     from contracts.models import ContractLine
     settings.MEDIA_ROOT = tmp_path
     c = Contract.objects.create(
@@ -67,4 +67,5 @@ def test_descrizione_riga_va_a_capo(sponsor, evento, settings, tmp_path):
     from contracts.services.pdf_generator import generate_quote_pdf_html
     with mock.patch('weasyprint.HTML', FintoHTML):
         generate_quote_pdf_html(c)
-    assert '· Area nuda<br>· Logo su sito' in catturato['html']
+    # elenco puntato: una voce per riga
+    assert '<li>Area nuda</li><li>Logo su sito</li>' in catturato['html']

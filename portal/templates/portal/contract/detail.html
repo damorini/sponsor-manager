@@ -1,6 +1,7 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 {% load portal_labels %}
+{% load elenco %}
 
 {% block title %}{{ contract.contract_number }}{% endblock %}
 
@@ -138,7 +139,7 @@
                 </div>
                 {% if line.service_description_snapshot %}
                 <div class="text-xs text-gray-500 mt-1">
-                  {{ line.service_description_snapshot|linebreaksbr }}
+                  {{ line.service_description_snapshot|elenco_puntato }}
                 </div>
                 {% endif %}
                 {% if line.is_prezzo_revisionato %}
