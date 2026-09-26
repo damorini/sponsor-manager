@@ -185,7 +185,7 @@ class EventAdmin(admin.ModelAdmin):
         }),
         ('Allegato 2 al contratto (es. Regolamento tecnico)', {
             'fields': ('contract_annex_enabled', 'contract_annex_title',
-                       'contract_annex_file'),
+                       'contract_annex_file', 'contract_annex_moduli'),
             'description': "Spunta «Inserisci allegato al contratto» e carica il "
                            "file: ogni contratto di sponsorizzazione generato da qui "
                            "in avanti lo avra' in fondo come ALLEGATO 2. I contratti "

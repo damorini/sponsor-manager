@@ -212,6 +212,14 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Il Word viene convertito in PDF alla generazione di ogni "
                   "contratto. I vecchi file .doc vanno prima salvati come .docx.",
     )
+    contract_annex_moduli = models.FileField(
+        upload_to='events/contract_annex/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(['pdf'])],
+        verbose_name="Moduli da allegare in fondo all'Allegato 2 (PDF)",
+        help_text="Es. i moduli ME1/ME2 del Polo Congressuale: vengono accodati "
+                  "cosi' come sono in fondo all'Allegato 2 e contati nelle sue pagine.",
+    )
     montaggio_indirizzo = models.TextField(
         blank=True, verbose_name="Indirizzo di accesso per montaggio e smontaggio",
         help_text="Da dove entrano Sponsor e allestitori coi mezzi, se diverso "

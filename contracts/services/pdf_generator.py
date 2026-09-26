@@ -1428,8 +1428,9 @@ def _prepara_allegato_2(contract, cartella):
     if not sorgente.exists():
         logger.warning("Allegato 2 dell'evento %s mancante su disco", event.pk)
         return None
+    moduli = _moduli_allegato_2(event)
     if sorgente.suffix.lower() == '.pdf':
-        return sorgente
+        return _accoda_moduli(sorgente, moduli, cartella, contract)
     import shutil
     from contracts.services.allegato2 import prepara_docx, usa_pagine_allegato
     destinazione = Path(cartella) / f"allegato2_{contract.contract_number}.docx"
@@ -1442,11 +1443,45 @@ def _prepara_allegato_2(contract, cartella):
     # reali e si rifa' l'allegato col numero giusto
     if pdf and usa_pagine_allegato(sorgente):
         pagine = _conta_pagine_pdf(pdf)
+        if pagine and moduli:
+            pagine += _conta_pagine_pdf(moduli) or 0
         if pagine:
             shutil.copyfile(sorgente, destinazione)
             prepara_docx(destinazione, contract, pagine=pagine)
             pdf = _convert_docx_to_pdf(destinazione) or pdf
-    return pdf
+    return _accoda_moduli(pdf, moduli, cartella, contract)
+
+
+def _moduli_allegato_2(event):
+    """PDF dei moduli da accodare all'Allegato 2 (es. ME1/ME2), o None."""
+    campo = getattr(event, 'contract_annex_moduli', None)
+    if not campo:
+        return None
+    try:
+        percorso = Path(campo.path)
+    except Exception:
+        return None
+    return percorso if percorso.exists() else None
+
+
+def _accoda_moduli(pdf, moduli, cartella, contract):
+    """Allegato 2 + moduli in un solo PDF (i moduli restano com'erano)."""
+    if not pdf or not moduli:
+        return pdf
+    try:
+        from pypdf import PdfWriter
+        uscita = Path(cartella) / f"allegato2_completo_{contract.contract_number}.pdf"
+        writer = PdfWriter()
+        writer.append(str(pdf))
+        writer.append(str(moduli))
+        with open(uscita, 'wb') as fh:
+            writer.write(fh)
+        writer.close()
+        return uscita
+    except Exception as e:
+        logger.warning("Allegato 2 %s: moduli non accodati (%s)",
+                       contract.contract_number, e)
+        return pdf
 
 
 # Larghezza media dei caratteri Arial, in "em" (per stimare se un testo sta
