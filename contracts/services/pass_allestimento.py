@@ -180,6 +180,8 @@ def pdf(contract):
                  'body { background: #ffffff !important; } '
                  'p, li, h1, h2, h3 { break-inside: avoid; page-break-inside: avoid; } '
                  'table table table { break-inside: avoid; page-break-inside: avoid; } '
+                 'table.lungo, table.lungo tr, table.lungo td { break-inside: auto; '
+                 'page-break-inside: auto; } '
                  'h1, h2, h3 { break-after: avoid; page-break-after: avoid; } '
                  'p { orphans: 4; widows: 4; }</style>')
         html = re.sub(r'(</head>)', stile + r'\1', html, count=1) \
