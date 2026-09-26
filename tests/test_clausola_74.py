@@ -21,7 +21,7 @@ CARTELLA = Path(settings.BASE_DIR) / 'contracts' / 'templates_pdf'
 ])
 def test_clausola_74(nome, chiave, rimborso):
     testi = [p.text.strip() for p in Document(str(CARTELLA / nome)).paragraphs]
-    i = next(i for i, t in enumerate(testi) if t[:3] in ('7.4', '7.5', '8.4', '8.5') and chiave in t)
+    i = next(i for i, t in enumerate(testi) if chiave in t)
     assert 'di quando versato' not in testi[i]
     assert rimborso in testi[i + 1]
     assert testi[i + 2] and not testi[i + 2].startswith('7.')

@@ -61,3 +61,19 @@ def test_penale_uguale_alla_caparra(sponsor):
         assert perc == '45'
     else:
         assert perc == str(ev.cancellation_penalty_percent or 50)
+
+
+@pytest.mark.parametrize('lingua,titolo,voce_1341', [
+    ('it', '7. Rinvio, riduzione o sospensione della manifestazione',
+     '7. Rinvio, riduzione o sospensione della manifestazione;'),
+    ('en', '7. Postponement, reduction or suspension of the Event',
+     '7. Postponement, reduction or suspension of the Event;'),
+])
+def test_art_7_rinvio_e_documentazione_in_8_3(lingua, titolo, voce_1341):
+    t = [p.text.strip() for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
+    i = t.index(titolo)
+    assert t[i + 1] and not t[i + 1][0].isdigit()      # capoverso senza numero
+    assert not any(x.startswith('7.1 ') for x in t)
+    doc_83 = next(x for x in t if x.startswith('8.3 '))
+    assert 'cinque anni' in doc_83 or 'five years' in doc_83
+    assert voce_1341 in ' '.join(t)
