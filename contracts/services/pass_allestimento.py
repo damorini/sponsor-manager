@@ -66,6 +66,8 @@ def contesto(contract):
         'spazio': _spazio(contract),
         'montaggio_indirizzo': _righe(getattr(ev, 'montaggio_indirizzo', '')),
         'montaggio_dettagli': _righe(getattr(ev, 'montaggio_dettagli', '')),
+        'regole_montaggio': _righe(getattr(ev, 'regole_montaggio', '')),
+        'magazzino_ritiro': _righe(getattr(ev, 'magazzino_ritiro', '')),
         'magazzino_indirizzo': _righe(getattr(ev, 'magazzino_indirizzo', '')),
         'magazzino_dettagli': _righe(getattr(ev, 'magazzino_dettagli', '')),
     }

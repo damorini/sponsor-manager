@@ -192,14 +192,14 @@ class EventAdmin(admin.ModelAdmin):
                            "gia' generati si aggiornano con «Rigenera PDF CONTRATTO».",
         }),
         ('Accesso per montaggio e smontaggio', {
-            'fields': ('montaggio_indirizzo', 'montaggio_dettagli'),
+            'fields': ('montaggio_indirizzo', 'montaggio_dettagli', 'regole_montaggio'),
             'description': "Indirizzo da cui si entra per montare e smontare gli "
                            "stand, quando e' diverso dall'ingresso della "
                            "manifestazione: compare nel Regolamento tecnico "
                            "(Allegato 2) e nella mail del PASS allestimento.",
         }),
         ('Magazzino di consegna (Regolamento tecnico)', {
-            'fields': ('magazzino_indirizzo', 'magazzino_dettagli'),
+            'fields': ('magazzino_indirizzo', 'magazzino_dettagli', 'magazzino_ritiro'),
             'description': "Indirizzo e indicazioni del magazzino a cui gli "
                            "Sponsor spediscono i materiali: vengono riportati nel "
                            "Regolamento tecnico (Allegato 2) di ogni contratto.",

@@ -108,6 +108,16 @@
 <p style="font-size:13px;">All set-up and dismantling work must be completed within the times indicated. For workplace
   safety reasons, no set-up work is allowed during the congress days.</p>
 
+{% if regole_montaggio %}
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Rules for setting up and dismantling the exhibition area</h3>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
+    {% for r in regole_montaggio %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+  </td></tr>
+</table>
+{% endif %}
+
 <!-- Shipping -->
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Shipping materials for your stand</h3>
 <p style="font-size:13px;">You may bring your materials directly during the set-up hours or ship them to
@@ -133,6 +143,16 @@
 <p style="font-size:13px;"><strong>PLEASE NOTE: shipments requiring special storage conditions (for example
   and not limited to, controlled temperatures or other instructions requiring special handling) will
   not be accepted.</strong></p>
+
+{% if magazzino_ritiro %}
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Collection of materials at the end of the event</h3>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
+    {% for r in magazzino_ritiro %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+  </td></tr>
+</table>
+{% endif %}
 
 <p style="font-size:13px; margin-top:22px;"><strong>This PASS is also attached as a PDF,
   so that you can forward it to your stand builder.</strong></p>

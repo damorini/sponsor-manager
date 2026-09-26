@@ -70,6 +70,8 @@ def contesto(contract):
         'montaggio_dettagli': _testo_a_righe(
             getattr(contract.event, 'montaggio_dettagli', '')),
         **_disallestimento(contract.event),
+        'magazzino_ritiro': _testo_a_righe(getattr(contract.event, 'magazzino_ritiro', '')),
+        'regole_montaggio': _testo_a_righe(getattr(contract.event, 'regole_montaggio', '')),
         'magazzino_indirizzo': _testo_a_righe(
             getattr(contract.event, 'magazzino_indirizzo', '')) or 'da comunicare',
         'magazzino_dettagli': _testo_a_righe(

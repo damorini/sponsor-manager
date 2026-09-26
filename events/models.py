@@ -223,6 +223,18 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Facoltativo, es. lunghezza massima dei mezzi, varco, parcheggio, "
                   "documenti da esibire.",
     )
+    regole_montaggio = models.TextField(
+        blank=True,
+        verbose_name="Regole per il montaggio e lo smontaggio dell'area espositiva",
+        help_text="Compaiono nella mail del PASS allestimento e nel suo PDF (nel "
+                  "Regolamento tecnico con il segnaposto {{ regole_montaggio }}).",
+    )
+    magazzino_ritiro = models.TextField(
+        blank=True, verbose_name="Ritiro del materiale a fine evento",
+        help_text="Istruzioni, orari e obblighi per ritirare il materiale a fine "
+                  "evento. Compaiono nella mail del PASS allestimento e nel suo PDF "
+                  "(nel Regolamento tecnico con il segnaposto {{ magazzino_ritiro }}).",
+    )
     magazzino_indirizzo = models.TextField(
         blank=True, verbose_name="Indirizzo del magazzino di consegna",
         help_text="Dove gli Sponsor spediscono i materiali per lo stand. Compare "
