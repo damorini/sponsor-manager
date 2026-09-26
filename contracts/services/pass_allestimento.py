@@ -171,9 +171,9 @@ def pdf(contract):
         from weasyprint import HTML
         _oggetto, html = anteprima(contract, per_pdf=True)
         html = html.replace('&#127881;', '').replace('\U0001F389', '')
-        # carattere piu' piccolo della mail (circa -30%)
+        # carattere piu' piccolo della mail (circa -25%)
         html = re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px',
-                      lambda m: f"font-size:{float(m.group(1)) * 0.68:.1f}px", html)
+                      lambda m: f"font-size:{float(m.group(1)) * 0.75:.1f}px", html)
         # a fine pagina si va a capo solo fra blocchi interi: paragrafi, righe
         # di tabella, riquadri e titoli non si spezzano
         stile = ('<style>@page { size: A4; margin: 8mm 9mm; } '
