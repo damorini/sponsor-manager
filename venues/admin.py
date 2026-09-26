@@ -72,16 +72,17 @@ class StandBlockForm(forms.ModelForm):
                 .filter(Q(stand_block__isnull=True, status=StandStatus.AVAILABLE)
                         | Q(stand_block=inst))
                 .select_related('event').order_by('code'))
+            f.initial = Stand.objects.filter(stand_block=inst)
+        else:
+            # nuovo blocco: gli stand disponibili e senza blocco di tutti gli eventi
+            f.queryset = (Stand.objects
+                .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
+                .select_related('event').order_by('event__slug', 'code'))
         # 'Tipologia' (block_type): tendina coi valori già usati, resta libero.
         if 'block_type' in self.fields:
             usate = (StandBlock.objects.exclude(block_type='')
                      .order_by('block_type').values_list('block_type', flat=True).distinct())
             self.fields['block_type'].widget = DatalistTextInput(options=list(usate))
-            f.initial = Stand.objects.filter(stand_block=inst)
-        else:
-            f.queryset = (Stand.objects
-                .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
-                .select_related('event').order_by('event__slug', 'code'))
         # L'etichetta include il NOME dell'evento (come nella tendina Evento):
         # cosi' il filtro integrato della casella puo' restringere per evento.
         f.label_from_instance = lambda st: (
