@@ -58,6 +58,7 @@ def contesto(contract):
         'event_name': nome_evento(contract),
         'contact': destinatario(contract),
         'stand': _etichetta_stand(contract),
+        **_stand_o_blocco(contract, lingua),
         'accesso': _porta_accesso(contract),
         'date_evento': _date_evento(ev),
         'sede': _event_for_template(ev).location,
@@ -68,6 +69,21 @@ def contesto(contract):
         'magazzino_indirizzo': _righe(getattr(ev, 'magazzino_indirizzo', '')),
         'magazzino_dettagli': _righe(getattr(ev, 'magazzino_dettagli', '')),
     }
+
+
+def _stand_o_blocco(contract, lingua):
+    """Etichetta e testo dello spazio: «Stand n. 1-A» oppure, per un blocco,
+    «Blocco SELTEC» con «stand n° 29-A e 30-A»."""
+    en = lingua == 'en'
+    blocco = contract.stand_block if contract.stand_block_id and not contract.stand_id else None
+    if blocco is None:
+        return {'blocco': '', 'stand_del_blocco': ''}
+    codici = list(blocco.stands.order_by('code').values_list('code', flat=True))
+    if len(codici) > 1:
+        elenco = ", ".join(codici[:-1]) + (" and " if en else " e ") + codici[-1]
+    else:
+        elenco = codici[0] if codici else ''
+    return {'blocco': blocco.code, 'stand_del_blocco': elenco}
 
 
 def _spazio(contract):
@@ -115,6 +131,29 @@ def anteprima(contract):
     return sogg, html
 
 
+def pdf(contract):
+    """Il PASS in PDF (stesso contenuto della mail), da allegare. Ritorna
+    (nome_file, bytes) oppure None se la conversione non riesce."""
+    try:
+        import re
+        from weasyprint import HTML
+        _oggetto, html = anteprima(contract)
+        html = html.replace('&#127881;', '').replace('\U0001F389', '')
+        stile = ('<style>@page { size: A4; margin: 12mm 10mm; } '
+                 'body { background: #ffffff !important; }</style>')
+        html = re.sub(r'(<head[^>]*>)', r'\1' + stile, html, count=1) \
+            if '<head' in html else stile + html
+        from django.conf import settings
+        base = getattr(settings, 'SITE_URL', '') or None
+        dati = HTML(string=html, base_url=base).write_pdf()
+        numero = (contract.contract_number or str(contract.pk)).replace('/', '-')
+        return (f"PASS_allestimento_{numero}.pdf", dati)
+    except Exception as e:
+        logger.warning("PASS allestimento %s: PDF non generato (%s)",
+                       contract.contract_number, e)
+        return None
+
+
 def invia(contract, utente=None):
     """Invia il PASS e segna data e ora sul contratto. Solleva ValueError se
     manca l'indirizzo email dello Sponsor."""
@@ -122,8 +161,10 @@ def invia(contract, utente=None):
     c = destinatario(contract)
     if c is None:
         raise ValueError("nessun contatto con indirizzo email per lo Sponsor")
+    allegato = pdf(contract)
     send_email(
         template_name=TEMPLATE,
+        attachments=[(allegato[0], allegato[1], 'application/pdf')] if allegato else None,
         context=contesto(contract),
         to=[c.email],
         cc=list(CC_AMMINISTRAZIONE),

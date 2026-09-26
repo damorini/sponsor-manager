@@ -29,9 +29,14 @@
     <td style="padding:16px 20px;">
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px; color:#374151;">
         <tr><td style="padding:3px 0; color:#6b7280; width:170px;">Sponsor</td><td style="padding:3px 0;"><strong>{{ sponsor.legal_name }}</strong></td></tr>
+        {% if blocco %}
+        <tr><td style="padding:3px 0; color:#6b7280;">Block</td><td style="padding:3px 0;"><strong>{{ blocco }}</strong></td></tr>
+        <tr><td style="padding:3px 0; color:#6b7280;">Stands in the block</td><td style="padding:3px 0;"><strong>no. {{ stand_del_blocco }}</strong></td></tr>
+        {% else %}
         <tr><td style="padding:3px 0; color:#6b7280;">Stand no.</td><td style="padding:3px 0;"><strong>{{ stand }}</strong></td></tr>
+        {% endif %}
+        {% if accesso %}<tr><td style="padding:3px 0; color:#6b7280;">Hall access door</td><td style="padding:3px 0;"><strong>{{ accesso }}</strong></td></tr>{% endif %}
         <tr><td style="padding:3px 0; color:#6b7280;">Agreement no.</td><td style="padding:3px 0;">{{ contract.contract_number }}</td></tr>
-        {% if accesso %}<tr><td style="padding:3px 0; color:#6b7280;">Hall access no.</td><td style="padding:3px 0;"><strong>{{ accesso }}</strong></td></tr>{% endif %}
         {% if sede %}<tr><td style="padding:3px 0; color:#6b7280;">Venue</td><td style="padding:3px 0;">{{ sede }}</td></tr>{% endif %}
         {% if date_evento %}<tr><td style="padding:3px 0; color:#6b7280;">Congress dates</td><td style="padding:3px 0;">{{ date_evento }}</td></tr>{% endif %}
       </table>
@@ -57,7 +62,7 @@
 {% endif %}
 
 <!-- Days and times -->
-<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Set-up and dismantling dates and times</h3>
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Access for set-up and dismantling</h3>
 {% if giorni %}
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
        style="border-collapse:collapse; font-size:13px; color:#374151;">
@@ -100,7 +105,7 @@
 <p style="margin-top:12px;"><strong>For your confirmed stand you may enter the hall (for set-up and
   dismantling) through access no. {{ accesso }}.</strong></p>
 {% endif %}
-<p style="font-size:13px;">All set-up work must be completed within the times indicated. For workplace
+<p style="font-size:13px;">All set-up and dismantling work must be completed within the times indicated. For workplace
   safety reasons, no set-up work is allowed during the congress days.</p>
 
 <!-- Shipping -->
@@ -115,7 +120,7 @@
       <strong>CONSIGNEE:</strong> {{ sponsor.legal_name }}<br>
       <strong>ADDRESS:</strong> {% if magazzino_indirizzo %}{% for r in magazzino_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}to be communicated by the Organizing Secretariat{% endif %}<br>
       <strong>EVENT TITLE:</strong> {{ event_name }}<br>
-      <strong>STAND NUMBER:</strong> {{ stand }}
+      <strong>STAND NUMBER:</strong> {% if blocco %}{{ stand_del_blocco }} (Block {{ blocco }}){% else %}{{ stand }}{% endif %}
     </td>
   </tr>
 </table>
@@ -129,7 +134,10 @@
   and not limited to, controlled temperatures or other instructions requiring special handling) will
   not be accepted.</strong></p>
 
-<p style="font-size:13px; margin-top:22px;">For all other technical matters (stand project, electrical
+<p style="font-size:13px; margin-top:22px;"><strong>This PASS is also attached as a PDF,
+  so that you can forward it to your stand builder.</strong></p>
+
+<p style="font-size:13px;">For all other technical matters (stand project, electrical
   systems, safety, dismantling) please refer to the Technical Regulations annexed to your agreement.</p>
 
 <p>We remain at your disposal and wish you a successful set-up.<br>

@@ -29,9 +29,14 @@
     <td style="padding:16px 20px;">
       <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px; color:#374151;">
         <tr><td style="padding:3px 0; color:#6b7280; width:170px;">Sponsor</td><td style="padding:3px 0;"><strong>{{ sponsor.legal_name }}</strong></td></tr>
+        {% if blocco %}
+        <tr><td style="padding:3px 0; color:#6b7280;">Blocco</td><td style="padding:3px 0;"><strong>{{ blocco }}</strong></td></tr>
+        <tr><td style="padding:3px 0; color:#6b7280;">Stand del blocco</td><td style="padding:3px 0;"><strong>n° {{ stand_del_blocco }}</strong></td></tr>
+        {% else %}
         <tr><td style="padding:3px 0; color:#6b7280;">Stand n.</td><td style="padding:3px 0;"><strong>{{ stand }}</strong></td></tr>
+        {% endif %}
+        {% if accesso %}<tr><td style="padding:3px 0; color:#6b7280;">Porta di accesso al padiglione</td><td style="padding:3px 0;"><strong>{{ accesso }}</strong></td></tr>{% endif %}
         <tr><td style="padding:3px 0; color:#6b7280;">Contratto n.</td><td style="padding:3px 0;">{{ contract.contract_number }}</td></tr>
-        {% if accesso %}<tr><td style="padding:3px 0; color:#6b7280;">Accesso al padiglione n°</td><td style="padding:3px 0;"><strong>{{ accesso }}</strong></td></tr>{% endif %}
         {% if sede %}<tr><td style="padding:3px 0; color:#6b7280;">Sede</td><td style="padding:3px 0;">{{ sede }}</td></tr>{% endif %}
         {% if date_evento %}<tr><td style="padding:3px 0; color:#6b7280;">Date del congresso</td><td style="padding:3px 0;">{{ date_evento }}</td></tr>{% endif %}
       </table>
@@ -57,7 +62,7 @@
 {% endif %}
 
 <!-- Giorni e orari -->
-<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Date e orari di allestimento e disallestimento</h3>
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Accesso per allestimento e disallestimento</h3>
 {% if giorni %}
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
        style="border-collapse:collapse; font-size:13px; color:#374151;">
@@ -100,7 +105,7 @@
 <p style="margin-top:12px;"><strong>Per lo stand confermato potrete accedere al padiglione (per le fasi di
   montaggio e smontaggio) tramite l'accesso n° {{ accesso }}.</strong></p>
 {% endif %}
-<p style="font-size:13px;">Tutti i lavori di allestimento dovranno essere terminati nei tempi indicati. Per
+<p style="font-size:13px;">Tutti i lavori di allestimento e disallestimento dovranno essere terminati nei tempi indicati. Per
   ragioni legate alla sicurezza sul lavoro, non è consentito effettuare allestimenti durante le
   giornate congressuali.</p>
 
@@ -117,7 +122,7 @@
       <strong>DESTINATARIO:</strong> {{ sponsor.legal_name }}<br>
       <strong>INDIRIZZO:</strong> {% if magazzino_indirizzo %}{% for r in magazzino_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}vi sarà comunicato dalla Segreteria Organizzativa{% endif %}<br>
       <strong>TITOLO DELLA MANIFESTAZIONE:</strong> {{ event_name }}<br>
-      <strong>NUMERO DELLO STAND:</strong> {{ stand }}
+      <strong>NUMERO DELLO STAND:</strong> {% if blocco %}{{ stand_del_blocco }} (Blocco {{ blocco }}){% else %}{{ stand }}{% endif %}
     </td>
   </tr>
 </table>
@@ -131,7 +136,10 @@
   particolari di stoccaggio delle merci (a titolo esemplificativo e non limitativo, temperature
   controllate o altre indicazioni che necessitino di particolari accorgimenti).</strong></p>
 
-<p style="font-size:13px; margin-top:22px;">Per tutte le altre indicazioni tecniche (progetto dello stand,
+<p style="font-size:13px; margin-top:22px;"><strong>In allegato trovate questo PASS anche in PDF,
+  da inoltrare all'eventuale allestitore.</strong></p>
+
+<p style="font-size:13px;">Per tutte le altre indicazioni tecniche (progetto dello stand,
   impianti elettrici, sicurezza, smontaggio) fa fede il Regolamento tecnico allegato al contratto.</p>
 
 <p>Restiamo a vostra disposizione e vi auguriamo buon lavoro.<br>
