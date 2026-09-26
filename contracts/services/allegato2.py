@@ -69,10 +69,35 @@ def contesto(contract):
             getattr(contract.event, 'montaggio_indirizzo', '')) or 'da comunicare',
         'montaggio_dettagli': _testo_a_righe(
             getattr(contract.event, 'montaggio_dettagli', '')),
+        **_disallestimento(contract.event),
         'magazzino_indirizzo': _testo_a_righe(
             getattr(contract.event, 'magazzino_indirizzo', '')) or 'da comunicare',
         'magazzino_dettagli': _testo_a_righe(
             getattr(contract.event, 'magazzino_dettagli', '')),
+    }
+
+
+MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio',
+        'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre']
+
+
+def _disallestimento(event):
+    """Orari e giorno di disallestimento dalla tabella dell'evento: inizio del
+    primo giorno, fine e data dell'ultimo («27 febbraio 2027»)."""
+    giorni = []
+    if hasattr(event, 'setup_days'):
+        giorni = list(event.setup_days.filter(kind='disallestimento')
+                      .order_by('date', 'start_time'))
+    if not giorni:
+        return {'disallestimento_inizio': 'da comunicare',
+                'disallestimento_fine': 'da comunicare',
+                'disallestimento_giorno': 'giorno da comunicare'}
+    primo, ultimo = giorni[0], giorni[-1]
+    return {
+        'disallestimento_inizio': f"{primo.start_time:%H:%M}",
+        'disallestimento_fine': f"{ultimo.end_time:%H:%M}",
+        'disallestimento_giorno': (f"{ultimo.date.day} {MESI[ultimo.date.month - 1]} "
+                                   f"{ultimo.date.year}"),
     }
 
 
