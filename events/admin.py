@@ -192,7 +192,8 @@ class EventAdmin(admin.ModelAdmin):
                            "gia' generati si aggiornano con «Rigenera PDF CONTRATTO».",
         }),
         ('Accesso per montaggio e smontaggio', {
-            'fields': ('montaggio_indirizzo', 'montaggio_dettagli', 'regole_montaggio'),
+            'fields': ('montaggio_indirizzo', 'montaggio_dettagli', 'referente_sponsor',
+                       'regole_montaggio'),
             'description': "Indirizzo da cui si entra per montare e smontare gli "
                            "stand, quando e' diverso dall'ingresso della "
                            "manifestazione: compare nel Regolamento tecnico "

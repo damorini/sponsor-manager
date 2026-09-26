@@ -68,9 +68,38 @@ def contesto(contract):
         'montaggio_dettagli': _righe(getattr(ev, 'montaggio_dettagli', '')),
         'regole_montaggio': _righe(getattr(ev, 'regole_montaggio', '')),
         'magazzino_ritiro': _righe(getattr(ev, 'magazzino_ritiro', '')),
+        'regole_montaggio_html': testo_html(getattr(ev, 'regole_montaggio', '')),
+        'magazzino_ritiro_html': testo_html(getattr(ev, 'magazzino_ritiro', '')),
+        'referente_sponsor': _righe(getattr(ev, 'referente_sponsor', '')),
         'magazzino_indirizzo': _righe(getattr(ev, 'magazzino_indirizzo', '')),
         'magazzino_dettagli': _righe(getattr(ev, 'magazzino_dettagli', '')),
     }
+
+
+def testo_html(testo):
+    """Testo libero dell'evento in HTML: capoversi separati dalle righe vuote,
+    giustificati; le righe tutte maiuscole (titoletti) in grassetto."""
+    from django.utils.html import escape
+    from django.utils.safestring import mark_safe
+    blocchi, corrente = [], []
+    for riga in (testo or '').replace('\r', '').split('\n'):
+        if riga.strip():
+            corrente.append(riga.strip())
+        elif corrente:
+            blocchi.append(corrente)
+            corrente = []
+    if corrente:
+        blocchi.append(corrente)
+    html = []
+    for righe in blocchi:
+        parti = []
+        for r in righe:
+            lettere = [c for c in r if c.isalpha()]
+            titolo = len(lettere) >= 4 and all(c.isupper() for c in lettere)
+            parti.append(f"<strong>{escape(r)}</strong>" if titolo else escape(r))
+        html.append('<p style="margin:0 0 8px 0; text-align:justify;">'
+                    + '<br>'.join(parti) + '</p>')
+    return mark_safe(''.join(html))
 
 
 def _stand_o_blocco(contract, lingua):
@@ -117,11 +146,12 @@ def oggetto(contract):
     return OGGETTO[_lingua(contract)].format(evento=nome_evento(contract))
 
 
-def anteprima(contract):
-    """(oggetto, html) della email, SENZA inviarla."""
+def anteprima(contract, per_pdf=False):
+    """(oggetto, html) della email, SENZA inviarla. per_pdf: versione per il
+    PDF allegato (senza la frase «In allegato trovate...»)."""
     from contracts.services.email_sender import _render_email_body, build_common_context
     lingua = _lingua(contract)
-    ctx = build_common_context(contesto(contract), lingua)
+    ctx = build_common_context({**contesto(contract), 'per_pdf': per_pdf}, lingua)
     sogg = oggetto(contract)
     ctx['subject'] = sogg
     html, sogg_admin = _render_email_body(
@@ -139,7 +169,7 @@ def pdf(contract):
     try:
         import re
         from weasyprint import HTML
-        _oggetto, html = anteprima(contract)
+        _oggetto, html = anteprima(contract, per_pdf=True)
         html = html.replace('&#127881;', '').replace('\U0001F389', '')
         # carattere piu' piccolo della mail (circa -20%)
         html = re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px',
@@ -148,8 +178,8 @@ def pdf(contract):
         # di tabella, riquadri e titoli non si spezzano
         stile = ('<style>@page { size: A4; margin: 12mm 10mm; } '
                  'body { background: #ffffff !important; } '
-                 'p, li, tr, h1, h2, h3 { break-inside: avoid; page-break-inside: avoid; } '
-                 'table table { break-inside: avoid; page-break-inside: avoid; } '
+                 'p, li, h1, h2, h3 { break-inside: avoid; page-break-inside: avoid; } '
+                 'table table table { break-inside: avoid; page-break-inside: avoid; } '
                  'h1, h2, h3 { break-after: avoid; page-break-after: avoid; } '
                  'p { orphans: 4; widows: 4; }</style>')
         html = re.sub(r'(</head>)', stile + r'\1', html, count=1) \

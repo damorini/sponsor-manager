@@ -231,6 +231,11 @@ class Event(TranslatableMixin, TimeStampedModel):
         help_text="Facoltativo, es. lunghezza massima dei mezzi, varco, parcheggio, "
                   "documenti da esibire.",
     )
+    referente_sponsor = models.TextField(
+        blank=True, verbose_name="Referente per informazioni Sponsor",
+        help_text="Es. «Elisa Fantini Tel. ... – WhatsApp ... - email». Compare "
+                  "evidenziato nella mail del PASS allestimento e nel suo PDF.",
+    )
     regole_montaggio = models.TextField(
         blank=True,
         verbose_name="Regole per il montaggio e lo smontaggio dell'area espositiva",

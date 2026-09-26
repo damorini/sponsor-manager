@@ -44,6 +44,15 @@
   </tr>
 </table>
 
+{% if referente_sponsor %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 18px 0; border-left:4px solid #1d4ed8; background-color:#eef4ff;">
+  <tr><td style="padding:10px 14px; font-size:13px; line-height:1.6; color:#1d4ed8;">
+    <strong>{% for r in referente_sponsor %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+  </td></tr>
+</table>
+{% endif %}
+
 {% if spazio %}
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Caratteristiche del vostro spazio</h3>
 {% for s in spazio %}
@@ -57,7 +66,10 @@
   </tr>
   {% endfor %}
 </table>
-{% if s.indicazioni %}<p style="font-size:13px; margin:0 0 14px 0;"><strong>Indicazioni specifiche:</strong><br>{{ s.indicazioni|linebreaksbr }}</p>{% endif %}
+{% if s.indicazioni %}<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e0cf9f; border-radius:8px; background-color:#fdf8e8;">
+  <tr><td style="padding:10px 14px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;"><strong>Indicazioni specifiche:</strong><br>{{ s.indicazioni|linebreaksbr }}</td></tr>
+</table>{% endif %}
 {% endfor %}
 {% endif %}
 
@@ -113,8 +125,8 @@
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Regole per il montaggio e lo smontaggio dell'area espositiva</h3>
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
        style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
-  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
-    {% for r in regole_montaggio %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;">
+    {{ regole_montaggio_html }}
   </td></tr>
 </table>
 {% endif %}
@@ -150,14 +162,16 @@
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Ritiro del materiale a fine evento</h3>
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
        style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
-  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
-    {% for r in magazzino_ritiro %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;">
+    {{ magazzino_ritiro_html }}
   </td></tr>
 </table>
 {% endif %}
 
+{% if not per_pdf %}
 <p style="font-size:13px; margin-top:22px;"><strong>In allegato trovate questo PASS anche in PDF,
   da inoltrare all'eventuale allestitore.</strong></p>
+{% endif %}
 
 <p style="font-size:13px;">Per tutte le altre indicazioni tecniche (progetto dello stand,
   impianti elettrici, sicurezza, smontaggio) fa fede il Regolamento tecnico allegato al contratto.</p>
