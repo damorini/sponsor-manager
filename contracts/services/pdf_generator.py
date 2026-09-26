@@ -1437,6 +1437,62 @@ def _prepara_allegato_2(contract, cartella):
     return _convert_docx_to_pdf(destinazione)
 
 
+# Larghezza media dei caratteri Arial, in "em" (per stimare se un testo sta
+# su una riga): cifre 0,556, maiuscole ~0,67, minuscole ~0,5.
+def _larghezza_testo_twip(testo, punti):
+    em = 0.0
+    for ch in testo:
+        if ch in '.,:;|il1!\' ':
+            em += 0.28
+        elif ch == '@':
+            em += 1.0
+        elif ch.isdigit():
+            em += 0.556
+        elif ch.isupper():
+            em += 0.68
+        else:
+            em += 0.52
+    return em * punti * 20
+
+
+def _una_riga_tabella_parti(docx_path):
+    """Nella tabella delle parti (la prima del contratto) ogni valore deve
+    stare su una riga: se una casella e' troppo stretta per il suo testo, il
+    carattere di QUELLA casella scende quanto basta (minimo 7 pt)."""
+    from docx import Document
+    from docx.shared import Pt
+    d = Document(str(docx_path))
+    if not d.tables:
+        return
+    tbl = d.tables[0]._tbl
+    W_ = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    grid = [int(g.get(W_ + 'w')) for g in tbl.find(W_ + 'tblGrid').findall(W_ + 'gridCol')]
+    cambiato = False
+    for riga in d.tables[0].rows:
+        pos = 0
+        for tc in riga._tr.findall(W_ + 'tc'):
+            sp = tc.find(f'{W_}tcPr/{W_}gridSpan')
+            n = int(sp.get(W_ + 'val')) if sp is not None else 1
+            disponibile = sum(grid[pos:pos + n]) - 230       # margini interni
+            pos += n
+            from docx.table import _Cell
+            cella = _Cell(tc, d.tables[0])
+            for par in cella.paragraphs:
+                runs = [r for r in par.runs if r.text]
+                if not runs:
+                    continue
+                punti = max((r.font.size.pt if r.font.size else 9) for r in runs)
+                larga = _larghezza_testo_twip(par.text.strip(), punti)
+                if larga <= disponibile or disponibile <= 0:
+                    continue
+                nuovo = max(7.0, punti * disponibile / larga)
+                for r in runs:
+                    r.font.size = Pt(round(nuovo * 2) / 2)
+                cambiato = True
+    if cambiato:
+        d.save(str(docx_path))
+
+
 def _conta_pagine_pdf(percorso):
     try:
         from pypdf import PdfReader
@@ -1689,6 +1745,11 @@ def generate_sponsor_contract_pdf(contract):
         doc = DocxTemplate(str(template_path))
         doc.render(context, jinja_env=get_jinja_env())
         doc.save(str(full_docx_path))
+        try:
+            _una_riga_tabella_parti(full_docx_path)
+        except Exception as e:
+            logger.warning("Tabella parti non adattata per %s: %s",
+                           contract.contract_number, e)
         try:
             _add_header_footer_to_docx(full_docx_path, contract)
         except Exception as e:
