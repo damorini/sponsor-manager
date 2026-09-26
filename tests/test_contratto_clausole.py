@@ -114,12 +114,14 @@ def test_53_risoluzione_via_pec(lingua, attesi):
 
 
 @pytest.mark.parametrize("lingua,frase", [
-    ("it", "non consente in alcun caso lo smontaggio o lo svuotamento anticipato dello stand"),
-    ("en", "does not in any case allow the early dismantling or emptying of the stand"),
+    ("it", "purché non comportino lo smantellamento anticipato dello spazio espositivo"),
+    ("en", "provided that they do not involve the early dismantling of the exhibition space"),
 ])
 def test_43_movimentazione_a_mano(lingua, frase):
     t = [p.text for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
-    assert frase in next(x for x in t if x.startswith("4.3 "))
+    i = next(i for i, x in enumerate(t) if x.startswith("4.3 "))
+    assert frase in t[i + 3]
+    assert t[i + 4] == "" or t[i + 4].startswith("5.")
 
 
 @pytest.mark.parametrize("lingua,frase", [
