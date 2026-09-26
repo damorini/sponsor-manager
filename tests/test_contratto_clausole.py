@@ -133,3 +133,16 @@ def test_104_dispositivi_medici(lingua, frase):
     p = next(x for x in t if x.startswith("10.4 "))
     assert frase in p and "2007/47" not in p
     assert t[t.index(p) + 1] == ""
+
+
+@pytest.mark.parametrize("lingua,parti", [
+    ("it", ["Allegato 1 – Domanda di ammissione", "Allegato 2 – Regolamento tecnico",
+            "moduli tecnici"]),
+    ("en", ["Annex 1 – Application for admission", "Annex 2 – Technical Regulations",
+            "technical forms"]),
+])
+def test_81_composizione_del_contratto(lingua, parti):
+    t = [p.text for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
+    p = next(x for x in t if x.startswith("8.1 "))
+    for x in parti:
+        assert x in p, x
