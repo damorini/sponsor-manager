@@ -53,11 +53,65 @@ def get_or_create_stand_service(event, stand_type=""):
     return service
 
 
+def _stand_superiore(stands):
+    """Lo stand «superiore» del blocco: prezzo piu' alto, a pari prezzo il piu'
+    grande. None se il blocco e' vuoto."""
+    def peso(st):
+        return (st.base_price or Decimal('0'), st.area_sqm or Decimal('0'))
+    return max(stands, key=peso) if stands else None
+
+
 def _block_stand_type(block):
-    """Tipologia di un blocco: quella dei suoi stand se UNIFORME, altrimenti ''
-    (pacchetto generico)."""
-    tipi = set(t for t in block.stands.values_list('stand_type', flat=True) if t)
-    return tipi.pop() if len(tipi) == 1 else ""
+    """Tipologia di un blocco: quella dello stand SUPERIORE (se le tipologie
+    sono diverse, vale la piu' alta)."""
+    sup = _stand_superiore(list(block.stands.all()))
+    return (sup.stand_type or "") if sup else ""
+
+
+def _stand_della_tipologia_superiore(stands):
+    sup = _stand_superiore(stands)
+    if sup is None:
+        return []
+    return [st for st in stands if (st.stand_type or "") == (sup.stand_type or "")]
+
+
+def somma_inclusi_blocco(parent_line):
+    """Righe dei servizi inclusi di un contratto a BLOCCO: per ogni servizio,
+    la SOMMA delle quantita' dei pacchetti di tutti gli stand del blocco (ogni
+    stand col pacchetto della sua tipologia). Aggiorna le righe gia' create
+    dall'espansione del pacchetto e aggiunge quelle mancanti."""
+    from contracts.models import ContractLine
+    contract = parent_line.contract
+    block = getattr(contract, 'stand_block', None)
+    if block is None or parent_line.service_id is None:
+        return
+    totali, ordine = {}, []
+    for st in block.stands.all().order_by('code'):
+        pacchetto = Service.objects.filter(
+            event=contract.event, code=stand_service_code(st.stand_type or "")).first()
+        if pacchetto is None:
+            continue
+        for inc in pacchetto.inclusions.select_related('child').all():
+            if inc.child_id not in totali:
+                totali[inc.child_id] = [inc.child, 0]
+                ordine.append(inc.child_id)
+            totali[inc.child_id][1] += inc.quantity or 1
+    parent_code = parent_line.service.code or str(parent_line.service_id)
+    lang = getattr(contract, 'language', None) or 'it'
+    for child_id in ordine:
+        sub, qta = totali[child_id]
+        marker = "[incluso:%s>%s]" % (parent_code, sub.code or str(sub.id))
+        riga = contract.lines.filter(notes__contains=marker).first()
+        if riga is None:
+            riga = ContractLine(contract=contract, service=sub, notes=marker,
+                                service_name_snapshot=sub.translated('name', lang),
+                                quantity=qta)
+            riga.save()
+        elif riga.quantity == qta and not riga.unit_price:
+            continue
+        riga.quantity = qta
+        riga.unit_price = Decimal('0.00')
+        riga.save()
 
 
 def _voci_degli_stand(stands, desc):
@@ -115,7 +169,8 @@ def _stand_price_and_label(contract):
                       f"no. {elenco} of the official floor plan" if lang == 'en' else
                       f" corrispondente agli stand n° {elenco} della planimetria ufficiale")
         return (block.effective_price, label[:255], f"block:{block.code}",
-                _desc(block) or _voci_degli_stand(stands, _desc),
+                _desc(block) or _voci_degli_stand(
+                    _stand_della_tipologia_superiore(stands), _desc),
                 _block_stand_type(block))
     raise ValueError("Il contratto non ha ne' uno stand ne' un blocco assegnato.")
 
@@ -177,6 +232,8 @@ def genera_riga_da_stand(contract):
         notes=marker,  # marcatore per idempotenza
     )
     line.save()
+    if getattr(contract, 'stand_block', None) is not None and not getattr(contract, 'stand', None):
+        somma_inclusi_blocco(line)
     return ("creata", f"Riga creata: {label} - prezzo {price_eff}. Totale aggiornato.")
 
 
