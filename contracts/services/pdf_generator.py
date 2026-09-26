@@ -740,12 +740,20 @@ def _add_header_footer_to_docx(docx_path, contract):
         cell_logo, cell_txt = ftbl.rows[0].cells
         cell_logo.width = Mm(logo_w)
         cell_txt.width = Mm(text_w)
-        # rimuovo i bordi della tabella
+        # niente bordi, tranne un filo sottile grigio in alto che separa il
+        # piè di pagina dal testo
         _tblPr = ftbl._tbl.tblPr
         _bd = _tblPr.makeelement(_qn('w:tblBorders'), {})
-        for _edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        _bd.append(_bd.makeelement(_qn('w:top'), {
+            _qn('w:val'): 'single', _qn('w:sz'): '4', _qn('w:space'): '0',
+            _qn('w:color'): 'A6A6A6'}))
+        for _edge in ('left', 'bottom', 'right', 'insideH', 'insideV'):
             _bd.append(_bd.makeelement(_qn('w:' + _edge), {_qn('w:val'): 'none'}))
         _tblPr.append(_bd)
+        # un po' d'aria fra il filo e il contenuto del piè di pagina
+        _mar = _tblPr.makeelement(_qn('w:tblCellMar'), {})
+        _mar.append(_mar.makeelement(_qn('w:top'), {_qn('w:w'): '85', _qn('w:type'): 'dxa'}))
+        _tblPr.append(_mar)
         # cella logo (sinistra)
         p_logo = cell_logo.paragraphs[0]
         p_logo.alignment = WD_ALIGN_PARAGRAPH.LEFT
