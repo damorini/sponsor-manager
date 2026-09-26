@@ -171,19 +171,20 @@ def pdf(contract):
         from weasyprint import HTML
         _oggetto, html = anteprima(contract, per_pdf=True)
         html = html.replace('&#127881;', '').replace('\U0001F389', '')
-        # carattere piu' piccolo della mail (circa -20%)
+        # carattere piu' piccolo della mail (circa -30%)
         html = re.sub(r'font-size:\s*(\d+(?:\.\d+)?)px',
-                      lambda m: f"font-size:{float(m.group(1)) * 0.8:.1f}px", html)
+                      lambda m: f"font-size:{float(m.group(1)) * 0.68:.1f}px", html)
         # a fine pagina si va a capo solo fra blocchi interi: paragrafi, righe
         # di tabella, riquadri e titoli non si spezzano
-        stile = ('<style>@page { size: A4; margin: 12mm 10mm; } '
+        stile = ('<style>@page { size: A4; margin: 8mm 9mm; } '
                  'body { background: #ffffff !important; } '
                  'p, li, h1, h2, h3 { break-inside: avoid; page-break-inside: avoid; } '
                  'table table table { break-inside: avoid; page-break-inside: avoid; } '
                  'table.lungo, table.lungo tr, table.lungo td { break-inside: auto; '
                  'page-break-inside: auto; } '
                  'h1, h2, h3 { break-after: avoid; page-break-after: avoid; } '
-                 'p { orphans: 4; widows: 4; }</style>')
+                 'p { orphans: 4; widows: 4; margin-top: 0 !important; margin-bottom: 7px !important; } '
+                 'h3 { margin: 14px 0 6px 0 !important; }</style>')
         html = re.sub(r'(</head>)', stile + r'\1', html, count=1) \
             if '</head>' in html else stile + html
         from django.conf import settings

@@ -44,16 +44,9 @@
   </tr>
 </table>
 
-{% if referente_sponsor %}
-<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
-       style="margin:0 0 18px 0; border-left:4px solid #1d4ed8; background-color:#eef4ff;">
-  <tr><td style="padding:10px 14px; font-size:13px; line-height:1.6; color:#1d4ed8;">
-    <strong>{% for r in referente_sponsor %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
-  </td></tr>
-</table>
-{% endif %}
-
 {% if spazio %}
+<div style="page-break-inside:avoid; break-inside:avoid;">
+
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Caratteristiche del vostro spazio</h3>
 {% for s in spazio %}
 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
@@ -71,6 +64,7 @@
   <tr><td style="padding:10px 14px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;"><strong>Indicazioni specifiche:</strong><br>{{ s.indicazioni|linebreaksbr }}</td></tr>
 </table>{% endif %}
 {% endfor %}
+</div>
 {% endif %}
 
 <!-- Giorni e orari -->
@@ -120,6 +114,15 @@
 <p style="font-size:13px;">Tutti i lavori di allestimento e disallestimento dovranno essere terminati nei tempi indicati. Per
   ragioni legate alla sicurezza sul lavoro, non è consentito effettuare allestimenti durante le
   giornate congressuali.</p>
+
+{% if referente_sponsor %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 18px 0; border-left:4px solid #1d4ed8; background-color:#eef4ff;">
+  <tr><td style="padding:10px 14px; font-size:13px; line-height:1.6; color:#1d4ed8;">
+    <strong>{% for r in referente_sponsor %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+  </td></tr>
+</table>
+{% endif %}
 
 {% if regole_montaggio %}
 <h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Regole per il montaggio e lo smontaggio dell'area espositiva</h3>
