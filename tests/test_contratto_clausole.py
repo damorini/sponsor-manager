@@ -27,7 +27,7 @@ def test_numerazione_e_articoli_nuovi(lingua):
     t = [p.text.strip() for p in Document(str(CARTELLA / nome)).paragraphs]
     assert titolo in t
     inizi = [x.split(' ')[0] for x in t if re.match(r'^\d+\.\d', x)]
-    for n in ('3.3', '4.1', '4.2', '8.4', '8.5', '8.6', '12.1', '13.1'):
+    for n in ('3.3', '4.1', '4.2', '8.4', '8.5', '12.1', '13.1'):
         assert n in inizi, n
     assert inizi.count('8.4') == 1
     assert '8.7' not in inizi   # l'8.3 sul foro e' stato tolto (resta il 13.1)
@@ -146,3 +146,27 @@ def test_81_composizione_del_contratto(lingua, parti):
     p = next(x for x in t if x.startswith("8.1 "))
     for x in parti:
         assert x in p, x
+
+
+
+@pytest.mark.parametrize("lingua,prevalenza,vietati", [
+    ("it", "prevalgono, nell’ordine, il presente Contratto", ["8.6 ", "Rappresentate", "Contratto Regolamento", "quartiere fieristico"]),
+    ("en", "shall prevail in that order", ["8.6 ", "Agreement/Regulations", "exhibition centre"]),
+])
+def test_revisione_finale(lingua, prevalenza, vietati):
+    d = Document(str(CARTELLA / MODELLI[lingua][0]))
+    testi = [p.text for p in d.paragraphs] + [c.text for t in d.tables for c in t._cells]
+    tutto = " ".join(testi)
+    assert prevalenza in tutto
+    for v in vietati:
+        assert v not in tutto, v
+
+
+@pytest.mark.parametrize("lingua,atteso,vietato", [
+    ("it", "CAPARRA CONFIRMATORIA", "DEPOSITO CAUZIONALE"),
+    ("en", "CONFIRMATORY DEPOSIT", "SECURITY DEPOSIT"),
+])
+def test_domanda_caparra(lingua, atteso, vietato):
+    t = " ".join(p.text for p in Document(
+        str(CARTELLA / f"template_domanda_ammissione_{lingua}.docx")).paragraphs)
+    assert atteso in t and vietato not in t
