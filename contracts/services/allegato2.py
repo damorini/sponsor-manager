@@ -720,6 +720,26 @@ def _etichette_a_sinistra(d):
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
+def _a_capo_a_sinistra(d):
+    """Paragrafi giustificati con a capo interni (<w:br/>): a sinistra."""
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    def paragrafi():
+        yield from d.paragraphs
+        for t in d.tables:
+            for cella in t._cells:
+                yield from cella.paragraphs
+
+    for par in paragrafi():
+        if par._p.findall('.//' + W + 'br') and par.alignment in (
+                None, WD_ALIGN_PARAGRAPH.JUSTIFY, WD_ALIGN_PARAGRAPH.DISTRIBUTE):
+            stile = par.style.paragraph_format.alignment if par.style is not None else None
+            if par.alignment is None and stile not in (WD_ALIGN_PARAGRAPH.JUSTIFY,
+                                                       WD_ALIGN_PARAGRAPH.DISTRIBUTE):
+                continue
+            par.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+
 def prepara_docx(percorso, contract):
     """Personalizza IN-PLACE la copia del Word dell'allegato per il contratto.
     Ogni passo e' protetto: un Word 'strano' esce comunque, al limite meno
@@ -742,7 +762,8 @@ def prepara_docx(percorso, contract):
                   lambda: _margine_sopra(d, contract),
                   lambda: _due_colonne(d, fine_intestazione.get('p')),
                   lambda: _contatti_su_una_riga(d),
-                  lambda: _etichette_a_sinistra(d)):
+                  lambda: _etichette_a_sinistra(d),
+                  lambda: _a_capo_a_sinistra(d)):
         try:
             passo()
         except Exception as e:
