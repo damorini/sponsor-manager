@@ -77,3 +77,20 @@ def test_art_7_rinvio_e_documentazione_in_8_3(lingua, titolo, voce_1341):
     doc_83 = next(x for x in t if x.startswith('8.3 '))
     assert 'cinque anni' in doc_83 or 'five years' in doc_83
     assert voce_1341 in ' '.join(t)
+
+
+@pytest.mark.parametrize("lingua,attesi", [
+    ("it", ["{{ penale_percent }}% dell’importo complessivo indicato nell’Allegato 1",
+            "caparra confirmatoria ai sensi dell’art. 1385 del Codice Civile",
+            "a titolo di liquidazione convenzionale del danno"]),
+    ("en", ["{{ penale_percent }}% of the total amount indicated in Annex 1",
+            "confirmatory deposit pursuant to art. 1385",
+            "as agreed liquidation of damages"]),
+])
+def test_33_caparra_confirmatoria(lingua, attesi):
+    t = [p.text.strip() for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
+    i = next(i for i, x in enumerate(t) if x.startswith("3.3 "))
+    blocco = t[i] + " " + t[i + 1]
+    for a in attesi:
+        assert a in blocco, a
+    assert "30 giorni" not in t[i] and "30 days" not in t[i]
