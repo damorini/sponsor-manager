@@ -611,6 +611,29 @@ def _viene_dopo(body, el, riferimento):
     return elementi.index(el) > elementi.index(riferimento)
 
 
+def _contatti_su_una_riga(d):
+    """Righe «etichetta: indirizzo email» (es. «gestione amministrativa:
+    amministrazione@valet.it») allineate a sinistra e, se serve, con il
+    carattere ridotto quanto basta per stare su una riga della colonna."""
+    import re
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Pt
+    from contracts.services.pdf_generator import _larghezza_testo_twip
+    larga = _larghezza_colonna(d) - 60
+    for p in d.paragraphs:
+        testo = p.text.strip()
+        if not re.match(r'^[^:@]{3,80}:\s*\S+@\S+$', testo):
+            continue
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+        runs = [r for r in p.runs if r.text]
+        punti = max((r.font.size.pt if r.font.size else CORPO) for r in runs)
+        serve = _larghezza_testo_twip(testo, punti)
+        if serve > larga:
+            nuovo = max(6.5, punti * larga / serve)
+            for r in runs:
+                r.font.size = Pt(round(nuovo * 2) / 2)
+
+
 def prepara_docx(percorso, contract):
     """Personalizza IN-PLACE la copia del Word dell'allegato per il contratto.
     Ogni passo e' protetto: un Word 'strano' esce comunque, al limite meno
@@ -631,7 +654,8 @@ def prepara_docx(percorso, contract):
                   lambda: _tabella_orari(d, contract),
                   lambda: _svuota_intestazioni(d),
                   lambda: _margine_sopra(d, contract),
-                  lambda: _due_colonne(d, fine_intestazione.get('p'))):
+                  lambda: _due_colonne(d, fine_intestazione.get('p')),
+                  lambda: _contatti_su_una_riga(d)):
         try:
             passo()
         except Exception as e:

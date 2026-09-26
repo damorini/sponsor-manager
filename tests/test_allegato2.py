@@ -211,3 +211,24 @@ def test_allegato_2_due_colonne(contratto, tmp_path):
     corpo = [r.font.size.pt for p in d.paragraphs
              if p.text.startswith('Testo della clausola') for r in p.runs]
     assert corpo and all(x == 8 for x in corpo)
+
+
+def test_contatti_su_una_riga(contratto, tmp_path):
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from contracts.services.allegato2 import prepara_docx
+    d0 = Document()
+    d0.add_paragraph('REGOLAMENTO TECNICO', style='Title')
+    d0.add_paragraph('1. ORGANIZZATORE', style='Heading 1')
+    d0.add_paragraph('gestione dei rapporti con le aziende espositrici: '
+                     'elisa.fantini@valet.it')
+    d0.add_paragraph('Testo normale della clausola ' * 10)
+    d0.add_paragraph('2. ULTIMO', style='Heading 1')
+    percorso = tmp_path / 'a2.docx'
+    d0.save(str(percorso))
+    prepara_docx(percorso, contratto)
+    d = Document(str(percorso))
+    riga = next(p for p in d.paragraphs if p.text.startswith('gestione dei rapporti'))
+    assert riga.alignment == WD_ALIGN_PARAGRAPH.LEFT
+    assert all(r.font.size.pt <= 8 for r in riga.runs if r.text)
+    normale = next(p for p in d.paragraphs if p.text.startswith('Testo normale'))
+    assert normale.alignment == WD_ALIGN_PARAGRAPH.JUSTIFY
