@@ -94,3 +94,21 @@ def test_33_caparra_confirmatoria(lingua, attesi):
     for a in attesi:
         assert a in blocco, a
     assert "30 giorni" not in t[i] and "30 days" not in t[i]
+
+
+@pytest.mark.parametrize("lingua,titolo,rimandi", [
+    ("it", "5.3 CLAUSOLA RISOLUTIVA ESPRESSA",
+     ["art. 4.2 del contratto", "art. 11.01 dell’Allegato 2", "art. 7.14 dell’Allegato 2",
+      "art. 6 dell’Allegato 2"]),
+    ("en", "5.3 EXPRESS TERMINATION CLAUSE",
+     ["art. 4.2 of the agreement", "art. 11.01 of Annex 2", "art. 7.14 of Annex 2",
+      "art. 6 of Annex 2"]),
+])
+def test_53_clausola_risolutiva(lingua, titolo, rimandi):
+    t = [p.text.strip() for p in Document(str(CARTELLA / MODELLI[lingua][0])).paragraphs]
+    i = t.index(titolo)
+    blocco = " ".join(t[i:i + 9])
+    assert [x[:2] for x in t[i + 2:i + 7]] == ["a)", "b)", "c)", "d)", "e)"]
+    for r in rimandi:
+        assert r in blocco, r
+    assert t[i + 9].startswith("5.4 ")
