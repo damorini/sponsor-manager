@@ -1431,13 +1431,22 @@ def _prepara_allegato_2(contract, cartella):
     if sorgente.suffix.lower() == '.pdf':
         return sorgente
     import shutil
-    from contracts.services.allegato2 import prepara_docx
+    from contracts.services.allegato2 import prepara_docx, usa_pagine_allegato
     destinazione = Path(cartella) / f"allegato2_{contract.contract_number}.docx"
     shutil.copyfile(sorgente, destinazione)
     # titolo, riquadro Azienda/Stand/Contratto, orari di allestimento, stile e
     # intestazioni del contratto (vedi allegato2.py)
     prepara_docx(destinazione, contract)
-    return _convert_docx_to_pdf(destinazione)
+    pdf = _convert_docx_to_pdf(destinazione)
+    # «si compone di N. {{ pagine_allegato }} pagine»: si contano le pagine
+    # reali e si rifa' l'allegato col numero giusto
+    if pdf and usa_pagine_allegato(sorgente):
+        pagine = _conta_pagine_pdf(pdf)
+        if pagine:
+            shutil.copyfile(sorgente, destinazione)
+            prepara_docx(destinazione, contract, pagine=pagine)
+            pdf = _convert_docx_to_pdf(destinazione) or pdf
+    return pdf
 
 
 # Larghezza media dei caratteri Arial, in "em" (per stimare se un testo sta

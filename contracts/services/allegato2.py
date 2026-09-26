@@ -54,7 +54,7 @@ def _date_evento(event):
     return f"{inizio:%d/%m/%Y} – {fine:%d/%m/%Y}"
 
 
-def contesto(contract):
+def contesto(contract, pagine=None):
     from contracts.services.pdf_generator import _event_for_template
     ev = _event_for_template(contract.event)
     return {
@@ -65,6 +65,7 @@ def contesto(contract):
         'date_evento': _date_evento(contract.event),
         'sede': ev.location,
         'accesso': _porta_accesso(contract),
+        'pagine_allegato': str(pagine) if pagine else '__',
         'montaggio_indirizzo': _testo_a_righe(
             getattr(contract.event, 'montaggio_indirizzo', '')) or 'da comunicare',
         'montaggio_dettagli': _testo_a_righe(
@@ -742,12 +743,22 @@ def _a_capo_a_sinistra(d):
             par.alignment = WD_ALIGN_PARAGRAPH.LEFT
 
 
-def prepara_docx(percorso, contract):
+def usa_pagine_allegato(percorso):
+    """True se il Word dell'allegato contiene il segnaposto {{ pagine_allegato }}."""
+    import zipfile
+    try:
+        with zipfile.ZipFile(str(percorso)) as z:
+            return 'pagine_allegato' in z.read('word/document.xml').decode('utf-8', 'ignore')
+    except Exception:
+        return False
+
+
+def prepara_docx(percorso, contract, pagine=None):
     """Personalizza IN-PLACE la copia del Word dell'allegato per il contratto.
     Ogni passo e' protetto: un Word 'strano' esce comunque, al limite meno
     rifinito."""
     from docx import Document
-    ctx = contesto(contract)
+    ctx = contesto(contract, pagine)
     _compila_segnaposto(percorso, ctx)
     d = Document(str(percorso))
     titolo = (getattr(contract.event, 'contract_annex_title', '') or '').strip()
