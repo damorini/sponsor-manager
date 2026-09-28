@@ -1919,6 +1919,26 @@ def build_scientific_secretariat_context(event, site_url=''):
     return {'text': text, 'logo_url': logo_url}
 
 
+def _misure_riga_spazio(contract, line):
+    """Testo delle misure per la riga dello spazio espositivo nel preventivo:
+    stand -> «Misure: 6 × 4 m (24 m²)»; blocco -> «Superficie totale: 48 m²».
+    '' per le altre righe o se le misure mancano."""
+    from venues.models import misura
+    note = getattr(line, 'notes', '') or ''
+    en = (getattr(contract, 'language', '') or 'it') == 'en'
+    stand = getattr(contract, 'stand', None)
+    if stand is not None and f"stand:{stand.code}" in note:
+        dim = stand.dimensioni_testo
+        return (("Size: " if en else "Misure: ") + dim) if dim else ''
+    blocco = getattr(contract, 'stand_block', None)
+    if blocco is not None and f"block:{blocco.code}" in note:
+        aree = [s.area_sqm for s in blocco.stands.all() if s.area_sqm]
+        if not aree:
+            return ''
+        return ("Total area: " if en else "Superficie totale: ") + f"{misura(sum(aree))} m²"
+    return ''
+
+
 def generate_quote_pdf_html(contract):
     """Genera il PDF del preventivo dalla grafica HTML (come la mail), con
     pulsante cliccabile verso la pagina del portale. Richiede WeasyPrint."""
@@ -1936,6 +1956,8 @@ def generate_quote_pdf_html(contract):
     event = contract.event
     # Riepilogo: prima i servizi valorizzati (importo decrescente), poi gli inclusi.
     lines = _righe_valorizzate_prima(contract.lines.all())
+    for _ln in lines:
+        _ln.misure_spazio = _misure_riga_spazio(contract, _ln)
     site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
     try:
         portal_path = reverse('portal:contract_detail', args=[contract.id])
