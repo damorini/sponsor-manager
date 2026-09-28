@@ -1,11 +1,22 @@
 {% extends "admin/base_site.html" %}
 {% block content %}
-<h1>Genera e invia preventivo</h1>
+<h1>{{ title }}</h1>
 
+{% if contratti|length > 1 %}
+<p>Sponsor <strong>{{ contract.sponsor.legal_name }}</strong> &middot;
+  partiranno <strong>{{ contratti|length }} preventivi</strong>, uno per ciascuno spazio,
+  agli stessi destinatari (una mail con il suo PDF per ogni preventivo):</p>
+<ul>
+  {% for c in contratti %}
+  <li><strong>{{ c.contract_number }}</strong>{% if c.stand %} &middot; stand {{ c.stand.code }}{% elif c.stand_block %} &middot; blocco {{ c.stand_block.code }}{% endif %} &middot; &euro; {{ c.total|floatformat:2 }}</li>
+  {% endfor %}
+</ul>
+{% else %}
 <p>
   Contratto <strong>{{ contract.contract_number }}</strong> &middot;
   Sponsor <strong>{{ contract.sponsor.legal_name }}</strong>
 </p>
+{% endif %}
 
 {% if manca_firmatario %}
 <div style="background:#fef3cd; border-left:4px solid #f0ad4e; padding:12px 16px; margin:12px 0; border-radius:4px;">
@@ -21,6 +32,7 @@
 
 <form method="post">
   {% csrf_token %}
+  {% if contratti|length > 1 %}<input type="hidden" name="ids" value="{{ ids }}">{% endif %}
   <fieldset class="module aligned">
     <h2>Destinatari</h2>
     {% if contacts %}
@@ -50,8 +62,8 @@
   </fieldset>
 
   <div class="submit-row">
-    <input type="submit" value="Genera PDF e invia" class="default">
-    <a href="../" class="button cancel-link">Annulla</a>
+    <input type="submit" value="{% if contratti|length > 1 %}Genera i PDF e invia i {{ contratti|length }} preventivi{% else %}Genera PDF e invia{% endif %}" class="default">
+    <a href="{{ ritorno|default:'../' }}" class="button cancel-link">Annulla</a>
   </div>
 </form>
 {% endblock %}
