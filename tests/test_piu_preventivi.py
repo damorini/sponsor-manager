@@ -66,3 +66,26 @@ def test_sponsor_diversi_rifiutati(regia, due, db):
                            '_selected_action': [c.pk for c in due]}, follow=True)
     assert 'STESSO' in r.content.decode()
     assert not mail.outbox
+
+
+def test_una_mail_per_destinatario_col_suo_nome(regia, due, contact):
+    """Due destinatari: due mail distinte, ciascuna col nome di chi la riceve;
+    un indirizzo aggiunto a mano riceve il saluto con il nome dell'azienda."""
+    from sponsors.models import Contact
+    Contact.objects.create(sponsor=contact.sponsor, first_name='Giulia',
+                           last_name='Verdi', full_name='Giulia Verdi',
+                           email='giulia@test.it')
+    c = due[0]
+    url = f'/admin/contracts/contract/{c.pk}/invia-preventivo/'
+    with mock.patch('weasyprint.HTML', _Finto):
+        r = regia.post(url, {'recipients': [contact.email, 'giulia@test.it'],
+                             'extra_emails': 'esterno@altro.it'})
+    assert r.status_code == 302
+    assert len(mail.outbox) == 3
+    per_dest = {m.to[0]: m.alternatives[0][0] for m in mail.outbox}
+    assert all(len(m.to) == 1 for m in mail.outbox)
+    assert contact.full_name in per_dest[contact.email]
+    assert 'Giulia Verdi' in per_dest['giulia@test.it']
+    assert 'Giulia Verdi' not in per_dest[contact.email]
+    assert contact.full_name not in per_dest['giulia@test.it']
+    assert c.sponsor.legal_name in per_dest['esterno@altro.it']

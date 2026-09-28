@@ -7,7 +7,7 @@
   {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.luogo_completo %} &middot; {{ event.luogo_completo }}{% endif %}
 </p>
 
-<p style="margin:0 0 16px 0;">Gentile {{ contract.sponsor.legal_name }},<br>
+<p style="margin:0 0 16px 0;">Gentile {{ contact.full_name|default:contract.sponsor.legal_name }},<br>
 grazie per l'interesse verso <strong>{{ event_name }}</strong>. Abbiamo preparato per voi una proposta di sponsorizzazione dedicata.</p>
 
 <p style="margin:0 0 16px 0;">Trovate <strong>tutti i dettagli</strong> — spazi, servizi selezionati e importi — nel <strong>documento PDF allegato</strong> a questa email.</p>

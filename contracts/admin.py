@@ -873,6 +873,21 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
             })
         return rows
 
+    @staticmethod
+    def _contatto_per_email(contract, email):
+        """Il contatto dello sponsor con questa email (per il nome nel saluto).
+        Per un indirizzo aggiunto a mano, che non e' tra i contatti, un
+        segnaposto col nome dell'azienda: mai il nome di un'altra persona."""
+        from types import SimpleNamespace
+        c = (contract.sponsor.contacts
+             .filter(deleted_at__isnull=True, email__iexact=email.strip())
+             .first())
+        if c:
+            return c
+        nome = contract.sponsor.legal_name or ''
+        return SimpleNamespace(full_name=nome, first_name='', last_name='',
+                               email=email, is_placeholder=True)
+
     def preview_quote_view(self, request, object_id):
         """Genera il PDF del preventivo SENZA inviarlo e lo apre subito.
 
@@ -968,29 +983,35 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                     )
                     continue
 
-                # 3) invia email con allegato (in dev -> console)
+                # 3) invia email con allegato (in dev -> console): una mail per
+                # destinatario, cosi' il saluto porta il nome di chi la riceve
                 event = c.event
                 event_name = event.get_name(c.language) if hasattr(event, 'get_name') else str(event)
-                try:
-                    send_email(
-                        template_name='quote_email',
-                        context={'contract': c, 'event': event,
-                                 'event_name': event_name},
-                        to=recipients,
-                        subject=(f"Quote {c.contract_number} - {event_name}"
-                                 if (c.language or 'it') == 'en'
-                                 else f"Preventivo {c.contract_number} - {event_name}"),
-                        language=c.language or 'it',
-                        attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
-                        related_to=c,
-                        communication_type='quote',
-                        triggered_by_user=getattr(request, 'user', None),
-                    )
-                except Exception as e:
-                    self.message_user(
-                        request, f"{c.contract_number}: PDF generato ma invio email fallito: {e}",
-                        level=messages.ERROR,
-                    )
+                partite = 0
+                for email in recipients:
+                    try:
+                        send_email(
+                            template_name='quote_email',
+                            context={'contract': c, 'event': event,
+                                     'event_name': event_name,
+                                     'contact': self._contatto_per_email(c, email)},
+                            to=[email],
+                            subject=(f"Quote {c.contract_number} - {event_name}"
+                                     if (c.language or 'it') == 'en'
+                                     else f"Preventivo {c.contract_number} - {event_name}"),
+                            language=c.language or 'it',
+                            attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
+                            related_to=c,
+                            communication_type='quote',
+                            triggered_by_user=getattr(request, 'user', None),
+                        )
+                        partite += 1
+                    except Exception as e:
+                        self.message_user(
+                            request, f"{c.contract_number}: invio a {email} fallito: {e}",
+                            level=messages.ERROR,
+                        )
+                if not partite:
                     continue
 
                 # Porta il preventivo a "Inviato": cosi' compare nel portale del

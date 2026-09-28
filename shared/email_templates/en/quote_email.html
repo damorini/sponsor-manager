@@ -7,7 +7,7 @@
   {% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.luogo_completo %} &middot; {{ event.luogo_completo }}{% endif %}
 </p>
 
-<p style="margin:0 0 16px 0;">Dear {{ contract.sponsor.legal_name }},<br>
+<p style="margin:0 0 16px 0;">Dear {{ contact.full_name|default:contract.sponsor.legal_name }},<br>
 thank you for your interest in <strong>{{ event_name }}</strong>. We have prepared a dedicated sponsorship proposal for you.</p>
 
 <p style="margin:0 0 16px 0;">You will find <strong>all the details</strong> — spaces, selected services and amounts — in the <strong>attached PDF document</strong>.</p>
