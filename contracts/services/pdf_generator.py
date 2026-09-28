@@ -418,11 +418,41 @@ def _righe_valorizzate_prima(lines):
     il default del modello), il comportamento e' IDENTICO a prima - il
     display_order diventa rilevante solo se qualcuno lo valorizza."""
     from decimal import Decimal as _D
+    lines = list(lines)
+    posizione = _posizione_inclusi(lines)
     return sorted(
-        list(lines),
+        lines,
         key=lambda l: (l.display_order or 0,
-                        (l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0'))),
+                        (l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0')),
+                        posizione.get(id(l), 10_000), l.pk or 0),
     )
+
+
+def _posizione_inclusi(lines):
+    """{id(riga): posizione} per le righe dei servizi inclusi, secondo l'ordine
+    della lista «Servizi inclusi» del pacchetto (marcatore [incluso:PADRE>FIGLIO]
+    nelle note della riga)."""
+    import re
+    from catalog.models import ServiceInclusion
+    posizione, cache = {}, {}
+    for l in lines:
+        m = re.search(r'\[incluso:([^>\]]+)>([^\]]+)\]', getattr(l, 'notes', '') or '')
+        if not m:
+            continue
+        padre, figlio = m.groups()
+        try:
+            evento = l.contract.event_id
+        except Exception:
+            evento = None
+        chiave = (evento, padre)
+        if chiave not in cache:
+            qs = ServiceInclusion.objects.filter(parent__code=padre)
+            if evento:
+                qs = qs.filter(parent__event_id=evento)
+            cache[chiave] = {c: i for i, c in enumerate(
+                qs.order_by('id').values_list('child__code', flat=True))}
+        posizione[id(l)] = cache[chiave].get(figlio, 9_999)
+    return posizione
 
 
 def _group_lines_by_category(contract, event_type):

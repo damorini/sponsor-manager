@@ -383,6 +383,7 @@ class ServiceInclusion(models.Model):
     class Meta:
         verbose_name = "Servizio incluso"
         verbose_name_plural = "Servizi inclusi"
+        ordering = ['id']
         constraints = [
             models.UniqueConstraint(
                 fields=['parent', 'child'],

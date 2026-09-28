@@ -1397,7 +1397,7 @@ class ContractLine(TimeStampedModel):
     class Meta:
         verbose_name = "Riga contratto"
         verbose_name_plural = "Righe contratto"
-        ordering = ['contract', 'display_order']
+        ordering = ['contract', 'display_order', 'id']
 
     def __str__(self):
         return f"{self.service_name_snapshot} × {self.quantity}"
