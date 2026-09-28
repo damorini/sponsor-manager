@@ -36,8 +36,8 @@
   .tot td { padding:3px 0; }
   .tot .lbl { color:#6b7280; } .tot .val { text-align:right; color:#6b7280; }
   .tot .sconto td { color:#065f46; font-weight:700; }
-  .tot .grand td { border-top:2px solid #e5e7eb; padding-top:8px; font-weight:800; color:#111827; }
-  .tot .grand .g { color:{{ brand_color }}; font-size:16px; text-align:right; }
+  .tot .lbl, .tot .val { color:#374151; font-size:10.5px; font-weight:600; }
+  .tot .grand td { border-top:1px solid #e5e7eb; padding-top:4px; }
   /* Box validita' in fondo (evidenziato col colore brand) */
   .valid { background:#ecfdf5; border:1px solid {{ brand_color }}; border-left:5px solid {{ brand_color }}; padding:9px 13px; margin:12px 0 4px; color:#064e3b; border-radius:6px; line-height:1.45; font-weight:600; }
   .cta { text-align:center; margin:14px 0 4px; }
@@ -92,11 +92,11 @@
     {% endfor %}
   </table>
   <table class="tot">
-    <tr><td class="lbl">{{ t.subtotale }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">{% if contract.vat_applicable %}{{ t.imponibile }}{% else %}{{ t.subtotale }}{% endif %}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
     {% if contract.vat_applicable %}
     <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
     {% endif %}
-    <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
+    <tr class="grand"><td class="lbl">{% if contract.vat_applicable %}{{ t.totale_iva }}{% else %}{{ t.totale }}{% endif %}</td><td class="val">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>
 
   {% if stand_notes %}<div class="valid"><strong>{{ t.note_stand }}:</strong> {{ stand_notes|linebreaksbr }}</div>{% endif %}
