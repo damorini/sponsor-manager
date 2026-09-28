@@ -875,18 +875,8 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
 
     @staticmethod
     def _contatto_per_email(contract, email):
-        """Il contatto dello sponsor con questa email (per il nome nel saluto).
-        Per un indirizzo aggiunto a mano, che non e' tra i contatti, un
-        segnaposto col nome dell'azienda: mai il nome di un'altra persona."""
-        from types import SimpleNamespace
-        c = (contract.sponsor.contacts
-             .filter(deleted_at__isnull=True, email__iexact=email.strip())
-             .first())
-        if c:
-            return c
-        nome = contract.sponsor.legal_name or ''
-        return SimpleNamespace(full_name=nome, first_name='', last_name='',
-                               email=email, is_placeholder=True)
+        from .services.email_sender import contatto_per_email
+        return contatto_per_email(contract.sponsor, email)
 
     def preview_quote_view(self, request, object_id):
         """Genera il PDF del preventivo SENZA inviarlo e lo apre subito.
