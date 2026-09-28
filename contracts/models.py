@@ -627,8 +627,11 @@ class Contract(SoftDeleteModel):
     def _sync_option_deadline(self, update_fields=None):
         """
         Sincronizza la Deadline 'scadenza_opzione' con option_until.
-        - crea/aggiorna se: DRAFT + option_until + spazio assegnato;
-        - elimina (se pending) se: opzione tolta o contratto non piu' DRAFT.
+        - crea/aggiorna se: preventivo INVIATO (SENT) + option_until + spazio
+          assegnato (la bozza non e' ancora arrivata al cliente: niente
+          promemoria);
+        - elimina (se pending) se: opzione tolta o contratto non piu' SENT
+          (firmato, annullato...).
         Idempotente. La Deadline opzione e' una sola per contratto.
         """
         from contracts.models import ContractStatus, Deadline, DeadlineStatus
@@ -647,7 +650,7 @@ class Contract(SoftDeleteModel):
             esistente = self.deadlines.filter(deadline_type='scadenza_opzione').first()
 
             vuole_opzione = (
-                self.status == ContractStatus.DRAFT
+                self.status == ContractStatus.SENT
                 and self.option_until is not None
                 and (self.stand_id or self.stand_block_id)
             )

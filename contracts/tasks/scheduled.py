@@ -55,13 +55,16 @@ def check_upcoming_deadlines():
         days_remaining = (deadline.due_date - today).days
 
         # Reminder days: dal template se presente; altrimenti default per tipo.
-        # Le scadenze di pagamento (acconto/saldo) usano 7 e 3 giorni prima.
-        # 7/3 giorni per scadenze di pagamento e di opzione spazio
+        # Pagamenti (acconto/saldo): 7 e 3 giorni prima.
+        # Opzione sullo spazio: 3 giorni prima e il giorno prima.
         SHORT_REMINDER_DAYS = [7, 3]
+        OPTION_REMINDER_DAYS = [3, 1]
         _dtype = (deadline.deadline_type or '')
         if deadline.deadline_template:
             reminder_days = deadline.deadline_template.reminder_days_before
-        elif _dtype.startswith('pagamento') or _dtype == 'scadenza_opzione':
+        elif _dtype == 'scadenza_opzione':
+            reminder_days = OPTION_REMINDER_DAYS
+        elif _dtype.startswith('pagamento'):
             reminder_days = SHORT_REMINDER_DAYS
         else:
             reminder_days = [10, 3, 0]
@@ -113,6 +116,10 @@ def check_overdue_deadlines():
         if deadline.status != DeadlineStatus.OVERDUE:
             deadline.status = DeadlineStatus.OVERDUE
             deadline.save(update_fields=['status', 'updated_at'])
+
+        # Opzione scaduta: nessun sollecito al cliente (bastano i promemoria)
+        if (deadline.deadline_type or '') == 'scadenza_opzione':
+            continue
 
         send_deadline_reminder.delay(deadline.id, reminder_type='overdue')
         sent_count += 1
