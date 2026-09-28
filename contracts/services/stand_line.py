@@ -27,13 +27,35 @@ def stand_service_code(stand_type=""):
     return STAND_SERVICE_CODE + _stand_type_suffix(stand_type)
 
 
+def _codice_normalizzato(code):
+    return re.sub(r'[^A-Za-z0-9]+', '_', (code or '').strip()).strip('_').upper()
+
+
+def trova_pacchetto_stand(event, stand_type=""):
+    """Il Service "Spazio espositivo" dell'evento per la tipologia, o None.
+    Il codice e' confrontato senza badare a spazi/trattini/maiuscole
+    ('SPAZIO_ESPOSITIVO_STAND_REGULAR - A' vale come '..._REGULAR_A'); se ce
+    n'e' piu' d'uno vince quello attivo con servizi inclusi, poi quello col
+    codice esatto."""
+    code = stand_service_code(stand_type)
+    candidati = [
+        s for s in Service.objects.filter(event=event,
+                                          code__istartswith=STAND_SERVICE_CODE)
+        if _codice_normalizzato(s.code) == code
+    ]
+    if not candidati:
+        return None
+    return max(candidati, key=lambda s: (bool(s.is_active), s.inclusions.exists(),
+                                         s.code == code))
+
+
 def get_or_create_stand_service(event, stand_type=""):
     """
     Trova (o crea la prima volta) il Service "Spazio espositivo" dell'evento
     PER LA TIPOLOGIA indicata. Uno per (evento, tipologia).
     """
     code = stand_service_code(stand_type)
-    service = Service.objects.filter(event=event, code=code).first()
+    service = trova_pacchetto_stand(event, stand_type)
     if service:
         return service
 
@@ -87,8 +109,7 @@ def somma_inclusi_blocco(parent_line):
         return
     totali, ordine = {}, []
     for st in block.stands.all().order_by('code'):
-        pacchetto = Service.objects.filter(
-            event=contract.event, code=stand_service_code(st.stand_type or "")).first()
+        pacchetto = trova_pacchetto_stand(contract.event, st.stand_type or "")
         if pacchetto is None:
             continue
         for inc in pacchetto.inclusions.select_related('child').all():
