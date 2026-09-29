@@ -70,7 +70,7 @@
 <p>Potete consultare lo stato completo del vostro contratto nell'area riservata:</p>
 {% endif %}
 
-<p style="text-align:center; margin:24px 0;">
+{% if deadline.deadline_template.client_template_file %}<p>Collegandovi al portale troverete il <strong>template da scaricare</strong> per la realizzazione da parte del vostro ufficio grafico.</p>{% endif %}<p style="text-align:center; margin:24px 0;">
   <a href="{% if is_pagamento %}{{ portal_url }}pagamenti/{% else %}{{ portal_url }}{% endif %}" class="button">
     {% if is_pagamento %}Vedi i tuoi pagamenti{% else %}Accedi al portale sponsor{% endif %}
   </a>
