@@ -86,7 +86,7 @@ def _sovrapposizione(misure, firme_per_pag):
     for (w, h), punti in zip(misure, firme_per_pag):
         imgs = ''.join(
             f'<img src="{FIRMA_SEGRETERIA.as_uri()}" style="position:absolute;'
-            f'left:{x + 12:.1f}pt;top:{h - y - 30:.1f}pt;height:32pt;">'
+            f'left:{x + 62:.1f}pt;top:{h - y - 30:.1f}pt;height:32pt;">'
             for x, y in punti)
         blocchi.append(f'<div class="p" style="width:{w}pt;height:{h}pt;">{imgs}</div>')
     w0, h0 = misure[0]
@@ -175,6 +175,8 @@ def completa_contratto(percorso_pdf, contract, parti):
             firma_segreteria_allegato(percorso_pdf, prima, ultima)
 
     reader = PdfReader(str(percorso_pdf))
+    # il timbro «ALLEGATO 2 pag. x di N» conta anche i moduli accodati
+    pagine_moduli = sum(n for k, n in parti if k == 'moduli')
     # +1: la guida diventa la pagina 1 del file
     voci, firme, moduli = [], [], None
     for chiave, prima, ultima in intervalli:
@@ -185,7 +187,9 @@ def completa_contratto(percorso_pdf, contract, parti):
             continue
         for i, n in firme_per_pagina(reader, prima, ultima):
             firme.append({'pagina': i + 2, 'n': n, 'parte': TITOLI[lingua][chiave],
-                          'pag_parte': i - prima + 1, 'tot_parte': ultima - prima + 1})
+                          'pag_parte': i - prima + 1,
+                          'tot_parte': ultima - prima + 1
+                          + (pagine_moduli if chiave == 'allegato2' else 0)})
 
     copertina = PdfReader(io.BytesIO(_copertina_pdf(contract, voci, firme, moduli, lingua)))
     writer = PdfWriter()
