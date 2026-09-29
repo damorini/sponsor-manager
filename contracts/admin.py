@@ -873,6 +873,14 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
             })
         return rows
 
+    def _avvisa_inviti_portale(self, request, inviti):
+        if inviti:
+            self.message_user(
+                request,
+                "Invito al portale mandato in automatico (primo accesso) a: "
+                + ", ".join(dict.fromkeys(inviti)) + ".",
+                level=messages.INFO)
+
     @staticmethod
     def _contatto_per_email(contract, email):
         from .services.email_sender import contatto_per_email
@@ -949,7 +957,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                 )
                 return HttpResponseRedirect(request.get_full_path())
 
-            inviati = []
+            inviati, inviti_portale = [], []
             for c in contratti:
                 # 1) genera il PDF del preventivo
                 try:
@@ -980,7 +988,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                 partite = 0
                 for email in recipients:
                     try:
-                        send_email(
+                        _com = send_email(
                             template_name='quote_email',
                             context={'contract': c, 'event': event,
                                      'event_name': event_name,
@@ -996,6 +1004,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                             triggered_by_user=getattr(request, 'user', None),
                         )
                         partite += 1
+                        inviti_portale += getattr(_com, 'inviti_portale', []) or []
                     except Exception as e:
                         self.message_user(
                             request, f"{c.contract_number}: invio a {email} fallito: {e}",
@@ -1026,6 +1035,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                     + f" inviati a: {', '.join(recipients)} (PDF allegato).",
                     level=messages.SUCCESS,
                 )
+            self._avvisa_inviti_portale(request, inviti_portale)
             # Promemoria operatore: senza firmatario il cliente non potra'
             # confermare (gate lato portale) e il contratto non si genera.
             self._avvisa_se_manca_firmatario(request, contract)
@@ -1149,7 +1159,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
             event = contract.event
             event_name = event.get_name(contract.language) if hasattr(event, 'get_name') else str(event)
             try:
-                send_email(
+                _com = send_email(
                     template_name='contract_email',
                     context={'contract': contract, 'event': event,
                              'event_name': event_name},
@@ -1169,6 +1179,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                 )
                 return HttpResponseRedirect('../')
 
+            self._avvisa_inviti_portale(request, getattr(_com, 'inviti_portale', []))
             self.message_user(
                 request,
                 f"Contratto {contract.contract_number} creato e inviato a: "

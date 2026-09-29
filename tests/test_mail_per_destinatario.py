@@ -6,7 +6,8 @@ from contracts.services.email_sender import send_email
 
 
 @pytest.mark.django_db
-def test_una_mail_per_persona_col_suo_nome(sponsor, contact):
+def test_una_mail_per_persona_col_suo_nome(sponsor, contact, settings):
+    settings.INVITO_PORTALE_AUTOMATICO = False  # qui si contano solo le mail
     from sponsors.models import Contact
     Contact.objects.create(sponsor=sponsor, first_name='Giulia', last_name='Verdi',
                            full_name='Giulia Verdi', email='giulia@test.it')

@@ -283,7 +283,7 @@ def send_email(
     _dest = [e for e in dict.fromkeys(to or []) if e]
     if (_sp_dest is not None and len(_dest) > 1
             and not (isinstance(context, dict) and context.get('_mail_singola'))):
-        ultima, errori = None, []
+        ultima, errori, inviti = None, [], []
         for i, email in enumerate(_dest):
             ctx = dict(context)
             ctx['contact'] = contatto_per_email(_sp_dest, email)
@@ -298,11 +298,14 @@ def send_email(
                     triggered_by_user=triggered_by_user, is_automated=is_automated,
                     custom_body_html=custom_body_html,
                 )
+                inviti += getattr(ultima, 'inviti_portale', []) or []
             except Exception as e:  # le altre persone la ricevono comunque
                 logger.exception("Invio a %s fallito", email)
                 errori.append(e)
         if ultima is None and errori:
             raise errori[0]
+        if ultima is not None:
+            ultima.inviti_portale = inviti
         return ultima
 
     # 2. Costruisci contesto completo
@@ -441,7 +444,56 @@ def send_email(
         logger.exception("Errore invio email %s a %s", template_name, to)
         raise
 
+    # Invito al portale automatico per chi dell'azienda non l'ha mai avuto
+    communication.inviti_portale = invita_al_portale_se_mai_invitati(
+        template_name, context, to)
     return communication
+
+
+# Mail dopo le quali NON si manda l'invito: l'invito stesso, accessi, staff e
+# le campagne promozionali (vanno in massa anche a chi non e' ancora cliente)
+_SENZA_INVITO_PORTALE = {'portal_invitation', 'password_reset', 'operator_alert',
+                         'promotional_campaign'}
+
+
+def invita_al_portale_se_mai_invitati(template_name, context, to):
+    """Dopo una mail a uno sponsor: ogni destinatario che e' tra i contatti
+    dell'azienda e non ha mai avuto un accesso al portale riceve l'invito con
+    le credenziali. Una volta sola: chi ha gia' un utente (collegato o con la
+    stessa email) non viene toccato. Ritorna le email invitate. Mai un errore
+    verso il chiamante: la mail principale e' gia' partita."""
+    if template_name in _SENZA_INVITO_PORTALE:
+        return []
+    if not getattr(settings, 'INVITO_PORTALE_AUTOMATICO', True):
+        return []
+    sponsor = _sponsor_da_contesto(context)
+    if sponsor is None:
+        return []
+    invitati = []
+    try:
+        from django.contrib.auth import get_user_model
+        from portal.services.invitation import invite_contact_to_portal
+        User = get_user_model()
+        for email in to or []:
+            email = (email or '').strip()
+            if not email:
+                continue
+            contatto = (sponsor.contacts
+                        .filter(deleted_at__isnull=True, email__iexact=email,
+                                portal_user__isnull=True)
+                        .first())
+            if contatto is None or User.objects.filter(email__iexact=email).exists():
+                continue
+            try:
+                invite_contact_to_portal(contatto, send_email=True)
+                invitati.append(contatto.email)
+                logger.info("Invito portale automatico a %s (%s)",
+                            contatto.email, sponsor)
+            except Exception:
+                logger.exception("Invito portale automatico fallito per %s", email)
+    except Exception:
+        logger.exception("Controllo inviti portale fallito")
+    return invitati
 
 
 def _create_communication(

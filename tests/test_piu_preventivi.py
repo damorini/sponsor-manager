@@ -68,7 +68,8 @@ def test_sponsor_diversi_rifiutati(regia, due, db):
     assert not mail.outbox
 
 
-def test_una_mail_per_destinatario_col_suo_nome(regia, due, contact):
+def test_una_mail_per_destinatario_col_suo_nome(regia, due, contact, settings):
+    settings.INVITO_PORTALE_AUTOMATICO = False  # qui si contano solo le mail
     """Due destinatari: due mail distinte, ciascuna col nome di chi la riceve;
     un indirizzo aggiunto a mano riceve il saluto con il nome dell'azienda."""
     from sponsors.models import Contact
