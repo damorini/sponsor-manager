@@ -1914,6 +1914,29 @@ def generate_sponsor_contract_pdf(contract):
         logger.warning("Numerazione pagine non applicata per %s: %s",
                        contract.contract_number, e)
 
+    # Firma della Segreteria nell'Allegato 2 e guida in prima pagina (di cosa
+    # si compone il documento, dove firmare, come restituirlo)
+    try:
+        from contracts.services.guida_firme import completa_contratto
+        pagine_moduli = 0
+        if allegato2_pdf and _moduli_allegato_2(event):
+            pagine_moduli = _conta_pagine_pdf(_moduli_allegato_2(event)) or 0
+        parti = [('contratto', _conta_pagine_pdf(contract_pdf) or 0)]
+        if final_pdf != contract_pdf:
+            if domanda_pdf:
+                parti.append(('allegato1', _conta_pagine_pdf(domanda_pdf) or 0))
+            if allegato2_pdf:
+                parti.append(('allegato2', (_conta_pagine_pdf(allegato2_pdf) or 0) - pagine_moduli))
+                parti.append(('moduli', pagine_moduli))
+        if sum(n for _, n in parti) == (_conta_pagine_pdf(final_pdf) or 0):
+            completa_contratto(final_pdf, contract, parti)
+        else:
+            logger.warning("Guida firme saltata per %s: pagine non tornano",
+                           contract.contract_number)
+    except Exception as e:
+        logger.warning("Guida firme non aggiunta per %s: %s",
+                       contract.contract_number, e)
+
     relative_pdf_path = f"documents/contracts/{contract.id}/{final_name}"
     document = _create_document_record(
         contract, final_pdf, relative_pdf_path, file_name=final_name,

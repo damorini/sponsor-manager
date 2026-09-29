@@ -65,7 +65,8 @@ def test_allegato_2_accodato(contratto):
     assert 'Articolo 1 del regolamento tecnico prova' in testo
     assert testo.index('ALLEGATO 2') > testo.index('ALLEGATO 1')
     m = re.search(r'si compone di N\. (\d+) pagine', testo)
-    assert m and int(m.group(1)) == pagine
+    # la pagina di guida in testa al file non fa parte del contratto
+    assert m and int(m.group(1)) == pagine - 1
 
 
 def test_senza_spunta_niente_allegato_2(contratto):

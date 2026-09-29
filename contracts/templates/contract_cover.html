@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="{% if en %}en{% else %}it{% endif %}">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 20mm 18mm 18mm; }
+  body { font-family: 'Helvetica Neue', Arial, sans-serif; color:#1f2937; font-size:10.5pt; line-height:1.45; margin:0; }
+  .brandbar { height:5px; background:{{ brand_color }}; border-radius:3px; margin:0 0 14px; }
+  .eyebrow { color:{{ brand_color }}; font-size:9pt; font-weight:700; letter-spacing:.05em; text-transform:uppercase; margin:0 0 4px; }
+  h1 { font-size:19pt; margin:0 0 4px; color:#111827; }
+  .sub { color:#4b5563; margin:0 0 16px; }
+  .scheda { background:#f3f4f6; border-left:3px solid {{ brand_color }}; padding:8px 12px; margin:0 0 16px; }
+  .scheda td { padding:1px 12px 1px 0; vertical-align:top; }
+  .scheda .k { color:#6b7280; white-space:nowrap; }
+  .intro { margin:0 0 14px; }
+  .passo { margin:0 0 14px; page-break-inside:avoid; }
+  .passo h2 { font-size:11.5pt; margin:0 0 6px; color:#111827; }
+  .num { display:inline-block; width:20px; height:20px; line-height:20px; border-radius:10px; background:{{ brand_color }};
+         color:#fff; text-align:center; font-size:10pt; font-weight:700; margin-right:7px; }
+  table.t { width:100%; border-collapse:collapse; margin:2px 0 0; }
+  table.t th { text-align:left; font-size:8.5pt; color:{{ brand_color }}; text-transform:uppercase; letter-spacing:.03em;
+               border-bottom:1.5px solid {{ brand_color }}; padding:0 6px 4px 0; }
+  table.t td { border-bottom:1px solid #e5e7eb; padding:5px 6px 5px 0; vertical-align:top; }
+  table.t .c { white-space:nowrap; }
+  .nota { color:#4b5563; font-size:9.5pt; margin:6px 0 0; }
+  ul.semplice { margin:4px 0 0; padding-left:18px; }
+  ul.semplice li { margin:0 0 3px; }
+  .piede { position:fixed; bottom:0; left:0; right:0; color:#6b7280; font-size:8.5pt; border-top:1px solid #e5e7eb; padding-top:6px; }
+</style>
+</head>
+<body>
+<div class="brandbar"></div>
+<p class="eyebrow">{% if en %}How to complete and return the agreement{% else %}Come completare e restituire il contratto{% endif %}</p>
+<h1>{% if en %}Sponsorship agreement{% else %}Contratto di sponsorizzazione{% endif %}</h1>
+<p class="sub">{{ event_name }}</p>
+
+<table class="scheda">
+  <tr><td class="k">{% if en %}Agreement{% else %}Contratto{% endif %}</td><td><strong>{{ contract.contract_number }}</strong></td></tr>
+  <tr><td class="k">Sponsor</td><td><strong>{{ sponsor.legal_name }}</strong></td></tr>
+  {% if event.start_date %}<tr><td class="k">{% if en %}Dates{% else %}Date{% endif %}</td><td>{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} – {{ event.end_date|date:"d/m/Y" }}{% endif %}</td></tr>{% endif %}
+</table>
+
+<p class="intro">{% if en %}This document is generated automatically following the confirmation of the quote. This guide page is not part of the agreement.{% else %}Questo documento viene generato automaticamente a seguito della conferma del preventivo. Questa pagina di guida non fa parte del contratto.{% endif %}</p>
+
+<div class="passo">
+  <h2><span class="num">1</span>{% if en %}What the document contains{% else %}Di cosa si compone il documento{% endif %}</h2>
+  <table class="t">
+    <tr><th>{% if en %}Part{% else %}Parte{% endif %}</th><th class="c">{% if en %}Pages of the file{% else %}Pagine del file{% endif %}</th></tr>
+    {% for v in voci %}
+    <tr><td>{{ v.titolo }}</td><td class="c">{% if v.dal == v.al %}{{ v.dal }}{% else %}{{ v.dal }}–{{ v.al }}{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="passo">
+  <h2><span class="num">2</span>{% if en %}Sign where indicated{% else %}Firmate dove indicato{% endif %}</h2>
+  <p style="margin:0 0 4px;">{% if en %}The document requires <strong>{{ totale_firme }} signature{{ totale_firme|pluralize }}</strong> of the Sponsor's legal representative, with date:{% else %}Il documento richiede <strong>{{ totale_firme }} firm{{ totale_firme|pluralize:"a,e" }}</strong> del legale rappresentante dello Sponsor, con la data:{% endif %}</p>
+  <table class="t">
+    <tr><th class="c">{% if en %}Page of the file{% else %}Pagina del file{% endif %}</th><th>{% if en %}Part{% else %}Parte{% endif %}</th><th class="c">{% if en %}Signatures{% else %}Firme{% endif %}</th></tr>
+    {% for f in firme %}
+    <tr>
+      <td class="c"><strong>{% if en %}Page{% else %}Pagina{% endif %} {{ f.pagina }}</strong></td>
+      <td>{{ f.parte }} <span style="color:#6b7280;">({% if en %}page {{ f.pag_parte }} of {{ f.tot_parte }}{% else %}pag. {{ f.pag_parte }} di {{ f.tot_parte }}{% endif %})</span></td>
+      <td class="c">{{ f.n }} {% if en %}signature{{ f.n|pluralize }}{% else %}firm{{ f.n|pluralize:"a,e" }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% if moduli %}<p class="nota">{% if en %}If you use an external stand builder, also fill in and sign the attached forms ({% if moduli.dal == moduli.al %}page {{ moduli.dal }}{% else %}pages {{ moduli.dal }}–{{ moduli.al }}{% endif %}).{% else %}Se vi avvalete di un allestitore esterno, completate e firmate anche i moduli allegati ({% if moduli.dal == moduli.al %}pagina {{ moduli.dal }}{% else %}pagine {{ moduli.dal }}–{{ moduli.al }}{% endif %}).{% endif %}</p>{% endif %}
+  <p class="nota">{% if en %}The signature of the Organising Secretariat (VALET S.r.l.) is already on the document.{% else %}La firma della Segreteria Organizzativa (VALET S.r.l.) è già presente nel documento.{% endif %}</p>
+</div>
+
+<div class="passo">
+  <h2><span class="num">3</span>{% if en %}Upload it to the sponsor portal{% else %}Caricatelo sul portale sponsor{% endif %}</h2>
+  <ul class="semplice">
+    {% if en %}
+    <li>Scan the whole signed document into <strong>a single PDF file</strong>.</li>
+    <li>Log in to the sponsor portal, open the <strong>Materials</strong> section and use the upload button of the deadline <strong>«Signed contract»</strong>.</li>
+    <li>Alternatively, send it by email to <strong>amministrazione@valet.it</strong>.</li>
+    {% else %}
+    <li>Eseguite la scansione di tutto il documento firmato in <strong>un unico file PDF</strong>.</li>
+    <li>Collegatevi al portale sponsor, aprite la sezione <strong>Materiali</strong> e usate il pulsante di caricamento della scadenza <strong>«Invio contratto firmato»</strong>.</li>
+    <li>In alternativa potete inviarlo via email ad <strong>amministrazione@valet.it</strong>.</li>
+    {% endif %}
+  </ul>
+</div>
+
+<div class="piede">VALET CONFERENCE · Valet Srl · Via Dei Fornaciai, 29/b · 40129 Bologna · Tel. +39 051 6388334 · congresso@valet.it</div>
+</body>
+</html>
