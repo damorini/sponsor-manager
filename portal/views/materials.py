@@ -40,6 +40,13 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_MAX_UPLOAD_SIZE_MB = 20
 
+
+def max_upload_mb(deadline):
+    """MB massimi per file su questa scadenza: quelli della scadenza del
+    catalogo se impostati (es. 100 per i banner), altrimenti 20."""
+    t = getattr(deadline, 'deadline_template', None) if deadline.deadline_template_id else None
+    return getattr(t, 'max_file_size_mb', None) or DEFAULT_MAX_UPLOAD_SIZE_MB
+
 DEFAULT_ALLOWED_MIME_TYPES = [
     'application/pdf',
     # niente image/svg+xml: un SVG puo' contenere <script> (stored XSS se
@@ -122,6 +129,7 @@ def _get_materials_for_contract(contract):
                                     if d.deadline_template_id and
                                     getattr(d.deadline_template, 'file_area_label', '')
                                     else '')),
+            'max_mb': max_upload_mb(d),
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
             # Le scadenze di PAGAMENTO accettano l'upload della contabile del
@@ -272,9 +280,7 @@ def material_upload_view(request, deadline_id):
         return redirect('portal:materials_list', contract_id=deadline.contract_id)
 
     template = deadline.deadline_template
-    max_size_bytes = (
-        getattr(template, 'max_file_size_mb', None) or DEFAULT_MAX_UPLOAD_SIZE_MB
-    ) * 1024 * 1024
+    max_size_bytes = max_upload_mb(deadline) * 1024 * 1024
 
     allowed_mimes = (
         getattr(template, 'allowed_mime_types', None) or DEFAULT_ALLOWED_MIME_TYPES
@@ -613,6 +619,7 @@ def _materials_from_deadlines(deadlines):
                                     if d.deadline_template_id and
                                     getattr(d.deadline_template, 'file_area_label', '')
                                     else '')),
+            'max_mb': max_upload_mb(d),
             'needs_content': getattr(d, 'submission_kind', 'file') in ('content', 'both'),
             'content_locked': d.due_date < today,
             # Upload contabile consentito anche sulle scadenze di pagamento,

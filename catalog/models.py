@@ -554,6 +554,13 @@ class DeadlineTemplate(TimeStampedModel):
                   "compilare.",
     )
 
+    max_file_size_mb = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="Dimensione massima file (MB)",
+        help_text="Limite per ogni file caricato dal cliente. Vuoto = 20 MB. "
+                  "Per le grafiche di stampa (es. banner) si puo' alzare, es. 100.",
+    )
+
     is_active = models.BooleanField(default=True, verbose_name="Attivo")
     display_order = models.IntegerField(default=0, verbose_name="Ordine")
 

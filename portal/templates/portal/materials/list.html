@@ -264,7 +264,7 @@
                 {% trans "o trascina i file qui" %}
               </div>
               <p class="text-xs text-gray-500 mt-1">
-                {% blocktrans with mb=max_upload_mb %}Max {{ mb }} MB per file. Fino a 10 file per upload.{% endblocktrans %}
+                {% blocktrans with mb=m.max_mb|default:max_upload_mb %}Max {{ mb }} MB per file. Fino a 10 file per upload.{% endblocktrans %}
               </p>
               <p class="text-xs text-gray-500 mt-1 file-list"></p>
             </div>
