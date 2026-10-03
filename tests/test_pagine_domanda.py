@@ -48,3 +48,21 @@ def test_domanda_termini_cancellazione(lingua, attesi):
                                                             'CANCELLATION TERMS'))
     for a in attesi:
         assert a in t[i + 1], a
+
+
+@pytest.mark.parametrize('lingua,rimando', [
+    ('it', 'art. 3 del Contratto di sponsorizzazione'),
+    ('en', 'art. 3 of the Sponsorship Agreement'),
+])
+def test_domanda_allegato_rimanda_all_art_3(lingua, rimando):
+    """Come Allegato 1 i termini di cancellazione rimandano all'art. 3 del
+    contratto; da sola (ECM, aggiuntivi) la Domanda tiene il testo completo."""
+    t = [p.text for p in Document(
+        str(CARTELLA / f'template_domanda_ammissione_{lingua}.docx')).paragraphs]
+    i = next(i for i, x in enumerate(t) if x.strip() in ('TERMINI DI CANCELLAZIONE',
+                                                            'CANCELLATION TERMS'))
+    testo = t[i + 1]
+    assert testo.startswith('{% if as_allegato %}')
+    allegato, da_sola = testo.split('{% else %}', 1)
+    assert rimando in allegato and '1382' not in allegato
+    assert '1382' in da_sola
