@@ -71,6 +71,27 @@ class DocumentUploadForm(forms.ModelForm):
 
 
 from django.contrib.contenttypes.admin import GenericTabularInline
+from django.contrib.contenttypes.forms import BaseGenericInlineFormSet
+
+
+class _DocumentiFormSet(BaseGenericInlineFormSet):
+    """Riconosce i documenti ARCHIVIATI mentre la pagina era aperta (es. il
+    PDF del preventivo sostituito da un'«Anteprima preventivo» in un'altra
+    scheda). Senza questo la riga del PDF vecchio diventava un documento
+    NUOVO e il salvataggio chiedeva di caricare un file."""
+
+    def _existing_object(self, pk):
+        obj = super()._existing_object(pk)
+        if obj is None and self.instance is not None and self.instance.pk:
+            obj = self.model.all_objects.filter(
+                pk=pk, object_id=self.instance.pk).first()
+        return obj
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        campo = form.fields.get(self.model._meta.pk.name)
+        if campo is not None and hasattr(campo, 'queryset'):
+            campo.queryset = self.model.all_objects.all()
 
 
 class ContractDocumentInline(GenericTabularInline):
@@ -78,6 +99,7 @@ class ContractDocumentInline(GenericTabularInline):
     Spunta 'Visibile a sponsor' per farli vedere al cliente nel portale."""
     model = Document
     form = DocumentUploadForm
+    formset = _DocumentiFormSet
     ct_field = 'content_type'
     ct_fk_field = 'object_id'
     extra = 0
