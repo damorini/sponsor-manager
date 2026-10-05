@@ -450,7 +450,7 @@ def _posizione_inclusi(lines):
             if evento:
                 qs = qs.filter(parent__event_id=evento)
             cache[chiave] = {c: i for i, c in enumerate(
-                qs.order_by('id').values_list('child__code', flat=True))}
+                qs.order_by('display_order', 'id').values_list('child__code', flat=True))}
         posizione[id(l)] = cache[chiave].get(figlio, 9_999)
     return posizione
 

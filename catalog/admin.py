@@ -186,7 +186,7 @@ class ServiceInclusionInline(admin.TabularInline):
     fk_name = 'parent'
     extra = 0
     autocomplete_fields = ['child']
-    fields = ('child', 'quantity')
+    fields = ('child', 'quantity', 'display_order')
     formset = ServiceInclusionFormSet
     verbose_name = 'Servizio incluso'
     verbose_name_plural = 'Servizi inclusi (accessori)'

@@ -1,40 +1,54 @@
-"""Servizi inclusi nell'ordine della lista del pacchetto dello stand."""
+"""I servizi inclusi di un pacchetto hanno un Ordine: le righe incluse del
+preventivo nascono in quell'ordine, e un incluso nuovo senza ordine va in fondo."""
 from datetime import date
 from decimal import Decimal
 
 import pytest
 
-from catalog.models import Service, ServiceInclusion
-from contracts.models import Contract, ContractKind, ContractStatus
-from contracts.services.pdf_generator import _righe_valorizzate_prima
-from contracts.services.stand_line import get_or_create_stand_service
-from events.models import Event
-from venues.models import Stand
 
+@pytest.mark.django_db
+def test_righe_incluse_seguono_l_ordine(sponsor):
+    from catalog.models import Service, ServiceInclusion
+    from contracts.models import Contract, ContractKind, ContractLine, ContractStatus
+    from contracts.services.pdf_generator import _posizione_inclusi
+    from events.models import Event
 
-@pytest.fixture
-def contratto(db, sponsor):
-    ev = Event.objects.create(name={'it': 'Ev Ordine'}, code='ORD',
+    ev = Event.objects.create(name={'it': 'Ev'}, code='ORD',
                               start_date=date(2027, 2, 25), end_date=date(2027, 2, 27))
-    pac = get_or_create_stand_service(ev, 'Main')
-    # ordine voluto nella lista del pacchetto: C, A, B (non alfabetico)
-    for codice, qta in (('ISCRIZIONI', 5), ('BADGE_DELEGATE', 2), ('BADGE_FULL', 3)):
-        figlio = Service.objects.create(event=ev, code=codice, name={'it': codice},
-                                        base_price=Decimal('10'))
-        ServiceInclusion.objects.create(parent=pac, child=figlio, quantity=qta)
-    st = Stand.objects.create(event=ev, code='1-A', stand_type='Main', base_price=Decimal('1000'))
-    return Contract.objects.create(sponsor=sponsor, event=ev, stand=st, language='it',
-                                   contract_kind=ContractKind.MAIN, status=ContractStatus.DRAFT)
+
+    def servizio(code, prezzo='0'):
+        return Service.objects.create(event=ev, code=code, name={'it': code},
+                                      base_price=Decimal(prezzo), is_active=True)
+
+    corso = servizio('CORSO', '1000')
+    iscr, full, std = servizio('ISCR'), servizio('FULL'), servizio('STD')
+    ServiceInclusion.objects.create(parent=corso, child=iscr, quantity=10, display_order=3)
+    ServiceInclusion.objects.create(parent=corso, child=full, quantity=2, display_order=1)
+    ServiceInclusion.objects.create(parent=corso, child=std, quantity=5, display_order=2)
+
+    c = Contract.objects.create(sponsor=sponsor, event=ev, language='it',
+                                contract_kind=ContractKind.MAIN,
+                                status=ContractStatus.DRAFT)
+    ContractLine.objects.create(contract=c, service=corso, quantity=1)
+
+    incluse = [l for l in c.lines.all() if '[incluso:' in (l.notes or '')]
+    assert [l.service.code for l in incluse] == ['FULL', 'STD', 'ISCR']
+
+    pos = _posizione_inclusi(incluse)
+    assert sorted(incluse, key=lambda l: pos[id(l)]) == incluse
 
 
-def test_ordine_come_lista_pacchetto(contratto):
-    from contracts.services.stand_line import genera_riga_da_stand
-    if not contratto.lines.filter(notes__contains='stand:').exists():
-        genera_riga_da_stand(contratto)
-    righe = _righe_valorizzate_prima(contratto.lines.all())
-    codici = [r.service.code for r in righe]
-    assert codici[0].startswith('SPAZIO_ESPOSITIVO')
-    assert codici[1:] == ['ISCRIZIONI', 'BADGE_DELEGATE', 'BADGE_FULL']
-    # stessa cosa anche se le righe arrivano mescolate
-    mescolate = list(reversed(list(contratto.lines.all())))
-    assert [r.service.code for r in _righe_valorizzate_prima(mescolate)] == codici
+@pytest.mark.django_db
+def test_incluso_senza_ordine_va_in_fondo():
+    from catalog.models import Service, ServiceInclusion
+    from events.models import Event
+
+    ev = Event.objects.create(name={'it': 'Ev'}, code='ORD2',
+                              start_date=date(2027, 2, 25), end_date=date(2027, 2, 27))
+    pad, a, b = (Service.objects.create(event=ev, code=c, name={'it': c},
+                                        base_price=Decimal('0')) for c in ('PAD', 'A', 'B'))
+    ServiceInclusion.objects.create(parent=pad, child=a, display_order=7)
+    nuovo = ServiceInclusion.objects.create(parent=pad, child=b)
+
+    assert nuovo.display_order == 8
+    assert [i.child.code for i in pad.inclusions.all()] == ['A', 'B']

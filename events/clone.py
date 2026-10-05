@@ -97,6 +97,7 @@ def duplica_evento(evento):
         child_clone = mappa_servizi.get(inc.child_id)
         if parent_clone and child_clone:
             ServiceInclusion.objects.create(
-                parent=parent_clone, child=child_clone, quantity=inc.quantity)
+                parent=parent_clone, child=child_clone, quantity=inc.quantity,
+                display_order=inc.display_order)
 
     return nuovo

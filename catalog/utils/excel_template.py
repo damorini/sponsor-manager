@@ -299,7 +299,7 @@ def export_servizi_workbook(event):
         ws.cell(row=r, column=14, value=s.pricing_mode or 'fixed')
         ws.cell(row=r, column=15, value=_norm_bool_out(s.triggers_deadlines))
         try:
-            incl = ', '.join(sub.code for sub in s.included_services.all())
+            incl = ', '.join(i.child.code for i in s.inclusions.select_related('child'))
         except Exception:
             incl = ''
         ws.cell(row=r, column=16, value=incl)

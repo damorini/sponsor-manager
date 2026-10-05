@@ -72,7 +72,7 @@ class Command(BaseCommand):
             raise CommandError(
                 "openpyxl non installato. Installa con: pip install openpyxl"
             )
-        from catalog.models import Service
+        from catalog.models import Service, ServiceInclusion
         from events.models import Event
 
         path = Path(opts["file"]).expanduser()
@@ -279,6 +279,9 @@ class Command(BaseCommand):
                 else:
                     non_trovati.append(c)
             svc.included_services.set(trovati)
+            # l'ordine dei codici nella cella e' l'ordine nel preventivo
+            for pos, sub in enumerate(trovati, start=1):
+                ServiceInclusion.objects.filter(parent=svc, child=sub).update(display_order=pos)
             if non_trovati:
                 self.stdout.write(self.style.WARNING(
                     f"  riga {n_riga}: inclusi non trovati per '{svc.code}': {non_trovati}"
