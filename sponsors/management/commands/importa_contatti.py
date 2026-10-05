@@ -1,5 +1,6 @@
 """Importa o aggiorna Contatti (referenti) da un file Excel."""
 import re
+from core.excel import righe_excel
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -76,7 +77,7 @@ class Command(BaseCommand):
         except Exception as e:
             raise CommandError(f"Impossibile aprire il file Excel: {e}")
         ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
+        rows = righe_excel(ws)
         if not rows:
             raise CommandError("Il foglio e' vuoto.")
         header = [str(c).strip() if c is not None else "" for c in rows[0]]
