@@ -695,6 +695,7 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                'action_rigenera_pdf_contratto',
                'action_convert_to_contract',
                'action_generate_stand_line',
+               'action_aggiorna_testi',
                'action_restore']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -1279,6 +1280,28 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
                 f"{creati} riga/e stand create. Totali contratto aggiornati.",
                 level=messages.SUCCESS,
             )
+
+    @admin.action(description="📝 Aggiorna i testi dei servizi (preventivi in bozza o inviati)")
+    def action_aggiorna_testi(self, request, queryset):
+        from .services.testi_righe import aggiorna_testi_righe
+        contratti = list(queryset)
+        for contract in contratti:
+            if contract.status not in (ContractStatus.DRAFT, ContractStatus.SENT):
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: non e' piu' un preventivo "
+                    "(firmato o oltre), i testi restano quelli firmati.",
+                    level=messages.WARNING)
+                continue
+            n = aggiorna_testi_righe(contract)
+            self.message_user(
+                request,
+                f"{contract.contract_number}: testi aggiornati su {n} righe. "
+                "Per vederli nel PDF usa «Anteprima preventivo».",
+                level=messages.SUCCESS if n else messages.INFO)
+        if len(contratti) == 1:
+            return HttpResponseRedirect(
+                reverse('admin:contracts_contract_change', args=[contratti[0].pk]))
 
     # ---- Piano pagamento: importi/scadenze calcolati (sola lettura) ----
     @admin.display(description='Acconto (calcolato, IVA incl.)')
