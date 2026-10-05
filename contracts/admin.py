@@ -72,12 +72,24 @@ class ContractLineInline(admin.TabularInline):
     model = ContractLine
     extra = 0
     fields = (
+        'display_order',
         'service', 'custom_description', 'service_variant', 'quantity', 'unit_price',
         'discount_percent', 'discount_amount',
         'line_subtotal', 'line_vat', 'line_total',
     )
     readonly_fields = ('line_subtotal', 'line_vat', 'line_total')
     autocomplete_fields = ['service']
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        field = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == 'display_order':
+            field.widget.attrs['style'] = 'width:4em;'
+            field.help_text = (
+                "Posizione nel preventivo, nella Domanda e nel contratto: "
+                "numeri piu' bassi in alto. Con 0 su tutte le righe l'ordine "
+                "e' automatico (prima le righe a pagamento, poi le incluse); "
+                "per un ordine preciso numera tutte le righe.")
+        return field
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # 'service': autocomplete filtrato per evento del contratto.
@@ -436,6 +448,11 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
             obj.save()
         formset.save_m2m()
         for obj in formset.deleted_objects:
+            # PDF gia' sostituito da un'«Anteprima preventivo» mentre la pagina
+            # era aperta: e' gia' archiviato, non c'e' niente da cancellare
+            # (cancellarlo provava a inserirlo di nuovo, senza contratto: 500).
+            if obj._state.adding:
+                continue
             obj.delete()
 
     def get_queryset(self, request):

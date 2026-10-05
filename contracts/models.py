@@ -1654,6 +1654,16 @@ class ContractLine(TimeStampedModel):
             if self.vat_rate is None:
                 self.vat_rate = self.service.vat_rate
 
+        # Prezzo svuotato a mano su una riga gia' salvata: torna il listino
+        # (della variante, se c'e'), invece di mandare in errore il salvataggio.
+        if self.unit_price is None:
+            if self.service_variant_id and self.service_variant.base_price is not None:
+                self.unit_price = self.service_variant.base_price
+            elif self.service_id and self.service.base_price is not None:
+                self.unit_price = self.service.base_price
+            else:
+                self.unit_price = Decimal('0.00')
+
         self.calculate_totals()
         super().save(*args, **kwargs)
 
