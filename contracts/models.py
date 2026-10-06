@@ -523,6 +523,18 @@ class Contract(SoftDeleteModel):
             except Exception:
                 pass
 
+        # In CREAZIONE l'acconto parte uguale alla penale di cancellazione
+        # dell'evento (la caparra e' la penale). Resta modificabile sul
+        # contratto; 0 = pagamento unico. Gli add-on si pagano al checkout.
+        if (self._state.adding and self.deposit_percent is None and self.event_id
+                and self.contract_kind != ContractKind.ADDON):
+            try:
+                _penale = self.event.cancellation_penalty_percent
+                if _penale:
+                    self.deposit_percent = Decimal(_penale)
+            except Exception:
+                pass
+
         # Cambio LINGUA su un contratto esistente: gli snapshot delle righe
         # (nome/descrizione servizio, etichetta stand) vanno ri-tradotti,
         # altrimenti il preventivo resta nella lingua vecchia.
