@@ -1425,11 +1425,20 @@ class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.Mode
 
     @admin.action(description='Rigenera PDF CONTRATTO (allega e mostra nel portale)')
     def action_rigenera_pdf_contratto(self, request, queryset):
-        from .services.pdf_generator import generate_contract_pdf
+        from events.models import EventType
+        from .services.pdf_generator import generate_contract_pdf, generate_sponsor_contract_pdf
         ok = 0
         for contract in queryset:
             try:
-                doc = generate_contract_pdf(contract)
+                # Contratto principale di un evento non-ECM: e' il contratto di
+                # sponsorizzazione completo (contratto + allegati + guida firme),
+                # lo stesso generato alla firma. Prima il pulsante usava il
+                # modello generico e pubblicava nel portale un documento sbagliato.
+                if (contract.contract_kind == ContractKind.MAIN
+                        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
+                    doc = generate_sponsor_contract_pdf(contract)
+                else:
+                    doc = generate_contract_pdf(contract)
             except Exception as e:
                 self.message_user(
                     request,
