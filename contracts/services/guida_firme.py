@@ -14,8 +14,12 @@ logger = logging.getLogger(__name__)
 
 FIRMA_SEGRETERIA = Path(__file__).resolve().parent.parent / 'templates_pdf' / 'firma_segreteria.png'
 
-# Riga della data sotto ogni blocco firma: «Bologna, ______», «Data ______»
-_RIGA_DATA = re.compile(r'(?:\bData|\bDate|\b[A-ZÀ-Ý][a-zà-ÿ]+,)\s*_{3,}')
+# Riga della data sotto ogni blocco firma, da sola sulla riga: «Data ______»,
+# «Bologna, ______» oppure con la data gia' stampata «Bologna, 05/10/2026»
+# (contratto e Domanda la stampano: prima quelle firme sfuggivano alla guida).
+_RIGA_DATA = re.compile(
+    r'^\s*(?:Data|Date|[A-ZÀ-Ý][a-zà-ÿ]+(?: [A-ZÀ-Ý][a-zà-ÿ]+)*,)'
+    r'\s*(?:_{3,}|\d{1,2}/\d{1,2}/\d{2,4})\s*$', re.M)
 # Etichetta della firma della Segreteria nell'Allegato 2
 _ETICHETTA_SEGRETERIA = re.compile(
     r'Firma della Segreteria Organizzativa|Organi[sz]ing Secretariat', re.I)
