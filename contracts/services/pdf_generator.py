@@ -528,6 +528,16 @@ def _convert_docx_to_pdf(docx_path):
     
     docx_path = Path(docx_path)
     output_dir = docx_path.parent
+
+    # Un capitolo non si spezza tra due pagine (vale per tutti i documenti
+    # Word: contratto, Domanda, Allegato 2...). Se non riesce, si converte
+    # comunque il documento cosi' com'e'.
+    try:
+        from .impaginazione import tieni_capitoli_interi
+        tieni_capitoli_interi(docx_path)
+    except Exception as e:
+        logger.warning("Impaginazione a capitoli interi non applicata a %s: %s",
+                       docx_path.name, e)
     
     try:
         result = subprocess.run(
