@@ -21,7 +21,7 @@
 
 {% if importo_scadenza %}
 <div class="alert-warning">
-  <strong>Importo:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)
+  <strong>Importo:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}
 </div>
 {% endif %}
 

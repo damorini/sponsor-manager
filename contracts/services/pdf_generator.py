@@ -1410,10 +1410,12 @@ def _arricchisci_righe_domanda(docx_path, lines, language):
     doc.save(str(docx_path))
 
 
-def _rimuovi_riga_iva_domanda(docx_path):
-    """Per i clienti ESENTI IVA: elimina la riga 'IVA ...' dalla tabella totali
-    della domanda (post-render docxtpl). Best-effort e idempotente.
-    Non tocca la cella 'PARTITA IVA' dei dati sponsor."""
+def _rimuovi_riga_iva_domanda(docx_path, motivo='', language='it'):
+    """Per i clienti ESENTI IVA: la riga 'IVA ...' della tabella totali della
+    domanda (post-render docxtpl) non riporta importi. Se c'e' il motivo
+    dell'esenzione la riga resta e lo indica (es. 'ESENZIONE IVA: NON
+    IMPONIBILE ART. 8/1-C'), altrimenti viene eliminata.
+    Best-effort e idempotente. Non tocca la cella 'PARTITA IVA' dei dati sponsor."""
     from docx import Document
     d = Document(str(docx_path))
     removed = False
@@ -1432,7 +1434,10 @@ def _rimuovi_riga_iva_domanda(docx_path):
                 ct = c.text.strip().upper()
                 if ((ct.startswith('IVA') and 'PARTITA' not in ct)
                         or (ct.startswith('VAT') and 'NUMBER' not in ct)):
-                    row._tr.getparent().remove(row._tr)
+                    if motivo:
+                        _scrivi_esenzione_in_riga(row, motivo, language)
+                    else:
+                        row._tr.getparent().remove(row._tr)
                     removed = True
                     break
         if removed:
@@ -1440,6 +1445,35 @@ def _rimuovi_riga_iva_domanda(docx_path):
     if removed:
         d.save(str(docx_path))
     return removed
+
+
+
+def _scrivi_esenzione_in_riga(row, motivo, language='it'):
+    """Riga IVA della domanda per un cliente esente: l'etichetta diventa il
+    motivo dell'esenzione e la cella dell'importo resta vuota (niente importo
+    IVA per chi non la applica). Le celle unite si ripetono in row.cells:
+    ognuna si scrive una volta sola, mantenendo il formato del primo run."""
+    etichetta = 'VAT EXEMPTION' if language == 'en' else 'ESENZIONE IVA'
+    etichetta = f"{etichetta}: {motivo}"
+    visti = []
+    for c in row.cells:
+        if any(c._tc is v for v in visti):
+            continue
+        visti.append(c._tc)
+        testo = c.text.strip().upper()
+        if not testo:
+            continue
+        nuovo = etichetta if (testo.startswith('IVA') or testo.startswith('VAT')) else ''
+        par = c.paragraphs[0]
+        if par.runs:
+            par.runs[0].text = nuovo
+            for r in par.runs[1:]:
+                r.text = ''
+        else:
+            par.add_run(nuovo)
+        for altro in c.paragraphs[1:]:
+            for r in altro.runs:
+                r.text = ''
 
 
 def _pct_pulita(v):
@@ -1713,7 +1747,9 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     # l'importo IVA per chi non la applica).
     if not contract.vat_applicable:
         try:
-            _rimuovi_riga_iva_domanda(full_docx_path)
+            _rimuovi_riga_iva_domanda(full_docx_path,
+                                      contract.vat_exemption_reason,
+                                      contract.language)
         except Exception as e:
             logger.warning("Riga IVA non rimossa dalla domanda per %s: %s",
                            contract.contract_number, e)
@@ -2126,7 +2162,8 @@ def generate_quote_pdf_html(contract):
             'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total', 'imponibile': 'Total excl. VAT', 'totale_iva': 'Total incl. VAT',
             'validity': validity, 'cta': 'View the quote', 'ref': 'Quote',
             'note_stand': 'Exhibition space notes',
-            'your_ref': 'Your reference',
+            'your_ref': 'Your reference', 'quote_no': 'Quote No.',
+            'esenzione': 'VAT exemption',
         }
     else:
         intro = mark_safe(
@@ -2156,7 +2193,8 @@ def generate_quote_pdf_html(contract):
             'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale', 'imponibile': 'Totale IVA esclusa', 'totale_iva': 'Totale IVA inclusa',
             'validity': validity, 'cta': 'Vedi il preventivo', 'ref': 'Preventivo',
             'note_stand': 'Note sullo spazio espositivo',
-            'your_ref': 'Vostro riferimento',
+            'your_ref': 'Vostro riferimento', 'quote_no': 'Preventivo n.',
+            'esenzione': 'Esenzione IVA',
         }
 
     from decimal import Decimal as _Dec
