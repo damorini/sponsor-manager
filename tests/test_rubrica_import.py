@@ -139,3 +139,71 @@ class TestLeggiFile:
         from sponsors.rubrica_import import leggi_file
         with pytest.raises(ValueError, match='email'):
             leggi_file(SimpleUploadedFile('r.csv', b'company;referente\nAlfa;Mario\n'))
+
+
+@pytest.mark.django_db
+class TestRobustezza:
+    def test_stessa_email_due_aziende_nello_stesso_file(self, cardio):
+        from sponsors.rubrica_import import analizza
+        r1, r2 = analizza([R(company='Alfa Srl', email='mario@x.it'),
+                           R(company='Beta Spa', email='mario@x.it', _riga=3)])
+        assert r1.esito == 'nuovo' and r2.esito == 'errore'
+        assert any('Stessa email già usata per un\'altra azienda alla riga 2' in m for m in r2.messaggi)
+
+    def test_campo_troppo_lungo_e_errore(self, cardio):
+        from sponsors.rubrica_import import analizza
+        [r] = analizza([R(ruolo='x' * 101)])
+        assert r.esito == 'errore'
+        assert any('Ruolo troppo lungo (101 caratteri, massimo 100)' in m for m in r.messaggi)
+
+    def test_due_grafie_nuova_azienda_nello_stesso_file(self, cardio):
+        from sponsors.rubrica_import import analizza
+        r1, r2 = analizza([R(company='Gamma Srl'),
+                           R(company='Gamma S.r.l.', email='b@g.it', referente='Anna Bianchi', _riga=3)])
+        assert r1.esito == 'nuovo' and r2.esito == 'errore'
+        assert any('«Gamma Srl» (riga 2)' in m for m in r2.messaggi)
+
+    def test_stessa_grafia_nuova_azienda_resta_valida(self, cardio):
+        from sponsors.rubrica_import import analizza
+        r1, r2 = analizza([R(company='Gamma Srl'),
+                           R(company='gamma srl', email='b@g.it', referente='Anna Bianchi', _riga=3)])
+        assert r1.esito == 'nuovo' and r2.esito == 'nuovo'
+
+    def test_applica_non_si_ferma_su_errore_imprevisto(self, cardio, monkeypatch):
+        from sponsors.models import Contact, Sponsor
+        from sponsors.rubrica_import import applica
+        orig = Contact.save
+
+        def finto(self, *a, **k):
+            if self.email == 'boom@alfa.it':
+                raise RuntimeError('boom')
+            return orig(self, *a, **k)
+        monkeypatch.setattr(Contact, 'save', finto)
+        esito = applica([R(email='boom@alfa.it'),
+                         R(_riga=3, email='anna@alfa.it', referente='Anna Bianchi')])
+        assert esito['creati'] == 1 and esito['scartati'] == 1
+        assert esito['aziende_create'] == 1
+        assert Sponsor.objects.filter(legal_name='Alfa Srl').count() == 1
+        assert Contact.objects.filter(email='anna@alfa.it').exists()
+
+
+@pytest.mark.django_db
+class TestLeggiFileRobusto:
+    def test_csv_excel_cp1252(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from sponsors.rubrica_import import leggi_file
+        testo = 'company;referente;email\nCittà Srl;Niccolò Rossi;n@c.it\n'
+        righe = leggi_file(SimpleUploadedFile('r.csv', testo.encode('cp1252')))
+        assert righe[0]['company'] == 'Città Srl' and righe[0]['referente'] == 'Niccolò Rossi'
+
+    def test_xlsx_danneggiato(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from sponsors.rubrica_import import leggi_file
+        with pytest.raises(ValueError, match='danneggiato'):
+            leggi_file(SimpleUploadedFile('r.xlsx', b'not a zip'))
+
+    def test_xls_non_supportato(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from sponsors.rubrica_import import leggi_file
+        with pytest.raises(ValueError, match='xls'):
+            leggi_file(SimpleUploadedFile('r.xls', b'qualcosa'))

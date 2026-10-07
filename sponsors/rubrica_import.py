@@ -8,6 +8,7 @@ senza errori. Mai unire aziende o creare aree in silenzio."""
 import csv
 import io
 import re
+import logging
 from dataclasses import dataclass, field
 
 from django.core.exceptions import ValidationError
@@ -15,7 +16,9 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.utils import timezone
 
-COLONNE_OBBLIGATORIE = ['company', 'email']
+logger = logging.getLogger(__name__)
+
+COLONNE_OBBLIGATORIE =['company', 'email']
 SUFFISSI_SOCIETARI = r'\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|ltd|gmbh|inc|unipersonale)\b'
 
 
@@ -32,6 +35,7 @@ class RigaImport:
     esito: str = 'nuovo'
     messaggi: list = field(default_factory=list)
     nuova_azienda: bool = False
+    sponsor_id: object = None
 
     def errore(self, msg):
         self.esito = 'errore'
@@ -43,13 +47,26 @@ def leggi_file(f):
     con la chiave '_riga' = numero di riga nel file (intestazione = 1)."""
     nome = (getattr(f, 'name', '') or '').lower()
     dati = f.read()
+    if nome.endswith('.xls'):
+        raise ValueError("Formato .xls non supportato: salva il file come .xlsx o .csv.")
     if nome.endswith(('.xlsx', '.xlsm')):
         from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(dati), read_only=True, data_only=True)
-        tabella = [['' if v is None else str(v) for v in r]
-                   for r in wb.active.iter_rows(values_only=True)]
+        try:
+            wb = load_workbook(io.BytesIO(dati), read_only=True, data_only=True)
+        except Exception as e:
+            raise ValueError("Impossibile leggere il file Excel: è danneggiato o non è un .xlsx.") from e
+        try:
+            if wb.active is None:
+                raise ValueError("Il file Excel non ha fogli.")
+            tabella = [['' if v is None else str(v) for v in r]
+                       for r in wb.active.iter_rows(values_only=True)]
+        finally:
+            wb.close()
     else:
-        testo = dati.decode('utf-8-sig', errors='replace')
+        try:
+            testo = dati.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            testo = dati.decode('cp1252', errors='replace')
         primo = testo.splitlines()[0] if testo else ''
         sep = ';' if primo.count(';') >= primo.count(',') else ','
         tabella = list(csv.reader(io.StringIO(testo), delimiter=sep))
@@ -88,8 +105,23 @@ def dividi_referente(testo):
     return ' '.join(parti[:-1]), parti[-1]
 
 
+def _limiti():
+    """(campo della riga, etichetta, max_length) letti dai modelli."""
+    from sponsors.models import Contact, Sponsor
+    voci = [('azienda', 'Azienda', Sponsor, 'legal_name'),
+            ('nome', 'Nome', Contact, 'first_name'),
+            ('cognome', 'Cognome', Contact, 'last_name'),
+            ('email', 'Email', Contact, 'email'),
+            ('ruolo', 'Ruolo', Contact, 'job_title'),
+            ('telefono', 'Telefono', Contact, 'phone')]
+    return [(campo, et, m._meta.get_field(nome).max_length) for campo, et, m, nome in voci]
+
+
 def analizza(righe):
     from sponsors.models import Contact, InterestArea, Sponsor, SuppressedEmail
+    limiti = _limiti()
+    email_viste = {}
+    nuove_grafie = {}
 
     aree_attive = {a.name.casefold(): a for a in InterestArea.objects.filter(is_active=True)}
     per_nome, per_norm = {}, {}
@@ -121,6 +153,11 @@ def analizza(righe):
         except ValidationError:
             riga.errore(f"Email mancante o non valida: «{riga.email}».")
 
+        for campo, etichetta, massimo in limiti:
+            valore = getattr(riga, campo)
+            if massimo and len(valore) > massimo:
+                riga.errore(f"{etichetta} troppo lungo ({len(valore)} caratteri, massimo {massimo}).")
+
         for nome_area in [a.strip() for a in re.split(r'[;,]', r.get('interessi', '')) if a.strip()]:
             area = aree_attive.get(nome_area.casefold())
             if area is None:
@@ -136,16 +173,30 @@ def analizza(righe):
             riga.messaggi.append("Si è disiscritto dal marketing: entra in rubrica ma non riceverà campagne.")
 
         sponsor = per_nome.get(riga.azienda.casefold())
-        if sponsor is None and riga.azienda:
-            simile = per_norm.get(normalizza_azienda(riga.azienda))
+        norm = normalizza_azienda(riga.azienda)
+        if sponsor is not None:
+            riga.sponsor_id = sponsor.pk
+        elif riga.azienda and norm:
+            simile = per_norm.get(norm)
             if simile is not None:
                 riga.errore(f"Esiste già un'azienda simile: «{simile.legal_name}». "
                             "Se è la stessa, scrivi nel file il nome esatto.")
             else:
                 riga.nuova_azienda = True
                 riga.messaggi.append(f"Nuova azienda: verrà creata «{riga.azienda}».")
+                grafia = riga.azienda.strip().casefold()
+                prima = nuove_grafie.setdefault(norm, (grafia, riga.azienda, riga.numero))
+                if prima[0] != grafia:
+                    riga.errore(f"Nello stesso file l'azienda compare anche come «{prima[1]}» "
+                                f"(riga {prima[2]}): usa lo stesso nome.")
 
-        chiave = (normalizza_azienda(riga.azienda), email_l)
+        if email_l:
+            altra = email_viste.setdefault(email_l, (norm, riga.numero))
+            if altra[0] != norm:
+                riga.errore("Stessa email già usata per un'altra azienda "
+                            f"alla riga {altra[1]} del file.")
+
+        chiave = (norm, email_l)
         if chiave in visti:
             riga.errore(f"Stessa azienda ed email già alla riga {visti[chiave]} del file.")
         else:
@@ -181,31 +232,40 @@ def applica(righe):
         if r.esito == 'errore':
             esito['scartati'] += 1
             continue
-        with transaction.atomic():
-            if r.nuova_azienda:
-                chiave = normalizza_azienda(r.azienda)
-                sponsor = nuove_aziende.get(chiave)
-                if sponsor is None:
-                    sponsor = Sponsor.objects.create(legal_name=r.azienda, address_country='IT')
-                    nuove_aziende[chiave] = sponsor
-                    esito['aziende_create'] += 1
-            else:
-                sponsor = (Sponsor.objects.filter(legal_name__iexact=r.azienda).first()
-                           or Sponsor.objects.filter(display_name__iexact=r.azienda).first())
-            contatto = Contact.objects.filter(sponsor=sponsor, email__iexact=r.email).first()
-            if contatto is None:
-                contatto = Contact(sponsor=sponsor, email=r.email,
-                                   first_name=r.nome, last_name=r.cognome)
-                esito['creati'] += 1
-            else:
-                esito['aggiornati'] += 1
-            if r.telefono:
-                contatto.phone = r.telefono
-            if r.ruolo:
-                contatto.job_title = r.ruolo
-            if not contatto.marketing_consent:
-                contatto.marketing_consent = True
-                contatto.marketing_consent_at = adesso
-            contatto.save()
-            contatto.interest_areas.add(*[aree[n] for n in r.aree])
+        chiave = normalizza_azienda(r.azienda)
+        azienda_creata = False
+        try:
+            with transaction.atomic():
+                if r.nuova_azienda:
+                    sponsor = nuove_aziende.get(chiave)
+                    if sponsor is None:
+                        sponsor = Sponsor.objects.create(legal_name=r.azienda, address_country='IT')
+                        nuove_aziende[chiave] = sponsor
+                        azienda_creata = True
+                else:
+                    sponsor = Sponsor.objects.get(pk=r.sponsor_id)
+                contatto = Contact.objects.filter(sponsor=sponsor, email__iexact=r.email).first()
+                nuovo = contatto is None
+                if nuovo:
+                    contatto = Contact(sponsor=sponsor, email=r.email,
+                                       first_name=r.nome, last_name=r.cognome)
+                if r.telefono:
+                    contatto.phone = r.telefono
+                if r.ruolo:
+                    contatto.job_title = r.ruolo
+                if not contatto.marketing_consent:
+                    contatto.marketing_consent = True
+                    contatto.marketing_consent_at = adesso
+                contatto.save()
+                contatto.interest_areas.add(*[aree[n] for n in r.aree])
+        except Exception:
+            logger.exception("Import rubrica: riga %s scartata (%s)", r.numero, r.email)
+            if azienda_creata:
+                # la creazione e' stata annullata col rollback della riga
+                nuove_aziende.pop(chiave, None)
+            esito['scartati'] += 1
+            continue
+        esito['creati' if nuovo else 'aggiornati'] += 1
+        if azienda_creata:
+            esito['aziende_create'] += 1
     return esito
