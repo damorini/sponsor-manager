@@ -97,3 +97,53 @@ class TestPermessiEmailEscluse:
         url = reverse('admin:sponsors_suppressedemail_delete', args=[r.pk])
         assert client.post(url, {'post': 'yes'}).status_code == 403
         assert SuppressedEmail.objects.filter(pk=r.pk).exists()
+
+
+@pytest.mark.django_db
+class TestImportAdmin:
+    URL = 'admin:sponsors_contact_importa_rubrica'
+
+    def _csv(self, testo):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return SimpleUploadedFile('r.csv', testo.encode('utf-8'))
+
+    def test_pulsante_in_lista_contatti(self, staff_client):
+        resp = staff_client.get(reverse('admin:sponsors_contact_changelist'))
+        assert reverse(self.URL).encode() in resp.content
+
+    def test_anteprima_non_scrive_nulla(self, staff_client):
+        from sponsors.models import Contact
+        resp = staff_client.post(reverse(self.URL), {'file': self._csv(
+            'company;referente;email\nAlfa Srl;Mario Rossi;mario@alfa.it\n')})
+        assert resp.status_code == 200
+        assert b'mario@alfa.it' in resp.content and b'Nuova azienda' in resp.content
+        assert not Contact.objects.filter(email='mario@alfa.it').exists()
+
+    def test_conferma_scrive(self, staff_client):
+        from sponsors.models import Contact
+        resp = staff_client.post(reverse(self.URL), {'file': self._csv(
+            'company;referente;email\nAlfa Srl;Mario Rossi;mario@alfa.it\n')})
+        dati = resp.context['dati']
+        resp = staff_client.post(reverse(self.URL), {'conferma': '1', 'dati': dati})
+        assert resp.status_code == 302
+        assert Contact.objects.filter(email='mario@alfa.it').exists()
+
+    def test_dati_manomessi_rifiutati(self, staff_client):
+        from sponsors.models import Contact
+        resp = staff_client.post(reverse(self.URL), {'conferma': '1', 'dati': 'falso'})
+        assert resp.status_code == 302
+        assert Contact.objects.count() == 0
+
+    def test_file_senza_colonne_mostra_errore(self, staff_client):
+        resp = staff_client.post(reverse(self.URL), {'file': self._csv('a;b\n1;2\n')})
+        assert resp.status_code == 200 and b'Colonne mancanti' in resp.content
+
+    def test_import_negato_senza_permessi(self, client, db):
+        from django.contrib.auth.models import Permission
+        from users.models import User
+        u = User.objects.create_user(username='viewer2', email='v2@test.it',
+                                     password='x', is_staff=True)
+        u.user_permissions.add(Permission.objects.get(
+            codename='view_contact', content_type__app_label='sponsors'))
+        client.force_login(u)
+        assert client.get(reverse(self.URL)).status_code == 403

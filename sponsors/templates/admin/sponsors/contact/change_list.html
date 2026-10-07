@@ -1,0 +1,6 @@
+{# sponsors/templates/admin/sponsors/contact/change_list.html #}
+{% extends "admin/anagrafica_change_list.html" %}
+{% block object-tools-items %}
+  {{ block.super }}
+  <li><a href="{% url 'admin:sponsors_contact_importa_rubrica' %}">Importa rubrica</a></li>
+{% endblock %}

@@ -732,7 +732,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 class ContactAdmin(admin.ModelAdmin):
     """Admin separato per cercare contatti tra tutti gli sponsor."""
     form = ContactRolesForm
-    change_list_template = 'admin/anagrafica_change_list.html'
+    change_list_template = 'admin/sponsors/contact/change_list.html'
 
     class Media:
         css = {'all': ('admin/css/contact_changelist.css',)}
@@ -850,10 +850,67 @@ class ContactAdmin(admin.ModelAdmin):
         ]
         return custom + urls
 
-    # Viste provvisorie: sostituite nei Task 6-7.
+    # Vista provvisoria trasferisci: sostituita nel Task 7.
     def importa_rubrica_view(self, request):
+        """GET: form di caricamento. POST con file: anteprima (non scrive).
+        POST con conferma: riapplica l'analisi e scrive le righe buone.
+        Le righe passano dall'anteprima alla conferma firmate (signing), cosi'
+        non servono file temporanei e non si possono alterare."""
+        import logging
+        from django.contrib import messages
+        from django.core import signing
+        from django.core.exceptions import PermissionDenied
         from django.shortcuts import redirect
-        return redirect('admin:sponsors_contact_changelist')
+        from django.template.response import TemplateResponse
+        from sponsors.rubrica_import import analizza, applica, leggi_file
+
+        if not (self.has_add_permission(request) and self.has_change_permission(request)):
+            raise PermissionDenied
+
+        logger = logging.getLogger(__name__)
+        SALT = 'rubrica-import'
+        ctx = {**self.admin_site.each_context(request), 'opts': self.model._meta,
+               'title': 'Importa rubrica'}
+
+        if request.method == 'POST' and request.POST.get('conferma'):
+            try:
+                righe = signing.loads(request.POST.get('dati', ''), salt=SALT, max_age=3600)
+            except signing.BadSignature:
+                self.message_user(request, "Anteprima scaduta o non valida: ricarica il file.",
+                                  level=messages.ERROR)
+                return redirect('admin:sponsors_contact_importa_rubrica')
+            try:
+                esito = applica(righe)
+            except Exception as e:
+                logger.exception("Import rubrica fallito")
+                self.message_user(request, f"Import non riuscito ({type(e).__name__}): {e}",
+                                  level=messages.ERROR)
+                return redirect('admin:sponsors_contact_importa_rubrica')
+            self.message_user(request, (
+                f"Import completato: {esito['creati']} contatti creati, "
+                f"{esito['aggiornati']} aggiornati, {esito['aziende_create']} aziende nuove, "
+                f"{esito['scartati']} righe scartate."))
+            return redirect('admin:sponsors_contact_changelist')
+
+        if request.method == 'POST' and request.FILES.get('file'):
+            try:
+                righe = leggi_file(request.FILES['file'])
+            except ValueError as e:
+                ctx['errore'] = str(e)
+                return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
+            except Exception as e:
+                logger.exception("Lettura file rubrica fallita")
+                ctx['errore'] = f"Impossibile leggere il file ({type(e).__name__}). Usa .xlsx o .csv."
+                return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
+            analisi = analizza(righe)
+            ctx.update({
+                'analisi': analisi,
+                'dati': signing.dumps(righe, salt=SALT, compress=True),
+                'n_nuovi': sum(r.esito == 'nuovo' for r in analisi),
+                'n_aggiorna': sum(r.esito == 'aggiorna' for r in analisi),
+                'n_errori': sum(r.esito == 'errore' for r in analisi),
+            })
+        return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
 
     def trasferisci_view(self, request, object_id):
         from django.shortcuts import redirect
