@@ -77,8 +77,11 @@ def anonimizza_persona(email):
     escluse, cosi' un import futuro non la reinserisce. Le righe restano per
     non rompere i contratti che le citano."""
     from shared.models import AuditLog
+    email = (email or '').strip()
+    if not email:
+        raise ValidationError("Email mancante: impossibile identificare la persona da anonimizzare.")
     SuppressedEmail.add(email, SuppressedEmail.Reason.ANONYMIZED)
-    schede = list(Contact.all_objects.filter(email__iexact=(email or '').strip()))
+    schede = list(Contact.all_objects.filter(email__iexact=email))
     adesso = timezone.now()
     for c in schede:
         c.portal_user = None          # prima di save(): save() riallinea l'email dell'utente collegato

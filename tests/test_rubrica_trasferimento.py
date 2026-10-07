@@ -76,3 +76,33 @@ class TestAnonimizzazione:
         anonimizza_persona('mario@vecchia.it')
         rossi.refresh_from_db()
         assert rossi.portal_user is None and rossi.has_portal_access is False
+        u.refresh_from_db()
+        assert u.email == 'mario@vecchia.it'
+
+    def test_email_vuota_rifiutata_senza_toccare_nulla(self, due_aziende):
+        from sponsors.models import Contact, SuppressedEmail
+        from sponsors.rubrica import anonimizza_persona
+        senza_email = Contact.objects.create(sponsor=due_aziende[0], first_name='Anna',
+                                             last_name='Bianchi', email='')
+        with pytest.raises(ValidationError):
+            anonimizza_persona('  ')
+        senza_email.refresh_from_db()
+        assert senza_email.full_name == 'Anna Bianchi'
+        assert senza_email.deleted_at is None
+        assert SuppressedEmail.objects.count() == 0
+
+    def test_cancella_dati_firmatario_e_storico(self, rossi):
+        from shared.models import AuditLog
+        from sponsors.models import Contact
+        from sponsors.rubrica import anonimizza_persona
+        rossi.signer_tax_code = 'RSSMRA75C15H501Z'
+        rossi.birth_place = 'Roma'
+        rossi.id_document_number = 'AB123'
+        rossi.save()
+        log = AuditLog.objects.create(action='update', entity_type='Contact', entity_id=rossi.pk,
+                                      changes={'email': {'from': 'x', 'to': 'y'}})
+        anonimizza_persona('mario@vecchia.it')
+        c = Contact.all_objects.get(pk=rossi.pk)
+        assert (c.signer_tax_code, c.birth_place, c.id_document_number) == ('', '', '')
+        log.refresh_from_db()
+        assert log.changes is None
