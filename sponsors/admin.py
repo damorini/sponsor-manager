@@ -1177,7 +1177,6 @@ class InterestAreaAdmin(admin.ModelAdmin):
     search_fields = ('name',)
 
     def get_queryset(self, request):
-        from django.db.models import Count
         return super().get_queryset(request).annotate(
             _n=Count('contacts', filter=Q(contacts__deleted_at__isnull=True,
                                           contacts__left_company_at__isnull=True)))
@@ -1201,4 +1200,5 @@ class SuppressedEmailAdmin(admin.ModelAdmin):
         return False
 
     def has_delete_permission(self, request, obj=None):
-        return obj is None or obj.reason == SuppressedEmail.Reason.UNSUBSCRIBED
+        return super().has_delete_permission(request, obj) and (
+            obj is None or obj.reason == SuppressedEmail.Reason.UNSUBSCRIBED)

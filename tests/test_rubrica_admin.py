@@ -29,9 +29,21 @@ class TestAdminRubrica:
         from sponsors.models import InterestArea
         a = InterestArea.objects.create(name='Cardiologia')
         contact.interest_areas.set([a])
+        from sponsors.models import Contact, Sponsor
+        altro_sp = Sponsor.objects.create(legal_name='Altra Azienda S.p.A.',
+                                          vat_number='10987654321', address_country='IT')
+        Contact.objects.create(sponsor=altro_sp, full_name='Altro Contatto',
+                               email='altro@test.it')
         resp = staff_client.get(reverse('admin:sponsors_contact_changelist')
                                 + f'?interest_areas__id__exact={a.pk}')
-        assert resp.status_code == 200 and contact.email.encode() in resp.content
+        assert resp.status_code == 200
+        assert contact.email.encode() in resp.content
+        assert b'altro@test.it' not in resp.content
+
+    def test_filtro_uscito_si_apre(self, staff_client, contact):
+        resp = staff_client.get(reverse('admin:sponsors_contact_changelist')
+                                + '?left_company_at__isempty=1')
+        assert resp.status_code == 200
 
     def test_lista_email_escluse(self, staff_client):
         from sponsors.models import SuppressedEmail
@@ -49,3 +61,39 @@ class TestAdminRubrica:
         contact.interest_areas.set([InterestArea.objects.create(name='Oncologia')])
         resp = staff_client.get(reverse('admin:sponsors_sponsor_change', args=[contact.sponsor_id]))
         assert resp.status_code == 200 and b'Oncologia' in resp.content
+
+
+@pytest.mark.django_db
+class TestPermessiEmailEscluse:
+    def _riga(self, reason, email='del@x.it'):
+        from sponsors.models import SuppressedEmail
+        SuppressedEmail.add(email, reason)
+        return SuppressedEmail.objects.get(email=email)
+
+    def test_superuser_cancella_disiscrizione(self, staff_client):
+        from sponsors.models import SuppressedEmail
+        r = self._riga(SuppressedEmail.Reason.UNSUBSCRIBED)
+        url = reverse('admin:sponsors_suppressedemail_delete', args=[r.pk])
+        assert staff_client.get(url).status_code == 200
+        staff_client.post(url, {'post': 'yes'})
+        assert not SuppressedEmail.objects.filter(pk=r.pk).exists()
+
+    def test_superuser_non_cancella_anonimizzazione(self, staff_client):
+        from sponsors.models import SuppressedEmail
+        r = self._riga(SuppressedEmail.Reason.ANONYMIZED)
+        url = reverse('admin:sponsors_suppressedemail_delete', args=[r.pk])
+        assert staff_client.get(url).status_code == 403
+        assert SuppressedEmail.objects.filter(pk=r.pk).exists()
+
+    def test_staff_solo_view_non_cancella(self, client, db):
+        from django.contrib.auth.models import Permission
+        from sponsors.models import SuppressedEmail
+        from users.models import User
+        u = User.objects.create_user(username='viewer', email='v@test.it',
+                                     password='x', is_staff=True)
+        u.user_permissions.add(Permission.objects.get(codename='view_suppressedemail'))
+        client.force_login(u)
+        r = self._riga(SuppressedEmail.Reason.UNSUBSCRIBED)
+        url = reverse('admin:sponsors_suppressedemail_delete', args=[r.pk])
+        assert client.post(url, {'post': 'yes'}).status_code == 403
+        assert SuppressedEmail.objects.filter(pk=r.pk).exists()
