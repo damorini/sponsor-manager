@@ -6,6 +6,7 @@ Contact sono le persone dentro un'azienda sponsor.
 """
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
+from django.db.models.functions import Lower
 
 from core.models import SoftDeleteModel, TimeStampedModel
 
@@ -244,6 +245,27 @@ class Sponsor(SoftDeleteModel):
         }
 
 
+class InterestArea(TimeStampedModel):
+    """Area di interesse (es. Cardiologia): indica a quale tipologia di evento
+    e' interessata una PERSONA. Elenco gestito dall'admin, mai testo libero,
+    cosi' i filtri delle campagne non perdono contatti per errori di battitura."""
+    name = models.CharField(max_length=100, verbose_name="Nome")
+    is_active = models.BooleanField(
+        default=True, verbose_name="Attiva",
+        help_text="Le aree disattivate non compaiono nelle nuove selezioni.")
+
+    class Meta:
+        verbose_name = "Area di interesse"
+        verbose_name_plural = "Aree di interesse"
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(Lower('name'), name='unique_interestarea_name_ci'),
+        ]
+
+    def __str__(self):
+        return self.name
+
+
 class Contact(SoftDeleteModel):
     """
     Persona di contatto presso uno sponsor. Un'azienda ha tipicamente
@@ -313,6 +335,21 @@ class Contact(SoftDeleteModel):
     )
 
     notes = models.TextField(blank=True, verbose_name="Note")
+
+    # --- Rubrica ---
+    interest_areas = models.ManyToManyField(
+        'sponsors.InterestArea',
+        blank=True,
+        related_name='contacts',
+        verbose_name="Aree di interesse",
+        help_text="Tipologie di evento che segue QUESTA persona.",
+    )
+    left_company_at = models.DateField(
+        null=True, blank=True,
+        verbose_name="Non più in azienda dal",
+        help_text="Valorizzato dal trasferimento ad altra azienda: il contatto resta "
+                  "per lo storico dei contratti ma non riceve più comunicazioni.",
+    )
 
     # ========================================================================
     # Dati per ruolo "Firmatario" (legale rappresentante)
@@ -607,3 +644,82 @@ class PortalMessage(TimeStampedModel):
             if contact is not None:
                 self.read_by = contact
             self.save(update_fields=['read_at', 'read_by', 'updated_at'])
+
+
+
+class SuppressedEmail(TimeStampedModel):
+    """Indirizzi esclusi da TUTTE le campagne promozionali. La disiscrizione
+    segue la PERSONA (l'indirizzo), non la scheda contatto: se cambia azienda o
+    compare in piu' aziende resta esclusa ovunque. Email salvata minuscola."""
+
+    class Reason(models.TextChoices):
+        UNSUBSCRIBED = 'unsubscribed', 'Disiscritto dal marketing'
+        ANONYMIZED = 'anonymized', 'Dati cancellati (GDPR)'
+
+    email = models.EmailField(verbose_name="Email")
+    reason = models.CharField(
+        max_length=20, choices=Reason.choices, verbose_name="Motivo")
+
+    class Meta:
+        verbose_name = "Email esclusa dal marketing"
+        verbose_name_plural = "Email escluse dal marketing"
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(Lower('email'), name='unique_suppressedemail_email_ci'),
+        ]
+
+    def __str__(self):
+        return f"{self.email} ({self.get_reason_display()})"
+
+    @staticmethod
+    def _norm(email):
+        return (email or '').strip().lower()
+
+    @classmethod
+    def add(cls, email, reason):
+        """Registra l'esclusione (idempotente). ANONYMIZED prevale su
+        UNSUBSCRIBED e non viene mai declassata."""
+        e = cls._norm(email)
+        if not e:
+            return None
+        obj, created = cls.objects.get_or_create(email=e, defaults={'reason': reason})
+        if (not created and reason == cls.Reason.ANONYMIZED
+                and obj.reason != cls.Reason.ANONYMIZED):
+            obj.reason = reason
+            obj.save(update_fields=['reason', 'updated_at'])
+        return obj
+
+    @classmethod
+    def is_suppressed(cls, email):
+        e = cls._norm(email)
+        return bool(e) and cls.objects.filter(email=e).exists()
+
+
+class InterestCampaign(TimeStampedModel):
+    """Email una tantum a tutti i contatti interessati a una o piu' aree.
+    Si invia solo a mano dall'admin (mai dallo scheduler)."""
+    name = models.CharField(
+        max_length=255, verbose_name="Nome interno",
+        help_text="Solo per riconoscerla in lista: il cliente non la vede.")
+    interest_areas = models.ManyToManyField(
+        'sponsors.InterestArea', related_name='campaigns',
+        verbose_name="Aree di interesse",
+        help_text="Riceve chi segue ALMENO UNA delle aree scelte.")
+    subject = models.JSONField(default=dict, blank=True, verbose_name="Oggetto")
+    body = models.JSONField(
+        default=dict, blank=True, verbose_name="Corpo email",
+        help_text="Segnaposto: {{ contact.first_name }}, {{ contact.full_name }}, "
+                  "{{ sponsor.legal_name }}.")
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name="Inviata il")
+    sent_by = models.ForeignKey(
+        'users.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', verbose_name="Inviata da")
+    sent_count = models.PositiveIntegerField(default=0, verbose_name="Email inviate")
+
+    class Meta:
+        verbose_name = "Campagna per aree di interesse"
+        verbose_name_plural = "Campagne per aree di interesse"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return self.name
