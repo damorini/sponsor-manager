@@ -15,7 +15,10 @@ from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
 from django.utils.html import format_html
 
-from .models import Contact, ContactRole, MessageSender, PortalMessage, Sponsor
+from .models import (
+    Contact, ContactRole, InterestArea, MessageSender, PortalMessage, Sponsor,
+    SuppressedEmail,
+)
 
 
 class _Cognome(Func):
@@ -220,7 +223,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         'address_city', 'pec_email',
     )
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary',
-                       'logo_preview', 'conversazione_display')
+                       'logo_preview', 'conversazione_display', 'aree_azienda')
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
     actions = ['action_generate_client_summary', 'action_compose_email', 'action_restore']
@@ -460,9 +463,20 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         return render(request, 'admin/compose_email.html', context)
 
 
+    @admin.display(description='Aree di interesse (dai contatti)')
+    def aree_azienda(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        nomi = (InterestArea.objects
+                .filter(contacts__sponsor=obj, contacts__deleted_at__isnull=True,
+                        contacts__left_company_at__isnull=True)
+                .distinct().values_list('name', flat=True))
+        return ', '.join(nomi) or '—'
+
     fieldsets = (
         ('Anagrafica', {
-            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview'),
+            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview',
+                       'aree_azienda'),
         }),
         ('Dati fiscali', {
             'fields': ('vat_number', 'tax_code', 'sdi_code', 'pec_email',
@@ -726,12 +740,15 @@ class ContactAdmin(admin.ModelAdmin):
     list_display = (
         'col_cognome', 'col_nome', 'sponsor_link', 'email', 'cellulare', 'job_title',
         'roles_display', 'col_principale', 'col_lingua', 'col_portale',
+        'col_uscito',
     )
     list_display_links = ('col_cognome', 'col_nome')
     list_filter = (
         'is_primary', 'has_portal_access', 'preferred_language',
-        'marketing_consent',
+        'marketing_consent', 'interest_areas',
+        ('left_company_at', admin.EmptyFieldListFilter),
     )
+    filter_horizontal = ('interest_areas',)
     search_fields = ('first_name', 'last_name', 'full_name', 'email', 'phone', 'sponsor__legal_name')
 
     def get_search_results(self, request, queryset, search_term):
@@ -753,7 +770,7 @@ class ContactAdmin(admin.ModelAdmin):
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',
                        'privacy_accepted_at', 'privacy_policy_version',
-                       'marketing_consent_at')
+                       'marketing_consent_at', 'left_company_at', 'azioni_rubrica')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
         # Ordina per Cognome, poi Nome (campi reali).
@@ -765,6 +782,11 @@ class ContactAdmin(admin.ModelAdmin):
         }),
         ('Funzioni', {
             'fields': ('roles', 'is_primary', 'preferred_language'),
+        }),
+        ('Rubrica', {
+            'fields': ('interest_areas', 'left_company_at', 'azioni_rubrica'),
+            'description': "Aree di interesse della persona. «Non più in azienda dal» "
+                           "si compila con il pulsante Trasferisci, non a mano.",
         }),
         ('Firmatario contratti', {
             'fields': (
@@ -797,6 +819,49 @@ class ContactAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Uscito', ordering='left_company_at')
+    def col_uscito(self, obj):
+        return f"dal {obj.left_company_at:%d/%m/%Y}" if obj.left_company_at else ''
+
+    @admin.display(description='Azioni')
+    def azioni_rubrica(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        links = []
+        if not obj.left_company_at:
+            links.append(format_html('<a class="button" href="{}">Trasferisci in altra azienda</a>',
+                                     reverse('admin:sponsors_contact_trasferisci', args=[obj.pk])))
+        links.append(format_html('<a class="button" style="background:#b91c1c" href="{}">'
+                                 'Cancella dati (GDPR)</a>',
+                                 reverse('admin:sponsors_contact_anonimizza', args=[obj.pk])))
+        return format_html(' '.join(['{}'] * len(links)), *links)
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('importa-rubrica/', self.admin_site.admin_view(self.importa_rubrica_view),
+                 name='sponsors_contact_importa_rubrica'),
+            path('<path:object_id>/trasferisci/', self.admin_site.admin_view(self.trasferisci_view),
+                 name='sponsors_contact_trasferisci'),
+            path('<path:object_id>/anonimizza/', self.admin_site.admin_view(self.anonimizza_view),
+                 name='sponsors_contact_anonimizza'),
+        ]
+        return custom + urls
+
+    # Viste provvisorie: sostituite nei Task 6-7.
+    def importa_rubrica_view(self, request):
+        from django.shortcuts import redirect
+        return redirect('admin:sponsors_contact_changelist')
+
+    def trasferisci_view(self, request, object_id):
+        from django.shortcuts import redirect
+        return redirect('admin:sponsors_contact_changelist')
+
+    def anonimizza_view(self, request, object_id):
+        from django.shortcuts import redirect
+        return redirect('admin:sponsors_contact_changelist')
 
     @admin.display(description='Cognome', ordering='last_name')
     def col_cognome(self, obj):
@@ -1103,3 +1168,37 @@ class PortalMessageAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         if _nuovo and obj.sender == MessageSender.OPERATOR:
             _notifica_cliente_nuovo_messaggio(request, obj.sponsor)
+
+
+@admin.register(InterestArea)
+class InterestAreaAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'n_contatti')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+
+    def get_queryset(self, request):
+        from django.db.models import Count
+        return super().get_queryset(request).annotate(
+            _n=Count('contacts', filter=Q(contacts__deleted_at__isnull=True,
+                                          contacts__left_company_at__isnull=True)))
+
+    @admin.display(description='Contatti', ordering='_n')
+    def n_contatti(self, obj):
+        return obj._n
+
+
+@admin.register(SuppressedEmail)
+class SuppressedEmailAdmin(admin.ModelAdmin):
+    """Le esclusioni nascono dal link di disiscrizione o dall'anonimizzazione.
+    Togliere una DISISCRIZIONE riammette l'indirizzo alle campagne (solo se la
+    persona lo chiede); le anonimizzazioni non si toccano."""
+    list_display = ('email', 'reason', 'created_at')
+    list_filter = ('reason',)
+    search_fields = ('email',)
+    readonly_fields = ('email', 'reason', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return obj is None or obj.reason == SuppressedEmail.Reason.UNSUBSCRIBED
