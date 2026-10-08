@@ -47,6 +47,8 @@ urlpatterns = [
     path('smetti-impersona/', auth.impersonate_stop, name='impersonate_stop'),
     path('campagne/annulla/<str:token>/', portal_campaigns.campaign_unsubscribe_view,
          name='campaign_unsubscribe'),
+    path('campagne/disiscrizione/<str:token>/', portal_campaigns.marketing_unsubscribe_view,
+         name='marketing_unsubscribe'),
     path('contracts/', dashboard.contracts_list_view, name='contracts_list'),
     path('pagamenti/', dashboard.payments_view, name='payments'),
     path('acquisti/', dashboard.purchases_view, name='purchases'),

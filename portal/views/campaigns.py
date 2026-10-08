@@ -46,3 +46,26 @@ def campaign_unsubscribe_view(request, token):
         'esito': esito,
         'campaign': campaign,
     })
+
+
+MARKETING_UNSUB_SALT = 'marketing-optout'
+
+
+@require_GET
+def marketing_unsubscribe_view(request, token):
+    """Disiscrive l'INDIRIZZO da tutte le campagne promozionali (per area e
+    per evento). Idempotente. Le email transazionali continuano."""
+    from sponsors.models import SuppressedEmail
+
+    esito = 'errore'
+    try:
+        data = signing.loads(token, salt=MARKETING_UNSUB_SALT)
+        if SuppressedEmail.add(data.get('e'), SuppressedEmail.Reason.UNSUBSCRIBED):
+            esito = 'ok'
+            logger.info("Disiscrizione marketing globale registrata")
+    except signing.BadSignature:
+        esito = 'errore'
+    except Exception:
+        logger.exception("Errore disiscrizione marketing (token=%s)", token)
+    return render(request, 'portal/campaign_unsubscribe.html', {
+        'esito': esito, 'campaign': None, 'globale': True})

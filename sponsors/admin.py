@@ -14,9 +14,10 @@ from django.db.models.functions import Lower
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
 from django.utils.html import format_html
+from core.admin_widgets import TranslatableJSONField
 
 from .models import (
-    Contact, ContactRole, InterestArea, MessageSender, PortalMessage, Sponsor,
+    Contact, ContactRole, InterestArea, InterestCampaign, MessageSender, PortalMessage, Sponsor,
     SuppressedEmail,
 )
 
@@ -1315,3 +1316,68 @@ class SuppressedEmailAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         return super().has_delete_permission(request, obj) and (
             obj is None or obj.reason == SuppressedEmail.Reason.UNSUBSCRIBED)
+
+
+class InterestCampaignForm(forms.ModelForm):
+    subject = TranslatableJSONField(languages=['it', 'en'], required_languages=['it'], label='Oggetto')
+    body = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=['it'], wysiwyg=True, label='Corpo email',
+        help_text="Il link di disiscrizione viene aggiunto automaticamente in fondo.")
+
+    class Meta:
+        model = InterestCampaign
+        fields = ('name', 'interest_areas', 'subject', 'body')
+
+    class Media:
+        js = ('https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
+              'admin/js/email_wysiwyg.js')
+
+
+@admin.register(InterestCampaign)
+class InterestCampaignAdmin(admin.ModelAdmin):
+    form = InterestCampaignForm
+    list_display = ('name', 'aree', 'destinatari', 'sent_at', 'sent_count')
+    search_fields = ('name',)
+    filter_horizontal = ('interest_areas',)
+    readonly_fields = ('destinatari', 'sent_at', 'sent_by', 'sent_count')
+    fieldsets = (
+        (None, {'fields': ('name', 'interest_areas', 'destinatari')}),
+        ('Contenuto email', {'fields': ('subject', 'body')}),
+        ('Invio', {'fields': ('sent_at', 'sent_by', 'sent_count')}),
+    )
+    actions = ['action_prova', 'action_invia']
+
+    @admin.display(description='Aree')
+    def aree(self, obj):
+        return ', '.join(obj.interest_areas.values_list('name', flat=True))
+
+    @admin.display(description='Destinatari')
+    def destinatari(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        from sponsors.rubrica import destinatari_per_aree
+        return len(destinatari_per_aree(obj.interest_areas.all()))
+
+    @admin.action(description="Invia una PROVA a me", permissions=['change'])
+    def action_prova(self, request, queryset):
+        from contracts.tasks.notifications import send_interest_campaign
+        for c in queryset:
+            send_interest_campaign.delay(c.pk, test_to=request.user.email)
+        self.message_user(request, f"Prova in invio a {request.user.email}.")
+
+    @admin.action(description="INVIA a tutti i destinatari (una sola volta)", permissions=['change'])
+    def action_invia(self, request, queryset):
+        from django.contrib import messages
+        from django.utils import timezone
+        from contracts.tasks.notifications import send_interest_campaign
+        partite = 0
+        for c in queryset:
+            # update condizionato: un doppio clic non la manda due volte
+            if InterestCampaign.objects.filter(pk=c.pk, sent_at__isnull=True).update(
+                    sent_at=timezone.now(), sent_by=request.user):
+                send_interest_campaign.delay(c.pk)
+                partite += 1
+        saltate = queryset.count() - partite
+        self.message_user(request, f"{partite} campagna/e in invio."
+                          + (f" {saltate} già inviata/e: ignorata/e." if saltate else ''),
+                          level=messages.WARNING if saltate else messages.SUCCESS)
