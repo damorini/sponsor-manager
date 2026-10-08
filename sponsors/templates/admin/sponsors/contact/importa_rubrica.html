@@ -9,11 +9,17 @@
 
   <p>Non hai un file pronto?
      <a href="{% url 'core:cruscotto_download_template_contatti' %}">
-       Scarica il template Excel</a> — ha già la colonna delle aree di interesse,
-     un esempio compilato e le istruzioni. Va bene anche il template che hai
-     scaricato dalle Utility: i suoi nomi di colonna
-     (<code>sponsor_ragione_sociale</code>, <code>ruolo_aziendale</code>,
-     <code>telefono</code>, <code>aree_interesse</code>) sono accettati qui.</p>
+       Scarica il template Excel</a> — ha un esempio compilato e le istruzioni.
+     Questo è l'unico import contatti: va bene anche un file vecchio scaricato
+     dalle Utility.</p>
+
+  <p style="color:#555">Oltre a quelle qui sopra puoi usare, se ti servono:
+     <code>sponsor_partita_iva</code> (collega l'azienda per P.IVA, e vince sul
+     nome), <code>nome_completo</code> al posto di nome e cognome,
+     <code>ruoli_funzionali</code> (firmatario, marketing, amministrazione,
+     operativo, cc, educational), <code>principale</code>,
+     <code>consenso_marketing</code>, <code>lingua</code> e <code>note</code>.
+     Le colonne che non ti interessano puoi lasciarle fuori dal file.</p>
 
   {% if errore %}<p class="errornote">{{ errore }}</p>{% endif %}
 

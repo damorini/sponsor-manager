@@ -1602,7 +1602,19 @@ def download_template_contatti(request):
 
 @staff_member_required
 def importa_contatti_upload(request):
-    if request.method != 'POST':
-        from django.shortcuts import redirect
-        return redirect('core:cruscotto_utility')
-    return _esegui_import_excel(request, 'importa_contatti', 'core:cruscotto_utility')
+    """L'import contatti ora e' uno solo: la pagina della rubrica.
+
+    Questa rotta resta per i segnalibri e per chi ricarica un vecchio POST:
+    invece di importare con regole proprie, porta li'. Teneva in piedi un
+    secondo import con controlli diversi, e lo stesso file si comportava in
+    due modi a seconda di dove lo caricavi.
+    """
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    messages.info(
+        request,
+        "L'import dei contatti si fa da qui: mostra l'anteprima riga per "
+        "riga e scrive solo dopo la tua conferma. Il modello Excel resta "
+        "scaricabile dalle Utility.")
+    return redirect('admin:sponsors_contact_importa_rubrica')

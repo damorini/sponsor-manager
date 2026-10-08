@@ -35,6 +35,33 @@ SINONIMI = {
 SUFFISSI_SOCIETARI = r'\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|ltd|gmbh|inc|unipersonale)\b'
 
 
+# Ruoli funzionali scritti in italiano nel file -> codici del modello.
+RUOLI = {
+    'signer': 'signer', 'firmatario': 'signer',
+    'marketing': 'marketing',
+    'finance': 'finance', 'amministrazione': 'finance', 'amm': 'finance',
+    'operational': 'operational', 'operativo': 'operational',
+    'cc': 'cc',
+    'educational': 'educational', 'educational manager': 'educational',
+    'educational_manager': 'educational',
+}
+VERO = {'s', 'si', 'sì', 'yes', 'y', '1', 'true', 'x', '✓'}
+FALSO = {'n', 'no', '0', 'false', '-'}
+
+
+def _booleano(testo):
+    """Tri-stato: None quando la cella e' vuota, cioe' 'non specificato'.
+    Serve per il consenso: cella vuota non e' la stessa cosa di 'no'."""
+    s = (testo or '').strip().lower()
+    if not s:
+        return None
+    if s in VERO:
+        return True
+    if s in FALSO:
+        return False
+    return None
+
+
 @dataclass
 class RigaImport:
     numero: int
@@ -49,6 +76,13 @@ class RigaImport:
     messaggi: list = field(default_factory=list)
     nuova_azienda: bool = False
     sponsor_id: object = None
+    # colonne che prima capiva solo l'import delle Utility
+    piva: str = ''
+    ruoli: list = field(default_factory=list)
+    principale: object = None      # None = non specificato
+    consenso: object = None        # None = non specificato -> consenso dato
+    lingua: str = ''
+    note: str = ''
 
     def errore(self, msg):
         self.esito = 'errore'
@@ -87,9 +121,13 @@ def leggi_file(f):
         raise ValueError("Il file è vuoto.")
     intest = [SINONIMI.get(h.strip().lower(), h.strip().lower())
               for h in tabella[0]]
-    mancanti = [c for c in COLONNE_OBBLIGATORIE if c not in intest]
-    if 'referente' not in intest and 'cognome' not in intest:
-        mancanti.append('referente (oppure cognome)')
+    mancanti = []
+    if 'email' not in intest:
+        mancanti.append('email')
+    if 'company' not in intest and 'sponsor_partita_iva' not in intest:
+        mancanti.append('company (oppure sponsor_partita_iva)')
+    if not ({'referente', 'cognome', 'nome_completo'} & set(intest)):
+        mancanti.append('referente (oppure cognome, oppure nome_completo)')
     if mancanti:
         raise ValueError("Colonne mancanti nell'intestazione: " + ', '.join(mancanti))
     righe = []
@@ -141,28 +179,66 @@ def analizza(righe):
     nuove_grafie = {}
 
     aree_attive = {a.name.casefold(): a for a in InterestArea.objects.filter(is_active=True)}
-    per_nome, per_norm = {}, {}
+    per_nome, per_norm, per_piva = {}, {}, {}
     for s in Sponsor.objects.all():
         for n in (s.legal_name, s.display_name):
             if n:
                 per_nome.setdefault(n.strip().casefold(), s)
                 per_norm.setdefault(normalizza_azienda(n), s)
+        if s.vat_number:
+            per_piva.setdefault(s.vat_number.strip().casefold(), s)
     esclusi = dict(SuppressedEmail.objects.values_list('email', 'reason'))
     visti = {}
     out = []
     for r in righe:
         nome, cognome = r.get('nome', ''), r.get('cognome', '')
         if not (nome or cognome):
-            nome, cognome = dividi_referente(r.get('referente', ''))
+            # 'referente' e' la colonna nostra, 'nome_completo' quella dei
+            # file vecchi dell'import Utility: entrambe un nome intero.
+            nome, cognome = dividi_referente(
+                r.get('referente', '') or r.get('nome_completo', ''))
         riga = RigaImport(
             numero=r.get('_riga', 0), azienda=r.get('company', '').strip(),
             nome=nome.strip(), cognome=cognome.strip(),
             email=r.get('email', '').strip(), ruolo=r.get('ruolo', ''),
-            telefono=r.get('tel', ''))
+            telefono=r.get('tel', ''),
+            piva=r.get('sponsor_partita_iva', '').strip(),
+            principale=_booleano(r.get('principale', '')),
+            consenso=_booleano(r.get('consenso_marketing', '')),
+            note=r.get('note', '').strip())
         email_l = riga.email.lower()
 
-        if not riga.azienda:
-            riga.errore("Manca l'azienda (colonna company).")
+        lingua = r.get('lingua', '').strip().lower()
+        if lingua in {'it', 'italiano'}:
+            riga.lingua = 'it'
+        elif lingua in {'en', 'inglese', 'english'}:
+            riga.lingua = 'en'
+        elif lingua:
+            riga.messaggi.append(
+                f"Lingua «{lingua}» non riconosciuta: resta quella attuale "
+                "(valori ammessi: it, en).")
+
+        ruoli_scritti = r.get('ruoli_funzionali', '')
+        if ruoli_scritti:
+            ignorati = []
+            for voce in [t.strip().lower()
+                         for t in re.split(r'[,;/]+', ruoli_scritti) if t.strip()]:
+                codice = RUOLI.get(voce)
+                if codice is None:
+                    ignorati.append(voce)
+                elif codice not in riga.ruoli:
+                    riga.ruoli.append(codice)
+            if ignorati:
+                # segnalato, non scartato: il contatto vale anche senza i ruoli
+                riga.messaggi.append(
+                    "Ruoli non riconosciuti e ignorati: "
+                    + ', '.join(ignorati)
+                    + ". Ammessi: firmatario, marketing, amministrazione, "
+                      "operativo, cc, educational.")
+
+        if not riga.azienda and not riga.piva:
+            riga.errore("Manca l'azienda: compila company "
+                        "oppure sponsor_partita_iva.")
         if not riga.cognome:
             riga.errore("Manca il referente.")
         try:
@@ -189,8 +265,24 @@ def analizza(righe):
         elif motivo == SuppressedEmail.Reason.UNSUBSCRIBED:
             riga.messaggi.append("Si è disiscritto dal marketing: entra in rubrica ma non riceverà campagne.")
 
-        sponsor = per_nome.get(riga.azienda.casefold())
-        norm = normalizza_azienda(riga.azienda)
+        # La P.IVA identifica l'azienda meglio del nome: se c'e' e corrisponde,
+        # vince, e un nome scritto in modo diverso nel file non crea un doppione.
+        sponsor = per_piva.get(riga.piva.casefold()) if riga.piva else None
+        if sponsor is not None:
+            norm = normalizza_azienda(sponsor.legal_name)
+            if riga.azienda and normalizza_azienda(riga.azienda) != norm:
+                riga.messaggi.append(
+                    f"Collegata per P.IVA a «{sponsor.legal_name}», "
+                    f"il nome nel file era «{riga.azienda}».")
+            riga.azienda = sponsor.legal_name
+        elif riga.piva and not riga.azienda:
+            riga.errore(
+                f"Nessuna azienda con P.IVA «{riga.piva}». Scrivi anche il "
+                "nome in company, oppure correggi la partita IVA.")
+            norm = ''
+        else:
+            sponsor = per_nome.get(riga.azienda.casefold())
+            norm = normalizza_azienda(riga.azienda)
         if sponsor is not None:
             riga.sponsor_id = sponsor.pk
         elif riga.azienda and norm:
@@ -266,14 +358,33 @@ def applica(righe):
                 if nuovo:
                     contatto = Contact(sponsor=sponsor, email=r.email,
                                        first_name=r.nome, last_name=r.cognome)
+                if r.nuova_azienda and r.piva and not sponsor.vat_number:
+                    sponsor.vat_number = r.piva
+                    sponsor.save(update_fields=['vat_number'])
                 if r.telefono:
                     contatto.phone = r.telefono
                 if r.ruolo:
                     contatto.job_title = r.ruolo
-                if not contatto.marketing_consent:
+                if r.ruoli:
+                    contatto.roles = r.ruoli
+                if r.lingua:
+                    contatto.preferred_language = r.lingua
+                if r.note:
+                    contatto.notes = r.note
+                if r.principale is not None:
+                    contatto.is_primary = r.principale
+                # Consenso: la colonna, quando compilata, decide. Quando manca
+                # resta la regola di partenza (i contatti caricati sono gia'
+                # consensati), senza pero' revocare un consenso esistente.
+                if r.consenso is False:
+                    contatto.marketing_consent = False
+                elif not contatto.marketing_consent:
                     contatto.marketing_consent = True
                     contatto.marketing_consent_at = adesso
                 contatto.save()
+                if r.principale:
+                    sponsor.contacts.filter(is_primary=True).exclude(
+                        pk=contatto.pk).update(is_primary=False)
                 contatto.interest_areas.add(*[aree[n] for n in r.aree])
         except Exception:
             logger.exception("Import rubrica: riga %s scartata (%s)", r.numero, r.email)
