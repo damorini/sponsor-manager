@@ -180,12 +180,13 @@ class Sponsor(SoftDeleteModel):
 
     @property
     def primary_contact(self):
-        """Restituisce il contatto principale, se esiste."""
-        return self.contacts.filter(is_primary=True).first()
+        """Restituisce il contatto principale, se esiste (mai chi e' uscito
+        dall'azienda con un trasferimento)."""
+        return self.contacts.filter(is_primary=True, left_company_at__isnull=True).first()
 
     def get_contacts_with_role(self, role):
-        """Restituisce i contatti con un ruolo specifico."""
-        return self.contacts.filter(roles__contains=[role])
+        """Restituisce i contatti con un ruolo specifico (esclusi gli usciti)."""
+        return self.contacts.filter(roles__contains=[role], left_company_at__isnull=True)
 
     # Aliases "billing_*" per compatibilità con i template contratto.
     # I dati reali stanno nei campi address_*; queste property li espongono

@@ -61,6 +61,11 @@ def trasferisci_contatto(contact, nuovo_sponsor, nuova_email='', data=None):
 
     contact.left_company_at = data
     contact.is_primary = False
+    # niente ruoli ne' firma: non deve piu' ricevere le email per ruolo della
+    # vecchia azienda ne' essere scelto come firmatario di nuovi contratti.
+    # I contratti gia' firmati restano suoi via Contract.sponsor_signer_contact.
+    contact.roles = []
+    contact.is_signer = False
     contact.has_portal_access = False
     contact.portal_user = None
     contact.save()

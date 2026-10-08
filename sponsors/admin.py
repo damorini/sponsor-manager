@@ -381,7 +381,8 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     def compose_email_view(self, request, object_id):
         sponsor = get_object_or_404(Sponsor, pk=object_id)
-        contacts = list(sponsor.contacts.all())
+        # chi e' uscito dall'azienda (trasferito) non e' piu' un destinatario
+        contacts = list(sponsor.contacts.filter(left_company_at__isnull=True))
         events = self._events_of_sponsor(sponsor)
 
         if not contacts:

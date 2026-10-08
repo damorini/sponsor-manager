@@ -362,6 +362,7 @@ def _get_signer_contact(contract):
     return contract.sponsor.contacts.filter(
         is_signer=True,
         deleted_at__isnull=True,
+        left_company_at__isnull=True,   # trasferito ad altra azienda
     ).first()
 
 
@@ -392,8 +393,9 @@ def _get_referente_contact(contract):
     
     Cerca per role='operational' o is_primary=True.
     """
-    contacts = contract.sponsor.contacts.filter(deleted_at__isnull=True)
-    
+    contacts = contract.sponsor.contacts.filter(
+        deleted_at__isnull=True, left_company_at__isnull=True)
+
     # Prima prova: contact con ruolo 'operational'
     for c in contacts:
         if 'operational' in (c.roles or []):
