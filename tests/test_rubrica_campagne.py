@@ -55,6 +55,16 @@ class TestInvio:
         token = re.search(r'/campagne/disiscrizione/([^/"]+)/', html).group(1)
         assert signing.loads(token, salt='marketing-optout') == {'e': 'io@valet.it'}
 
+    def test_oggetto_senza_escape_html(self, campagna):
+        """L'oggetto e' testo semplice: "&" non deve diventare "&amp;"."""
+        from contracts.tasks.notifications import send_interest_campaign
+        from sponsors.models import Sponsor
+        Sponsor.objects.filter(legal_name='Alfa Srl').update(legal_name='Johnson & Johnson')
+        send_interest_campaign(campagna.pk)
+        m = next(m for m in mail.outbox if m.to == ['mario@alfa.it'])
+        assert m.subject == 'Johnson & Johnson – Novità per Johnson & Johnson'
+        assert '&amp;' not in m.subject
+
     @pytest.mark.parametrize('vuoto', ['', '   '])
     def test_prova_con_indirizzo_vuoto_non_invia_a_nessuno(self, campagna, vuoto):
         from contracts.tasks.notifications import send_interest_campaign

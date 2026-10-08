@@ -959,8 +959,11 @@ def send_interest_campaign(self, campaign_id, test_to=None):
         try:
             # dentro il try: un oggetto che non compila (in una lingua) salta
             # solo i destinatari di quella lingua, non ferma l'intera campagna
+            # l'oggetto e' testo semplice, non HTML: niente escape ("&" non "&amp;")
             subject = dj.from_string(
-                _pick_lang(campaign.subject, lang) or campaign.name).render(placeholders)
+                '{% autoescape off %}'
+                + (_pick_lang(campaign.subject, lang) or campaign.name)
+                + '{% endautoescape %}').render(placeholders)
             send_email(
                 template_name='promotional_campaign',
                 context={
