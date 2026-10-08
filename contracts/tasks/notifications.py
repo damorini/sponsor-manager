@@ -122,9 +122,7 @@ def send_contract_signed_notification(self, contract_id):
             contract.contract_number, e
         )
 
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     context = {
         'contract': contract,
@@ -354,9 +352,7 @@ def send_payment_confirmation_notification(self, payment_id):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)
@@ -424,9 +420,7 @@ def send_proforma_generated_notification(self, contract_id, document_ids):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)
@@ -534,9 +528,7 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)

@@ -371,7 +371,7 @@ def export_sponsor_workbook(sponsors):
     r = 2
     for s in sponsors:
         try:
-            ref = s.contacts.filter(is_primary=True).first() or s.contacts.first()
+            ref = s.contatto_di_riferimento
         except Exception:
             ref = None
         vals = [

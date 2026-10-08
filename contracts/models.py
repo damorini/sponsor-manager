@@ -495,7 +495,7 @@ class Contract(SoftDeleteModel):
         # l'operatore l'ha lasciata sul default 'it'. Sull'edit non si tocca.
         if self._state.adding and (self.language or 'it') == 'it' and self.sponsor_id:
             try:
-                _c = self.sponsor.primary_contact or self.sponsor.contacts.first()
+                _c = self.sponsor.contatto_di_riferimento
                 _pl = getattr(_c, 'preferred_language', None) if _c else None
                 if _pl in ('it', 'en'):
                     self.language = _pl

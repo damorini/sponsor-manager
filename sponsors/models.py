@@ -188,6 +188,20 @@ class Sponsor(SoftDeleteModel):
         """Restituisce i contatti con un ruolo specifico (esclusi gli usciti)."""
         return self.contacts.filter(roles__contains=[role], left_company_at__isnull=True)
 
+    @property
+    def contatto_di_riferimento(self):
+        """Il contatto da usare quando serve UNA persona per l'azienda: il
+        nome nel saluto di un messaggio, la lingua preferita, il referente
+        negli elenchi.
+
+        Il principale, altrimenti il primo ancora in azienda. Mai chi e'
+        uscito con un trasferimento: dopo F1 l'email arriva alla persona
+        giusta, ma senza questo filtro il saluto poteva ancora nominare chi
+        non c'e' piu'.
+        """
+        return self.primary_contact or self.contacts.filter(
+            left_company_at__isnull=True).first()
+
     # Aliases "billing_*" per compatibilità con i template contratto.
     # I dati reali stanno nei campi address_*; queste property li espongono
     # con i nomi attesi dai template Jinja docxtpl.

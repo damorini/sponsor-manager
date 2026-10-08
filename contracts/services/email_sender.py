@@ -172,7 +172,7 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
             common['azienda'] = getattr(_sp, 'legal_name', '') or ''
         if not common.get('contact'):
             try:
-                common['contact'] = _sp.primary_contact or _sp.contacts.first()
+                common['contact'] = _sp.contatto_di_riferimento
             except Exception:
                 pass
     return common
