@@ -1439,9 +1439,32 @@ class InterestCampaignForm(forms.ModelForm):
         """Oggetto e corpo sono template Django ({{ contact.full_name }}...):
         se uno non compila, l'invio fallirebbe per ogni destinatario. Meglio
         dirlo qui, con la lingua e il motivo."""
+        import re as _re
         from django.template import TemplateSyntaxError, engines
         cleaned = super().clean()
         dj = engines['django']
+
+        # Immagini incorporate nell'HTML: la causa quasi sempre quando il
+        # salvataggio finisce in «Bad Request (400)», perche' gonfiano la
+        # pagina oltre il limite della richiesta. E anche quando ci stanno,
+        # producono email che molti server rifiutano per il peso e che molti
+        # programmi non mostrano. Meglio fermarle qui, dicendo cosa fare.
+        corpi = cleaned.get('body')
+        if isinstance(corpi, dict):
+            quante = sum(len(_re.findall(r'src\s*=\s*["\']\s*data:', t or '',
+                                         _re.I))
+                         for t in corpi.values())
+            if quante:
+                self.add_error('body', (
+                    f"Il corpo contiene {quante} immagin"
+                    f"{'e' if quante == 1 else 'i'} incorporat"
+                    f"{'a' if quante == 1 else 'e'} nell'HTML "
+                    "(src=\"data:image/…\"). Carica le immagini da qualche "
+                    "parte e nell'HTML collega il loro indirizzo "
+                    "(src=\"https://…/logo.png\"): così la pagina si salva, "
+                    "l'email pesa poco e i programmi di posta la mostrano. "
+                    "Incorporate, molti server rifiutano il messaggio."))
+
         for campo, etichetta in (('subject', 'Oggetto'), ('body', 'Corpo email')):
             valori = cleaned.get(campo)
             if not isinstance(valori, dict):

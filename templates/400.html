@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dati troppo grandi · Sponsor Manager</title>
+  <style>
+    body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+           max-width: 640px; margin: 48px auto; padding: 0 20px;
+           color: #1f2328; line-height: 1.6; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .sotto { color: #656d76; margin-top: 0; }
+    ol { padding-left: 20px; }
+    li { margin-bottom: 10px; }
+    code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px;
+           font-size: 90%; }
+    .nota { background: #fff8e5; border-left: 3px solid #d4a72c;
+            padding: 12px 14px; margin-top: 24px; }
+    a { color: #0969da; }
+  </style>
+</head>
+<body>
+  <h1>La pagina non è stata salvata: i dati erano troppo grandi</h1>
+  <p class="sotto">Niente è andato perso sul server, ma il contenuto che hai
+     inviato non è stato accettato.</p>
+
+  <p>Succede quasi sempre quando si incolla l'HTML di una newsletter che
+     contiene <strong>immagini incorporate</strong> dentro il codice
+     (<code>src="data:image/..."</code>): poche foto fanno passare il file
+     da qualche decina di KB a diversi MB.</p>
+
+  <p><strong>Come sistemarlo:</strong></p>
+  <ol>
+    <li><strong>Carica le immagini da qualche parte</strong> (il sito, o la
+        cartella documenti dell'evento) e nell'HTML <strong>collega il loro
+        indirizzo</strong>: <code>&lt;img src="https://…/logo.png"&gt;</code>
+        al posto di <code>&lt;img src="data:image/png;base64,…"&gt;</code>.</li>
+    <li>Torna indietro con il browser: quello che avevi scritto è ancora
+        nella pagina, non devi riscriverlo.</li>
+    <li>Sostituisci le immagini e salva di nuovo.</li>
+  </ol>
+
+  <div class="nota">
+    Vale anche per la riuscita dell'invio: le email con immagini incorporate
+    vengono spesso rifiutate dai server di posta per via del peso, e molti
+    programmi non le mostrano affatto. Collegare le immagini è più leggero e
+    arriva meglio.
+  </div>
+
+  <p style="margin-top:28px"><a href="/admin/">Torna al gestionale</a></p>
+</body>
+</html>

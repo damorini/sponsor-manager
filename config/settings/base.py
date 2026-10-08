@@ -149,6 +149,15 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Corpo massimo di una richiesta. Il valore di serie di Django (2,5 MB) e'
+# troppo basso per incollare l'HTML di una newsletter nel corpo di una
+# campagna: oltre quella soglia Django rifiuta PRIMA di leggere i dati, e
+# l'utente vede una pagina bianca con «Bad Request (400)» e nessuna
+# spiegazione (successo il 9 ottobre 2026, quattro tentativi di fila).
+# Le immagini incorporate nell'HTML restano vietate dal form della campagna:
+# vedi InterestCampaignForm.clean. Questo limite serve all'HTML, non a loro.
+DATA_UPLOAD_MAX_MEMORY_SIZE = 15 * 1024 * 1024
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CELERY_BROKER_URL = config('REDIS_URL', default='redis://localhost:6379/0')
