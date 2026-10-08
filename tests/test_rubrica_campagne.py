@@ -66,19 +66,54 @@ class TestInvio:
 
 @pytest.mark.django_db
 class TestDisiscrizioneGlobale:
-    def test_link_disiscrive_da_tutto_il_marketing(self, client, campagna):
+    def test_get_mostra_conferma_senza_disiscrivere(self, client, campagna):
+        """Prima la GET disiscriveva: i filtri antispam e le anteprime dei
+        client di posta aprono i link da soli, quindi la persona risultava
+        disiscritta senza averlo chiesto. Ora la GET chiede conferma."""
         from sponsors.models import SuppressedEmail
         token = signing.dumps({'e': 'mario@alfa.it'}, salt='marketing-optout')
         resp = client.get(reverse('portal:marketing_unsubscribe', args=[token]))
+        assert resp.status_code == 200
+        assert b'Conferma disiscrizione' in resp.content
+        assert b'method="post"' in resp.content
+        assert SuppressedEmail.objects.count() == 0
+
+    def test_post_disiscrive_da_tutto_il_marketing(self, client, campagna):
+        from sponsors.models import SuppressedEmail
+        token = signing.dumps({'e': 'mario@alfa.it'}, salt='marketing-optout')
+        resp = client.post(reverse('portal:marketing_unsubscribe', args=[token]))
         assert resp.status_code == 200
         assert SuppressedEmail.is_suppressed('mario@alfa.it')
         from contracts.tasks.notifications import send_interest_campaign
         assert send_interest_campaign(campagna.pk) == 1
 
-    def test_token_manomesso(self, client):
+    def test_post_funziona_senza_token_csrf(self, campagna):
+        from django.test import Client
         from sponsors.models import SuppressedEmail
-        resp = client.get(reverse('portal:marketing_unsubscribe', args=['falso']))
+        token = signing.dumps({'e': 'mario@alfa.it'}, salt='marketing-optout')
+        resp = Client(enforce_csrf_checks=True).post(
+            reverse('portal:marketing_unsubscribe', args=[token]))
+        assert resp.status_code == 200
+        assert SuppressedEmail.is_suppressed('mario@alfa.it')
+
+    @pytest.mark.parametrize('metodo', ['get', 'post'])
+    def test_token_manomesso(self, client, metodo):
+        from sponsors.models import SuppressedEmail
+        resp = getattr(client, metodo)(reverse('portal:marketing_unsubscribe', args=['falso']))
         assert resp.status_code == 200 and SuppressedEmail.objects.count() == 0
+        assert b'Link non valido' in resp.content
+        assert b'Conferma disiscrizione' not in resp.content
+
+    def test_errore_non_logga_il_token(self, client, caplog, monkeypatch):
+        from sponsors.models import SuppressedEmail
+        token = signing.dumps({'e': 'mario@alfa.it'}, salt='marketing-optout')
+
+        def esplode(*a, **k):
+            raise RuntimeError('db giu')
+        monkeypatch.setattr(SuppressedEmail, 'add', esplode)
+        client.post(reverse('portal:marketing_unsubscribe', args=[token]))
+        assert caplog.records, "l'errore deve essere loggato"
+        assert all(token not in r.getMessage() for r in caplog.records)
 
 
 @pytest.mark.django_db
