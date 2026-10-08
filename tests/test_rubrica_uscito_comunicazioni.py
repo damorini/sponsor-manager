@@ -106,3 +106,26 @@ def test_signer_email_ignora_anonimizzati(db):
     signer = SimpleNamespace(email='anonimizzato-12@invalid.invalid')
     assert get_signer_email(_contratto(None, signer)) is None
     assert get_signer_email(_contratto(None, SimpleNamespace(email='a@b.it'))) == 'a@b.it'
+
+
+@pytest.mark.django_db
+class TestPassAllestimentoNonVaAChiEUscito:
+    """Il PASS allestimento e' arrivato dopo F1 e scegliendo il destinatario
+    ricadeva sul firmatario: per un contratto gia' firmato quello resta chi ha
+    firmato, anche se oggi lavora altrove. Come intestazione del PDF e'
+    corretto, come DESTINATARIO di un'email no."""
+
+    def test_non_sceglie_chi_e_uscito_nemmeno_come_firmatario(self, scenario):
+        from contracts.services.pass_allestimento import destinatario
+        # il contratto e' intestato a chi ha firmato, che ora e' uscito
+        c = _contratto(scenario.vecchia, signer=scenario.uscito)
+        assert destinatario(c) is None
+
+    def test_sceglie_chi_e_rimasto(self, scenario):
+        from contracts.services.pass_allestimento import destinatario
+        from sponsors.models import Contact
+        anna = Contact.objects.create(
+            sponsor=scenario.vecchia, first_name='Anna', last_name='Verdi',
+            email='anna@vecchia.it')
+        c = _contratto(scenario.vecchia, signer=scenario.uscito)
+        assert destinatario(c) == anna

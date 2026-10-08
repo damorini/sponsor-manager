@@ -123,16 +123,29 @@ def _spazio(contract):
 
 
 def destinatario(contract):
-    """Contatto operativo (come per l'invio del contratto), poi il principale."""
+    """Contatto operativo (come per l'invio del contratto), poi il principale.
+
+    Chi e' uscito dall'azienda con un trasferimento non e' mai un
+    destinatario: _get_operational_contact puo' ricadere sul firmatario, e
+    per un contratto gia' firmato quello resta chi ha firmato anche se oggi
+    lavora altrove. Come intestazione del PDF e' corretto, come indirizzo a
+    cui mandare il PASS no.
+    """
     from contracts.services.pdf_generator import _get_operational_contact
+
+    def _in_azienda(c):
+        return (c is not None and getattr(c, 'email', '')
+                and getattr(c, 'left_company_at', None) is None)
+
     c = _get_operational_contact(contract)
-    if c is not None and getattr(c, 'email', ''):
+    if _in_azienda(c):
         return c
     sp = contract.sponsor
     c = getattr(sp, 'primary_contact', None)
-    if c is not None and getattr(c, 'email', ''):
+    if _in_azienda(c):
         return c
-    return sp.contacts.exclude(email='').first()
+    return (sp.contacts.filter(left_company_at__isnull=True)
+            .exclude(email='').first())
 
 
 def nome_evento(contract):
