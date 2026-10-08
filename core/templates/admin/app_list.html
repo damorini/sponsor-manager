@@ -31,7 +31,7 @@
     <table>
       <caption><a class="section" href="#">👥 Clienti</a></caption>
       {% for app in app_list %}{% for model in app.models %}
-        {% if model.object_name == 'Sponsor' or model.object_name == 'Contact' %}
+        {% if model.object_name == 'Sponsor' or model.object_name == 'Contact' or model.object_name == 'InterestArea' or model.object_name == 'InterestCampaign' or model.object_name == 'SuppressedEmail' %}
           <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
             <th scope="row">
               {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
@@ -115,6 +115,37 @@
       {% endfor %}{% endfor %}
     </table>
   </div>
+
+  {% comment %}
+    === 7. ALTRO - rete di sicurezza ===
+    I sei gruppi sopra elencano i modelli UNO PER UNO, quindi un modello
+    nuovo che nessuno aggiunge a questo file non comparirebbe in nessun
+    punto del menu: sarebbe raggiungibile solo conoscendone l'URL. E'
+    successo con le Aree di interesse della Rubrica. Qui finisce tutto
+    cio' che non e' stato classificato, cosi' non si perde niente in
+    silenzio. Per spostare una voce in un gruppo vero, aggiungi il suo
+    object_name alla condizione di quel gruppo: spariera' da qui.
+    Il test tests/test_menu_admin_completo.py verifica che ogni modello
+    registrato in admin compaia nel menu.
+  {% endcomment %}
+  {% with noti="Event Service CatalogService ServiceCategory Stand StandBlock DeadlineTemplate Sponsor Contact InterestArea InterestCampaign SuppressedEmail Contract Deadline Payment Document EmailTemplate LetterTemplate Communication InvoiceExport PortalMessage Wishlist OrganizerSettings EmailSettings User LogEntry AuditLog" %}
+  <div class="module sm-group">
+    <table>
+      <caption><a class="section" href="#">\ud83d\udce6 Altro</a></caption>
+      {% for app in app_list %}{% for model in app.models %}
+        {% if model.object_name not in noti.split %}
+          <tr class="model-{{ model.object_name|lower }}{% if model.admin_url in request.path|urlencode %} current-model{% endif %}">
+            <th scope="row">
+              {% if model.admin_url %}<a href="{{ model.admin_url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+            </th>
+            {% if model.add_url %}<td><a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a></td>{% else %}<td></td>{% endif %}
+            {% if model.admin_url and show_changelinks %}{% if model.view_only %}<td><a href="{{ model.admin_url }}" class="viewlink">{% translate 'View' %}</a></td>{% else %}<td><a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a></td>{% endif %}{% elif show_changelinks %}<td></td>{% endif %}
+          </tr>
+        {% endif %}
+      {% endfor %}{% endfor %}
+    </table>
+  </div>
+  {% endwith %}
 
 {% else %}
   <p>{% translate 'You don\u2019t have permission to view or edit anything.' %}</p>
