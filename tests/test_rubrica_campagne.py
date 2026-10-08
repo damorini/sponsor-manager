@@ -125,6 +125,19 @@ class TestDisiscrizioneGlobale:
         assert caplog.records, "l'errore deve essere loggato"
         assert all(token not in r.getMessage() for r in caplog.records)
 
+    def test_anche_la_disiscrizione_per_evento_non_logga_il_token(
+            self, client, caplog, monkeypatch):
+        """L'altra vista, quella per una singola campagna: stessa regola."""
+        from events.models import PromotionalCampaign
+        token = signing.dumps({'c': 1, 'k': 1}, salt='promo-campaign-optout')
+
+        def esplode(*a, **k):
+            raise RuntimeError('db giu')
+        monkeypatch.setattr(PromotionalCampaign.objects, 'filter', esplode)
+        client.get(reverse('portal:campaign_unsubscribe', args=[token]))
+        assert caplog.records, "l'errore deve essere loggato"
+        assert all(token not in r.getMessage() for r in caplog.records)
+
 
 @pytest.mark.django_db
 class TestAdminInvio:

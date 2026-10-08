@@ -40,7 +40,8 @@ def campaign_unsubscribe_view(request, token):
     except signing.BadSignature:
         esito = 'errore'
     except Exception:
-        logger.exception("Errore disiscrizione campagna (token=%s)", token)
+        # mai il token nel log: e' la credenziale per disiscrivere quell'indirizzo
+        logger.exception("Errore disiscrizione campagna")
         esito = 'errore'
 
     return render(request, 'portal/campaign_unsubscribe.html', {
