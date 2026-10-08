@@ -147,3 +147,68 @@ class TestImportAdmin:
             codename='view_contact', content_type__app_label='sponsors'))
         client.force_login(u)
         assert client.get(reverse(self.URL)).status_code == 403
+
+
+@pytest.mark.django_db
+class TestTrasferisciAnonimizzaAdmin:
+    def test_trasferisci(self, staff_client, contact):
+        from sponsors.models import Sponsor, Contact
+        nuova = Sponsor.objects.create(legal_name='Nuova Spa', address_country='IT')
+        url = reverse('admin:sponsors_contact_trasferisci', args=[contact.pk])
+        assert staff_client.get(url).status_code == 200
+        resp = staff_client.post(url, {'nuova_azienda': nuova.pk, 'nuova_email': '',
+                                       'data': '2026-10-01'})
+        nuovo = Contact.objects.get(sponsor=nuova)
+        assert resp.status_code == 302
+        assert resp['Location'] == reverse('admin:sponsors_contact_change', args=[nuovo.pk])
+        contact.refresh_from_db()
+        assert str(contact.left_company_at) == '2026-10-01'
+
+    def test_trasferisci_data_in_formato_iso_nel_form(self, staff_client, contact):
+        resp = staff_client.get(reverse('admin:sponsors_contact_trasferisci', args=[contact.pk]))
+        import re
+        assert re.search(rb'type="date"[^>]*value="\d{4}-\d{2}-\d{2}"|value="\d{4}-\d{2}-\d{2}"[^>]*type="date"',
+                         resp.content)
+
+    def test_trasferisci_contatto_gia_uscito_mostra_errore_sul_form(self, staff_client, contact):
+        import datetime
+        from sponsors.models import Sponsor, Contact
+        nuova = Sponsor.objects.create(legal_name='Nuova Spa', address_country='IT')
+        contact.left_company_at = datetime.date(2026, 9, 1)
+        contact.save()
+        url = reverse('admin:sponsors_contact_trasferisci', args=[contact.pk])
+        assert staff_client.get(url).status_code == 200
+        n_prima = Contact.all_objects.count()
+        resp = staff_client.post(url, {'nuova_azienda': nuova.pk, 'nuova_email': '',
+                                       'data': '2026-10-01'})
+        assert resp.status_code == 200
+        assert Contact.all_objects.count() == n_prima
+
+    def test_anonimizza_chiede_conferma_poi_esegue(self, staff_client, contact):
+        from sponsors.models import Contact
+        url = reverse('admin:sponsors_contact_anonimizza', args=[contact.pk])
+        resp = staff_client.get(url)
+        assert resp.status_code == 200 and contact.email.encode() in resp.content
+        resp = staff_client.post(url, {'conferma': '1'})
+        assert resp.status_code == 302
+        assert Contact.all_objects.get(pk=contact.pk).full_name == 'Anonimizzato'
+
+    def test_anonimizza_email_vuota_non_va_in_500(self, staff_client, contact):
+        from sponsors.models import Contact
+        Contact.objects.filter(pk=contact.pk).update(email='')
+        url = reverse('admin:sponsors_contact_anonimizza', args=[contact.pk])
+        resp = staff_client.post(url, {'conferma': '1'})
+        assert resp.status_code == 302
+        assert resp['Location'] == reverse('admin:sponsors_contact_change', args=[contact.pk])
+        assert Contact.all_objects.get(pk=contact.pk).full_name != 'Anonimizzato'
+
+    def test_anonimizza_negato_a_operatore(self, client, contact):
+        from users.models import User
+        op = User.objects.create_user(username='op', email='op@test.it', password='x',
+                                      is_staff=True, role='operator')
+        from django.contrib.auth.models import Permission
+        op.user_permissions.add(*Permission.objects.filter(codename__in=['view_contact', 'change_contact']))
+        client.force_login(op)
+        resp = client.post(reverse('admin:sponsors_contact_anonimizza', args=[contact.pk]),
+                           {'conferma': '1'})
+        assert resp.status_code == 403

@@ -1,0 +1,12 @@
+{# sponsors/templates/admin/sponsors/contact/trasferisci.html #}
+{% extends "admin/base_site.html" %}
+{% block content %}
+<p>{{ contatto.full_name }} lascia <strong>{{ contatto.sponsor.legal_name }}</strong>.
+   Viene creata una nuova scheda nella nuova azienda (con telefono, lingua e aree di interesse);
+   quella attuale resta per i contratti già firmati ma non riceverà più comunicazioni.</p>
+<form method="post">{% csrf_token %}
+  {{ form.as_p }}
+  <input type="submit" class="default" value="Trasferisci">
+  <a href="{% url 'admin:sponsors_contact_change' contatto.pk %}">Annulla</a>
+</form>
+{% endblock %}

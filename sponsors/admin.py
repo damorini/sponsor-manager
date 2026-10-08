@@ -913,12 +913,68 @@ class ContactAdmin(admin.ModelAdmin):
         return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
 
     def trasferisci_view(self, request, object_id):
+        from django.core.exceptions import PermissionDenied, ValidationError
         from django.shortcuts import redirect
-        return redirect('admin:sponsors_contact_changelist')
+        from django.template.response import TemplateResponse
+        from django.utils import timezone
+        from sponsors.rubrica import trasferisci_contatto
+
+        contatto = get_object_or_404(Contact, pk=object_id)
+        if not self.has_change_permission(request, contatto):
+            raise PermissionDenied
+
+        class TrasferisciForm(forms.Form):
+            nuova_azienda = forms.ModelChoiceField(
+                queryset=Sponsor.objects.exclude(pk=contatto.sponsor_id).order_by('legal_name'),
+                label='Nuova azienda')
+            nuova_email = forms.EmailField(
+                required=False, label='Nuova email',
+                help_text='Lascia vuoto se resta la stessa.')
+            data = forms.DateField(
+                label='In azienda nuova dal', initial=timezone.localdate,
+                widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+
+        form = TrasferisciForm(request.POST or None)
+        if request.method == 'POST' and form.is_valid():
+            try:
+                nuovo = trasferisci_contatto(contatto, form.cleaned_data['nuova_azienda'],
+                                             form.cleaned_data['nuova_email'],
+                                             form.cleaned_data['data'])
+            except ValidationError as e:
+                form.add_error(None, e)
+            else:
+                self.message_user(request, (
+                    f"{nuovo.full_name} ora è in {nuovo.sponsor.legal_name}. "
+                    f"La scheda in {contatto.sponsor.legal_name} resta per lo storico. "
+                    "Se serve l'accesso al portale, invitalo di nuovo."))
+                return redirect('admin:sponsors_contact_change', nuovo.pk)
+        return TemplateResponse(request, 'admin/sponsors/contact/trasferisci.html', {
+            **self.admin_site.each_context(request), 'opts': self.model._meta,
+            'title': f'Trasferisci {contatto.full_name}', 'contatto': contatto, 'form': form})
 
     def anonimizza_view(self, request, object_id):
+        from django.core.exceptions import PermissionDenied, ValidationError
         from django.shortcuts import redirect
-        return redirect('admin:sponsors_contact_changelist')
+        from django.template.response import TemplateResponse
+        from sponsors.rubrica import anonimizza_persona
+
+        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'admin'):
+            raise PermissionDenied
+        contatto = get_object_or_404(Contact.all_objects, pk=object_id)
+        schede = (Contact.all_objects.filter(email__iexact=contatto.email)
+                  .select_related('sponsor'))
+        if request.method == 'POST' and request.POST.get('conferma'):
+            try:
+                n = anonimizza_persona(contatto.email)
+            except ValidationError as e:
+                self.message_user(request, ' '.join(e.messages), level=messages.ERROR)
+                return redirect('admin:sponsors_contact_change', contatto.pk)
+            self.message_user(request, f"Dati cancellati: {n} schede anonimizzate. "
+                                       "L'indirizzo non potrà più essere reimportato.")
+            return redirect('admin:sponsors_contact_changelist')
+        return TemplateResponse(request, 'admin/sponsors/contact/anonimizza.html', {
+            **self.admin_site.each_context(request), 'opts': self.model._meta,
+            'title': 'Cancella dati personali (GDPR)', 'contatto': contatto, 'schede': schede})
 
     @admin.display(description='Cognome', ordering='last_name')
     def col_cognome(self, obj):
