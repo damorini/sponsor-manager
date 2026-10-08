@@ -32,6 +32,9 @@ class TestInvio:
         assert m.subject == 'Alfa Srl – Novità per Alfa Srl'
         html = m.alternatives[0][0] if m.alternatives else m.body
         assert 'Mario Rossi' in html and '/campagne/disiscrizione/' in html
+        # il link deve portare l'indirizzo di QUESTO destinatario
+        token = re.search(r'/campagne/disiscrizione/([^/"]+)/', html).group(1)
+        assert signing.loads(token, salt='marketing-optout') == {'e': 'mario@alfa.it'}
         campagna.refresh_from_db()
         assert campagna.sent_count == 2
 
@@ -40,6 +43,23 @@ class TestInvio:
         assert send_interest_campaign(campagna.pk, test_to='io@valet.it') == 1
         assert [m.to for m in mail.outbox] == [['io@valet.it']]
         assert '[PROVA]' in mail.outbox[0].subject
+        campagna.refresh_from_db()
+        assert campagna.sent_count == 0
+
+
+    def test_prova_link_porta_indirizzo_del_tester(self, campagna):
+        from contracts.tasks.notifications import send_interest_campaign
+        send_interest_campaign(campagna.pk, test_to='io@valet.it')
+        m = mail.outbox[0]
+        html = m.alternatives[0][0] if m.alternatives else m.body
+        token = re.search(r'/campagne/disiscrizione/([^/"]+)/', html).group(1)
+        assert signing.loads(token, salt='marketing-optout') == {'e': 'io@valet.it'}
+
+    @pytest.mark.parametrize('vuoto', ['', '   '])
+    def test_prova_con_indirizzo_vuoto_non_invia_a_nessuno(self, campagna, vuoto):
+        from contracts.tasks.notifications import send_interest_campaign
+        assert send_interest_campaign(campagna.pk, test_to=vuoto) == 0
+        assert len(mail.outbox) == 0
         campagna.refresh_from_db()
         assert campagna.sent_count == 0
 
@@ -74,3 +94,29 @@ class TestAdminInvio:
         assert len(mail.outbox) == 2                    # 2 destinatari, una volta sola
         campagna.refresh_from_db()
         assert campagna.sent_at is not None and campagna.sent_by == u
+
+
+@pytest.mark.django_db
+class TestAdminProva:
+    def _admin(self, client, email):
+        from users.models import User
+        u = User.objects.create_superuser(username='s2', email=email, password='x')
+        client.force_login(u)
+
+    def test_prova_senza_email_utente_non_invia_nulla(self, client, campagna):
+        self._admin(client, '')
+        url = reverse('admin:sponsors_interestcampaign_changelist')
+        resp = client.post(url, {'action': 'action_prova', '_selected_action': [campagna.pk]},
+                           follow=True)
+        assert len(mail.outbox) == 0
+        from html import unescape
+        assert "non ha un'email" in unescape(resp.content.decode())
+
+    def test_prova_senza_destinatari_avvisa(self, client, campagna):
+        self._admin(client, 'a@valet.it')
+        campagna.interest_areas.clear()
+        url = reverse('admin:sponsors_interestcampaign_changelist')
+        resp = client.post(url, {'action': 'action_prova', '_selected_action': [campagna.pk]},
+                           follow=True)
+        assert len(mail.outbox) == 0
+        assert 'Nessun destinatario' in resp.content.decode()

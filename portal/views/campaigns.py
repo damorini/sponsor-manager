@@ -48,13 +48,11 @@ def campaign_unsubscribe_view(request, token):
     })
 
 
-MARKETING_UNSUB_SALT = 'marketing-optout'
-
-
 @require_GET
 def marketing_unsubscribe_view(request, token):
     """Disiscrive l'INDIRIZZO da tutte le campagne promozionali (per area e
     per evento). Idempotente. Le email transazionali continuano."""
+    from contracts.tasks.notifications import MARKETING_UNSUB_SALT
     from sponsors.models import SuppressedEmail
 
     esito = 'errore'

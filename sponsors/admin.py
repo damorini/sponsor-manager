@@ -1361,9 +1361,21 @@ class InterestCampaignAdmin(admin.ModelAdmin):
     @admin.action(description="Invia una PROVA a me", permissions=['change'])
     def action_prova(self, request, queryset):
         from contracts.tasks.notifications import send_interest_campaign
+        from sponsors.rubrica import destinatari_per_aree
+        email = (request.user.email or '').strip()
+        if not email:
+            self.message_user(
+                request, "Il tuo utente non ha un'email: impostala nel profilo per ricevere la prova.",
+                level=messages.ERROR)
+            return
         for c in queryset:
-            send_interest_campaign.delay(c.pk, test_to=request.user.email)
-        self.message_user(request, f"Prova in invio a {request.user.email}.")
+            if not destinatari_per_aree(c.interest_areas.all()):
+                self.message_user(
+                    request, "Nessun destinatario per le aree scelte: prova non inviata.",
+                    level=messages.WARNING)
+                continue
+            send_interest_campaign.delay(c.pk, test_to=email)
+            self.message_user(request, f"Prova in invio a {email}.")
 
     @admin.action(description="INVIA a tutti i destinatari (una sola volta)", permissions=['change'])
     def action_invia(self, request, queryset):

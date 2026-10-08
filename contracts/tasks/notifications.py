@@ -930,8 +930,17 @@ def send_interest_campaign(self, campaign_id, test_to=None):
         logger.error("Campagna per aree %s non trovata", campaign_id)
         return 0
 
+    # Prova = test_to presente (anche vuoto): un indirizzo vuoto NON deve mai
+    # degradare a invio vero verso tutti i destinatari.
+    is_test = test_to is not None
+    if is_test:
+        test_to = test_to.strip()
+        if not test_to:
+            logger.error("Campagna per aree %s: prova senza indirizzo, nulla inviato", campaign_id)
+            return 0
+
     destinatari = destinatari_per_aree(campaign.interest_areas.all())
-    if test_to:
+    if is_test:
         destinatari = destinatari[:1]
     base_url = (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
     dj = engines['django']
@@ -944,7 +953,9 @@ def send_interest_campaign(self, campaign_id, test_to=None):
         if not body.strip():
             continue
         subject = dj.from_string(_pick_lang(campaign.subject, lang) or campaign.name).render(placeholders)
-        token = signing.dumps({'e': contact.email.strip().lower()}, salt=MARKETING_UNSUB_SALT)
+        # in prova il link porta l'indirizzo del tester, mai quello di un contatto vero
+        token = signing.dumps({'e': (test_to or contact.email).strip().lower()},
+                              salt=MARKETING_UNSUB_SALT)
         txt = _MARKETING_UNSUB_TEXT.get(lang, _MARKETING_UNSUB_TEXT['it'])
         try:
             send_email(
@@ -955,20 +966,20 @@ def send_interest_campaign(self, campaign_id, test_to=None):
                     'unsubscribe_intro': txt['intro'],
                     'unsubscribe_label': txt['label'],
                 },
-                to=[test_to or contact.email],
-                subject=('[PROVA] ' if test_to else '') + subject,
+                to=[test_to if is_test else contact.email],
+                subject=('[PROVA] ' if is_test else '') + subject,
                 language=lang,
                 custom_body_html=body,
                 related_to=campaign,
                 communication_type='promotional_campaign',
-                is_automated=not test_to,
+                is_automated=not is_test,
             )
             sent += 1
         except Exception:
             logger.exception("Invio campagna per aree %s a %s fallito", campaign_id, contact.email)
 
-    if not test_to:
+    if not is_test:
         InterestCampaign.objects.filter(pk=campaign.pk).update(sent_count=sent)
     logger.info("Campagna per aree '%s': %d email%s", campaign.name, sent,
-                ' (prova)' if test_to else '')
+                ' (prova)' if is_test else '')
     return sent
