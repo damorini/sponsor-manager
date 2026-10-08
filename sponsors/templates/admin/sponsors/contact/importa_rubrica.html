@@ -7,6 +7,14 @@
      <code>tel</code>, <code>interessi</code> (aree separate da <code>;</code>).
      Prima vedi l'anteprima: nulla viene salvato finché non confermi.</p>
 
+  <p>Non hai un file pronto?
+     <a href="{% url 'core:cruscotto_download_template_contatti' %}">
+       Scarica il template Excel</a> — ha già la colonna delle aree di interesse,
+     un esempio compilato e le istruzioni. Va bene anche il template che hai
+     scaricato dalle Utility: i suoi nomi di colonna
+     (<code>sponsor_ragione_sociale</code>, <code>ruolo_aziendale</code>,
+     <code>telefono</code>, <code>aree_interesse</code>) sono accettati qui.</p>
+
   {% if errore %}<p class="errornote">{{ errore }}</p>{% endif %}
 
   <form method="post" enctype="multipart/form-data">{% csrf_token %}

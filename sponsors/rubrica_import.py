@@ -19,6 +19,19 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 COLONNE_OBBLIGATORIE =['company', 'email']
+
+# Il template che si scarica dall'utility (Importa contatti) usa nomi di
+# colonna diversi dai nostri. Accettarli come sinonimi evita che chi scarica
+# quel file si senta dire "colonne mancanti" proprio da questa pagina.
+SINONIMI = {
+    'sponsor_ragione_sociale': 'company',
+    'azienda': 'company',
+    'ragione_sociale': 'company',
+    'ruolo_aziendale': 'ruolo',
+    'telefono': 'tel',
+    'aree_interesse': 'interessi',
+    'aree_di_interesse': 'interessi',
+}
 SUFFISSI_SOCIETARI = r'\b(s\.?r\.?l\.?s?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|ltd|gmbh|inc|unipersonale)\b'
 
 
@@ -72,7 +85,8 @@ def leggi_file(f):
         tabella = list(csv.reader(io.StringIO(testo), delimiter=sep))
     if not tabella:
         raise ValueError("Il file è vuoto.")
-    intest = [h.strip().lower() for h in tabella[0]]
+    intest = [SINONIMI.get(h.strip().lower(), h.strip().lower())
+              for h in tabella[0]]
     mancanti = [c for c in COLONNE_OBBLIGATORIE if c not in intest]
     if 'referente' not in intest and 'cognome' not in intest:
         mancanti.append('referente (oppure cognome)')

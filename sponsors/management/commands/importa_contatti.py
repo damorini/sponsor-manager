@@ -10,7 +10,8 @@ from django.db import transaction
 COLONNE_RICHIESTE = [
     "sponsor_partita_iva", "sponsor_ragione_sociale",
     "cognome", "nome", "email", "telefono", "ruolo_aziendale",
-    "ruoli_funzionali", "principale", "consenso_marketing", "lingua", "note",
+    "ruoli_funzionali", "principale", "consenso_marketing", "lingua",
+    "aree_interesse", "note",
 ]
 # Solo 'email' a livello header: il nome (cognome o nome_completo) si valida riga per riga,
 # cosi' funzionano sia i nuovi file (cognome/nome) sia i vecchi (nome_completo).
@@ -65,7 +66,7 @@ class Command(BaseCommand):
             from openpyxl import load_workbook
         except ImportError:
             raise CommandError("openpyxl non installato. Installa con: pip install openpyxl")
-        from sponsors.models import Sponsor, Contact
+        from sponsors.models import Contact, InterestArea, Sponsor
 
         path = Path(opts["file"]).expanduser()
         if not path.exists():
@@ -85,6 +86,12 @@ class Command(BaseCommand):
         if mancanti:
             raise CommandError(f"Colonne obbligatorie mancanti nell'intestazione: {mancanti}.")
         col_idx = {h: i for i, h in enumerate(header)}
+
+        # Aree di interesse: solo quelle che esistono gia'. Un nome scritto male
+        # NON crea un'area nuova, altrimenti un errore di battitura diventerebbe
+        # un'area e i filtri per area non tornerebbero piu'.
+        aree_per_nome = {a.name.casefold(): a
+                         for a in InterestArea.objects.filter(is_active=True)}
 
         n_create = n_update = n_err = 0
         errori = []
@@ -117,6 +124,27 @@ class Command(BaseCommand):
                     raise ValueError(
                         "sponsor non trovato (indica sponsor_partita_iva o "
                         "sponsor_ragione_sociale di uno sponsor gia' esistente)")
+
+                # Risolte PRIMA di scrivere, cosi' un nome sbagliato scarta la
+                # riga invece di importare un contatto senza le sue aree, e si
+                # vede anche in anteprima (--dry-run).
+                aree_raw = G("aree_interesse")
+                aree = []
+                if aree_raw:
+                    sconosciute = []
+                    for nome_area in [a.strip() for a in re.split(r"[;,]", aree_raw)
+                                      if a.strip()]:
+                        area = aree_per_nome.get(nome_area.casefold())
+                        if area is None:
+                            sconosciute.append(nome_area)
+                        elif area not in aree:
+                            aree.append(area)
+                    if sconosciute:
+                        raise ValueError(
+                            "area di interesse non riconosciuta: "
+                            + ", ".join(sconosciute)
+                            + ". Creala in Clienti > Aree di interesse, oppure "
+                              "correggi il nome nel file")
 
                 contact = Contact.objects.filter(sponsor=sponsor, email__iexact=email).first()
                 creato = contact is None
@@ -171,6 +199,10 @@ class Command(BaseCommand):
                     if principale_set:
                         contact.is_primary = _norm_bool(principale_set)
                     contact.save()
+                    # M2M solo dopo il save. Cella vuota = non tocca le aree
+                    # gia' assegnate, come per tutti gli altri campi.
+                    if aree_raw:
+                        contact.interest_areas.set(aree)
                     if principale_set and contact.is_primary:
                         sponsor.contacts.filter(is_primary=True).exclude(
                             pk=contact.pk).update(is_primary=False)

@@ -540,6 +540,10 @@ def build_template_contatti_workbook():
         ("principale", "s/n. Se 's' diventa il contatto principale dello sponsor."),
         ("consenso_marketing", "s/n."),
         ("lingua", "it/en (default it)."),
+        ("aree_interesse", "Opzionale. Tipologie di evento che segue QUESTA persona, "
+         "separate da punto e virgola. Es. Cardiologia; Oncologia. I nomi devono "
+         "essere identici a quelli in Clienti > Aree di interesse: un nome scritto "
+         "male fa scartare la riga, non crea una nuova area."),
         ("note", "Opzionale."),
     ]
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -552,15 +556,19 @@ def build_template_contatti_workbook():
         cell.comment = Comment(comment, "Sponsor Manager")
 
     esempio1 = ["01234567890", "Rossi Pharma S.p.A.", "Bianchi", "Maria", "maria.bianchi@rossipharma.it",
-                "051 123456", "Responsabile marketing", "marketing, cc", "s", "s", "it", ""]
+                "051 123456", "Responsabile marketing", "marketing, cc", "s", "s", "it",
+                "Cardiologia; Oncologia", ""]
     esempio2 = ["", "Verdi Medical S.r.l.", "Verdi", "Luca", "luca.verdi@verdimedical.it",
-                "", "Amministrazione", "amministrazione, firmatario", "n", "n", "it", "Referente fatture"]
+                "", "Amministrazione", "amministrazione, firmatario", "n", "n", "it",
+                "", "Referente fatture"]
     for col, v in enumerate(esempio1, start=1):
         ws.cell(row=2, column=col, value=v)
     for col, v in enumerate(esempio2, start=1):
         ws.cell(row=3, column=col, value=v)
 
-    larghezze = [18, 26, 18, 18, 30, 16, 24, 34, 12, 16, 10, 24]
+    larghezze = [18, 26, 18, 18, 30, 16, 24, 34, 12, 16, 10, 30, 24]
+    assert len(larghezze) == len(headers), (
+        "una larghezza per colonna: aggiorna larghezze quando aggiungi un header")
     for i, w in enumerate(larghezze, start=1):
         ws.column_dimensions[chr(64 + i)].width = w
 
@@ -580,6 +588,17 @@ def build_template_contatti_workbook():
         "7. principale: 's' rende il contatto il principale dello sponsor (gli altri vengono declassati).",
         "8. lingua: it/en (default it). consenso_marketing: s/n.",
         "   NB: l'import NON crea l'accesso al portale: lo abiliti tu dall'admin quando vuoi.",
+        "9. aree_interesse: le tipologie di evento che segue QUESTA persona, separate da",
+        "   punto e virgola. Es. 'Cardiologia; Oncologia'. Si spuntano per PERSONA e non per",
+        "   azienda, perche' nella stessa azienda sono persone diverse a seguire divisioni",
+        "   diverse. I nomi devono corrispondere a quelli in Clienti > Aree di interesse:",
+        "   un nome scritto male fa SCARTARE la riga e non crea una nuova area, altrimenti",
+        "   un errore di battitura diventerebbe un'area nuova e i filtri non tornerebbero.",
+        "   Le aree le crei tu da Clienti > Aree di interesse; cella vuota = non le tocca.",
+        "",
+        "Questo stesso file va bene anche per Clienti > Anagrafica > 'Importa rubrica',",
+        "che mostra un'anteprima riga per riga prima di scrivere. Se usi quella pagina,",
+        "compila sponsor_ragione_sociale: il collegamento per sola P.IVA la' non e' previsto.",
         "",
         "Consiglio: lascia spuntato 'Solo anteprima' al primo caricamento per vedere cosa farebbe.",
     ]
