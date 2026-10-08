@@ -251,6 +251,7 @@ def send_email(
     triggered_by_user=None,
     is_automated: bool = False,
     custom_body_html: str = None,
+    headers: dict = None,
 ) -> 'Communication':
     """
     Invia un'email transazionale renderizzando il template specificato.
@@ -267,7 +268,12 @@ def send_email(
         communication_type: tipo (es. 'reminder', 'payment_confirmation')
         triggered_by_user: User che ha avviato l'invio (None per automazioni)
         is_automated: True se inviata da task Celery automatico
-    
+        headers: intestazioni aggiuntive del messaggio. Per la posta
+            promozionale servono List-Unsubscribe e List-Unsubscribe-Post,
+            che fanno comparire il pulsante "Annulla iscrizione" accanto al
+            mittente in Gmail e Outlook: senza, chi non vuole piu' le email
+            segnala come spam invece di disiscriversi.
+
     Returns:
         Istanza Communication salvata nel DB.
     
@@ -414,6 +420,7 @@ def send_email(
             bcc=bcc or [],
             reply_to=[_from],
             connection=_conn,
+            headers=headers or None,
         )
         email.attach_alternative(body_html, 'text/html')
 

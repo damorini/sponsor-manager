@@ -19,11 +19,83 @@ side effects multipli — la verifica avviene a livello di logica (es. controllo
 stato del contratto, presenza di Communication già inviata, ecc.).
 """
 import logging
+import time
 
 from celery import shared_task
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+PAUSA_MASSIMA = 60
+
+# Quanto puo' durare al massimo una campagna. CELERY_TASK_TIME_LIMIT globale
+# e' mezz'ora: con una pausa di 15 secondi oltre i 120 destinatari il task
+# verrebbe ucciso a META', e una parte della lista non riceverebbe nulla
+# senza che nessuno se ne accorga. Le due campagne hanno quindi un tempo
+# proprio, e la pausa viene ridotta se non ci starebbe (vedi
+# pausa_fra_invii). Nessun rischio di invii doppi: task_acks_late e' False,
+# il messaggio viene confermato alla presa in carico e non riconsegnato.
+BUDGET_CAMPAGNA = 4 * 3600
+LIMITE_CAMPAGNA = BUDGET_CAMPAGNA + 300
+
+# Indirezione per i test: cosi' non devono aspettare per davvero.
+_attendi = time.sleep
+
+
+def pausa_fra_invii(destinatari=0):
+    """Secondi da aspettare fra un'email di campagna e la successiva.
+
+    Spedire tutto alla massima velocita' e' il modo piu' rapido per farsi
+    limitare dal server di posta (o per sembrare spam). Il valore si imposta
+    in Configurazione email (SMTP); 0 = nessuna attesa.
+
+    Con `destinatari` la pausa viene ridotta se l'attesa totale non starebbe
+    nel tempo massimo della campagna: meglio spedire piu' veloce del voluto
+    che perdere per strada la coda della lista.
+
+    In EAGER — sviluppo e test — i task girano DENTRO la richiesta HTTP:
+    una pausa bloccherebbe l'admin per minuti, quindi non si attende. Il
+    ritmo serve nel worker, che e' dove le campagne partono in produzione.
+    """
+    from django.conf import settings
+    if getattr(settings, 'CELERY_TASK_ALWAYS_EAGER', False):
+        return 0
+    try:
+        from core.models import EmailSettings
+        valore = int(EmailSettings.load().pausa_campagne_secondi or 0)
+    except Exception:
+        logger.exception("Pausa invii non leggibile: procedo senza attesa")
+        return 0
+    valore = max(0, min(PAUSA_MASSIMA, valore))
+
+    attese = max(0, (destinatari or 0) - 1)
+    if valore and attese:
+        massimo = BUDGET_CAMPAGNA // attese
+        if valore > massimo:
+            logger.warning(
+                "Pausa ridotta da %ss a %ss: con %s destinatari l'attesa "
+                "impostata non starebbe nel tempo massimo della campagna.",
+                valore, massimo, destinatari)
+            valore = massimo
+    return valore
+
+
+def intestazioni_disiscrizione(url):
+    """List-Unsubscribe e List-Unsubscribe-Post per la posta promozionale.
+
+    Fanno comparire il pulsante "Annulla iscrizione" accanto al mittente in
+    Gmail e Outlook: senza, chi non vuole piu' le email segnala come spam, e
+    le segnalazioni pesano sulla reputazione del dominio molto piu' delle
+    disiscrizioni. One-Click vuol dire che il gestore di posta manda un POST
+    a quell'indirizzo: la nostra vista di disiscrizione lo accetta e
+    disiscrive davvero, quindi l'intestazione non e' una promessa a vuoto.
+    """
+    if not url:
+        return {}
+    return {
+        'List-Unsubscribe': f'<{url}>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }
 
 
 def nota_iva_importo(contract, language='it'):
@@ -812,7 +884,8 @@ _UNSUB_TEXT = {
 }
 
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=120)
+@shared_task(bind=True, max_retries=2, default_retry_delay=120,
+             time_limit=LIMITE_CAMPAGNA, soft_time_limit=BUDGET_CAMPAGNA)
 def send_promotional_campaign_batch(self, campaign_id):
     """
     Invia una campagna promozionale a tutti i contatti eleggibili (sponsor
@@ -846,7 +919,11 @@ def send_promotional_campaign_batch(self, campaign_id):
     dj = engines['django']
 
     sent = 0
-    for contact in campaign.eligible_contacts_queryset().select_related('sponsor'):
+    destinatari = list(
+        campaign.eligible_contacts_queryset().select_related('sponsor'))
+    pausa = pausa_fra_invii(len(destinatari))
+    ultimo = len(destinatari) - 1
+    for indice, contact in enumerate(destinatari):
         lang = contact.preferred_language if contact.preferred_language in ('it', 'en') else 'it'
         placeholders = {
             'sponsor': contact.sponsor,
@@ -883,10 +960,13 @@ def send_promotional_campaign_batch(self, campaign_id):
                 related_to=campaign,
                 communication_type='promotional_campaign',
                 is_automated=True,
+                headers=intestazioni_disiscrizione(unsubscribe_url),
             )
             sent += 1
         except Exception:
             logger.exception("Invio campagna %s a %s fallito", campaign_id, contact.email)
+        if pausa and indice < ultimo:
+            _attendi(pausa)
 
     campaign.last_sent_at = timezone.now()
     campaign.save(update_fields=['last_sent_at', 'updated_at'])
@@ -915,7 +995,8 @@ _MARKETING_UNSUB_TEXT = {
 }
 
 
-@shared_task(bind=True, max_retries=0)
+@shared_task(bind=True, max_retries=0,
+             time_limit=LIMITE_CAMPAGNA, soft_time_limit=BUDGET_CAMPAGNA)
 def send_interest_campaign(self, campaign_id, test_to=None):
     """Invia una campagna per aree di interesse: una email per indirizzo
     (vedi destinatari_per_aree). Con test_to manda UNA sola email di prova a
@@ -951,7 +1032,9 @@ def send_interest_campaign(self, campaign_id, test_to=None):
     dj = engines['django']
 
     sent = 0
-    for contact in destinatari:
+    pausa = 0 if is_test else pausa_fra_invii(len(destinatari))
+    ultimo = len(destinatari) - 1
+    for indice, contact in enumerate(destinatari):
         lang = contact.preferred_language if contact.preferred_language in ('it', 'en') else 'it'
         placeholders = {'sponsor': contact.sponsor, 'contact': contact, 'event_name': ''}
         body = _pick_lang(campaign.body, lang) or ''
@@ -961,6 +1044,7 @@ def send_interest_campaign(self, campaign_id, test_to=None):
         token = signing.dumps({'e': (test_to or contact.email).strip().lower()},
                               salt=MARKETING_UNSUB_SALT)
         txt = _MARKETING_UNSUB_TEXT.get(lang, _MARKETING_UNSUB_TEXT['it'])
+        unsub_url = base_url + reverse('portal:marketing_unsubscribe', args=[token])
         try:
             # dentro il try: un oggetto che non compila (in una lingua) salta
             # solo i destinatari di quella lingua, non ferma l'intera campagna
@@ -973,7 +1057,7 @@ def send_interest_campaign(self, campaign_id, test_to=None):
                 template_name='promotional_campaign',
                 context={
                     **placeholders,
-                    'unsubscribe_url': base_url + reverse('portal:marketing_unsubscribe', args=[token]),
+                    'unsubscribe_url': unsub_url,
                     'unsubscribe_intro': txt['intro'],
                     'unsubscribe_label': txt['label'],
                 },
@@ -984,10 +1068,15 @@ def send_interest_campaign(self, campaign_id, test_to=None):
                 related_to=campaign,
                 communication_type='promotional_campaign',
                 is_automated=not is_test,
+                headers=intestazioni_disiscrizione(unsub_url),
             )
             sent += 1
         except Exception:
             logger.exception("Invio campagna per aree %s a %s fallito", campaign_id, contact.email)
+        # Il ritmo si tiene anche dopo un invio fallito: se il server ci sta
+        # limitando, insistere senza pause peggiora le cose.
+        if pausa and indice < ultimo:
+            _attendi(pausa)
 
     if not is_test:
         InterestCampaign.objects.filter(pk=campaign.pk).update(sent_count=sent)

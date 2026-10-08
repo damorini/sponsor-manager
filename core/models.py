@@ -279,6 +279,21 @@ class EmailSettings(models.Model):
         help_text="Indirizzo a cui inviare l'email di PROVA. "
                   "Vuoto = la tua email di accesso.",
     )
+    pausa_campagne_secondi = models.PositiveIntegerField(
+        default=4, verbose_name="Pausa fra gli invii delle campagne (secondi)",
+        help_text="Quanto aspettare fra un'email e la successiva quando parte "
+                  "una campagna. Serve a non spedire una raffica: il server di "
+                  "posta può limitare gli invii, e una raffica improvvisa è uno "
+                  "dei segnali che i filtri antispam guardano. 4-5 secondi per "
+                  "poche decine di destinatari, 15-30 per qualche centinaio. "
+                  "0 = nessuna pausa. Massimo 60. "
+                  "Con 300 destinatari e 15 secondi la campagna dura circa "
+                  "un'ora e un quarto: parte in background, puoi chiudere la "
+                  "pagina. Su liste molto lunghe la pausa viene ridotta da "
+                  "sola, perché una campagna non può durare più di quattro "
+                  "ore: meglio spedire più in fretta del voluto che perdere "
+                  "per strada la coda della lista.",
+    )
 
     class Meta:
         verbose_name = "Configurazione email (SMTP)"
