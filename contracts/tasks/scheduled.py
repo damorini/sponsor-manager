@@ -55,13 +55,16 @@ def check_upcoming_deadlines():
         days_remaining = (deadline.due_date - today).days
 
         # Reminder days: dal template se presente; altrimenti default per tipo.
-        # Le scadenze di pagamento (acconto/saldo) usano 7 e 3 giorni prima.
-        # 7/3 giorni per scadenze di pagamento e di opzione spazio
+        # Pagamenti (acconto/saldo): 7 e 3 giorni prima.
+        # Opzione sullo spazio: 3 giorni prima e il giorno prima.
         SHORT_REMINDER_DAYS = [7, 3]
+        OPTION_REMINDER_DAYS = [3, 1]
         _dtype = (deadline.deadline_type or '')
         if deadline.deadline_template:
             reminder_days = deadline.deadline_template.reminder_days_before
-        elif _dtype.startswith('pagamento') or _dtype == 'scadenza_opzione':
+        elif _dtype == 'scadenza_opzione':
+            reminder_days = OPTION_REMINDER_DAYS
+        elif _dtype.startswith('pagamento'):
             reminder_days = SHORT_REMINDER_DAYS
         else:
             reminder_days = [10, 3, 0]
@@ -113,6 +116,10 @@ def check_overdue_deadlines():
         if deadline.status != DeadlineStatus.OVERDUE:
             deadline.status = DeadlineStatus.OVERDUE
             deadline.save(update_fields=['status', 'updated_at'])
+
+        # Opzione scaduta: nessun sollecito al cliente (bastano i promemoria)
+        if (deadline.deadline_type or '') == 'scadenza_opzione':
+            continue
 
         send_deadline_reminder.delay(deadline.id, reminder_type='overdue')
         sent_count += 1
@@ -249,8 +256,22 @@ def send_operator_alerts():
         bounced_at__gt=yesterday,
     )[:20])
 
+    # 4-6. Cose lasciate a meta' / che il cliente non vede (core/controlli.py)
+    from core import controlli
+    contatti_da_invitare = list(controlli.contatti_da_invitare()
+                                .select_related('sponsor')
+                                .order_by('sponsor__legal_name')[:20])
+    cliente_senza_accesso = list(controlli.contratti_cliente_senza_accesso()
+                                 .select_related('sponsor')
+                                 .order_by('sponsor__legal_name')[:20])
+    senza_scadenze_pagamento = list(controlli.contratti_senza_scadenze_pagamento()
+                                    .select_related('sponsor')
+                                    .order_by('sponsor__legal_name')[:20])
+
     # Se nulla di urgente, esci silenzioso
-    if not overdue_deadlines and not pending_payments and not failed_emails:
+    if not (overdue_deadlines or pending_payments or failed_emails
+            or contatti_da_invitare or cliente_senza_accesso
+            or senza_scadenze_pagamento):
         logger.info("send_operator_alerts: nulla di urgente, skip email")
         return
 
@@ -272,6 +293,9 @@ def send_operator_alerts():
         'overdue_deadlines': overdue_deadlines,
         'pending_payments': pending_payments,
         'failed_emails': failed_emails,
+        'contatti_da_invitare': contatti_da_invitare,
+        'cliente_senza_accesso': cliente_senza_accesso,
+        'senza_scadenze_pagamento': senza_scadenze_pagamento,
     }
 
     counts = []
@@ -281,6 +305,12 @@ def send_operator_alerts():
         counts.append(f"{len(pending_payments)} pagamenti da confermare")
     if failed_emails:
         counts.append(f"{len(failed_emails)} email non recapitate")
+    if cliente_senza_accesso:
+        counts.append(f"{len(cliente_senza_accesso)} contratti che il cliente non vede")
+    if contatti_da_invitare:
+        counts.append(f"{len(contatti_da_invitare)} inviti portale da mandare")
+    if senza_scadenze_pagamento:
+        counts.append(f"{len(senza_scadenze_pagamento)} contratti senza scadenze di pagamento")
     subject = f"⚠ Alert Sponsor Manager: {', '.join(counts)}"
 
     try:
@@ -342,3 +372,28 @@ def check_promotional_campaigns():
             n += 1
     logger.info("check_promotional_campaigns: %d campagne messe in coda", n)
     return n
+
+
+# ============================================================================
+# Opzioni spazio scadute: lo stand/blocco torna Disponibile
+# ============================================================================
+
+@shared_task
+def libera_spazi_opzione_scaduta():
+    """Ricalcola lo stato degli stand/blocchi 'Riservati': quando l'opzione
+    della bozza che li teneva e' scaduta tornano Disponibili anche nelle liste
+    (la tendina del contratto li mostra gia' da sola, vedi venues/admin.py)."""
+    from venues.models import Stand, StandBlock, StandStatus
+
+    liberati = 0
+    for block in StandBlock.objects.filter(status=StandStatus.RESERVED):
+        block.update_status_from_contract()
+        if block.status == StandStatus.AVAILABLE:
+            liberati += 1
+    for stand in Stand.objects.filter(status=StandStatus.RESERVED,
+                                      stand_block__isnull=True):
+        stand.update_status_from_contract()
+        if stand.status == StandStatus.AVAILABLE:
+            liberati += 1
+    logger.info("libera_spazi_opzione_scaduta: %d spazi tornati disponibili", liberati)
+    return liberati

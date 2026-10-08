@@ -109,3 +109,12 @@ def test_quote_senza_iva_non_mostra_la_riga_iva(sponsor):
     fine = testo.index('Totale', inizio)
     tabella_totali = testo[inizio:fine]
     assert 'IVA' not in tabella_totali, tabella_totali
+
+
+@pytest.mark.django_db
+def test_quote_totali_stessa_dimensione_e_etichette_iva():
+    from django.template.loader import render_to_string
+    html = open(Path(settings.BASE_DIR) / 'contracts/templates/quote_pdf.html', encoding='utf-8').read()
+    assert 'class="g"' not in html
+    assert 'font-size:16px' not in html.split('.tot')[1].split('</style>')[0]
+    assert '{{ t.imponibile }}' in html and '{{ t.totale_iva }}' in html

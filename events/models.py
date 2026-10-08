@@ -11,6 +11,7 @@ ottenere la traduzione con fallback alla lingua di default dell'evento.
 """
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from datetime import datetime, date
 from django.db import models
 from django.utils.text import slugify
@@ -191,6 +192,73 @@ class Event(TranslatableMixin, TimeStampedModel):
                   "(nome, indirizzo, contatti...). Appare in basso a destra nel "
                   "PDF del preventivo. Lascia vuoto per non mostrarla.",
     )
+    contract_annex_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Inserisci allegato al contratto",
+        help_text="Se spuntato, il file qui sotto viene aggiunto come ALLEGATO 2 "
+                  "in fondo al contratto di sponsorizzazione (dopo la Domanda di "
+                  "ammissione, che e' l'Allegato 1).",
+    )
+    contract_annex_title = models.CharField(
+        max_length=120, blank=True, default="Regolamento tecnico",
+        verbose_name="Titolo dell'allegato",
+        help_text="Stampato in testa all'allegato: «ALLEGATO 2 – <titolo>».",
+    )
+    contract_annex_file = models.FileField(
+        upload_to='events/contract_annex/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(['docx', 'pdf'])],
+        verbose_name="File dell'allegato (Word .docx o PDF)",
+        help_text="Il Word viene convertito in PDF alla generazione di ogni "
+                  "contratto. I vecchi file .doc vanno prima salvati come .docx.",
+    )
+    contract_annex_moduli = models.FileField(
+        upload_to='events/contract_annex/',
+        null=True, blank=True,
+        validators=[FileExtensionValidator(['pdf'])],
+        verbose_name="Moduli da allegare in fondo all'Allegato 2 (PDF)",
+        help_text="Es. i moduli ME1/ME2 del Polo Congressuale: vengono accodati "
+                  "cosi' come sono in fondo all'Allegato 2 e contati nelle sue pagine.",
+    )
+    montaggio_indirizzo = models.TextField(
+        blank=True, verbose_name="Indirizzo di accesso per montaggio e smontaggio",
+        help_text="Da dove entrano Sponsor e allestitori coi mezzi, se diverso "
+                  "dall'ingresso del congresso (es. «Via Calzoni 1/5 - Bologna»). "
+                  "Compare nel Regolamento tecnico e nella mail del PASS allestimento.",
+    )
+    montaggio_dettagli = models.TextField(
+        blank=True, verbose_name="Indicazioni per l'accesso al montaggio",
+        help_text="Facoltativo, es. lunghezza massima dei mezzi, varco, parcheggio, "
+                  "documenti da esibire.",
+    )
+    referente_sponsor = models.TextField(
+        blank=True, verbose_name="Referente per informazioni Sponsor",
+        help_text="Es. «Elisa Fantini Tel. ... – WhatsApp ... - email». Compare "
+                  "evidenziato nella mail del PASS allestimento e nel suo PDF.",
+    )
+    regole_montaggio = models.TextField(
+        blank=True,
+        verbose_name="Regole per il montaggio e lo smontaggio dell'area espositiva",
+        help_text="Compaiono nella mail del PASS allestimento e nel suo PDF (nel "
+                  "Regolamento tecnico con il segnaposto {{ regole_montaggio }}).",
+    )
+    magazzino_ritiro = models.TextField(
+        blank=True, verbose_name="Ritiro del materiale a fine evento",
+        help_text="Istruzioni, orari e obblighi per ritirare il materiale a fine "
+                  "evento. Compaiono nella mail del PASS allestimento e nel suo PDF "
+                  "(nel Regolamento tecnico con il segnaposto {{ magazzino_ritiro }}).",
+    )
+    magazzino_indirizzo = models.TextField(
+        blank=True, verbose_name="Indirizzo del magazzino di consegna",
+        help_text="Dove gli Sponsor spediscono i materiali per lo stand. Compare "
+                  "nel Regolamento tecnico (Allegato 2) alla voce INDIRIZZO.",
+    )
+    magazzino_dettagli = models.TextField(
+        blank=True, verbose_name="Giorni, orari e indicazioni per la consegna",
+        help_text="Es. giorni e orari di ricevimento, referente, indicazioni "
+                  "per il corriere. Compare nel Regolamento tecnico sotto "
+                  "l'indirizzo del magazzino.",
+    )
     scientific_secretariat_logo = models.FileField(
         upload_to='events/scientific_secretariat/',
         null=True,
@@ -359,6 +427,50 @@ class Event(TranslatableMixin, TimeStampedModel):
     @property
     def is_active(self):
         return self.status != EventStatus.ARCHIVED
+
+
+GIORNI_SETTIMANA = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì',
+                    'Venerdì', 'Sabato', 'Domenica']
+
+
+class SetupKind(models.TextChoices):
+    ALLESTIMENTO = 'allestimento', 'Allestimento'
+    DISALLESTIMENTO = 'disallestimento', 'Disallestimento'
+
+
+class EventSetupDay(TimeStampedModel):
+    """Un giorno di allestimento o disallestimento dell'evento, con orario.
+    Il giorno della settimana non si scrive: si ricava dalla data."""
+    event = models.ForeignKey(
+        Event, on_delete=models.CASCADE, related_name='setup_days',
+        verbose_name="Evento")
+    kind = models.CharField(
+        "Tipo", max_length=20, choices=SetupKind.choices,
+        default=SetupKind.ALLESTIMENTO)
+    date = models.DateField("Data")
+    start_time = models.TimeField("Orario di inizio")
+    end_time = models.TimeField("Orario di fine")
+    notes = models.CharField(
+        "Note", max_length=255, blank=True,
+        help_text="Facoltativo, es. 'solo stand preallestiti', 'ingresso carico merci'.")
+
+    class Meta:
+        verbose_name = "Giorno di allestimento/disallestimento"
+        verbose_name_plural = "Allestimento e disallestimento"
+        ordering = ['date', 'start_time']
+
+    def __str__(self):
+        return (f"{self.get_kind_display()} {self.giorno_settimana} "
+                f"{self.date:%d/%m/%Y} {self.start_time:%H:%M}-{self.end_time:%H:%M}")
+
+    @property
+    def giorno_settimana(self):
+        return GIORNI_SETTIMANA[self.date.weekday()] if self.date else ''
+
+    def clean(self):
+        if self.start_time and self.end_time and self.end_time <= self.start_time:
+            raise ValidationError(
+                {'end_time': "L'orario di fine deve essere successivo a quello di inizio."})
 
 
 class PromotionalCampaign(TimeStampedModel):

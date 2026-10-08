@@ -420,11 +420,41 @@ def _righe_valorizzate_prima(lines):
     il default del modello), il comportamento e' IDENTICO a prima - il
     display_order diventa rilevante solo se qualcuno lo valorizza."""
     from decimal import Decimal as _D
+    lines = list(lines)
+    posizione = _posizione_inclusi(lines)
     return sorted(
-        list(lines),
+        lines,
         key=lambda l: (l.display_order or 0,
-                        (l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0'))),
+                        (l.line_subtotal or _D('0')) <= 0, -(l.line_subtotal or _D('0')),
+                        posizione.get(id(l), 10_000), l.pk or 0),
     )
+
+
+def _posizione_inclusi(lines):
+    """{id(riga): posizione} per le righe dei servizi inclusi, secondo l'ordine
+    della lista «Servizi inclusi» del pacchetto (marcatore [incluso:PADRE>FIGLIO]
+    nelle note della riga)."""
+    import re
+    from catalog.models import ServiceInclusion
+    posizione, cache = {}, {}
+    for l in lines:
+        m = re.search(r'\[incluso:([^>\]]+)>([^\]]+)\]', getattr(l, 'notes', '') or '')
+        if not m:
+            continue
+        padre, figlio = m.groups()
+        try:
+            evento = l.contract.event_id
+        except Exception:
+            evento = None
+        chiave = (evento, padre)
+        if chiave not in cache:
+            qs = ServiceInclusion.objects.filter(parent__code=padre)
+            if evento:
+                qs = qs.filter(parent__event_id=evento)
+            cache[chiave] = {c: i for i, c in enumerate(
+                qs.order_by('display_order', 'id').values_list('child__code', flat=True))}
+        posizione[id(l)] = cache[chiave].get(figlio, 9_999)
+    return posizione
 
 
 def _group_lines_by_category(contract, event_type):
@@ -500,6 +530,16 @@ def _convert_docx_to_pdf(docx_path):
     
     docx_path = Path(docx_path)
     output_dir = docx_path.parent
+
+    # Un capitolo non si spezza tra due pagine (vale per tutti i documenti
+    # Word: contratto, Domanda, Allegato 2...). Se non riesce, si converte
+    # comunque il documento cosi' com'e'.
+    try:
+        from .impaginazione import tieni_capitoli_interi
+        tieni_capitoli_interi(docx_path)
+    except Exception as e:
+        logger.warning("Impaginazione a capitoli interi non applicata a %s: %s",
+                       docx_path.name, e)
     
     try:
         result = subprocess.run(
@@ -666,7 +706,8 @@ def _add_header_footer_to_docx(docx_path, contract):
                 else:
                     target = header.add_paragraph()
                 target.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                target.add_run().add_picture(str(img_path), width=Mm(usable_mm))
+                # al 75% della larghezza utile: header piu' basso, meno pagine
+                target.add_run().add_picture(str(img_path), width=Mm(usable_mm * 0.75))
                 changed = True
         except Exception:
             pass
@@ -741,12 +782,20 @@ def _add_header_footer_to_docx(docx_path, contract):
         cell_logo, cell_txt = ftbl.rows[0].cells
         cell_logo.width = Mm(logo_w)
         cell_txt.width = Mm(text_w)
-        # rimuovo i bordi della tabella
+        # niente bordi, tranne un filo sottile grigio in alto che separa il
+        # piè di pagina dal testo
         _tblPr = ftbl._tbl.tblPr
         _bd = _tblPr.makeelement(_qn('w:tblBorders'), {})
-        for _edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        _bd.append(_bd.makeelement(_qn('w:top'), {
+            _qn('w:val'): 'single', _qn('w:sz'): '4', _qn('w:space'): '0',
+            _qn('w:color'): 'A6A6A6'}))
+        for _edge in ('left', 'bottom', 'right', 'insideH', 'insideV'):
             _bd.append(_bd.makeelement(_qn('w:' + _edge), {_qn('w:val'): 'none'}))
         _tblPr.append(_bd)
+        # un po' d'aria fra il filo e il contenuto del piè di pagina
+        _mar = _tblPr.makeelement(_qn('w:tblCellMar'), {})
+        _mar.append(_mar.makeelement(_qn('w:top'), {_qn('w:w'): '85', _qn('w:type'): 'dxa'}))
+        _tblPr.append(_mar)
         # cella logo (sinistra)
         p_logo = cell_logo.paragraphs[0]
         p_logo.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -1303,10 +1352,72 @@ def _format_admission_services_table(docx_path):
     doc.save(str(docx_path))
 
 
-def _rimuovi_riga_iva_domanda(docx_path):
-    """Per i clienti ESENTI IVA: elimina la riga 'IVA ...' dalla tabella totali
-    della domanda (post-render docxtpl). Best-effort e idempotente.
-    Non tocca la cella 'PARTITA IVA' dei dati sponsor."""
+def _arricchisci_righe_domanda(docx_path, lines, language):
+    """
+    Completa le righe della tabella servizi della Domanda di Ammissione DOPO
+    il render (il template resta intatto):
+      - sotto il nome, la DESCRIZIONE della voce, una riga per a-capo (per lo
+        stand l'elenco di cio' che include; per badge e iscrizioni cosa
+        consentono);
+      - per i servizi INCLUSI (a EUR 0) la dicitura 'Incluso' al posto di
+        prezzo unitario e importo, come nel preventivo.
+    Le righe senza descrizione restano su una riga sola. Best-effort: se la
+    tabella non corrisponde alle righe attese, non tocca nulla.
+    """
+    from docx import Document
+    from docx.oxml import OxmlElement
+    from docx.shared import Pt, RGBColor
+    from docx.text.paragraph import Paragraph
+
+    lines = list(lines)
+    incluso = 'Included' if (language or 'it') == 'en' else 'Incluso'
+    doc = Document(str(docx_path))
+    for t in doc.tables:
+        header = ' '.join(c.text.strip().lower() for c in t.rows[0].cells)
+        if ('descrizione dei servizi' not in header
+                and 'description of the services' not in header):
+            continue
+        righe = [r for r in t.rows[1:] if r.cells[0].text.strip()]
+        if len(righe) != len(lines):
+            logger.warning("Domanda: %s righe in tabella, %s attese: "
+                           "descrizioni non aggiunte", len(righe), len(lines))
+            return
+        for row, ln in zip(righe, lines):
+            cella = row.cells[1]
+            if (ln.service_name_snapshot or '').strip() not in cella.text:
+                logger.warning("Domanda: riga non corrispondente (%s)",
+                               ln.service_name_snapshot)
+                return
+            if getattr(ln, 'is_included', False):
+                row.cells[2].text = incluso
+                row.cells[3].text = incluso
+            testo = (ln.service_description_snapshot or '').strip()
+            from core.elenco import voci_elenco
+            elenco = voci_elenco(testo)
+            voci = (['•  ' + v for v in elenco] if elenco else
+                    [v.strip() for v in testo.splitlines() if v.strip()])
+            dopo = cella.paragraphs[0]
+            for voce in voci:
+                nuovo_p = OxmlElement('w:p')
+                dopo._p.addnext(nuovo_p)
+                par = Paragraph(nuovo_p, dopo._parent)
+                par.paragraph_format.space_before = Pt(0)
+                par.paragraph_format.space_after = Pt(0)
+                run = par.add_run(voce)
+                run.font.bold = False
+                run.font.size = Pt(7)
+                run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+                dopo = par
+        break
+    doc.save(str(docx_path))
+
+
+def _rimuovi_riga_iva_domanda(docx_path, motivo='', language='it'):
+    """Per i clienti ESENTI IVA: la riga 'IVA ...' della tabella totali della
+    domanda (post-render docxtpl) non riporta importi. Se c'e' il motivo
+    dell'esenzione la riga resta e lo indica (es. 'ESENZIONE IVA: NON
+    IMPONIBILE ART. 8/1-C'), altrimenti viene eliminata.
+    Best-effort e idempotente. Non tocca la cella 'PARTITA IVA' dei dati sponsor."""
     from docx import Document
     d = Document(str(docx_path))
     removed = False
@@ -1325,7 +1436,10 @@ def _rimuovi_riga_iva_domanda(docx_path):
                 ct = c.text.strip().upper()
                 if ((ct.startswith('IVA') and 'PARTITA' not in ct)
                         or (ct.startswith('VAT') and 'NUMBER' not in ct)):
-                    row._tr.getparent().remove(row._tr)
+                    if motivo:
+                        _scrivi_esenzione_in_riga(row, motivo, language)
+                    else:
+                        row._tr.getparent().remove(row._tr)
                     removed = True
                     break
         if removed:
@@ -1333,6 +1447,202 @@ def _rimuovi_riga_iva_domanda(docx_path):
     if removed:
         d.save(str(docx_path))
     return removed
+
+
+
+def _scrivi_esenzione_in_riga(row, motivo, language='it'):
+    """Riga IVA della domanda per un cliente esente: l'etichetta diventa il
+    motivo dell'esenzione e la cella dell'importo resta vuota (niente importo
+    IVA per chi non la applica). Le celle unite si ripetono in row.cells:
+    ognuna si scrive una volta sola, mantenendo il formato del primo run."""
+    etichetta = 'VAT EXEMPTION' if language == 'en' else 'ESENZIONE IVA'
+    etichetta = f"{etichetta}: {motivo}"
+    visti = []
+    for c in row.cells:
+        if any(c._tc is v for v in visti):
+            continue
+        visti.append(c._tc)
+        testo = c.text.strip().upper()
+        if not testo:
+            continue
+        nuovo = etichetta if (testo.startswith('IVA') or testo.startswith('VAT')) else ''
+        par = c.paragraphs[0]
+        if par.runs:
+            par.runs[0].text = nuovo
+            for r in par.runs[1:]:
+                r.text = ''
+        else:
+            par.add_run(nuovo)
+        for altro in c.paragraphs[1:]:
+            for r in altro.runs:
+                r.text = ''
+
+
+def _pct_pulita(v):
+    """Percentuale 'pulita' per i testi (40 anziche' 40.00)."""
+    try:
+        d = Decimal(str(v))
+    except Exception:
+        return str(v)
+    return str(int(d)) if d == d.to_integral_value() else str(d.normalize())
+
+
+def _penale_cancellazione(contract):
+    """(percentuale penale, ha_caparra). Con caparra (acconto+saldo) la penale
+    e' pari alla caparra; con pagamento unico/differito e' la % dell'evento
+    (default 50). Stessa regola per Domanda di ammissione e contratto."""
+    has_deposit = bool(contract.has_deposit)
+    if has_deposit and contract.deposit_percent:
+        return _pct_pulita(contract.deposit_percent), has_deposit
+    return _pct_pulita(contract.event.cancellation_penalty_percent or 50), has_deposit
+
+
+def _prepara_allegato_2(contract, cartella):
+    """PDF dell'ALLEGATO 2 (es. Regolamento tecnico) caricato sull'evento, o
+    None se non previsto. Il Word viene personalizzato per il contratto e
+    convertito; un PDF viene accodato cosi' com'e'."""
+    event = contract.event
+    campo = getattr(event, 'contract_annex_file', None)
+    if not getattr(event, 'contract_annex_enabled', False) or not campo:
+        return None
+    try:
+        sorgente = Path(campo.path)
+    except Exception:
+        return None
+    if not sorgente.exists():
+        logger.warning("Allegato 2 dell'evento %s mancante su disco", event.pk)
+        return None
+    moduli = _moduli_allegato_2(event)
+    if sorgente.suffix.lower() == '.pdf':
+        return _accoda_moduli(sorgente, moduli, cartella, contract)
+    import shutil
+    from contracts.services.allegato2 import prepara_docx, usa_pagine_allegato
+    destinazione = Path(cartella) / f"allegato2_{contract.contract_number}.docx"
+    shutil.copyfile(sorgente, destinazione)
+    # titolo, riquadro Azienda/Stand/Contratto, orari di allestimento, stile e
+    # intestazioni del contratto (vedi allegato2.py)
+    prepara_docx(destinazione, contract)
+    pdf = _convert_docx_to_pdf(destinazione)
+    # «si compone di N. {{ pagine_allegato }} pagine»: si contano le pagine
+    # reali e si rifa' l'allegato col numero giusto
+    if pdf and usa_pagine_allegato(sorgente):
+        pagine = _conta_pagine_pdf(pdf)
+        if pagine and moduli:
+            pagine += _conta_pagine_pdf(moduli) or 0
+        if pagine:
+            shutil.copyfile(sorgente, destinazione)
+            prepara_docx(destinazione, contract, pagine=pagine)
+            pdf = _convert_docx_to_pdf(destinazione) or pdf
+    return _accoda_moduli(pdf, moduli, cartella, contract)
+
+
+def _moduli_allegato_2(event):
+    """PDF dei moduli da accodare all'Allegato 2 (es. ME1/ME2), o None."""
+    campo = getattr(event, 'contract_annex_moduli', None)
+    if not campo:
+        return None
+    try:
+        percorso = Path(campo.path)
+    except Exception:
+        return None
+    return percorso if percorso.exists() else None
+
+
+def _accoda_moduli(pdf, moduli, cartella, contract):
+    """Allegato 2 + moduli in un solo PDF (i moduli restano com'erano)."""
+    if not pdf or not moduli:
+        return pdf
+    try:
+        from pypdf import PdfWriter
+        uscita = Path(cartella) / f"allegato2_completo_{contract.contract_number}.pdf"
+        writer = PdfWriter()
+        writer.append(str(pdf))
+        writer.append(str(moduli))
+        with open(uscita, 'wb') as fh:
+            writer.write(fh)
+        writer.close()
+        return uscita
+    except Exception as e:
+        logger.warning("Allegato 2 %s: moduli non accodati (%s)",
+                       contract.contract_number, e)
+        return pdf
+
+
+# Larghezza media dei caratteri Arial, in "em" (per stimare se un testo sta
+# su una riga): cifre 0,556, maiuscole ~0,67, minuscole ~0,5.
+def _larghezza_testo_twip(testo, punti):
+    em = 0.0
+    for ch in testo:
+        if ch in '.,:;|il1!\' ':
+            em += 0.28
+        elif ch == '@':
+            em += 1.0
+        elif ch.isdigit():
+            em += 0.556
+        elif ch.isupper():
+            em += 0.68
+        else:
+            em += 0.52
+    return em * punti * 20
+
+
+def _una_riga_tabella_parti(docx_path):
+    """Nella tabella delle parti (la prima del contratto) ogni valore deve
+    stare su una riga: se una casella e' troppo stretta per il suo testo, il
+    carattere di QUELLA casella scende quanto basta (minimo 7 pt)."""
+    from docx import Document
+    from docx.shared import Pt
+    d = Document(str(docx_path))
+    if not d.tables:
+        return
+    tbl = d.tables[0]._tbl
+    W_ = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
+    grid = [int(g.get(W_ + 'w')) for g in tbl.find(W_ + 'tblGrid').findall(W_ + 'gridCol')]
+    cambiato = False
+    for riga in d.tables[0].rows:
+        pos = 0
+        for tc in riga._tr.findall(W_ + 'tc'):
+            sp = tc.find(f'{W_}tcPr/{W_}gridSpan')
+            n = int(sp.get(W_ + 'val')) if sp is not None else 1
+            disponibile = sum(grid[pos:pos + n]) - 230       # margini interni
+            pos += n
+            from docx.table import _Cell
+            cella = _Cell(tc, d.tables[0])
+            for par in cella.paragraphs:
+                runs = [r for r in par.runs if r.text]
+                if not runs:
+                    continue
+                punti = max((r.font.size.pt if r.font.size else 9) for r in runs)
+                larga = _larghezza_testo_twip(par.text.strip(), punti)
+                if larga <= disponibile or disponibile <= 0:
+                    continue
+                nuovo = max(7.0, punti * disponibile / larga)
+                for r in runs:
+                    r.font.size = Pt(round(nuovo * 2) / 2)
+                cambiato = True
+    if cambiato:
+        d.save(str(docx_path))
+
+
+def _conta_pagine_pdf(percorso):
+    try:
+        from pypdf import PdfReader
+        return len(PdfReader(str(percorso)).pages)
+    except Exception:
+        return None
+
+
+RAGIONE_SOCIALE_VALET = "VALET Società a Responsabilità Limitata"
+
+
+def _beneficiario_bonifico(organizzatore):
+    """Intestatario del bonifico nella Domanda: la ragione sociale completa di
+    VALET se l'organizzatore e' VALET (comunque scritto) o non indicato;
+    altrimenti il nome dell'organizzatore dell'evento."""
+    nome = (organizzatore or '').strip()
+    if not nome or nome.lower().startswith('valet'):
+        return RAGIONE_SOCIALE_VALET
+    return nome
 
 
 def generate_admission_request_pdf(contract, as_allegato=False):
@@ -1379,12 +1689,8 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         return str(int(d)) if d == d.to_integral_value() else str(d.normalize())
 
     has_deposit = bool(contract.has_deposit)
-    # Penale cancellazione: se c'e' caparra (acconto+saldo) e' pari alla caparra;
-    # se il pagamento e' unico/differito e' la % impostata sull'evento (default 50).
-    if has_deposit and contract.deposit_percent:
-        _penale = contract.deposit_percent
-    else:
-        _penale = event.cancellation_penalty_percent or 50
+    # Penale cancellazione: stessa regola del contratto (_penale_cancellazione).
+    _penale, _ = _penale_cancellazione(contract)
 
     context = {
         'contract': contract,
@@ -1392,6 +1698,7 @@ def generate_admission_request_pdf(contract, as_allegato=False):
         'signer': signer,
         'event': _event_for_template(event),
         'organizer_name': (event.organizer_legal_name or '').strip(),
+        'beneficiario': _beneficiario_bonifico(event.organizer_legal_name),
         'stand_notes': _stand_sponsor_notes(contract),
         'lines': lines,
         'imponibile': format_currency_filter(contract.subtotal),
@@ -1422,6 +1729,14 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     full_docx_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(full_docx_path))
 
+    # Descrizione sotto ogni voce e 'Incluso' al posto dei prezzi dei servizi
+    # inclusi (come nel preventivo).
+    try:
+        _arricchisci_righe_domanda(full_docx_path, lines, contract.language)
+    except Exception as e:
+        logger.warning("Descrizioni domanda non aggiunte per %s: %s",
+                       contract.contract_number, e)
+
     # Impagina la tabella servizi in modo professionale (font uniforme,
     # numeri a destra, intestazione evidenziata) sul docx generato.
     try:
@@ -1434,9 +1749,21 @@ def generate_admission_request_pdf(contract, as_allegato=False):
     # l'importo IVA per chi non la applica).
     if not contract.vat_applicable:
         try:
-            _rimuovi_riga_iva_domanda(full_docx_path)
+            _rimuovi_riga_iva_domanda(full_docx_path,
+                                      contract.vat_exemption_reason,
+                                      contract.language)
         except Exception as e:
             logger.warning("Riga IVA non rimossa dalla domanda per %s: %s",
+                           contract.contract_number, e)
+
+    # RIEPILOGO TECNICO DELLO SPAZIO (misure, altezza, kW...) e indicazioni
+    # specifiche dello stand, dopo le firme (non per gli addendum).
+    if not is_addendum:
+        try:
+            from contracts.services.caratteristiche_spazio import aggiungi_riepilogo_domanda
+            aggiungi_riepilogo_domanda(full_docx_path, contract)
+        except Exception as e:
+            logger.warning("Riepilogo tecnico non aggiunto alla domanda per %s: %s",
                            contract.contract_number, e)
 
     # Addendum: stesso modello, ma il titolo diventa "ADDENDUM AL CONTRATTO N° ...".
@@ -1523,38 +1850,9 @@ def generate_sponsor_contract_pdf(contract):
     ref = _get_operational_contact(contract)
     operational_email = (getattr(ref, 'email', '') or getattr(signer, 'email', '') or '')
 
-    context = {
-        'contract': contract,
-        'sponsor': sponsor,
-        'signer': signer,
-        'event': _event_for_template(event),
-        'organizer_name': (event.organizer_legal_name or '').strip(),
-        'operational_email': operational_email,
-    }
-    doc = DocxTemplate(str(template_path))
-    doc.render(context, jinja_env=get_jinja_env())
-
-    docx_filename = f"contratto_sponsor_{contract.contract_number}_{event.id}.docx"
-    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
-    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
-    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
-    doc.save(str(full_docx_path))
-
-    try:
-        _add_header_footer_to_docx(full_docx_path, contract)
-    except Exception as e:
-        logger.warning("Header/footer contratto sponsor non applicati per %s: %s",
-                       contract.contract_number, e)
-
-    contract_pdf = _convert_docx_to_pdf(full_docx_path)
-    if not contract_pdf:
-        return _create_document_record(
-            contract, full_docx_path, relative_docx_path, file_name=docx_filename,
-            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            document_type='sponsor_contract',
-        )
-
-    # ALLEGATO 1: la Domanda di ammissione (riusa quella gia' generata, se c'e')
+    # ALLEGATO 1 generato PRIMA del contratto: serve contarne le pagine,
+    # perche' il contratto dichiara di quante pagine si compone il documento
+    # (contratto + allegato).
     domanda_pdf = None
     try:
         # versione della domanda intitolata "ALLEGATO 1" (parte integrante)
@@ -1567,17 +1865,84 @@ def generate_sponsor_contract_pdf(contract):
     except Exception as e:
         logger.warning("Domanda (Allegato 1) non disponibile per %s: %s",
                        contract.contract_number, e)
+    pagine_allegato = (_conta_pagine_pdf(domanda_pdf) or 0) if domanda_pdf else 0
+
+    cartella_contratto = (Path(settings.MEDIA_ROOT) / 'documents' / 'contracts'
+                          / str(contract.id))
+    cartella_contratto.mkdir(parents=True, exist_ok=True)
+    allegato2_pdf = None
+    try:
+        allegato2_pdf = _prepara_allegato_2(contract, cartella_contratto)
+    except Exception as e:
+        logger.warning("Allegato 2 non aggiunto per %s: %s",
+                       contract.contract_number, e)
+    if allegato2_pdf:
+        pagine_allegato += _conta_pagine_pdf(allegato2_pdf) or 0
+
+    penale_percent, has_deposit = _penale_cancellazione(contract)
+    context = {
+        'contract': contract,
+        'sponsor': sponsor,
+        'signer': signer,
+        'event': _event_for_template(event),
+        'organizer_name': (event.organizer_legal_name or '').strip(),
+        'operational_email': operational_email,
+        'penale_percent': penale_percent,
+        'has_deposit': has_deposit,
+        'numero_pagine': 8,
+    }
+
+    docx_filename = f"contratto_sponsor_{contract.contract_number}_{event.id}.docx"
+    relative_docx_path = f"documents/contracts/{contract.id}/{docx_filename}"
+    full_docx_path = Path(settings.MEDIA_ROOT) / relative_docx_path
+    full_docx_path.parent.mkdir(parents=True, exist_ok=True)
+
+    contract_pdf = None
+    for _giro in range(3):
+        doc = DocxTemplate(str(template_path))
+        doc.render(context, jinja_env=get_jinja_env())
+        doc.save(str(full_docx_path))
+        try:
+            _una_riga_tabella_parti(full_docx_path)
+        except Exception as e:
+            logger.warning("Tabella parti non adattata per %s: %s",
+                           contract.contract_number, e)
+        try:
+            _add_header_footer_to_docx(full_docx_path, contract)
+        except Exception as e:
+            logger.warning("Header/footer contratto sponsor non applicati per %s: %s",
+                           contract.contract_number, e)
+        contract_pdf = _convert_docx_to_pdf(full_docx_path)
+        if not contract_pdf:
+            break
+        pagine_contratto = _conta_pagine_pdf(contract_pdf)
+        if not pagine_contratto:
+            break
+        totale = pagine_contratto + pagine_allegato
+        if totale == context['numero_pagine']:
+            break
+        # il numero dichiarato non torna: si rigenera con quello reale
+        context['numero_pagine'] = totale
+
+    if not contract_pdf:
+        return _create_document_record(
+            contract, full_docx_path, relative_docx_path, file_name=docx_filename,
+            mime='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            document_type='sponsor_contract',
+        )
 
     final_pdf = contract_pdf
     final_name = contract_pdf.name
-    if domanda_pdf:
+    allegati = [p for p in (domanda_pdf, allegato2_pdf) if p]
+    if allegati:
         try:
             from pypdf import PdfWriter
             merged_name = f"contratto_sponsor_completo_{contract.contract_number}_{event.id}.pdf"
             merged_path = full_docx_path.parent / merged_name
             writer = PdfWriter()
             writer.append(str(contract_pdf))
-            writer.append(str(domanda_pdf))
+            for allegato in allegati:
+                writer.append(str(allegato))
             with open(merged_path, 'wb') as fh:
                 writer.write(fh)
             writer.close()
@@ -1586,6 +1951,39 @@ def generate_sponsor_contract_pdf(contract):
         except Exception as e:
             logger.warning("Merge contratto+domanda (Allegato 1) fallito per %s: %s",
                            contract.contract_number, e)
+
+    # «CONTRATTO pag. 1 di 5», «ALLEGATO 1 pag. 1 di 3»... su ogni pagina
+    try:
+        from contracts.services.numerazione_pagine import numera
+        parti = [contract_pdf] + (allegati if final_pdf != contract_pdf else [])
+        numera(final_pdf, [_conta_pagine_pdf(x) or 0 for x in parti],
+               'en' if (contract.language or 'it') == 'en' else 'it')
+    except Exception as e:
+        logger.warning("Numerazione pagine non applicata per %s: %s",
+                       contract.contract_number, e)
+
+    # Firma della Segreteria nell'Allegato 2 e guida in prima pagina (di cosa
+    # si compone il documento, dove firmare, come restituirlo)
+    try:
+        from contracts.services.guida_firme import completa_contratto
+        pagine_moduli = 0
+        if allegato2_pdf and _moduli_allegato_2(event):
+            pagine_moduli = _conta_pagine_pdf(_moduli_allegato_2(event)) or 0
+        parti = [('contratto', _conta_pagine_pdf(contract_pdf) or 0)]
+        if final_pdf != contract_pdf:
+            if domanda_pdf:
+                parti.append(('allegato1', _conta_pagine_pdf(domanda_pdf) or 0))
+            if allegato2_pdf:
+                parti.append(('allegato2', (_conta_pagine_pdf(allegato2_pdf) or 0) - pagine_moduli))
+                parti.append(('moduli', pagine_moduli))
+        if sum(n for _, n in parti) == (_conta_pagine_pdf(final_pdf) or 0):
+            completa_contratto(final_pdf, contract, parti)
+        else:
+            logger.warning("Guida firme saltata per %s: pagine non tornano",
+                           contract.contract_number)
+    except Exception as e:
+        logger.warning("Guida firme non aggiunta per %s: %s",
+                       contract.contract_number, e)
 
     relative_pdf_path = f"documents/contracts/{contract.id}/{final_name}"
     document = _create_document_record(
@@ -1622,6 +2020,26 @@ def build_scientific_secretariat_context(event, site_url=''):
     return {'text': text, 'logo_url': logo_url}
 
 
+def _misure_riga_spazio(contract, line):
+    """Testo delle misure per la riga dello spazio espositivo nel preventivo:
+    stand -> «Misure: 6 × 4 m (24 m²)»; blocco -> «Superficie totale: 48 m²».
+    '' per le altre righe o se le misure mancano."""
+    from venues.models import misura
+    note = getattr(line, 'notes', '') or ''
+    en = (getattr(contract, 'language', '') or 'it') == 'en'
+    stand = getattr(contract, 'stand', None)
+    if stand is not None and f"stand:{stand.code}" in note:
+        dim = stand.dimensioni_testo
+        return (("Size: " if en else "Misure: ") + dim) if dim else ''
+    blocco = getattr(contract, 'stand_block', None)
+    if blocco is not None and f"block:{blocco.code}" in note:
+        aree = [s.area_sqm for s in blocco.stands.all() if s.area_sqm]
+        if not aree:
+            return ''
+        return ("Total area: " if en else "Superficie totale: ") + f"{misura(sum(aree))} m²"
+    return ''
+
+
 def generate_quote_pdf_html(contract):
     """Genera il PDF del preventivo dalla grafica HTML (come la mail), con
     pulsante cliccabile verso la pagina del portale. Richiede WeasyPrint."""
@@ -1639,6 +2057,8 @@ def generate_quote_pdf_html(contract):
     event = contract.event
     # Riepilogo: prima i servizi valorizzati (importo decrescente), poi gli inclusi.
     lines = _righe_valorizzate_prima(contract.lines.all())
+    for _ln in lines:
+        _ln.misure_spazio = _misure_riga_spazio(contract, _ln)
     site_url = getattr(settings, 'SITE_URL', '').rstrip('/')
     try:
         portal_path = reverse('portal:contract_detail', args=[contract.id])
@@ -1734,14 +2154,18 @@ def generate_quote_pdf_html(contract):
         t = {
             'eyebrow': 'Sponsorship proposal', 'intro': intro, 'attn': attn,
             'section_title': 'Summary of spaces and services on option',
+            'section_intro': 'Below you will find the description of the spaces on '
+                             'option and of the related services, including those '
+                             'already included in your participation.',
             'empty': 'No items selected.', 'incl': 'Included',
             'col_descrizione': 'Description', 'col_qta': 'Qty',
             'col_prezzo': 'Price', 'col_totale': 'Total (excl. VAT)',
             'badge_sconto': 'RESERVED DISCOUNT', 'badge_riservato': 'RESERVED PRICE',
-            'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total',
+            'subtotale': 'Subtotal', 'iva': 'VAT', 'totale': 'Total', 'imponibile': 'Total excl. VAT', 'totale_iva': 'Total incl. VAT',
             'validity': validity, 'cta': 'View the quote', 'ref': 'Quote',
             'note_stand': 'Exhibition space notes',
-            'your_ref': 'Your reference',
+            'your_ref': 'Your reference', 'quote_no': 'Quote No.',
+            'esenzione': 'VAT exemption',
         }
     else:
         intro = mark_safe(
@@ -1761,14 +2185,18 @@ def generate_quote_pdf_html(contract):
         t = {
             'eyebrow': 'Proposta di sponsorizzazione', 'intro': intro, 'attn': attn,
             'section_title': 'Riepilogo spazi e servizi in opzione',
+            'section_intro': 'Di seguito trovate la descrizione degli spazi opzionati '
+                             'e dei servizi collegati, compresi quelli già inclusi '
+                             'nella Vostra partecipazione.',
             'empty': 'Nessuna voce selezionata.', 'incl': 'Incluso',
             'col_descrizione': 'Descrizione', 'col_qta': 'Q.tà',
             'col_prezzo': 'Prezzo', 'col_totale': 'Totale (IVA escl.)',
             'badge_sconto': 'SCONTO A VOI RISERVATO', 'badge_riservato': 'PREZZO A VOI RISERVATO',
-            'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale',
+            'subtotale': 'Subtotale', 'iva': 'IVA', 'totale': 'Totale', 'imponibile': 'Totale IVA esclusa', 'totale_iva': 'Totale IVA inclusa',
             'validity': validity, 'cta': 'Vedi il preventivo', 'ref': 'Preventivo',
             'note_stand': 'Note sullo spazio espositivo',
-            'your_ref': 'Vostro riferimento',
+            'your_ref': 'Vostro riferimento', 'quote_no': 'Preventivo n.',
+            'esenzione': 'Esenzione IVA',
         }
 
     from decimal import Decimal as _Dec

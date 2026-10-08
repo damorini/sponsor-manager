@@ -30,8 +30,9 @@ def stand_con_prezzo(db, evento):
 
 
 @pytest.mark.django_db
-def test_nuovo_contratto_genera_scadenza_opzione(db, evento, stand_con_prezzo, sponsor):
-    """Nuovo contratto DRAFT con option_until + stand → scadenza_opzione creata al 1° save."""
+def test_scadenza_opzione_solo_da_preventivo_inviato(db, evento, stand_con_prezzo, sponsor):
+    """Bozza con option_until + stand: nessuna scadenza_opzione (il cliente non
+    ha ancora il preventivo). All'invio viene creata, alla firma sparisce."""
     from contracts.models import Contract, ContractStatus, ContractKind, Deadline
 
     scadenza_opzione = date.today() + timedelta(days=10)
@@ -44,9 +45,54 @@ def test_nuovo_contratto_genera_scadenza_opzione(db, evento, stand_con_prezzo, s
         deposit_percent=Decimal('30'),
     )
 
-    d = Deadline.objects.filter(contract=c, deadline_type='scadenza_opzione').first()
-    assert d is not None, "scadenza_opzione non creata al 1° salvataggio"
+    qs = Deadline.objects.filter(contract=c, deadline_type='scadenza_opzione')
+    assert not qs.exists(), "la bozza non deve avere promemoria opzione"
+
+    c.mark_as_sent()
+    d = qs.first()
+    assert d is not None, "scadenza_opzione non creata all'invio del preventivo"
     assert d.due_date == scadenza_opzione
+
+    c.status = ContractStatus.SIGNED
+    c.save(update_fields=['status', 'updated_at'])
+    assert not qs.exists(), "firmato: promemoria opzione da togliere"
+
+
+@pytest.mark.django_db
+def test_promemoria_opzione_3_giorni_e_giorno_prima(db, evento, stand_con_prezzo,
+                                                   sponsor, monkeypatch):
+    """Promemoria opzione: 3 giorni prima e il giorno prima; nessun sollecito
+    dopo la scadenza."""
+    from contracts.models import (Contract, ContractStatus, ContractKind,
+                                  Deadline)
+    from contracts.tasks import notifications
+    from contracts.tasks.scheduled import (check_upcoming_deadlines,
+                                           check_overdue_deadlines)
+
+    c = Contract.objects.create(
+        sponsor=sponsor, event=evento, contract_kind=ContractKind.MAIN,
+        status=ContractStatus.DRAFT, stand=stand_con_prezzo,
+        option_until=date.today() + timedelta(days=3),
+        deposit_percent=Decimal('30'),
+    )
+    c.mark_as_sent()
+    d = Deadline.objects.get(contract=c, deadline_type='scadenza_opzione')
+
+    inviati = []
+    monkeypatch.setattr(notifications.send_deadline_reminder, 'delay',
+                        lambda pk, reminder_type='reminder': inviati.append((pk, reminder_type)))
+
+    for giorni, atteso in ((7, 0), (3, 1), (2, 0), (1, 1), (0, 0)):
+        inviati.clear()
+        Deadline.objects.filter(pk=d.pk).update(
+            due_date=date.today() + timedelta(days=giorni), last_reminder_sent_at=None)
+        check_upcoming_deadlines()
+        assert len(inviati) == atteso, (giorni, inviati)
+
+    inviati.clear()
+    Deadline.objects.filter(pk=d.pk).update(due_date=date.today() - timedelta(days=1))
+    check_overdue_deadlines()
+    assert inviati == [], "nessun sollecito per l'opzione scaduta"
 
 
 @pytest.mark.django_db

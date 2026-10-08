@@ -13,10 +13,39 @@ from django.urls import reverse
 
 from core.admin_widgets import TranslatableJSONField
 
-from .models import Event, EventStatus, PromotionalCampaign, PromotionalCampaignOptOut
+from .models import (Event, EventSetupDay, EventStatus, PromotionalCampaign,
+                     PromotionalCampaignOptOut)
+
+
+class EventSetupDayInline(admin.TabularInline):
+    """Giorni di allestimento e disallestimento, uno per riga. Il giorno
+    della settimana si ricava dalla data (e si aggiorna subito scegliendola)."""
+    model = EventSetupDay
+    extra = 0
+    fields = ('kind', 'date', 'giorno', 'start_time', 'end_time', 'notes')
+    readonly_fields = ('giorno',)
+    verbose_name = "Giorno"
+    verbose_name_plural = "Allestimento e disallestimento"
+
+    class Media:
+        js = ('admin/js/giorno_settimana.js',)
+
+    @admin.display(description="Giorno della settimana")
+    def giorno(self, obj):
+        return obj.giorno_settimana if obj and obj.date else '-'
 
 
 class EventAdminForm(forms.ModelForm):
+
+    def clean(self):
+        cd = super().clean()
+        if cd.get('contract_annex_enabled') and not (
+                cd.get('contract_annex_file')
+                or getattr(self.instance, 'contract_annex_file', None)):
+            self.add_error('contract_annex_file',
+                           "Carica il file dell'allegato oppure togli la spunta.")
+        return cd
+
     name = TranslatableJSONField(
         languages=['it', 'en'],
         required_languages=['it'],
@@ -72,6 +101,7 @@ class EventAdmin(admin.ModelAdmin):
     ordering = ('-start_date',)
     readonly_fields = ('created_at', 'updated_at', 'sponsor_dashboard')
     actions = ['action_archivia', 'action_riattiva', 'action_duplica']
+    inlines = [EventSetupDayInline]
 
     @admin.action(description='Duplica per NUOVA EDIZIONE (servizi, stand, template scadenze)')
     def action_duplica(self, request, queryset):
@@ -152,6 +182,28 @@ class EventAdmin(admin.ModelAdmin):
         ('Dati per contratti', {
             'fields': ('scientific_director', 'ecm_id', 'aifa_reference', 'medtech_svc_reference', 'organizer_legal_name', 'contract_signing_location', 'cancellation_penalty_percent'),
             'classes': ('collapse',),
+        }),
+        ('Allegato 2 al contratto (es. Regolamento tecnico)', {
+            'fields': ('contract_annex_enabled', 'contract_annex_title',
+                       'contract_annex_file', 'contract_annex_moduli'),
+            'description': "Spunta «Inserisci allegato al contratto» e carica il "
+                           "file: ogni contratto di sponsorizzazione generato da qui "
+                           "in avanti lo avra' in fondo come ALLEGATO 2. I contratti "
+                           "gia' generati si aggiornano con «Rigenera PDF CONTRATTO».",
+        }),
+        ('Accesso per montaggio e smontaggio', {
+            'fields': ('montaggio_indirizzo', 'montaggio_dettagli', 'referente_sponsor',
+                       'regole_montaggio'),
+            'description': "Indirizzo da cui si entra per montare e smontare gli "
+                           "stand, quando e' diverso dall'ingresso della "
+                           "manifestazione: compare nel Regolamento tecnico "
+                           "(Allegato 2) e nella mail del PASS allestimento.",
+        }),
+        ('Magazzino di consegna (Regolamento tecnico)', {
+            'fields': ('magazzino_indirizzo', 'magazzino_dettagli', 'magazzino_ritiro'),
+            'description': "Indirizzo e indicazioni del magazzino a cui gli "
+                           "Sponsor spediscono i materiali: vengono riportati nel "
+                           "Regolamento tecnico (Allegato 2) di ogni contratto.",
         }),
         ('Segreteria Scientifica', {
             'fields': ('scientific_secretariat', 'scientific_secretariat_logo'),

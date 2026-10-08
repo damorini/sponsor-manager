@@ -153,6 +153,7 @@ class CommunicationType(models.TextChoices):
     MANUAL = 'manual', 'Manuale'
     PROMOTIONAL_CAMPAIGN = 'promotional_campaign', 'Campagna promozionale'
     PROFORMA_GENERATED = 'proforma_generated', 'Fattura proforma generata'
+    PASS_ALLESTIMENTO = 'pass_allestimento', 'PASS allestimento'
 
 
 class EmailTemplate(TimeStampedModel):

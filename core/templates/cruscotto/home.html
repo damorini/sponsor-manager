@@ -31,6 +31,36 @@
   </a>
   {% endif %}
 
+  {% if noaccesso_count %}
+  <a href="{{ noaccesso_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#ffebee;border-left:6px solid #c62828;border-radius:10px;padding:14px 18px;color:#7f1d1d;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>🚫 {{ noaccesso_count }} contratto/i che il cliente NON può vedere: nessun contatto dell'azienda ha l'accesso al portale</strong>
+      {% if noaccesso_sponsors %}<span> — {{ noaccesso_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · invita almeno un contatto →</span>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if inviti_count %}
+  <a href="{{ inviti_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#fff1e6;border-left:6px solid #ea580c;border-radius:10px;padding:14px 18px;color:#7c2d12;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>🔑 {{ inviti_count }} contatto/i con "Accesso al portale" spuntato ma mai invitato/i: non hanno ancora nome utente e password</strong>
+      {% if inviti_sponsors %}<span> — {{ inviti_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · selezionali e usa l'azione "Invita al portale" →</span>
+    </div>
+  </a>
+  {% endif %}
+
+  {% if nopag_count %}
+  <a href="{{ nopag_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
+    <div style="background:#fff7d6;border-left:6px solid #e6a23c;border-radius:10px;padding:14px 18px;color:#5b4a00;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+      <strong>💶 {{ nopag_count }} contratto/i firmato/i con importo ma senza scadenze di pagamento: il cliente non vede cosa pagare e non partono i promemoria</strong>
+      {% if nopag_sponsors %}<span> — {{ nopag_sponsors|join:", " }}</span>{% endif %}
+      <span style="opacity:.7;"> · clicca per vederli →</span>
+    </div>
+  </a>
+  {% endif %}
+
   {% if unread_msg_count %}
   <a href="{{ unread_msg_url }}" style="display:block;text-decoration:none;margin:0 0 18px;">
     <div style="background:#fff7d6;border-left:6px solid #e6a23c;border-radius:10px;padding:14px 18px;color:#5b4a00;box-shadow:0 1px 4px rgba(0,0,0,.08);">

@@ -1,4 +1,5 @@
 """Importa stand da un file Excel."""
+from core.excel import righe_excel
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -59,7 +60,7 @@ class Command(BaseCommand):
             raise CommandError(f"Impossibile aprire il file Excel: {e}")
 
         ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
+        rows = righe_excel(ws)
         if not rows:
             raise CommandError("Il foglio e' vuoto.")
 
@@ -167,6 +168,13 @@ class Command(BaseCommand):
                 # 'note_sponsor' non devono cancellare le note gia' salvate
                 if "note_sponsor" in col_idx:
                     campi["sponsor_notes"] = {"it": note_sponsor} if note_sponsor else {}
+                # idem per la porta di accesso (colonna facoltativa)
+                if "porta_accesso" in col_idx:
+                    campi["access_door"] = str(G("porta_accesso") or "").strip()[:50]
+                for _col in ("indicazioni_specifiche", "altre_caratteristiche"):
+                    if _col in col_idx:
+                        campi["caratteristiche"] = str(G(_col) or "").strip()
+                        break
                 if larghezza is not None:
                     campi["width_meters"] = larghezza
                 if profondita is not None:

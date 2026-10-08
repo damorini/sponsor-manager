@@ -14,7 +14,25 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 
+from .models import misura
 from .models import Stand, StandBlock, StandStatus, StandType
+
+
+def _solo_spazi_liberi(queryset, campo):
+    """Tendina di scelta spazio nel contratto: toglie gli stand/blocchi
+    Assegnati o Non disponibili e quelli che un contratto tiene ADESSO
+    (Contract.q_tiene_spazio: anche una bozza appena salvata). Il controllo e'
+    fatto dal vivo, non sullo stato salvato: cosi' lo spazio ricompare il
+    giorno dopo la scadenza dell'opzione senza aspettare altro."""
+    from django.db.models import Exists, OuterRef
+    from contracts.models import Contract, ContractStatus
+    tenuto = (Contract.objects
+              .filter(**{campo: OuterRef('pk')})
+              .exclude(status=ContractStatus.CANCELLED)
+              .filter(Contract.q_tiene_spazio()))
+    return (queryset
+            .exclude(status__in=[StandStatus.ASSIGNED, StandStatus.UNAVAILABLE])
+            .exclude(Exists(tenuto)))
 
 
 class StandBlockForm(forms.ModelForm):
@@ -54,22 +72,22 @@ class StandBlockForm(forms.ModelForm):
                 .filter(Q(stand_block__isnull=True, status=StandStatus.AVAILABLE)
                         | Q(stand_block=inst))
                 .select_related('event').order_by('code'))
+            f.initial = Stand.objects.filter(stand_block=inst)
+        else:
+            # nuovo blocco: gli stand disponibili e senza blocco di tutti gli eventi
+            f.queryset = (Stand.objects
+                .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
+                .select_related('event').order_by('event__slug', 'code'))
         # 'Tipologia' (block_type): tendina coi valori già usati, resta libero.
         if 'block_type' in self.fields:
             usate = (StandBlock.objects.exclude(block_type='')
                      .order_by('block_type').values_list('block_type', flat=True).distinct())
             self.fields['block_type'].widget = DatalistTextInput(options=list(usate))
-            f.initial = Stand.objects.filter(stand_block=inst)
-        else:
-            f.queryset = (Stand.objects
-                .filter(stand_block__isnull=True, status=StandStatus.AVAILABLE)
-                .select_related('event').order_by('event__slug', 'code'))
         # L'etichetta include il NOME dell'evento (come nella tendina Evento):
         # cosi' il filtro integrato della casella puo' restringere per evento.
         f.label_from_instance = lambda st: (
             f"{st.code} \u00b7 {st.event}"
-            + (f" ({st.width_meters}\u00d7{st.depth_meters}m)"
-               if st.width_meters and st.depth_meters else "")
+            + (f" ({st.dimensioni_testo})" if st.dimensioni_testo else "")
         )
 
     def clean_stands(self):
@@ -100,13 +118,13 @@ class StandBlockAdmin(admin.ModelAdmin):
     search_fields = ('code', 'name', 'event__name', 'event__slug')
 
     def get_search_results(self, request, queryset, search_term):
-        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
-        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
-        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione
+        # spazio nel contratto) mostra solo gli stand/blocchi liberi: vedi
+        # _solo_spazi_liberi (anche le bozze appena salvate li tengono).
         queryset, may_dup = super().get_search_results(
             request, queryset, search_term)
         if "/autocomplete/" in request.path:
-            queryset = queryset.filter(status=StandStatus.AVAILABLE)
+            queryset = _solo_spazi_liberi(queryset, 'stand_block')
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
@@ -222,7 +240,7 @@ class StandBlockAdmin(admin.ModelAdmin):
     @admin.display(description='Area totale')
     def total_area_display(self, obj):
         if obj.total_area_sqm:
-            return f"{obj.total_area_sqm} m\u00b2"
+            return f"{misura(obj.total_area_sqm)} m\u00b2"
         return '\u2014'
 
     @admin.display(description='Prezzo')
@@ -309,13 +327,14 @@ class StandAdmin(admin.ModelAdmin):
     search_fields = ('code', 'event__name', 'event__slug', 'stand_block__code')
 
     def get_search_results(self, request, queryset, search_term):
-        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione spazio nel contratto)
-        # mostra solo gli stand/blocchi DISPONIBILI, nascondendo quelli
-        # Riservati (opzionati), Assegnati (venduti) o Non disponibili.
+        # AUTOCOMPLETE_SOLO_DISPONIBILI: nella tendina autocomplete (selezione
+        # spazio nel contratto) mostra solo gli stand/blocchi liberi: vedi
+        # _solo_spazi_liberi (anche le bozze appena salvate li tengono).
         queryset, may_dup = super().get_search_results(
             request, queryset, search_term)
         if "/autocomplete/" in request.path:
-            queryset = queryset.filter(status=StandStatus.AVAILABLE, stand_block__isnull=True)
+            queryset = _solo_spazi_liberi(
+                queryset.filter(stand_block__isnull=True), 'stand')
             _ev = request.GET.get("event")
             if _ev:
                 queryset = queryset.filter(event_id=_ev)
@@ -347,7 +366,11 @@ class StandAdmin(admin.ModelAdmin):
                 ('has_power', 'power_kw'),
                 'has_water',
                 'has_internet',
+                'caratteristiche',
             ),
+        }),
+        ('Accesso per montaggio e smontaggio', {
+            'fields': ('access_door',),
         }),
         ('Posizionamento', {
             'fields': (('map_x', 'map_y'),),
@@ -394,12 +417,12 @@ class StandAdmin(admin.ModelAdmin):
     @admin.display(description='Dimensioni')
     def dimensions_display(self, obj):
         if obj.width_meters and obj.depth_meters:
-            return f"{obj.width_meters}\u00d7{obj.depth_meters} m ({obj.area_sqm} m\u00b2)"
+            return obj.dimensioni_testo
         return '\u2014'
 
     @admin.display(description='Area')
     def area_sqm_display(self, obj):
-        return f"{obj.area_sqm} m\u00b2" if obj.area_sqm else '\u2014'
+        return f"{obj.area_testo} m\u00b2" if obj.area_sqm else '\u2014'
 
     @admin.display(description='Dotazioni')
     def amenities_display(self, obj):

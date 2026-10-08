@@ -21,14 +21,14 @@
 
 {% if importo_scadenza %}
 <div class="alert-warning">
-  <strong>Importo:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)
+  <strong>Importo:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}
 </div>
 {% endif %}
 
 <p>Se invece il pagamento fosse ancora da effettuare, trovate tutti i dettagli
   e le coordinate bancarie nella vostra area riservata:</p>
 
-<p style="text-align:center; margin:24px 0;">
+{% if deadline.deadline_template.client_template_file %}<p>Collegandovi al portale troverete il <strong>template da scaricare</strong> per la realizzazione da parte del vostro ufficio grafico.</p>{% endif %}<p style="text-align:center; margin:24px 0;">
   <a href="{{ portal_url }}pagamenti/" class="button">Vedi i tuoi pagamenti</a>
 </p>
 

@@ -27,6 +27,7 @@ def contratto(db, sponsor):
         status=ContractStatus.SIGNED, contract_number='PRF-26-001',
         subtotal=Decimal('1000.00'), vat_amount=Decimal('220.00'),
         total=Decimal('1220.00'),
+        deposit_percent=Decimal('0'),  # pagamento unico
     )
 
 

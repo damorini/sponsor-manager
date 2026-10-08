@@ -182,6 +182,35 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
 # Invio email
 # ============================================================================
 
+def _sponsor_da_contesto(context):
+    """Lo sponsor a cui e' indirizzata la mail (dal contesto), o None."""
+    if not isinstance(context, dict):
+        return None
+    sp = context.get('sponsor')
+    if sp is None and context.get('contract') is not None:
+        sp = getattr(context.get('contract'), 'sponsor', None)
+    return sp
+
+
+def contatto_per_email(sponsor, email):
+    """Il contatto dello sponsor con questa email (per il nome nel saluto).
+    Per un indirizzo che non e' tra i contatti (aggiunto a mano, staff in
+    copia) un segnaposto col nome dell'azienda: mai il nome di un'altra
+    persona."""
+    from types import SimpleNamespace
+    try:
+        c = (sponsor.contacts
+             .filter(deleted_at__isnull=True, email__iexact=(email or '').strip())
+             .first())
+    except Exception:
+        c = None
+    if c:
+        return c
+    return SimpleNamespace(full_name=getattr(sponsor, 'legal_name', '') or '',
+                           first_name='', last_name='', email=email,
+                           is_placeholder=True)
+
+
 def send_plain_email(subject, body, recipients, fail_silently=True):
     """Invia un'email di TESTO SEMPLICE usando la connessione SMTP configurata
     dal pannello (core.models.EmailSettings) — la stessa di tutte le altre
@@ -247,6 +276,38 @@ def send_email(
     """
     from shared.models import Communication, CommunicationStatus
 
+    # 1-bis. Piu' destinatari di uno sponsor: una mail per ciascuno, col SUO
+    #        nome nel saluto (prima tutti ricevevano il nome del contatto
+    #        principale). Copie solo sulla prima mail.
+    _sp_dest = _sponsor_da_contesto(context)
+    _dest = [e for e in dict.fromkeys(to or []) if e]
+    if (_sp_dest is not None and len(_dest) > 1
+            and not (isinstance(context, dict) and context.get('_mail_singola'))):
+        ultima, errori, inviti = None, [], []
+        for i, email in enumerate(_dest):
+            ctx = dict(context)
+            ctx['contact'] = contatto_per_email(_sp_dest, email)
+            ctx['_mail_singola'] = True
+            ctx['_senza_inoltro_fisso'] = i > 0
+            try:
+                ultima = send_email(
+                    template_name, ctx, [email], subject,
+                    cc=cc if i == 0 else None, bcc=bcc if i == 0 else None,
+                    language=language, attachments=attachments,
+                    related_to=related_to, communication_type=communication_type,
+                    triggered_by_user=triggered_by_user, is_automated=is_automated,
+                    custom_body_html=custom_body_html,
+                )
+                inviti += getattr(ultima, 'inviti_portale', []) or []
+            except Exception as e:  # le altre persone la ricevono comunque
+                logger.exception("Invio a %s fallito", email)
+                errori.append(e)
+        if ultima is None and errori:
+            raise errori[0]
+        if ultima is not None:
+            ultima.inviti_portale = inviti
+        return ultima
+
     # 2. Costruisci contesto completo
     full_context = build_common_context(context, language)
     full_context['subject'] = subject
@@ -308,6 +369,8 @@ def send_email(
             if _ev_fwd is None and context.get('contract') is not None:
                 _ev_fwd = getattr(context.get('contract'), 'event', None)
         _fixed = _parse_email_list(getattr(_ev_fwd, 'notification_cc_emails', '') if _ev_fwd else '')
+        if isinstance(context, dict) and context.get('_senza_inoltro_fisso'):
+            _fixed = []  # gia' in copia sulla prima mail dello stesso invio
         if _fixed:
             _already = set(e.lower() for e in (list(to or []) + list(cc or []) + list(bcc or [])))
             bcc = list(bcc or []) + [e for e in _fixed if e.lower() not in _already]
@@ -381,7 +444,56 @@ def send_email(
         logger.exception("Errore invio email %s a %s", template_name, to)
         raise
 
+    # Invito al portale automatico per chi dell'azienda non l'ha mai avuto
+    communication.inviti_portale = invita_al_portale_se_mai_invitati(
+        template_name, context, to)
     return communication
+
+
+# Mail dopo le quali NON si manda l'invito: l'invito stesso, accessi, staff e
+# le campagne promozionali (vanno in massa anche a chi non e' ancora cliente)
+_SENZA_INVITO_PORTALE = {'portal_invitation', 'password_reset', 'operator_alert',
+                         'promotional_campaign'}
+
+
+def invita_al_portale_se_mai_invitati(template_name, context, to):
+    """Dopo una mail a uno sponsor: ogni destinatario che e' tra i contatti
+    dell'azienda e non ha mai avuto un accesso al portale riceve l'invito con
+    le credenziali. Una volta sola: chi ha gia' un utente (collegato o con la
+    stessa email) non viene toccato. Ritorna le email invitate. Mai un errore
+    verso il chiamante: la mail principale e' gia' partita."""
+    if template_name in _SENZA_INVITO_PORTALE:
+        return []
+    if not getattr(settings, 'INVITO_PORTALE_AUTOMATICO', True):
+        return []
+    sponsor = _sponsor_da_contesto(context)
+    if sponsor is None:
+        return []
+    invitati = []
+    try:
+        from django.contrib.auth import get_user_model
+        from portal.services.invitation import invite_contact_to_portal
+        User = get_user_model()
+        for email in to or []:
+            email = (email or '').strip()
+            if not email:
+                continue
+            contatto = (sponsor.contacts
+                        .filter(deleted_at__isnull=True, email__iexact=email,
+                                portal_user__isnull=True)
+                        .first())
+            if contatto is None or User.objects.filter(email__iexact=email).exists():
+                continue
+            try:
+                invite_contact_to_portal(contatto, send_email=True)
+                invitati.append(contatto.email)
+                logger.info("Invito portale automatico a %s (%s)",
+                            contatto.email, sponsor)
+            except Exception:
+                logger.exception("Invito portale automatico fallito per %s", email)
+    except Exception:
+        logger.exception("Controllo inviti portale fallito")
+    return invitati
 
 
 def _create_communication(

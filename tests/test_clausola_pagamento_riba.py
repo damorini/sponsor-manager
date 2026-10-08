@@ -31,6 +31,7 @@ def contratto_riba(db, sponsor, dati_firmatario_completi):
         sponsor=sponsor, event=event, contract_kind=ContractKind.MAIN,
         status=ContractStatus.SIGNED, contract_number='RB-26-001',
         balance_due_date_override=date(2026, 10, 29),
+        deposit_percent=Decimal('0'),  # pagamento unico
     )
     service = Service.objects.create(
         event=event, code='SRV1', name={'it': 'Servizio', 'en': 'Service'},

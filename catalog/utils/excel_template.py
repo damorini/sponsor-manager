@@ -199,6 +199,11 @@ def build_template_stand_workbook():
         ("descrizione_preventivo", "Opzionale. Descrizione mostrata nel preventivo"),
         ("note_sponsor", "Opzionale. Note per lo sponsor (es. specifiche per le "
                          "grafiche): compaiono nel preventivo e nel contratto"),
+        ("porta_accesso", "Opzionale. Porta di accesso al padiglione per montaggio "
+                          "e smontaggio (es. 3): compare nel Regolamento tecnico"),
+        ("indicazioni_specifiche", "Opzionale. Indicazioni specifiche dello spazio "
+                                   "(es. lati liberi, pilastri): sotto il riepilogo "
+                                   "tecnico in Allegato 1, Allegato 2 e PASS"),
     ]
 
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
@@ -212,15 +217,15 @@ def build_template_stand_workbook():
 
     esempio1 = ["AITEB2026", "A-01", "", 1500.00, 3, 2, "linear", "available",
                 "s", 3, "n", "s", 2.5, "Stand lineare 3x2 m, fronte corridoio",
-                "Grafiche pannello frontale: file PDF 300 dpi, 100x250 cm"]
+                "Grafiche pannello frontale: file PDF 300 dpi, 100x250 cm", "3"]
     esempio2 = ["AITEB2026", "A-02", "", 2500.00, 4, 4, "island", "available",
-                "s", 6, "s", "s", 3.0, "Isola 4x4 m, doppio fronte", ""]
+                "s", 6, "s", "s", 3.0, "Isola 4x4 m, doppio fronte", "", "5"]
     for col, v in enumerate(esempio1, start=1):
         ws.cell(row=2, column=col, value=v)
     for col, v in enumerate(esempio2, start=1):
         ws.cell(row=3, column=col, value=v)
 
-    larghezze = [14, 10, 14, 14, 12, 12, 16, 14, 18, 12, 16, 10, 14, 32, 40]
+    larghezze = [14, 10, 14, 14, 12, 12, 16, 14, 18, 12, 16, 10, 14, 32, 40, 14]
     for i, w in enumerate(larghezze, start=1):
         ws.column_dimensions[chr(64 + i)].width = w
 
@@ -294,7 +299,7 @@ def export_servizi_workbook(event):
         ws.cell(row=r, column=14, value=s.pricing_mode or 'fixed')
         ws.cell(row=r, column=15, value=_norm_bool_out(s.triggers_deadlines))
         try:
-            incl = ', '.join(sub.code for sub in s.included_services.all())
+            incl = ', '.join(i.child.code for i in s.inclusions.select_related('child'))
         except Exception:
             incl = ''
         ws.cell(row=r, column=16, value=incl)
@@ -316,7 +321,8 @@ def export_stand_workbook(event):
     ws.title = "stand"
     headers = ["evento_slug", "code", "blocco_code", "prezzo_base", "larghezza_m",
                "profondita_m", "tipologia", "stato", "allaccio_elettrico", "potenza_kw",
-               "allaccio_idrico", "internet", "altezza_max_m", "descrizione_preventivo"]
+               "allaccio_idrico", "internet", "altezza_max_m", "descrizione_preventivo",
+               "porta_accesso", "indicazioni_specifiche"]
     header_fill = PatternFill(start_color="417690", end_color="417690", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
     for i, name in enumerate(headers, start=1):
@@ -341,6 +347,8 @@ def export_stand_workbook(event):
         ws.cell(row=r, column=13, value=float(st.max_height_meters) if st.max_height_meters is not None else '')
         _qd = st.quote_description if isinstance(st.quote_description, dict) else {}
         ws.cell(row=r, column=14, value=_qd.get('it', '') or '')
+        ws.cell(row=r, column=15, value=st.access_door or '')
+        ws.cell(row=r, column=16, value=st.caratteristiche or '')
         r += 1
 
     for col in range(1, len(headers) + 1):

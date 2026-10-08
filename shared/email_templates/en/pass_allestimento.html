@@ -1,0 +1,185 @@
+{% extends "shared/email_templates/base/email_base.html" %}
+
+{% block content %}
+<!-- "PASS" header -->
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 22px 0; border-radius:10px; background-color:#1d6534;">
+  <tr>
+    <td style="padding:22px 24px; text-align:center; color:#ffffff;">
+      <div style="font-size:13px; letter-spacing:3px; text-transform:uppercase; opacity:0.85;">SET-UP PASS</div>
+      <div style="font-size:26px; font-weight:bold; margin-top:6px;">&#127881; CONGRATULATIONS!</div>
+      <div style="font-size:14px; margin-top:6px;">{{ event_name }}</div>
+    </td>
+  </tr>
+</table>
+
+<p>Dear {% if contact.full_name %}{{ contact.full_name }}{% else %}Sponsor{% endif %},</p>
+
+<p>we are pleased to inform you that your administrative procedures for
+  <strong>{{ event_name }}</strong> have successfully completed every step.</p>
+
+<p>With this <strong>PASS</strong> you may access the exhibition area and proceed with the
+  set-up of your stand. Please keep it and show it to the staff of the Congress Centre
+  when you arrive for the set-up.</p>
+
+<!-- PASS details -->
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:20px 0; border:2px solid #1d6534; border-radius:8px; background-color:#f0f7f2;">
+  <tr>
+    <td style="padding:16px 20px;">
+      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="font-size:14px; color:#374151;">
+        <tr><td style="padding:3px 0; color:#6b7280; width:215px;">Sponsor</td><td style="padding:3px 0;"><strong>{{ sponsor.legal_name }}</strong></td></tr>
+        {% if blocco %}
+        <tr><td style="padding:3px 0; color:#6b7280;">Block</td><td style="padding:3px 0;"><strong>{{ blocco }}</strong></td></tr>
+        <tr><td style="padding:3px 0; color:#6b7280;">Stands in the block</td><td style="padding:3px 0;"><strong>no. {{ stand_del_blocco }}</strong></td></tr>
+        {% else %}
+        <tr><td style="padding:3px 0; color:#6b7280;">Stand no.</td><td style="padding:3px 0;"><strong>{{ stand }}</strong></td></tr>
+        {% endif %}
+        {% if accesso %}<tr><td style="padding:3px 0; color:#6b7280;">Hall access door</td><td style="padding:3px 0;"><strong>{{ accesso }}</strong></td></tr>{% endif %}
+        <tr><td style="padding:3px 0; color:#6b7280;">Agreement no.</td><td style="padding:3px 0;">{{ contract.contract_number }}</td></tr>
+        {% if sede %}<tr><td style="padding:3px 0; color:#6b7280;">Venue</td><td style="padding:3px 0;">{{ sede }}</td></tr>{% endif %}
+        {% if date_evento %}<tr><td style="padding:3px 0; color:#6b7280;">Congress dates</td><td style="padding:3px 0;">{{ date_evento }}</td></tr>{% endif %}
+      </table>
+    </td>
+  </tr>
+</table>
+
+{% if spazio %}
+<div style="page-break-inside:avoid; break-inside:avoid;">
+
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Your space features</h3>
+{% for s in spazio %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 12px 0; border:1px solid #e5e7eb; border-radius:8px; font-size:13px; color:#374151;">
+  {% if spazio|length > 1 %}<tr><td colspan="2" style="padding:8px 14px; background-color:#f0f7f2;"><strong>Stand {{ s.codice }}</strong></td></tr>{% endif %}
+  {% for voce in s.voci %}
+  <tr>
+    <td style="padding:6px 14px; color:#6b7280; width:190px; border-top:1px solid #f3f4f6; vertical-align:top;">{{ voce.0 }}</td>
+    <td style="padding:6px 14px; border-top:1px solid #f3f4f6;"><strong>{{ voce.1|linebreaksbr }}</strong></td>
+  </tr>
+  {% endfor %}
+</table>
+{% if s.indicazioni %}<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e0cf9f; border-radius:8px; background-color:#fdf8e8;">
+  <tr><td style="padding:10px 14px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;"><strong>Specific notes:</strong><br>{{ s.indicazioni|linebreaksbr }}</td></tr>
+</table>{% endif %}
+{% endfor %}
+</div>
+{% endif %}
+
+<!-- Days and times -->
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Access for set-up and dismantling</h3>
+{% if giorni %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="border-collapse:collapse; font-size:13px; color:#374151;">
+  <tr style="background-color:#1d6534; color:#ffffff;">
+    <td style="padding:7px 10px;"><strong>Activity</strong></td>
+    <td style="padding:7px 10px;"><strong>Date</strong></td>
+    <td style="padding:7px 10px;"><strong>Time</strong></td>
+  </tr>
+  {% for g in giorni %}
+  <tr style="background-color:{% if g.allestimento %}#f0f7f2{% else %}#fdf6e7{% endif %};">
+    <td style="padding:7px 10px; border-top:1px solid #e5e7eb;">{{ g.tipo }}</td>
+    <td style="padding:7px 10px; border-top:1px solid #e5e7eb;">{{ g.giorno }} {{ g.data|date:"d/m/Y" }}</td>
+    <td style="padding:7px 10px; border-top:1px solid #e5e7eb;">{{ g.dalle|time:"H:i" }} – {{ g.alle|time:"H:i" }}</td>
+  </tr>
+  {% if g.note %}
+  <tr style="background-color:{% if g.allestimento %}#f0f7f2{% else %}#fdf6e7{% endif %};">
+    <td colspan="3" style="padding:0 10px 8px 22px; font-size:12px;">&#8627; <strong>Note for {{ g.giorno }} {{ g.data|date:"d/m/Y" }}:</strong> {{ g.note }}</td>
+  </tr>
+  {% endif %}
+  {% endfor %}
+</table>
+{% else %}
+<p>Dates and times will be communicated by the Organizing Secretariat.</p>
+{% endif %}
+{% if montaggio_indirizzo %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:16px 0; border-left:4px solid #d97706; background-color:#fff7ed;">
+  <tr>
+    <td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6;">
+      <strong>SET-UP AND DISMANTLING ACCESS</strong><br>
+      Please note: for set-up and dismantling the entrance is not the congress entrance.
+      Access is from:<br>
+      <strong>{% for r in montaggio_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+      {% if montaggio_dettagli %}<br>{% for r in montaggio_dettagli %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% endif %}
+    </td>
+  </tr>
+</table>
+{% endif %}
+{% if accesso %}
+<p style="margin-top:12px;"><strong>For your confirmed stand you may enter the hall (for set-up and
+  dismantling) through access no. {{ accesso }}.</strong></p>
+{% endif %}
+<p style="font-size:13px;">All set-up and dismantling work must be completed within the times indicated. For workplace
+  safety reasons, no set-up work is allowed during the congress days.</p>
+
+{% if referente_sponsor %}
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 18px 0; border-left:4px solid #1d4ed8; background-color:#eef4ff;">
+  <tr><td style="padding:10px 14px; font-size:13px; line-height:1.6; color:#1d4ed8;">
+    <strong>{% for r in referente_sponsor %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</strong>
+  </td></tr>
+</table>
+{% endif %}
+
+{% if regole_montaggio %}
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Rules for setting up and dismantling the exhibition area</h3>
+<table class="lungo" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;">
+    {{ regole_montaggio_html }}
+  </td></tr>
+</table>
+{% endif %}
+
+<!-- Shipping -->
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Shipping materials for your stand</h3>
+<p style="font-size:13px;">You may bring your materials directly during the set-up hours or ship them to
+  the delivery warehouse. In this case, the shipping documents must clearly show, on every package:</p>
+<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:8px 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr>
+    <td style="padding:14px 18px; font-size:13px; color:#374151; line-height:1.6;">
+      <strong>SENDER:</strong> whoever ships the goods (Sponsor or stand builder)<br>
+      <strong>CONSIGNEE:</strong> {{ sponsor.legal_name }}<br>
+      <strong>ADDRESS:</strong> {% if magazzino_indirizzo %}{% for r in magazzino_indirizzo %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}to be communicated by the Organizing Secretariat{% endif %}<br>
+      <strong>EVENT TITLE:</strong> {{ event_name }}<br>
+      <strong>STAND NUMBER:</strong> {% if blocco %}{{ stand_del_blocco }} (Block {{ blocco }}){% else %}{{ stand }}{% endif %}
+    </td>
+  </tr>
+</table>
+{% if magazzino_dettagli %}
+<p style="font-size:13px;"><strong>Delivery days, times and instructions</strong><br>
+  {% for r in magazzino_dettagli %}{{ r }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>
+{% endif %}
+<p style="font-size:13px;">Goods must be shipped carriage paid. Shipments with carriage forward will be
+  refused.</p>
+<p style="font-size:13px;"><strong>PLEASE NOTE: shipments requiring special storage conditions (for example
+  and not limited to, controlled temperatures or other instructions requiring special handling) will
+  not be accepted.</strong></p>
+
+{% if magazzino_ritiro %}
+<h3 class="text-primary" style="margin:26px 0 10px 0; font-size:16px;">Collection of materials at the end of the event</h3>
+<table class="lungo" role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"
+       style="margin:0 0 14px 0; border:1px solid #e5e7eb; border-radius:8px; background-color:#f9fafb;">
+  <tr><td style="padding:12px 16px; font-size:13px; color:#374151; line-height:1.6; text-align:justify;">
+    {{ magazzino_ritiro_html }}
+  </td></tr>
+</table>
+{% endif %}
+
+{% if not per_pdf %}
+<p style="font-size:13px; margin-top:22px;"><strong>This PASS is also attached as a PDF,
+  so that you can forward it to your stand builder.</strong></p>
+{% endif %}
+
+<p style="font-size:13px;">For all other technical matters (stand project, electrical
+  systems, safety, dismantling) please refer to the Technical Regulations annexed to your agreement.</p>
+
+<p>We remain at your disposal and wish you a successful set-up.<br>
+  See you at <strong>{{ event_name }}</strong>!</p>
+
+<p style="margin-top:22px;">Kind regards,<br>
+  <strong>Organizing Secretariat</strong></p>
+{% endblock %}

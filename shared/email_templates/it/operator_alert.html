@@ -48,6 +48,36 @@
 </ul>
 {% endif %}
 
+{% if cliente_senza_accesso %}
+<h3 style="color:#dc2626; margin-top:24px;">Contratti che il cliente NON può vedere ({{ cliente_senza_accesso|length }})</h3>
+<p style="margin:0 0 6px;">Nessun contatto dell'azienda ha l'accesso al portale: invita almeno un contatto.</p>
+<ul style="padding-left:20px;">
+{% for c in cliente_senza_accesso %}
+  <li><strong>{{ c.sponsor.legal_name }}</strong> · {{ c.contract_number }} · {{ c.get_status_display }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if contatti_da_invitare %}
+<h3 style="color:#f59e0b; margin-top:24px;">Inviti al portale da mandare ({{ contatti_da_invitare|length }})</h3>
+<p style="margin:0 0 6px;">"Accesso al portale" è spuntato ma l'invito non è mai partito: non hanno nome utente e password. Contatti → seleziona → azione "Invita al portale".</p>
+<ul style="padding-left:20px;">
+{% for c in contatti_da_invitare %}
+  <li><strong>{{ c.sponsor.legal_name }}</strong> · {{ c.full_name }} · {{ c.email }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if senza_scadenze_pagamento %}
+<h3 style="color:#f59e0b; margin-top:24px;">Contratti firmati senza scadenze di pagamento ({{ senza_scadenze_pagamento|length }})</h3>
+<p style="margin:0 0 6px;">Hanno un importo ma nessuna scadenza di acconto/saldo: il cliente non vede cosa pagare e non partono i promemoria.</p>
+<ul style="padding-left:20px;">
+{% for c in senza_scadenze_pagamento %}
+  <li><strong>{{ c.sponsor.legal_name }}</strong> · {{ c.contract_number }} · € {{ c.total|floatformat:2 }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
 <p style="text-align:center; margin:24px 0;">
   <a href="{{ admin_url }}" class="button">Apri il pannello admin</a>
 </p>

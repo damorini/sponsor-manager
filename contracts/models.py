@@ -176,6 +176,10 @@ class Contract(SoftDeleteModel):
     issued_date = models.DateField(null=True, blank=True, verbose_name="Data emissione")
     sent_date = models.DateTimeField(null=True, blank=True, verbose_name="Inviato il")
     signed_date = models.DateField(null=True, blank=True, verbose_name="Data firma")
+    pass_allestimento_inviato_il = models.DateTimeField(
+        null=True, blank=True, editable=False,
+        verbose_name="PASS allestimento inviato il",
+        help_text="Data e ora dell'ultimo invio del PASS allestimento allo Sponsor.")
     cancelled_date = models.DateTimeField(null=True, blank=True, verbose_name="Annullato il")
     cancellation_reason = models.TextField(blank=True, verbose_name="Motivo annullamento")
 
@@ -260,6 +264,15 @@ class Contract(SoftDeleteModel):
         verbose_name="Acconto %",
         help_text="Percentuale di acconto (es. 30 per il 30%). Vuoto = pagamento unico (tutto a saldo).",
     )
+    deposit_amount_override = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Importo acconto (manuale)",
+        help_text="Solo per casi eccezionali: importo esatto dell'acconto (IVA inclusa) "
+                  "quando la percentuale non arriva al centesimo. Vuoto = calcolato dalla percentuale.",
+    )
 
     deposit_due_date_override = models.DateField(
         null=True,
@@ -340,27 +353,35 @@ class Contract(SoftDeleteModel):
         most_common = Counter(rates).most_common(1)[0][0]
         return int(most_common)
 
-    def _contratti_che_tengono(self, **filtro_spazio):
+    @staticmethod
+    def q_tiene_spazio():
         """
-        Contratti (diversi da self, non annullati) che 'tengono' lo spazio indicato:
+        Regola UNICA per dire se un contratto 'tiene' il suo stand/blocco:
         - stati SENT/SIGNED/ACTIVE/COMPLETED, OPPURE
-        - DRAFT con opzione attiva (option_until >= oggi).
-        I DRAFT senza opzione o con opzione scaduta NON tengono lo spazio.
+        - DRAFT appena salvato: senza opzione lo tiene finche' non viene
+          annullato/cestinato o non cambia spazio; con opzione lo tiene fino
+          alla data dell'opzione compresa. Opzione scaduta -> spazio libero.
+        Usata dal controllo al salvataggio, dallo stato dello stand e dalla
+        tendina di scelta dello spazio: devono dire tutti la stessa cosa.
         """
         from django.db.models import Q
         from django.utils import timezone
         oggi = timezone.now().date()
-        tengono = (
+        return (
             Q(status__in=[ContractStatus.SENT, ContractStatus.SIGNED,
                           ContractStatus.ACTIVE, ContractStatus.COMPLETED])
-            | Q(status=ContractStatus.DRAFT, option_until__isnull=False,
-                option_until__gte=oggi)
+            | Q(status=ContractStatus.DRAFT, option_until__isnull=True)
+            | Q(status=ContractStatus.DRAFT, option_until__gte=oggi)
         )
+
+    def _contratti_che_tengono(self, **filtro_spazio):
+        """Contratti (diversi da self, non annullati/cestinati) che tengono lo
+        spazio indicato secondo q_tiene_spazio()."""
         return (Contract.objects
                 .filter(**filtro_spazio)
                 .exclude(status=ContractStatus.CANCELLED)
                 .exclude(pk=self.pk)
-                .filter(tengono))
+                .filter(self.q_tiene_spazio()))
 
     def clean(self):
         """Validazione: stand e stand_block sono mutuamente esclusivi."""
@@ -502,6 +523,18 @@ class Contract(SoftDeleteModel):
             except Exception:
                 pass
 
+        # In CREAZIONE l'acconto parte uguale alla penale di cancellazione
+        # dell'evento (la caparra e' la penale). Resta modificabile sul
+        # contratto; 0 = pagamento unico. Gli add-on si pagano al checkout.
+        if (self._state.adding and self.deposit_percent is None and self.event_id
+                and self.contract_kind != ContractKind.ADDON):
+            try:
+                _penale = self.event.cancellation_penalty_percent
+                if _penale:
+                    self.deposit_percent = Decimal(_penale)
+            except Exception:
+                pass
+
         # Cambio LINGUA su un contratto esistente: gli snapshot delle righe
         # (nome/descrizione servizio, etichetta stand) vanno ri-tradotti,
         # altrimenti il preventivo resta nella lingua vecchia.
@@ -524,7 +557,8 @@ class Contract(SoftDeleteModel):
         # Numero gia' presente (o esplicito): salvataggio normale.
         if self.contract_number:
             super().save(*args, **kwargs)
-            self._sync_option_venue(kwargs.get('update_fields'))
+            self._sync_option_venue(kwargs.get('update_fields'),
+                                    _prev_stand_id, _prev_block_id)
             # Sincronizza la scadenza-opzione anche sui contratti esistenti:
             # quando il preventivo viene confermato (status -> SIGNED) o l'opzione
             # viene rimossa, la Deadline 'scadenza_opzione' pending viene eliminata.
@@ -569,42 +603,47 @@ class Contract(SoftDeleteModel):
         # Esauriti i tentativi: rilancia l'ultimo errore.
         raise last_err
 
-    def _sync_option_venue(self, update_fields=None):
+    def _sync_option_venue(self, update_fields=None,
+                           prev_stand_id=None, prev_block_id=None):
         """
-        Dopo il salvataggio di una BOZZA con opzione (option_until), aggiorna lo
-        stato dello stand/blocco cosi' risulta riservato gia' in bozza.
-        Guardie:
-        - salta i salvataggi parziali dei soli totali (recalculate_totals) per
-          evitare lavoro inutile e ricorsioni;
-        - agisce solo se c'e' uno stand/blocco e un'opzione impostata.
+        Dopo il salvataggio ricalcola lo stato dello stand/blocco del contratto,
+        cosi' una BOZZA appena salvata lo toglie subito dalla tendina degli
+        spazi liberi (vedi Contract.q_tiene_spazio). Se lo spazio e' cambiato,
+        ricalcola anche quello di prima, che torna libero.
+        Salta i salvataggi parziali dei soli totali (recalculate_totals) per
+        evitare lavoro inutile e ricorsioni.
         """
-        from contracts.models import ContractStatus
-        # salta i save mirati ai soli totali / campi non rilevanti
+        from venues.models import Stand, StandBlock
         if update_fields is not None:
             campi = set(update_fields)
             rilevanti = {'status', 'option_until', 'stand', 'stand_block'}
             if not (campi & rilevanti):
                 return
-        if self.status != ContractStatus.DRAFT:
-            return
-        if not self.option_until:
-            return
-        if not (self.stand_id or self.stand_block_id):
-            return
         try:
             self._update_venue_status()
+            if prev_stand_id and prev_stand_id != self.stand_id:
+                _st = Stand.objects.filter(pk=prev_stand_id).first()
+                if _st:
+                    _st.update_status_from_contract()
+            if prev_block_id and prev_block_id != self.stand_block_id:
+                _bl = StandBlock.objects.filter(pk=prev_block_id).first()
+                if _bl:
+                    _bl.update_status_from_contract()
         except Exception:
             import logging
             logging.getLogger(__name__).exception(
-                "Errore aggiornamento stato spazio per opzione, contract %s",
+                "Errore aggiornamento stato spazio, contract %s",
                 getattr(self, 'contract_number', '?'),
             )
 
     def _sync_option_deadline(self, update_fields=None):
         """
         Sincronizza la Deadline 'scadenza_opzione' con option_until.
-        - crea/aggiorna se: DRAFT + option_until + spazio assegnato;
-        - elimina (se pending) se: opzione tolta o contratto non piu' DRAFT.
+        - crea/aggiorna se: preventivo INVIATO (SENT) + option_until + spazio
+          assegnato (la bozza non e' ancora arrivata al cliente: niente
+          promemoria);
+        - elimina (se pending) se: opzione tolta o contratto non piu' SENT
+          (firmato, annullato...).
         Idempotente. La Deadline opzione e' una sola per contratto.
         """
         from contracts.models import ContractStatus, Deadline, DeadlineStatus
@@ -623,7 +662,7 @@ class Contract(SoftDeleteModel):
             esistente = self.deadlines.filter(deadline_type='scadenza_opzione').first()
 
             vuole_opzione = (
-                self.status == ContractStatus.DRAFT
+                self.status == ContractStatus.SENT
                 and self.option_until is not None
                 and (self.stand_id or self.stand_block_id)
             )
@@ -746,6 +785,8 @@ class Contract(SoftDeleteModel):
         from decimal import Decimal
         if not self.deposit_percent:
             return Decimal('0.00')
+        if self.deposit_amount_override is not None:
+            return self.deposit_amount_override
         return (self.total * self.deposit_percent / Decimal('100')).quantize(Decimal('0.01'))
 
     @property
@@ -1371,7 +1412,7 @@ class ContractLine(TimeStampedModel):
     class Meta:
         verbose_name = "Riga contratto"
         verbose_name_plural = "Righe contratto"
-        ordering = ['contract', 'display_order']
+        ordering = ['contract', 'display_order', 'created_at', 'id']
 
     def __str__(self):
         return f"{self.service_name_snapshot} × {self.quantity}"
@@ -1624,6 +1665,16 @@ class ContractLine(TimeStampedModel):
                     self.unit_price = self.service.base_price
             if self.vat_rate is None:
                 self.vat_rate = self.service.vat_rate
+
+        # Prezzo svuotato a mano su una riga gia' salvata: torna il listino
+        # (della variante, se c'e'), invece di mandare in errore il salvataggio.
+        if self.unit_price is None:
+            if self.service_variant_id and self.service_variant.base_price is not None:
+                self.unit_price = self.service_variant.base_price
+            elif self.service_id and self.service.base_price is not None:
+                self.unit_price = self.service.base_price
+            else:
+                self.unit_price = Decimal('0.00')
 
         self.calculate_totals()
         super().save(*args, **kwargs)

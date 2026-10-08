@@ -239,6 +239,23 @@ def cruscotto_home(request):
         if _riga not in _opz_sponsors:
             _opz_sponsors.append(_riga)
 
+    # Avvisi "cosa manca": inviti al portale non mandati e cose fatte che il
+    # cliente non puo' vedere (definizioni in core/controlli.py).
+    from core import controlli
+    from core.event_scope import scope_anagrafica_by_event
+    from sponsors.models import Contact
+    _inv = scope_anagrafica_by_event(
+        request, controlli.contatti_da_invitare(Contact.objects.all()),
+        'sponsor__contracts')
+    _inv_count = _inv.count()
+    _inv_sponsors = controlli.nomi_aziende(_inv.order_by('sponsor__legal_name'))
+    _noacc = scope_by_event(request, controlli.contratti_cliente_senza_accesso(), 'event')
+    _noacc_count = _noacc.count()
+    _noacc_sponsors = controlli.nomi_aziende(_noacc.order_by('sponsor__legal_name'))
+    _nopag = scope_by_event(request, controlli.contratti_senza_scadenze_pagamento(), 'event')
+    _nopag_count = _nopag.count()
+    _nopag_sponsors = controlli.nomi_aziende(_nopag.order_by('sponsor__legal_name'))
+
     context = {
         **admin_site.each_context(request),
         'title': 'Cruscotto',
@@ -260,6 +277,15 @@ def cruscotto_home(request):
         'opzioni_count': _opz_count,
         'opzioni_sponsors': _opz_sponsors,
         'opzioni_url': _rev('admin:contracts_contract_changelist') + '?todo=opzioni_in_scadenza',
+        'inviti_count': _inv_count,
+        'inviti_sponsors': _inv_sponsors,
+        'inviti_url': _rev('admin:sponsors_contact_changelist') + '?invito=da_mandare',
+        'noaccesso_count': _noacc_count,
+        'noaccesso_sponsors': _noacc_sponsors,
+        'noaccesso_url': _rev('admin:contracts_contract_changelist') + '?todo=cliente_senza_accesso',
+        'nopag_count': _nopag_count,
+        'nopag_sponsors': _nopag_sponsors,
+        'nopag_url': _rev('admin:contracts_contract_changelist') + '?todo=senza_scadenze_pagamento',
     }
     return render(request, 'cruscotto/home.html', context)
 

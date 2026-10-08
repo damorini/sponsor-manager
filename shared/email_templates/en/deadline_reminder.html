@@ -26,7 +26,7 @@
         {% if importo_scadenza %}
         <tr>
           <td style="padding:4px 0; color:#6b7280;">Amount</td>
-          <td style="padding:4px 0; text-align:right; font-size:18px;"><strong class="text-primary">€ {{ importo_scadenza|floatformat:2 }}</strong> <span style="color:#6b7280; font-size:12px;">(VAT included)</span></td>
+          <td style="padding:4px 0; text-align:right; font-size:18px;"><strong class="text-primary">€ {{ importo_scadenza|floatformat:2 }}</strong> <span style="color:#6b7280; font-size:12px;">{{ nota_iva }}</span></td>
         </tr>
         {% endif %}
         <tr>
@@ -68,7 +68,7 @@
 <p>You can review the full contract status in your sponsor area:</p>
 {% endif %}
 
-<p style="text-align:center; margin:24px 0;">
+{% if deadline.deadline_template.client_template_file %}<p>By logging in to the portal you will find the <strong>template to download</strong>, so that your graphic design office can prepare the artwork.</p>{% endif %}<p style="text-align:center; margin:24px 0;">
   <a href="{% if is_pagamento %}{{ portal_url }}pagamenti/{% else %}{{ portal_url }}{% endif %}" class="button">
     {% if is_pagamento %}View your payments{% else %}Access sponsor portal{% endif %}
   </a>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
+{% load elenco %}<!DOCTYPE html><html lang="it"><head><meta charset="utf-8">
 <style>
   @page {
     size: A4;
@@ -10,6 +10,8 @@
   * { box-sizing: border-box; }
   body { font-family: 'Helvetica Neue', Arial, sans-serif; color:#1f2937; font-size:10.5px; margin:0; line-height:1.38; }
   .brandbar { height:5px; background:{{ brand_color }}; border-radius:3px; margin:0 0 10px; }
+  /* Numero del preventivo: in alto a destra, sotto la barra dell'header */
+  .quotenum { float:right; margin:0 0 0 12px; color:#374151; font-size:10.5px; font-weight:700; white-space:nowrap; }
   .eyebrow { color:{{ brand_color }}; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; margin:0 0 3px; }
   h1 { font-size:18px; margin:0 0 3px; color:#111827; }
   .meta { color:#6b7280; font-size:10.5px; margin:0 0 10px; }
@@ -19,8 +21,13 @@
   .section-title { color:{{ brand_color }}; font-size:12px; font-weight:700; letter-spacing:.02em; text-transform:uppercase; margin:13px 0 6px; border-bottom:2px solid {{ brand_color }}; padding-bottom:4px; }
   table { width:100%; border-collapse:collapse; }
   .svc td { padding:6px 0; border-bottom:1px solid #eef0f2; vertical-align:top; }
+  /* un servizio (nome + descrizione) non si spezza mai tra due pagine */
+  .svc tr { break-inside:avoid; page-break-inside:avoid; }
   .svc .name { font-weight:700; color:#111827; margin-bottom:1px; }
   .svc .desc { color:#6b7280; font-size:10px; font-weight:400; line-height:1.35; }
+  .svc .misure { color:#111827; font-size:10px; font-weight:700; margin:1px 0 2px; }
+  .svc .desc ul.elenco { margin:2px 0 0; padding-left:14px; color:#374151; }
+  .svc .desc ul.elenco li { margin:0 0 1px; }
   .svc .price { text-align:right; white-space:nowrap; font-weight:700; padding-left:14px; width:100px; }
   .svc .qty { text-align:right; white-space:nowrap; font-weight:400; color:#374151; padding-left:12px; width:44px; }
   .svc .chead td { border-bottom:1.5px solid {{ brand_color }}; color:{{ brand_color }}; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:0 0 4px; }
@@ -33,8 +40,10 @@
   .tot td { padding:3px 0; }
   .tot .lbl { color:#6b7280; } .tot .val { text-align:right; color:#6b7280; }
   .tot .sconto td { color:#065f46; font-weight:700; }
-  .tot .grand td { border-top:2px solid #e5e7eb; padding-top:8px; font-weight:800; color:#111827; }
-  .tot .grand .g { color:{{ brand_color }}; font-size:16px; text-align:right; }
+  .tot .lbl, .tot .val { color:#374151; font-size:10.5px; font-weight:600; }
+  /* Cliente esente IVA: motivo dell'esenzione sotto i totali */
+  .esenzione { margin:4px 0 0; color:#374151; font-size:10px; font-weight:600; }
+  .tot .grand td { border-top:1px solid #e5e7eb; padding-top:4px; }
   /* Box validita' in fondo (evidenziato col colore brand) */
   .valid { background:#ecfdf5; border:1px solid {{ brand_color }}; border-left:5px solid {{ brand_color }}; padding:9px 13px; margin:12px 0 4px; color:#064e3b; border-radius:6px; line-height:1.45; font-weight:600; }
   .cta { text-align:center; margin:14px 0 4px; }
@@ -53,6 +62,7 @@
 </style></head><body>
   {% if header_url %}<img class="hdr" src="{{ header_url }}">{% endif %}
   <div class="brandbar"></div>
+  {% if contract.contract_number %}<p class="quotenum">{{ t.quote_no }} {{ contract.contract_number }}</p>{% endif %}
   <p class="eyebrow">{{ t.eyebrow }}</p>
   <h1>{{ ev_name }}</h1>
   {% if event.start_date or event.venue_name or event.location %}<p class="meta">{% if event.start_date %}{{ event.start_date|date:"d/m/Y" }}{% if event.end_date and event.end_date != event.start_date %} &ndash; {{ event.end_date|date:"d/m/Y" }}{% endif %}{% endif %}{% if event.sede_completa %} &middot; {{ event.sede_completa }}{% endif %}</p>{% endif %}
@@ -64,6 +74,7 @@
   <p class="intro">{{ t.attn }}</p>
 
   <p class="section-title">{{ t.section_title }}</p>
+  {% if t.section_intro %}<p class="intro">{{ t.section_intro }}</p>{% endif %}
   <table class="svc">
     <tr class="chead">
       <td>{{ t.col_descrizione }}</td>
@@ -75,7 +86,8 @@
     <tr>
       <td>
         <div class="name">{{ line.service_name_snapshot }}{% if line.variant_label_snapshot %} <span class="desc">&ndash; {{ line.variant_label_snapshot }}</span>{% endif %}</div>
-        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot }}</div>{% endif %}
+        {% if line.misure_spazio %}<div class="misure">{{ line.misure_spazio }}</div>{% endif %}
+        {% if line.service_description_snapshot %}<div class="desc">{{ line.service_description_snapshot|elenco_puntato }}</div>{% endif %}
         {% if line.is_prezzo_revisionato %}<div><span class="badge-sconto">{% if line.is_sconto_esplicito %}{{ t.badge_sconto }} &euro; {{ line.sconto_eur|floatformat:2 }}{% else %}{{ t.badge_riservato }} &euro; {{ line.prezzo_riservato|floatformat:2 }}{% endif %}</span></div>{% endif %}
       </td>
       <td class="qty">{{ line.quantity }}</td>
@@ -87,12 +99,13 @@
     {% endfor %}
   </table>
   <table class="tot">
-    <tr><td class="lbl">{{ t.subtotale }}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
+    <tr><td class="lbl">{% if contract.vat_applicable %}{{ t.imponibile }}{% else %}{{ t.subtotale }}{% endif %}</td><td class="val">&euro; {{ contract.subtotal|floatformat:2 }}</td></tr>
     {% if contract.vat_applicable %}
     <tr><td class="lbl">{{ t.iva }}</td><td class="val">&euro; {{ contract.vat_amount|floatformat:2 }}</td></tr>
     {% endif %}
-    <tr class="grand"><td>{{ t.totale }}</td><td class="g">&euro; {{ contract.total|floatformat:2 }}</td></tr>
+    <tr class="grand"><td class="lbl">{% if contract.vat_applicable %}{{ t.totale_iva }}{% else %}{{ t.totale }}{% endif %}</td><td class="val">&euro; {{ contract.total|floatformat:2 }}</td></tr>
   </table>
+  {% if not contract.vat_applicable %}<p class="esenzione">{{ t.esenzione }}{% if contract.vat_exemption_reason %}: {{ contract.vat_exemption_reason }}{% endif %}</p>{% endif %}
 
   {% if stand_notes %}<div class="valid"><strong>{{ t.note_stand }}:</strong> {{ stand_notes|linebreaksbr }}</div>{% endif %}
 

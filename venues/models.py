@@ -29,6 +29,17 @@ def _ordine_naturale_codice():
     return [prefisso.asc(), numero.asc()]
 
 
+def misura(valore):
+    """Numero in metri senza zeri inutili e con la virgola: 24.0000 -> '24',
+    2.50 -> '2,5'. Stringa vuota se manca."""
+    if valore is None or valore == '':
+        return ''
+    from decimal import Decimal
+    d = Decimal(str(valore))
+    d = d.quantize(Decimal(1)) if d == d.to_integral_value() else d.normalize()
+    return format(d, 'f').replace('.', ',')
+
+
 class StandStatus(models.TextChoices):
     AVAILABLE = 'available', 'Disponibile'
     RESERVED = 'reserved', 'Riservato'
@@ -202,16 +213,13 @@ class StandBlock(TranslatableMixin, TimeStampedModel):
         if active_contract:
             new_status = StandStatus.ASSIGNED
         else:
-            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
-            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
-            _oggi = timezone.now().date()
+            # Riservato se un contratto non firmato tiene lo spazio: inviato,
+            # oppure bozza senza opzione o con opzione non ancora scaduta
+            # (regola unica in Contract.q_tiene_spazio).
             reserved_contract = self.contracts.filter(
                 deleted_at__isnull=True,
-            ).filter(
-                Q(status=ContractStatus.SENT)
-                | Q(status=ContractStatus.DRAFT,
-                    option_until__isnull=False,
-                    option_until__gte=_oggi)
+            ).exclude(status=ContractStatus.CANCELLED).filter(
+                Contract.q_tiene_spazio()
             ).first()
             new_status = StandStatus.RESERVED if reserved_contract else StandStatus.AVAILABLE
 
@@ -295,6 +303,22 @@ class Stand(TranslatableMixin, TimeStampedModel):
         verbose_name="Altezza max (m)",
     )
 
+    access_door = models.CharField(
+        max_length=50, blank=True,
+        verbose_name="Porta di accesso al padiglione",
+        help_text="Numero o nome dell'accesso da usare per montaggio e "
+                  "smontaggio (es. 3). Compare nel Regolamento tecnico "
+                  "(Allegato 2) del contratto.",
+    )
+
+    caratteristiche = models.TextField(
+        blank=True, verbose_name="Indicazioni specifiche",
+        help_text="Note tecniche su questo spazio (es. lati liberi, pilastri, "
+                  "vincoli di allestimento). Compaiono sotto il RIEPILOGO TECNICO "
+                  "DELLO SPAZIO nella Domanda di ammissione (Allegato 1), nel "
+                  "Regolamento tecnico (Allegato 2) e nel PASS allestimento.",
+    )
+
     # Posizione su planimetria
     map_x = models.IntegerField(null=True, blank=True, verbose_name="Coord. X")
     map_y = models.IntegerField(null=True, blank=True, verbose_name="Coord. Y")
@@ -362,6 +386,19 @@ class Stand(TranslatableMixin, TimeStampedModel):
         return None
 
     @property
+    def area_testo(self):
+        """Area leggibile: '24', '7,5' (senza zeri inutili)."""
+        return misura(self.area_sqm)
+
+    @property
+    def dimensioni_testo(self):
+        """'6 × 4 m (24 m²)' oppure '' se mancano le misure."""
+        if not (self.width_meters and self.depth_meters):
+            return ''
+        return (f"{misura(self.width_meters)} × {misura(self.depth_meters)} m "
+                f"({self.area_testo} m²)")
+
+    @property
     def is_in_block(self):
         return self.stand_block_id is not None
 
@@ -388,16 +425,13 @@ class Stand(TranslatableMixin, TimeStampedModel):
         if active_contract:
             self.status = StandStatus.ASSIGNED
         else:
-            # Riservato se: contratto SENT, OPPURE contratto in DRAFT con opzione
-            # ancora attiva (option_until >= oggi). Opzione scaduta -> non conta.
-            _oggi = timezone.now().date()
+            # Riservato se un contratto non firmato tiene lo spazio: inviato,
+            # oppure bozza senza opzione o con opzione non ancora scaduta
+            # (regola unica in Contract.q_tiene_spazio).
             reserved = self.contracts.filter(
                 deleted_at__isnull=True,
-            ).filter(
-                Q(status=ContractStatus.SENT)
-                | Q(status=ContractStatus.DRAFT,
-                    option_until__isnull=False,
-                    option_until__gte=_oggi)
+            ).exclude(status=ContractStatus.CANCELLED).filter(
+                Contract.q_tiene_spazio()
             ).first()
             self.status = StandStatus.RESERVED if reserved else StandStatus.AVAILABLE
 

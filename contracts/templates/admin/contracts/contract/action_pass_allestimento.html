@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Home admin</a>
+  &rsaquo; <a href="{% url 'admin:contracts_contract_changelist' %}">Contratti</a>
+  &rsaquo; Invia PASS allestimento
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Invia PASS allestimento</h1>
+<p>
+  La mail «COMPLIMENTI … con questo PASS potrete accedere all'area espositiva» partirà verso
+  <strong>{{ righe|length }} Sponsor</strong>, in copia a <strong>{{ cc }}</strong>.
+  Contiene stand, accesso al padiglione, giorni e orari di allestimento e disallestimento
+  (con le note) e le indicazioni per spedire i materiali al magazzino.
+</p>
+
+{% if eventi_incompleti %}
+<p style="background:#fff7d6; border:1px solid #e5c55a; padding:10px 14px; border-radius:6px;">
+  <strong>Attenzione:</strong> nella scheda di {{ eventi_incompleti|join:", " }} mancano i giorni
+  di allestimento o l'indirizzo del magazzino di consegna. La mail partirebbe senza quei dati.
+</p>
+{% endif %}
+
+<table style="width:100%; margin:16px 0;">
+  <thead>
+    <tr>
+      <th>Sponsor</th><th>Contratto</th><th>Stand</th><th>Destinatario</th>
+      <th>PASS già inviato</th><th>Avvisi</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in righe %}
+    <tr>
+      <td><strong>{{ r.c.sponsor.legal_name }}</strong></td>
+      <td>{{ r.c.contract_number }}</td>
+      <td>{% if r.c.stand %}{{ r.c.stand.code }}{% elif r.c.stand_block %}{{ r.c.stand_block.code }}{% else %}—{% endif %}</td>
+      <td>{{ r.email|default:"—" }}</td>
+      <td>{% if r.c.pass_allestimento_inviato_il %}&#10004; {{ r.c.pass_allestimento_inviato_il|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+      <td style="color:#b45309;">{{ r.avvisi|join:"; " }}</td>
+      <td><a href="{{ r.anteprima }}" target="_blank">Anteprima mail</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<form method="post">
+  {% csrf_token %}
+  {% for obj in queryset %}
+  <input type="hidden" name="{{ action_checkbox_name }}" value="{{ obj.pk }}">
+  {% endfor %}
+  <input type="hidden" name="action" value="{{ action }}">
+  <input type="hidden" name="_pass_confermato" value="1">
+
+  {% if gia_inviati %}
+  <p>
+    <label>
+      <input type="checkbox" name="reinvia" value="1">
+      Invia di nuovo anche ai {{ gia_inviati }} Sponsor che l'hanno già ricevuto
+    </label>
+    <br><small>Se non spunti, a loro non parte nulla.</small>
+  </p>
+  {% endif %}
+
+  <p>
+    <input type="submit" value="Invia PASS allestimento" class="button default" style="margin-right:8px;">
+    <a href="{% url 'admin:contracts_contract_changelist' %}" class="button cancel">Annulla</a>
+  </p>
+</form>
+{% endblock %}

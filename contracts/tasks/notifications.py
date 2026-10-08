@@ -26,11 +26,23 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 
 
+def nota_iva_importo(contract, language='it'):
+    """Nota accanto agli importi da versare: '(IVA inclusa)', oppure il motivo
+    dell'esenzione per i clienti che non applicano l'IVA."""
+    if contract.vat_applicable:
+        return '(VAT included)' if language == 'en' else '(IVA inclusa)'
+    motivo = contract.vat_exemption_reason or ''
+    if language == 'en':
+        return f'(VAT exempt: {motivo})' if motivo else '(VAT exempt)'
+    return f'(esente IVA: {motivo})' if motivo else '(esente IVA)'
+
+
 # ============================================================================
 # Notifica contratto firmato (con PDF allegato)
 # ============================================================================
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
+
 def send_contract_signed_notification(self, contract_id):
     """
     Invia email di conferma contratto firmato con PDF allegato.
@@ -562,6 +574,7 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
             _imp = None
         context['is_pagamento'] = True
         context['importo_scadenza'] = _imp
+        context['nota_iva'] = nota_iva_importo(contract, language)
         context['etichetta_pagamento'] = {
             'pagamento_acconto': 'Acconto',
             'pagamento_saldo': 'Saldo',

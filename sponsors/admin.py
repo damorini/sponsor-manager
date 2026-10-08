@@ -222,6 +222,41 @@ class AccessoPortaleFilter(admin.SimpleListFilter):
         return queryset
 
 
+class InvitoPortaleFilter(admin.SimpleListFilter):
+    """Contatti con 'Accesso al portale' spuntato ma senza account: la
+    spunta da sola non crea le credenziali (vedi core/controlli.py)."""
+    title = 'Invito portale'
+    parameter_name = 'invito'
+
+    def lookups(self, request, model_admin):
+        return (
+            ('da_mandare', 'Spuntati ma mai invitati'),
+            ('invitati', 'Con account'),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == 'da_mandare':
+            from core.controlli import contatti_da_invitare
+            return contatti_da_invitare(queryset)
+        if self.value() == 'invitati':
+            return queryset.filter(portal_user__isnull=False)
+        return queryset
+
+
+def _avvisa_inviti_mancanti(request, contatti):
+    """Dopo il salvataggio: ricorda che la spunta 'Accesso al portale' non
+    basta, finche' non si manda l'invito il contatto non puo' entrare."""
+    from core.controlli import contatti_da_invitare
+    nomi = [c.full_name or c.email for c in contatti_da_invitare(contatti)]
+    if nomi:
+        messages.warning(
+            request,
+            "Accesso al portale spuntato ma invito NON ancora mandato per: "
+            + ", ".join(nomi) + ". Finche' non lo mandi non hanno nome utente e "
+            "password: vai in Contatti, selezionali e usa l'azione "
+            "'Invita al portale' quando vuoi che ricevano le credenziali.")
+
+
 @admin.register(Sponsor)
 
 
@@ -248,6 +283,10 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
     actions = ['action_generate_client_summary', 'action_compose_email', 'action_restore']
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        _avvisa_inviti_mancanti(request, form.instance.contacts.all())
 
     def save_formset(self, request, form, formset, change):
         from django.utils import timezone
@@ -766,8 +805,8 @@ class ContactAdmin(admin.ModelAdmin):
     )
     list_display_links = ('col_cognome', 'col_nome')
     list_filter = (
-        'is_primary', 'has_portal_access', 'preferred_language',
-        'marketing_consent', 'interest_areas',
+        'is_primary', 'has_portal_access', InvitoPortaleFilter,
+        'preferred_language', 'marketing_consent', 'interest_areas',
         ('left_company_at', admin.EmptyFieldListFilter),
     )
     filter_horizontal = ('interest_areas',)
@@ -1087,6 +1126,10 @@ class ContactAdmin(admin.ModelAdmin):
     def sponsor_link(self, obj):
         url = reverse('admin:sponsors_sponsor_change', args=[obj.sponsor_id])
         return format_html('<a href="{}">{}</a>', url, obj.sponsor.legal_name)
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        _avvisa_inviti_mancanti(request, type(obj).objects.filter(pk=obj.pk))
 
     @admin.action(description='Invita al portale (crea utente + password)')
     def action_invita_al_portale(self, request, queryset):

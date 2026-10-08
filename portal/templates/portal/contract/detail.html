@@ -1,6 +1,7 @@
 {% extends "portal/base.html" %}
 {% load i18n %}
 {% load portal_labels %}
+{% load elenco %}
 
 {% block title %}{{ contract.contract_number }}{% endblock %}
 
@@ -138,7 +139,7 @@
                 </div>
                 {% if line.service_description_snapshot %}
                 <div class="text-xs text-gray-500 mt-1">
-                  {{ line.service_description_snapshot|truncatechars:100 }}
+                  {{ line.service_description_snapshot|elenco_puntato }}
                 </div>
                 {% endif %}
                 {% if line.is_prezzo_revisionato %}
@@ -305,7 +306,7 @@
             <dt class="text-gray-500 text-xs uppercase tracking-wide">{% trans "Stand assegnato" %}</dt>
             <dd class="text-gray-900">
               <strong>{{ contract.stand.code }}</strong>
-              ({{ contract.stand.area_sqm|floatformat:2 }} m²)
+              ({{ contract.stand.area_testo }} m²)
             </dd>
           </div>
           {% elif contract.stand_block %}

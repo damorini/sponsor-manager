@@ -103,7 +103,7 @@ class DeadlineTemplateInline(admin.StackedInline):
     fields = (
         ('deadline_type', 'title'),
         ('submission_kind', 'client_template_file'),
-        ('file_area_label',),
+        ('file_area_label', 'max_file_size_mb'),
         ('days_before_event', 'reminder_days_before', 'is_active'),
         ('campi_compilabili',),
     )
@@ -186,7 +186,7 @@ class ServiceInclusionInline(admin.TabularInline):
     fk_name = 'parent'
     extra = 0
     autocomplete_fields = ['child']
-    fields = ('child', 'quantity')
+    fields = ('child', 'quantity', 'display_order')
     formset = ServiceInclusionFormSet
     verbose_name = 'Servizio incluso'
     verbose_name_plural = 'Servizi inclusi (accessori)'
@@ -521,7 +521,8 @@ class DeadlineTemplateAdmin(admin.ModelAdmin):
         ('Scadenza', {
             'fields': ('deadline_type', 'title', 'description', 'submission_kind',
                        'file_area_label', 'shipping_instructions',
-                       'client_template_file', 'days_before_event', 'display_order'),
+                       'client_template_file', 'max_file_size_mb',
+                       'days_before_event', 'display_order'),
         }),
         ('Notifiche', {
             'fields': ('notify_roles', 'reminder_days_before'),

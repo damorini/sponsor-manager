@@ -379,16 +379,32 @@ class ServiceInclusion(models.Model):
         verbose_name="Quantita' inclusa",
         help_text="Quante unita' di questo accessorio vengono incluse.",
     )
+    display_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ordine",
+        help_text="Posizione nel preventivo: prima i numeri piu' bassi. "
+                  "0 = in fondo alla lista.",
+    )
 
     class Meta:
         verbose_name = "Servizio incluso"
         verbose_name_plural = "Servizi inclusi"
+        ordering = ['display_order', 'id']
         constraints = [
             models.UniqueConstraint(
                 fields=['parent', 'child'],
                 name='serviceinclusion_unique_parent_child',
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        # senza un ordine scelto il nuovo incluso va in fondo alla lista
+        if not self.display_order and self.parent_id:
+            ultimo = (ServiceInclusion.objects.filter(parent_id=self.parent_id)
+                      .exclude(pk=self.pk)
+                      .aggregate(m=models.Max('display_order'))['m'])
+            self.display_order = (ultimo or 0) + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return "%s x%s" % (self.child_id, self.quantity)
@@ -551,6 +567,13 @@ class DeadlineTemplate(TimeStampedModel):
                   "preparare il materiale richiesto: es. un template grafico "
                   "alla misura giusta, oppure un Excel con le colonne/info da "
                   "compilare.",
+    )
+
+    max_file_size_mb = models.PositiveIntegerField(
+        null=True, blank=True,
+        verbose_name="Dimensione massima file (MB)",
+        help_text="Limite per ogni file caricato dal cliente. Vuoto = 20 MB. "
+                  "Per le grafiche di stampa (es. banner) si puo' alzare, es. 100.",
     )
 
     is_active = models.BooleanField(default=True, verbose_name="Attivo")

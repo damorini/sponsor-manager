@@ -20,6 +20,7 @@ from django.contrib import admin, messages
 from django.contrib.admin import helpers
 from core.admin_filters import evento_filter
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
+from contracts.admin_pass import PassAllestimentoAdminMixin, PassAllestimentoFilter
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils import timezone
@@ -71,12 +72,24 @@ class ContractLineInline(admin.TabularInline):
     model = ContractLine
     extra = 0
     fields = (
+        'display_order',
         'service', 'custom_description', 'service_variant', 'quantity', 'unit_price',
         'discount_percent', 'discount_amount',
         'line_subtotal', 'line_vat', 'line_total',
     )
     readonly_fields = ('line_subtotal', 'line_vat', 'line_total')
     autocomplete_fields = ['service']
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        field = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == 'display_order':
+            field.widget.attrs['style'] = 'width:4em;'
+            field.help_text = (
+                "Posizione nel preventivo, nella Domanda e nel contratto: "
+                "numeri piu' bassi in alto. Con 0 su tutte le righe l'ordine "
+                "e' automatico (prima le righe a pagamento, poi le incluse); "
+                "per un ordine preciso numera tutte le righe.")
+        return field
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # 'service': autocomplete filtrato per evento del contratto.
@@ -314,6 +327,8 @@ class TodoFilter(admin.SimpleListFilter):
             ('opzioni_in_scadenza', 'Opzioni in scadenza (7 giorni)'),
             ('opzionati', 'Spazi opzionati (bozze con stand)'),
             ('firmati_senza_scadenze', 'Firmati senza scadenze'),
+            ('senza_scadenze_pagamento', 'Firmati con importo ma senza scadenze di pagamento'),
+            ('cliente_senza_accesso', 'Il cliente non li vede (nessun accesso al portale)'),
             ('carrelli', 'Carrelli abbandonati'),
         )
 
@@ -357,13 +372,20 @@ class TodoFilter(admin.SimpleListFilter):
                 status__in=[ContractStatus.SIGNED, ContractStatus.ACTIVE],
                 deadlines__isnull=True,
             ).distinct()
+        if v == 'senza_scadenze_pagamento':
+            # identico all'avviso della home cruscotto (core/controlli.py)
+            from core.controlli import contratti_senza_scadenze_pagamento
+            return contratti_senza_scadenze_pagamento(qs)
+        if v == 'cliente_senza_accesso':
+            from core.controlli import contratti_cliente_senza_accesso
+            return contratti_cliente_senza_accesso(qs)
         if v == 'carrelli':
             return qs.filter(contract_kind=ContractKind.ADDON, status=ContractStatus.DRAFT)
         return qs
 
 
 @admin.register(Contract)
-class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
+class ContractAdmin(PassAllestimentoAdminMixin, SoftDeleteAdminMixin, admin.ModelAdmin):
     @admin.display(description="Numero contratto")
     def contract_number_display(self, obj):
         # Mostra il numero; sui nuovi (non salvati) avvisa che e automatico
@@ -374,10 +396,10 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         'contract_number', 'sponsor_link', 'event_link',
         'kind_badge', 'status_badge', 'venue_display',
-        'total_display', 'incassato_display', 'origin_badge', 'created_at_short',
+        'total_display', 'incassato_display', 'pass_col', 'origin_badge', 'created_at_short',
     )
     list_filter = (
-        TodoFilter, EventoFilter,
+        TodoFilter, EventoFilter, PassAllestimentoFilter,
         'status', 'contract_kind', 'origin', 'language',
         'vat_applicable', DeletedListFilter,
     )
@@ -426,6 +448,11 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             obj.save()
         formset.save_m2m()
         for obj in formset.deleted_objects:
+            # PDF gia' sostituito da un'«Anteprima preventivo» mentre la pagina
+            # era aperta: e' gia' archiviato, non c'e' niente da cancellare
+            # (cancellarlo provava a inserirlo di nuovo, senza contratto: 500).
+            if obj._state.adding:
+                continue
             obj.delete()
 
     def get_queryset(self, request):
@@ -635,7 +662,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         }),
         ('Piano pagamento (acconto/saldo)', {
             'fields': (
-                'deposit_percent',
+                ('deposit_percent', 'deposit_amount_override'),
                 ('deposit_due_date_override', 'balance_due_date_override'),
                 'piano_acconto_display', 'piano_saldo_display',
                 'piano_scad_acconto_display', 'piano_scad_saldo_display',
@@ -663,10 +690,12 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                'action_generate_client_summary', 'action_genera_scadenze',
                'action_mark_as_sent', 'action_mark_as_signed', 'action_cancel',
                'action_registra_bonifico',
+               'action_invia_pass_allestimento',
                'action_genera_domanda_ammissione', 'action_genera_proforma',
                'action_rigenera_pdf_contratto',
                'action_convert_to_contract',
                'action_generate_stand_line',
+               'action_aggiorna_testi',
                'action_restore']
 
     @admin.display(description='Sponsor', ordering='sponsor__legal_name')
@@ -773,6 +802,11 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 name='contracts_contract_preview_quote',
             ),
             path(
+                'invia-preventivi/',
+                self.admin_site.admin_view(self.send_quotes_view),
+                name='contracts_contract_send_quotes',
+            ),
+            path(
                 '<path:object_id>/invia-preventivo/',
                 self.admin_site.admin_view(self.send_quote_view),
                 name='contracts_contract_send_quote',
@@ -858,6 +892,19 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             })
         return rows
 
+    def _avvisa_inviti_portale(self, request, inviti):
+        if inviti:
+            self.message_user(
+                request,
+                "Invito al portale mandato in automatico (primo accesso) a: "
+                + ", ".join(dict.fromkeys(inviti)) + ".",
+                level=messages.INFO)
+
+    @staticmethod
+    def _contatto_per_email(contract, email):
+        from .services.email_sender import contatto_per_email
+        return contatto_per_email(contract.sponsor, email)
+
     def preview_quote_view(self, request, object_id):
         """Genera il PDF del preventivo SENZA inviarlo e lo apre subito.
 
@@ -885,15 +932,34 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
     def send_quote_view(self, request, object_id):
         """Pagina di conferma: scelta destinatari, poi genera PDF e invia."""
         from .models import Contract
+        contract = get_object_or_404(Contract, pk=object_id)
+        return self._invia_preventivi(request, [contract], ritorno='../')
+
+    def send_quotes_view(self, request):
+        """Piu' preventivi dello stesso sponsor: destinatari scelti una volta,
+        un preventivo (PDF + mail) per ciascun contratto."""
+        from .models import Contract
+        ids = [x for x in (request.GET.get('ids') or request.POST.get('ids') or '').split(',') if x]
+        contratti = list(Contract.objects.filter(pk__in=ids).select_related('sponsor', 'event'))
+        ordine = {k: n for n, k in enumerate(ids)}
+        contratti.sort(key=lambda c: ordine.get(str(c.pk), 0))
+        ritorno = reverse('admin:contracts_contract_changelist')
+        if not contratti or len({c.sponsor_id for c in contratti}) > 1:
+            self.message_user(request, "Seleziona preventivi dello stesso sponsor.",
+                              level=messages.WARNING)
+            return HttpResponseRedirect(ritorno)
+        return self._invia_preventivi(request, contratti, ritorno=ritorno)
+
+    def _invia_preventivi(self, request, contratti, ritorno):
+        from .models import ContractStatus as _CS
         from .services.pdf_generator import generate_quote_pdf_html as generate_quote_pdf
         from .services.email_sender import send_email
         from django.core.files.storage import default_storage
 
-        contract = get_object_or_404(Contract, pk=object_id)
+        contract = contratti[0]
         contacts = self._contact_rows(contract)
 
         if request.method == 'POST':
-
             # raccogli destinatari: checkbox + email extra
             recipients = list(request.POST.getlist('recipients'))
             extra = (request.POST.get('extra_emails') or '').replace(',', ' ')
@@ -908,88 +974,104 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                     "Seleziona almeno un destinatario.",
                     level=messages.ERROR,
                 )
-                return HttpResponseRedirect(request.path)
+                return HttpResponseRedirect(request.get_full_path())
 
-            # 1) genera il PDF del preventivo
-            try:
-                document = generate_quote_pdf(contract)
-            except Exception as e:
-                self.message_user(
-                    request, f"Errore nella generazione del PDF: {e}",
-                    level=messages.ERROR,
-                )
-                return HttpResponseRedirect('../')
-
-            # 2) leggi i bytes del PDF dal storage
-            try:
-                rel = document.storage_url.replace(settings.MEDIA_URL, '', 1)
-                pdf_bytes = default_storage.open(rel).read()
-            except Exception as e:
-                self.message_user(
-                    request, f"PDF generato ma non leggibile per l'allegato: {e}",
-                    level=messages.ERROR,
-                )
-                return HttpResponseRedirect('../')
-
-            # 3) invia email con allegato (in dev -> console)
-            event = contract.event
-            event_name = event.get_name(contract.language) if hasattr(event, 'get_name') else str(event)
-            try:
-                send_email(
-                    template_name='quote_email',
-                    context={'contract': contract, 'event': event,
-                             'event_name': event_name},
-                    to=recipients,
-                    subject=(f"Quote {contract.contract_number} - {event_name}"
-                             if (contract.language or 'it') == 'en'
-                             else f"Preventivo {contract.contract_number} - {event_name}"),
-                    language=contract.language or 'it',
-                    attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
-                    related_to=contract,
-                    communication_type='quote',
-                    triggered_by_user=getattr(request, 'user', None),
-                )
-            except Exception as e:
-                self.message_user(
-                    request, f"PDF generato ma invio email fallito: {e}",
-                    level=messages.ERROR,
-                )
-                return HttpResponseRedirect('../')
-
-            # Porta il preventivo a "Inviato": cosi' compare nel portale del cliente
-            # e lo stand viene riservato. Solo se era in Bozza.
-            from .models import ContractStatus as _CS
-            stato_ok = False
-            if contract.status == _CS.DRAFT:
+            inviati, inviti_portale = [], []
+            for c in contratti:
+                # 1) genera il PDF del preventivo
                 try:
-                    contract.mark_as_sent()
-                    stato_ok = True
+                    document = generate_quote_pdf(c)
                 except Exception as e:
                     self.message_user(
-                        request,
-                        f"Preventivo inviato, ma stato non aggiornato a 'Inviato': {e}",
-                        level=messages.WARNING,
+                        request, f"{c.contract_number}: errore nella generazione del PDF: {e}",
+                        level=messages.ERROR,
                     )
+                    continue
 
-            self.message_user(
-                request,
-                f"Preventivo inviato a: {', '.join(recipients)} (PDF allegato)."
-                + (" Contratto impostato su 'Inviato'." if stato_ok else ""),
-                level=messages.SUCCESS,
-            )
+                # 2) leggi i bytes del PDF dal storage
+                try:
+                    rel = document.storage_url.replace(settings.MEDIA_URL, '', 1)
+                    pdf_bytes = default_storage.open(rel).read()
+                except Exception as e:
+                    self.message_user(
+                        request, f"{c.contract_number}: PDF generato ma non leggibile "
+                                 f"per l'allegato: {e}",
+                        level=messages.ERROR,
+                    )
+                    continue
+
+                # 3) invia email con allegato (in dev -> console): una mail per
+                # destinatario, cosi' il saluto porta il nome di chi la riceve
+                event = c.event
+                event_name = event.get_name(c.language) if hasattr(event, 'get_name') else str(event)
+                partite = 0
+                for email in recipients:
+                    try:
+                        _com = send_email(
+                            template_name='quote_email',
+                            context={'contract': c, 'event': event,
+                                     'event_name': event_name,
+                                     'contact': self._contatto_per_email(c, email)},
+                            to=[email],
+                            subject=(f"Quote {c.contract_number} - {event_name}"
+                                     if (c.language or 'it') == 'en'
+                                     else f"Preventivo {c.contract_number} - {event_name}"),
+                            language=c.language or 'it',
+                            attachments=[(document.file_name, pdf_bytes, 'application/pdf')],
+                            related_to=c,
+                            communication_type='quote',
+                            triggered_by_user=getattr(request, 'user', None),
+                        )
+                        partite += 1
+                        inviti_portale += getattr(_com, 'inviti_portale', []) or []
+                    except Exception as e:
+                        self.message_user(
+                            request, f"{c.contract_number}: invio a {email} fallito: {e}",
+                            level=messages.ERROR,
+                        )
+                if not partite:
+                    continue
+
+                # Porta il preventivo a "Inviato": cosi' compare nel portale del
+                # cliente e lo stand viene riservato. Solo se era in Bozza.
+                if c.status == _CS.DRAFT:
+                    try:
+                        c.mark_as_sent()
+                    except Exception as e:
+                        self.message_user(
+                            request,
+                            f"{c.contract_number}: preventivo inviato, ma stato non "
+                            f"aggiornato a 'Inviato': {e}",
+                            level=messages.WARNING,
+                        )
+                inviati.append(c.contract_number)
+
+            if inviati:
+                self.message_user(
+                    request,
+                    (f"Preventivo {inviati[0]}" if len(inviati) == 1 else
+                     f"Preventivi {', '.join(inviati)}")
+                    + f" inviati a: {', '.join(recipients)} (PDF allegato).",
+                    level=messages.SUCCESS,
+                )
+            self._avvisa_inviti_portale(request, inviti_portale)
             # Promemoria operatore: senza firmatario il cliente non potra'
             # confermare (gate lato portale) e il contratto non si genera.
             self._avvisa_se_manca_firmatario(request, contract)
-            return HttpResponseRedirect('../')
+            return HttpResponseRedirect(ritorno)
 
         # GET: mostra la pagina di conferma
         context = {
             **self.admin_site.each_context(request),
-            'title': 'Genera e invia preventivo',
+            'title': 'Genera e invia preventivo' if len(contratti) == 1
+                     else 'Genera e invia preventivi',
             'contract': contract,
+            'contratti': contratti,
+            'ids': ','.join(str(c.pk) for c in contratti),
             'contacts': contacts,
             'manca_firmatario': self._manca_firmatario(contract),
             'opts': self.model._meta,
+            'ritorno': ritorno,
         }
         return render(request, 'admin/quote_send_confirm.html', context)
 
@@ -1096,7 +1178,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
             event = contract.event
             event_name = event.get_name(contract.language) if hasattr(event, 'get_name') else str(event)
             try:
-                send_email(
+                _com = send_email(
                     template_name='contract_email',
                     context={'contract': contract, 'event': event,
                              'event_name': event_name},
@@ -1116,6 +1198,7 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 )
                 return HttpResponseRedirect('../')
 
+            self._avvisa_inviti_portale(request, getattr(_com, 'inviti_portale', []))
             self.message_user(
                 request,
                 f"Contratto {contract.contract_number} creato e inviato a: "
@@ -1138,16 +1221,24 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     @admin.action(description='Genera e invia PREVENTIVO (scegli destinatari)')
     def action_send_quote(self, request, queryset):
-        if queryset.count() != 1:
+        contratti = list(queryset)
+        if not contratti:
+            return
+        if len(contratti) == 1:
+            return HttpResponseRedirect(
+                reverse('admin:contracts_contract_send_quote', args=[contratti[0].pk])
+            )
+        if len({c.sponsor_id for c in contratti}) > 1:
             self.message_user(
                 request,
-                "Seleziona esattamente UN contratto per inviare il preventivo.",
+                "Per inviare piu' preventivi insieme seleziona contratti dello STESSO "
+                "sponsor (per sponsor diversi inviali separatamente).",
                 level=messages.WARNING,
             )
             return
-        contract = queryset.first()
+        ids = ','.join(str(c.pk) for c in contratti)
         return HttpResponseRedirect(
-            reverse('admin:contracts_contract_send_quote', args=[contract.pk])
+            reverse('admin:contracts_contract_send_quotes') + '?ids=' + ids
         )
 
     @admin.action(description='Trasforma PREVENTIVO in contratto (scegli destinatari)')
@@ -1190,6 +1281,28 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
                 f"{creati} riga/e stand create. Totali contratto aggiornati.",
                 level=messages.SUCCESS,
             )
+
+    @admin.action(description="📝 Aggiorna i testi dei servizi (preventivi in bozza o inviati)")
+    def action_aggiorna_testi(self, request, queryset):
+        from .services.testi_righe import aggiorna_testi_righe
+        contratti = list(queryset)
+        for contract in contratti:
+            if contract.status not in (ContractStatus.DRAFT, ContractStatus.SENT):
+                self.message_user(
+                    request,
+                    f"{contract.contract_number}: non e' piu' un preventivo "
+                    "(firmato o oltre), i testi restano quelli firmati.",
+                    level=messages.WARNING)
+                continue
+            n = aggiorna_testi_righe(contract)
+            self.message_user(
+                request,
+                f"{contract.contract_number}: testi aggiornati su {n} righe. "
+                "Per vederli nel PDF usa «Anteprima preventivo».",
+                level=messages.SUCCESS if n else messages.INFO)
+        if len(contratti) == 1:
+            return HttpResponseRedirect(
+                reverse('admin:contracts_contract_change', args=[contratti[0].pk]))
 
     # ---- Piano pagamento: importi/scadenze calcolati (sola lettura) ----
     @admin.display(description='Acconto (calcolato, IVA incl.)')
@@ -1313,11 +1426,20 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     @admin.action(description='Rigenera PDF CONTRATTO (allega e mostra nel portale)')
     def action_rigenera_pdf_contratto(self, request, queryset):
-        from .services.pdf_generator import generate_contract_pdf
+        from events.models import EventType
+        from .services.pdf_generator import generate_contract_pdf, generate_sponsor_contract_pdf
         ok = 0
         for contract in queryset:
             try:
-                doc = generate_contract_pdf(contract)
+                # Contratto principale di un evento non-ECM: e' il contratto di
+                # sponsorizzazione completo (contratto + allegati + guida firme),
+                # lo stesso generato alla firma. Prima il pulsante usava il
+                # modello generico e pubblicava nel portale un documento sbagliato.
+                if (contract.contract_kind == ContractKind.MAIN
+                        and getattr(contract.event, 'event_type', None) == EventType.NON_ECM):
+                    doc = generate_sponsor_contract_pdf(contract)
+                else:
+                    doc = generate_contract_pdf(contract)
             except Exception as e:
                 self.message_user(
                     request,

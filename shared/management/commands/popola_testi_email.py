@@ -131,14 +131,14 @@ TEXTS = {
             'it': H('Promemoria scadenza') +
                   '<p>Buongiorno {{ contact.full_name }},<br>vi ricordiamo la scadenza <strong>"{{ deadline.title }}"</strong> del contratto <strong>{{ contract.contract_number }}</strong> ({{ event_name }}).</p>' +
                   box('<p style="margin:0; font-size:15px;">Prevista per il <strong style="color:#1d6534;">{{ deadline.due_date|date:"d/m/Y" }}</strong> — tra <strong>{{ days_remaining }} giorni</strong>.</p>') +
-                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Importo da versare:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)</div>{% endif %}' +
+                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Importo da versare:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}</div>{% endif %}' +
                   '{% if deadline.description %}<p><strong>Cosa è richiesto:</strong><br>{{ deadline.description|linebreaksbr }}</p>{% endif %}' +
                   btn('{{ portal_url }}', 'Vai alla scadenza') +
                   SIGN_IT,
             'en': H('Deadline reminder') +
                   '<p>Hello {{ contact.full_name }},<br>a reminder about the deadline <strong>"{{ deadline.title }}"</strong> of contract <strong>{{ contract.contract_number }}</strong> ({{ event_name }}).</p>' +
                   box('<p style="margin:0; font-size:15px;">Due on <strong style="color:#1d6534;">{{ deadline.due_date|date:"d/m/Y" }}</strong> — in <strong>{{ days_remaining }} days</strong>.</p>') +
-                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Amount due:</strong> € {{ importo_scadenza|floatformat:2 }} (VAT incl.)</div>{% endif %}' +
+                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Amount due:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}</div>{% endif %}' +
                   '{% if deadline.description %}<p><strong>What is required:</strong><br>{{ deadline.description|linebreaksbr }}</p>{% endif %}' +
                   btn('{{ portal_url }}', 'Go to the deadline') +
                   SIGN_EN,
@@ -152,7 +152,7 @@ TEXTS = {
             'it': H('Sollecito · scadenza superata', '#dc2626') +
                   '<p>Buongiorno {{ contact.full_name }},</p>' +
                   '<div class="alert-error"><strong>Attenzione:</strong> la scadenza "<strong>{{ deadline.title }}</strong>" del contratto <strong>{{ contract.contract_number }}</strong> era prevista per il <strong>{{ deadline.due_date|date:"d/m/Y" }}</strong> ed è scaduta da {{ days_overdue }} giorni.</div>' +
-                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Importo da versare:</strong> € {{ importo_scadenza|floatformat:2 }} (IVA inclusa)</div>{% endif %}' +
+                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Importo da versare:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}</div>{% endif %}' +
                   '<p>Vi preghiamo di provvedere al più presto dall\'area riservata. Per difficoltà a rispettare la scadenza, contattateci.</p>' +
                   btn('{{ portal_url }}', 'Regolarizza ora') +
                   '<p style="color:#6b7280; font-size:13px;">Se nel frattempo avete già provveduto, vi ringraziamo: potete considerare questa comunicazione come non inviata.</p>' +
@@ -160,7 +160,7 @@ TEXTS = {
             'en': H('Reminder · deadline passed', '#dc2626') +
                   '<p>Hello {{ contact.full_name }},</p>' +
                   '<div class="alert-error"><strong>Please note:</strong> the deadline "<strong>{{ deadline.title }}</strong>" of contract <strong>{{ contract.contract_number }}</strong> was due on <strong>{{ deadline.due_date|date:"d/m/Y" }}</strong> and is {{ days_overdue }} days overdue.</div>' +
-                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Amount due:</strong> € {{ importo_scadenza|floatformat:2 }} (VAT incl.)</div>{% endif %}' +
+                  '{% if is_pagamento and importo_scadenza %}<div class="alert-warning"><strong>Amount due:</strong> € {{ importo_scadenza|floatformat:2 }} {{ nota_iva }}</div>{% endif %}' +
                   '<p>Please take care of it as soon as possible from your area. If you have any difficulty, contact us.</p>' +
                   btn('{{ portal_url }}', 'Resolve now') +
                   '<p style="color:#6b7280; font-size:13px;">If you have already taken care of this, thank you — please disregard this message.</p>' +

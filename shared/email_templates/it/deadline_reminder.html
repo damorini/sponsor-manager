@@ -26,7 +26,7 @@
         {% if importo_scadenza %}
         <tr>
           <td style="padding:4px 0; color:#6b7280;">Importo</td>
-          <td style="padding:4px 0; text-align:right; font-size:18px;"><strong class="text-primary">€ {{ importo_scadenza|floatformat:2 }}</strong> <span style="color:#6b7280; font-size:12px;">(IVA inclusa)</span></td>
+          <td style="padding:4px 0; text-align:right; font-size:18px;"><strong class="text-primary">€ {{ importo_scadenza|floatformat:2 }}</strong> <span style="color:#6b7280; font-size:12px;">{{ nota_iva }}</span></td>
         </tr>
         {% endif %}
         <tr>
@@ -70,7 +70,7 @@
 <p>Potete consultare lo stato completo del vostro contratto nell'area riservata:</p>
 {% endif %}
 
-<p style="text-align:center; margin:24px 0;">
+{% if deadline.deadline_template.client_template_file %}<p>Collegandovi al portale troverete il <strong>template da scaricare</strong> per la realizzazione da parte del vostro ufficio grafico.</p>{% endif %}<p style="text-align:center; margin:24px 0;">
   <a href="{% if is_pagamento %}{{ portal_url }}pagamenti/{% else %}{{ portal_url }}{% endif %}" class="button">
     {% if is_pagamento %}Vedi i tuoi pagamenti{% else %}Accedi al portale sponsor{% endif %}
   </a>
