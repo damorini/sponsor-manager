@@ -772,7 +772,8 @@ class ContactAdmin(admin.ModelAdmin):
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',
                        'privacy_accepted_at', 'privacy_policy_version',
-                       'marketing_consent_at', 'left_company_at', 'azioni_rubrica')
+                       'marketing_consent_at', 'left_company_at', 'transferred_from',
+                       'azioni_rubrica')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
         # Ordina per Cognome, poi Nome (campi reali).
@@ -786,7 +787,7 @@ class ContactAdmin(admin.ModelAdmin):
             'fields': ('roles', 'is_primary', 'preferred_language'),
         }),
         ('Rubrica', {
-            'fields': ('interest_areas', 'left_company_at', 'azioni_rubrica'),
+            'fields': ('interest_areas', 'left_company_at', 'transferred_from', 'azioni_rubrica'),
             'description': "Aree di interesse della persona. «Non più in azienda dal» "
                            "si compila con il pulsante Trasferisci, non a mano.",
         }),
@@ -958,16 +959,26 @@ class ContactAdmin(admin.ModelAdmin):
         from django.core.exceptions import PermissionDenied, ValidationError
         from django.shortcuts import redirect
         from django.template.response import TemplateResponse
-        from sponsors.rubrica import anonimizza_persona
+        from sponsors.rubrica import anonimizza_persona, schede_della_persona
 
         if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'admin'):
             raise PermissionDenied
         contatto = get_object_or_404(Contact.all_objects, pk=object_id)
-        schede = (Contact.all_objects.filter(email__iexact=contatto.email)
-                  .select_related('sponsor'))
+        # stessa email + catena dei trasferimenti: tutto cio' che verra' toccato
+        schede = schede_della_persona(contatto)
+        errore = ''
+        if not (contatto.email or '').strip() and len(schede) < 2:
+            # senza email e senza catena non c'e' modo di riconoscere la persona;
+            # NON elencare altro (email vuota = tutti i contatti senza email)
+            errore = ("Questa scheda è senza email e non è collegata ad altre schede da un "
+                      "trasferimento: impossibile identificare la persona da anonimizzare.")
+            schede = []
         if request.method == 'POST' and request.POST.get('conferma'):
+            if errore:
+                self.message_user(request, errore, level=messages.ERROR)
+                return redirect('admin:sponsors_contact_change', contatto.pk)
             try:
-                n = anonimizza_persona(contatto.email)
+                n = anonimizza_persona(contatto.email, contact=contatto)
             except ValidationError as e:
                 self.message_user(request, ' '.join(e.messages), level=messages.ERROR)
                 return redirect('admin:sponsors_contact_change', contatto.pk)
@@ -976,7 +987,8 @@ class ContactAdmin(admin.ModelAdmin):
             return redirect('admin:sponsors_contact_changelist')
         return TemplateResponse(request, 'admin/sponsors/contact/anonimizza.html', {
             **self.admin_site.each_context(request), 'opts': self.model._meta,
-            'title': 'Cancella dati personali (GDPR)', 'contatto': contatto, 'schede': schede})
+            'title': 'Cancella dati personali (GDPR)', 'contatto': contatto, 'schede': schede,
+            'errore': errore})
 
     @admin.display(description='Cognome', ordering='last_name')
     def col_cognome(self, obj):

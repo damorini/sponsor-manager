@@ -351,6 +351,12 @@ class Contact(SoftDeleteModel):
         help_text="Valorizzato dal trasferimento ad altra azienda: il contatto resta "
                   "per lo storico dei contratti ma non riceve più comunicazioni.",
     )
+    transferred_from = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='transferred_to', verbose_name="Trasferito da",
+        help_text="Scheda della stessa persona nell'azienda precedente: la "
+                  "cancellazione GDPR segue tutta la catena, anche se l'email è cambiata.",
+    )
 
     # ========================================================================
     # Dati per ruolo "Firmatario" (legale rappresentante)
