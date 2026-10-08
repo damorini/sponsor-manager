@@ -1,0 +1,170 @@
+"""Logica della rubrica contatti: destinatari delle campagne per area,
+trasferimento ad altra azienda, anonimizzazione GDPR."""
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Q
+from django.db.models.functions import Lower
+from django.utils import timezone
+
+from sponsors.models import Contact, SuppressedEmail
+
+
+def contatti_raggiungibili():
+    """Contatti a cui si puo' scrivere per marketing: non cestinati, azienda
+    non cestinata, non usciti dall'azienda, con email, non disiscritti."""
+    return (Contact.objects
+            .filter(sponsor__deleted_at__isnull=True, left_company_at__isnull=True)
+            .exclude(email='')
+            .annotate(email_l=Lower('email'))
+            .exclude(email_l__in=SuppressedEmail.objects.values('email')))
+
+
+def destinatari_per_aree(aree):
+    """Un contatto per indirizzo email (la stessa persona su piu' aziende o
+    piu' aree riceve UNA sola email), ordinati per email."""
+    qs = (contatti_raggiungibili()
+          .filter(interest_areas__in=aree)
+          .select_related('sponsor')
+          .order_by('email_l', 'created_at'))
+    visti, out = set(), []
+    for c in qs:
+        if c.email_l in visti:
+            continue
+        visti.add(c.email_l)
+        out.append(c)
+    return out
+
+
+@transaction.atomic
+def trasferisci_contatto(contact, nuovo_sponsor, nuova_email='', data=None):
+    """La persona cambia azienda: crea un NUOVO contatto nella nuova azienda e
+    segna il vecchio come uscito. Il vecchio non si sposta mai: i contratti
+    firmati (Contract.sponsor_signer_contact) devono restare intestati a chi
+    lavorava li' allora. Ritorna il nuovo contatto."""
+    if contact.left_company_at:
+        raise ValidationError("Questo contatto è già segnato come uscito dall'azienda.")
+    if nuovo_sponsor.pk == contact.sponsor_id:
+        raise ValidationError("La nuova azienda è uguale a quella attuale.")
+    data = data or timezone.localdate()
+    nuovo = Contact(
+        sponsor=nuovo_sponsor,
+        first_name=contact.first_name, last_name=contact.last_name,
+        email=(nuova_email or contact.email).strip(),
+        phone=contact.phone, job_title=contact.job_title,
+        preferred_language=contact.preferred_language,
+        marketing_consent=contact.marketing_consent,
+        marketing_consent_at=contact.marketing_consent_at,
+        notes=f"Trasferito da {contact.sponsor.legal_name} il {data:%d/%m/%Y}.",
+        transferred_from=contact,
+    )
+    nuovo.full_clean()
+    nuovo.save()
+    nuovo.interest_areas.set(contact.interest_areas.all())
+
+    contact.left_company_at = data
+    contact.is_primary = False
+    # niente ruoli ne' firma: non deve piu' ricevere le email per ruolo della
+    # vecchia azienda ne' essere scelto come firmatario di nuovi contratti.
+    # I contratti gia' firmati restano suoi via Contract.sponsor_signer_contact.
+    contact.roles = []
+    contact.is_signer = False
+    contact.has_portal_access = False
+    contact.portal_user = None
+    contact.save()
+    return nuovo
+
+
+ANON_NOME = 'Anonimizzato'
+
+
+def _espandi_persona(iniziali):
+    """Dalle schede di partenza raccoglie tutte quelle della stessa persona:
+    catena dei trasferimenti in entrambe le direzioni (transferred_from /
+    transferred_to) e schede con la stessa email (la stessa persona su piu'
+    aziende). Ripete finche' non si aggiungono schede. Include le cestinate."""
+    trovate = {c.pk: c for c in iniziali}
+    da_visitare = list(trovate.values())
+    while da_visitare:
+        pks = [c.pk for c in da_visitare]
+        emails = {(c.email or '').strip().lower() for c in da_visitare} - {''}
+        q = Q(pk__in=[c.transferred_from_id for c in da_visitare if c.transferred_from_id])
+        q |= Q(transferred_from_id__in=pks)
+        for e in emails:
+            q |= Q(email__iexact=e)
+        nuove = [c for c in Contact.all_objects.filter(q).exclude(pk__in=list(trovate))]
+        for c in nuove:
+            trovate[c.pk] = c
+        da_visitare = nuove
+    return sorted(trovate.values(), key=lambda c: (c.created_at, str(c.pk)))
+
+
+def schede_della_persona(contact):
+    """Tutte le schede della persona di questo contatto (vedi _espandi_persona).
+    Usata dalla conferma admin, che deve elencare cio' che verra' toccato."""
+    return _espandi_persona([contact])
+
+
+def _anonimizza_utente_portale(user):
+    """Account portale rimasto senza schede vive: disattivato e svuotato.
+    Gli account del backoffice (staff, superuser o ruolo non 'sponsor', come
+    in Contact.save) non si toccano: vengono solo scollegati."""
+    if (user.is_staff or user.is_superuser
+            or getattr(user, 'role', 'sponsor') != 'sponsor'):
+        return
+    if user.contact_profiles.exists():      # manager di default: solo schede vive
+        return
+    anon = f'anonimizzato-{user.pk}@invalid.invalid'
+    user.is_active = False
+    user.first_name = user.last_name = ''
+    user.email = user.username = anon
+    user.set_unusable_password()
+    user.save()
+
+
+@transaction.atomic
+def anonimizza_persona(email, contact=None):
+    """Richiesta GDPR di cancellazione: anonimizza TUTTE le schede della
+    persona (stessa email + catena dei trasferimenti, anche cestinate), le
+    cestina e mette OGNI suo indirizzo tra le email escluse, cosi' un import
+    futuro non la reinserisce. Le righe restano per non rompere i contratti
+    che le citano. Ritorna il numero di schede anonimizzate."""
+    from shared.models import AuditLog
+    email = (email or '').strip()
+    iniziali = list(Contact.all_objects.filter(email__iexact=email)) if email else []
+    if contact is not None and contact.pk not in {c.pk for c in iniziali}:
+        iniziali.append(contact)
+    if not email and (contact is None or len(schede_della_persona(contact)) < 2):
+        raise ValidationError("Email mancante: impossibile identificare la persona da anonimizzare.")
+    schede = _espandi_persona(iniziali)
+    if email:
+        SuppressedEmail.add(email, SuppressedEmail.Reason.ANONYMIZED)
+    for c in schede:
+        if c.email and not c.email.lower().endswith('.invalid'):
+            SuppressedEmail.add(c.email, SuppressedEmail.Reason.ANONYMIZED)
+    utenti = {c.portal_user for c in schede if c.portal_user_id}
+    adesso = timezone.now()
+    for c in schede:
+        c.portal_user = None          # prima di save(): save() riallinea l'email dell'utente collegato
+        c.has_portal_access = False
+        c.first_name, c.last_name, c.full_name = ANON_NOME, '', ''
+        c.email = f'anonimizzato-{c.pk}@invalid.invalid'
+        c.phone = c.job_title = c.notes = ''
+        c.signer_tax_code = c.birth_place = c.birth_province = ''
+        c.residence_street = c.residence_street_number = c.residence_city = ''
+        c.residence_zip = c.residence_province = c.id_document_number = ''
+        c.id_document_type = ''
+        c.birth_date = None
+        c.roles = []
+        c.is_primary = c.is_signer = c.marketing_consent = False
+        c.marketing_consent_at = None
+        c.privacy_accepted_at = None
+        c.privacy_policy_version = ''
+        c.welcome_seen_at = None
+        c.deleted_at = c.deleted_at or adesso
+        c.save()
+        c.interest_areas.clear()
+        # lo storico modifiche dal portale conteneva i vecchi valori in chiaro
+        AuditLog.objects.filter(entity_type='Contact', entity_id=c.pk).update(changes=None)
+    for u in utenti:
+        _anonimizza_utente_portale(u)
+    return len(schede)

@@ -421,7 +421,7 @@ class PromotionalCampaign(TimeStampedModel):
         da QUESTA campagna. Contract.objects esclude gia' i contratti nel
         cestino; qui si esclude anche lo sponsor nel cestino per sicurezza."""
         from contracts.models import Contract, ContractKind, ContractStatus
-        from sponsors.models import Contact
+        from sponsors.rubrica import contatti_raggiungibili
 
         sponsor_ids = (Contract.objects
                        .filter(event=self.event, contract_kind=ContractKind.MAIN,
@@ -430,9 +430,8 @@ class PromotionalCampaign(TimeStampedModel):
                                            ContractStatus.COMPLETED])
                        .values_list('sponsor_id', flat=True).distinct())
         opted_out_ids = self.opt_outs.values_list('contact_id', flat=True)
-        return (Contact.objects
-                .filter(sponsor_id__in=sponsor_ids, sponsor__deleted_at__isnull=True)
-                .exclude(email='')
+        return (contatti_raggiungibili()
+                .filter(sponsor_id__in=sponsor_ids)
                 .exclude(id__in=opted_out_ids))
 
 

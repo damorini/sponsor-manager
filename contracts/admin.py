@@ -839,7 +839,8 @@ class ContractAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         from sponsors.models import ContactRole
         role_map = dict(ContactRole.choices)
         rows = []
-        contacts = contract.sponsor.contacts.filter(deleted_at__isnull=True)
+        contacts = contract.sponsor.contacts.filter(
+            deleted_at__isnull=True, left_company_at__isnull=True)
         signer = contract.sponsor_signer_contact
         for c in contacts:
             if not c.email:

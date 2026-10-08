@@ -122,9 +122,7 @@ def send_contract_signed_notification(self, contract_id):
             contract.contract_number, e
         )
 
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     context = {
         'contract': contract,
@@ -354,9 +352,7 @@ def send_payment_confirmation_notification(self, payment_id):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)
@@ -424,9 +420,7 @@ def send_proforma_generated_notification(self, contract_id, document_ids):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)
@@ -534,9 +528,7 @@ def send_deadline_reminder(self, deadline_id, reminder_type='reminder'):
         return
 
     language = contract.language or 'it'
-    primary_contact = contract.sponsor.contacts.filter(is_primary=True).first()
-    if not primary_contact:
-        primary_contact = contract.sponsor.contacts.first()
+    primary_contact = contract.sponsor.contatto_di_riferimento
 
     event_name = (
         contract.event.get_name(language)
@@ -887,4 +879,105 @@ def send_promotional_campaign_batch(self, campaign_id):
     campaign.save(update_fields=['last_sent_at', 'updated_at'])
     logger.info("Campagna '%s' (evento %s) inviata a %d contatti",
                campaign.name, event, sent)
+    return sent
+
+
+# ============================================================================
+# Campagne per aree di interesse (rubrica)
+# ============================================================================
+
+MARKETING_UNSUB_SALT = 'marketing-optout'
+
+_MARKETING_UNSUB_TEXT = {
+    'it': {
+        'intro': ("Non vuoi più ricevere le nostre comunicazioni promozionali? "
+                 "Le email relative ai tuoi contratti continueranno ad arrivarti."),
+        'label': 'Disiscriviti dalle comunicazioni promozionali',
+    },
+    'en': {
+        'intro': ("Don't want to receive our promotional emails anymore? "
+                 "Emails about your contracts will keep arriving as usual."),
+        'label': 'Unsubscribe from promotional emails',
+    },
+}
+
+
+@shared_task(bind=True, max_retries=0)
+def send_interest_campaign(self, campaign_id, test_to=None):
+    """Invia una campagna per aree di interesse: una email per indirizzo
+    (vedi destinatari_per_aree). Con test_to manda UNA sola email di prova a
+    quell'indirizzo, personalizzata col primo destinatario, senza contarla.
+    Un errore su un destinatario non blocca gli altri."""
+    from django.conf import settings
+    from django.core import signing
+    from django.template import engines
+    from django.urls import reverse
+    from contracts.services.email_sender import send_email, _pick_lang
+    from sponsors.models import InterestCampaign
+    from sponsors.rubrica import destinatari_per_aree
+
+    try:
+        campaign = InterestCampaign.objects.get(pk=campaign_id)
+    except InterestCampaign.DoesNotExist:
+        logger.error("Campagna per aree %s non trovata", campaign_id)
+        return 0
+
+    # Prova = test_to presente (anche vuoto): un indirizzo vuoto NON deve mai
+    # degradare a invio vero verso tutti i destinatari.
+    is_test = test_to is not None
+    if is_test:
+        test_to = test_to.strip()
+        if not test_to:
+            logger.error("Campagna per aree %s: prova senza indirizzo, nulla inviato", campaign_id)
+            return 0
+
+    destinatari = destinatari_per_aree(campaign.interest_areas.all())
+    if is_test:
+        destinatari = destinatari[:1]
+    base_url = (getattr(settings, 'SITE_URL', '') or '').rstrip('/')
+    dj = engines['django']
+
+    sent = 0
+    for contact in destinatari:
+        lang = contact.preferred_language if contact.preferred_language in ('it', 'en') else 'it'
+        placeholders = {'sponsor': contact.sponsor, 'contact': contact, 'event_name': ''}
+        body = _pick_lang(campaign.body, lang) or ''
+        if not body.strip():
+            continue
+        # in prova il link porta l'indirizzo del tester, mai quello di un contatto vero
+        token = signing.dumps({'e': (test_to or contact.email).strip().lower()},
+                              salt=MARKETING_UNSUB_SALT)
+        txt = _MARKETING_UNSUB_TEXT.get(lang, _MARKETING_UNSUB_TEXT['it'])
+        try:
+            # dentro il try: un oggetto che non compila (in una lingua) salta
+            # solo i destinatari di quella lingua, non ferma l'intera campagna
+            # l'oggetto e' testo semplice, non HTML: niente escape ("&" non "&amp;")
+            subject = dj.from_string(
+                '{% autoescape off %}'
+                + (_pick_lang(campaign.subject, lang) or campaign.name)
+                + '{% endautoescape %}').render(placeholders)
+            send_email(
+                template_name='promotional_campaign',
+                context={
+                    **placeholders,
+                    'unsubscribe_url': base_url + reverse('portal:marketing_unsubscribe', args=[token]),
+                    'unsubscribe_intro': txt['intro'],
+                    'unsubscribe_label': txt['label'],
+                },
+                to=[test_to if is_test else contact.email],
+                subject=('[PROVA] ' if is_test else '') + subject,
+                language=lang,
+                custom_body_html=body,
+                related_to=campaign,
+                communication_type='promotional_campaign',
+                is_automated=not is_test,
+            )
+            sent += 1
+        except Exception:
+            logger.exception("Invio campagna per aree %s a %s fallito", campaign_id, contact.email)
+
+    if not is_test:
+        InterestCampaign.objects.filter(pk=campaign.pk).update(sent_count=sent)
+    logger.info("Campagna per aree '%s': %d email%s", campaign.name, sent,
+                ' (prova)' if is_test else '')
     return sent

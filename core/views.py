@@ -289,7 +289,7 @@ def cruscotto_cerca(request):
               .prefetch_related('contacts'))
         for sp in qs[:50]:
             try:
-                pc = sp.primary_contact or sp.contacts.first()
+                pc = sp.contatto_di_riferimento
             except Exception:
                 pc = None
             risultati.append({

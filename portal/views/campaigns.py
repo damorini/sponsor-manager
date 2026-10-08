@@ -9,7 +9,8 @@ import logging
 
 from django.core import signing
 from django.shortcuts import render
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_http_methods
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +40,42 @@ def campaign_unsubscribe_view(request, token):
     except signing.BadSignature:
         esito = 'errore'
     except Exception:
-        logger.exception("Errore disiscrizione campagna (token=%s)", token)
+        # mai il token nel log: e' la credenziale per disiscrivere quell'indirizzo
+        logger.exception("Errore disiscrizione campagna")
         esito = 'errore'
 
     return render(request, 'portal/campaign_unsubscribe.html', {
         'esito': esito,
         'campaign': campaign,
     })
+
+
+@csrf_exempt   # niente sessione: la credenziale e' il token firmato nell'URL
+@require_http_methods(['GET', 'POST'])
+def marketing_unsubscribe_view(request, token):
+    """Disiscrive l'INDIRIZZO da tutte le campagne promozionali (per area e
+    per evento). Idempotente. Le email transazionali continuano.
+    GET mostra solo il pulsante di conferma: filtri antispam e anteprime dei
+    client di posta aprono i link da soli e non devono disiscrivere nessuno.
+    La disiscrizione avviene col POST del pulsante."""
+    from contracts.tasks.notifications import MARKETING_UNSUB_SALT
+    from sponsors.models import SuppressedEmail
+
+    esito = 'errore'
+    try:
+        email = (signing.loads(token, salt=MARKETING_UNSUB_SALT).get('e') or '').strip()
+        if not email:
+            esito = 'errore'
+        elif request.method != 'POST':
+            esito = 'conferma'
+        elif SuppressedEmail.add(email, SuppressedEmail.Reason.UNSUBSCRIBED):
+            esito = 'ok'
+            logger.info("Disiscrizione marketing globale registrata")
+    except signing.BadSignature:
+        esito = 'errore'
+    except Exception:
+        # mai il token nel log: e' la credenziale per disiscrivere quell'indirizzo
+        logger.exception("Errore disiscrizione marketing globale")
+        esito = 'errore'
+    return render(request, 'portal/campaign_unsubscribe.html', {
+        'esito': esito, 'campaign': None, 'globale': True})

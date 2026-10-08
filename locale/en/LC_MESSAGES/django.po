@@ -3795,3 +3795,19 @@ msgstr "Proposal / agreement"
 
 msgid "confermato"
 msgstr "confirmed"
+
+#: portal/templates/portal/campaign_unsubscribe.html
+msgid "Non riceverai più le nostre comunicazioni promozionali."
+msgstr "You will no longer receive our promotional emails."
+
+#: portal/templates/portal/campaign_unsubscribe.html
+msgid "Vuoi disiscriverti?"
+msgstr "Do you want to unsubscribe?"
+
+#: portal/templates/portal/campaign_unsubscribe.html
+msgid "Non riceverai più le nostre comunicazioni promozionali. Continuerai comunque a ricevere le email relative al tuo contratto."
+msgstr "You will no longer receive our promotional communications. You will still receive emails about your contract."
+
+#: portal/templates/portal/campaign_unsubscribe.html
+msgid "Conferma disiscrizione"
+msgstr "Confirm unsubscribe"

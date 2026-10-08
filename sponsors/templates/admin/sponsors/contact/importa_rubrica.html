@@ -1,0 +1,45 @@
+{# sponsors/templates/admin/sponsors/contact/importa_rubrica.html #}
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div style="max-width:1100px">
+  <p>Carica un file <strong>.xlsx</strong> o <strong>.csv</strong> con le colonne
+     <code>company</code>, <code>referente</code>, <code>email</code>, <code>ruolo</code>,
+     <code>tel</code>, <code>interessi</code> (aree separate da <code>;</code>).
+     Prima vedi l'anteprima: nulla viene salvato finché non confermi.</p>
+
+  {% if errore %}<p class="errornote">{{ errore }}</p>{% endif %}
+
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <input type="file" name="file" accept=".xlsx,.csv" required>
+    <input type="submit" value="Mostra anteprima">
+  </form>
+
+  {% if analisi %}
+  <h2 style="margin-top:24px">Anteprima</h2>
+  <p><strong>{{ n_nuovi }}</strong> nuovi · <strong>{{ n_aggiorna }}</strong> da aggiornare ·
+     <strong style="color:#b91c1c">{{ n_errori }}</strong> con errori (non verranno importati)</p>
+  <table style="width:100%">
+    <thead><tr><th>Riga</th><th>Esito</th><th>Azienda</th><th>Nome</th><th>Cognome</th>
+      <th>Email</th><th>Aree</th><th>Note</th></tr></thead>
+    <tbody>
+    {% for r in analisi %}
+      <tr style="{% if r.esito == 'errore' %}background:rgba(185,28,28,.08){% endif %}">
+        <td>{{ r.numero }}</td>
+        <td>{% if r.esito == 'nuovo' %}Nuovo{% elif r.esito == 'aggiorna' %}Aggiorna{% else %}<strong style="color:#b91c1c">Errore</strong>{% endif %}</td>
+        <td>{{ r.azienda }}</td><td>{{ r.nome }}</td><td>{{ r.cognome }}</td>
+        <td>{{ r.email }}</td><td>{{ r.aree|join:", " }}</td>
+        <td>{{ r.messaggi|join:" " }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% if n_nuovi or n_aggiorna %}
+  <form method="post" style="margin-top:16px">{% csrf_token %}
+    <input type="hidden" name="dati" value="{{ dati }}">
+    <input type="hidden" name="conferma" value="1">
+    <input type="submit" class="default" value="Importa {{ n_nuovi|add:n_aggiorna }} righe">
+  </form>
+  {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

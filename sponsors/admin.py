@@ -14,8 +14,32 @@ from django.db.models.functions import Lower
 from core.softdelete_admin import SoftDeleteAdminMixin, DeletedListFilter
 from django.urls import reverse
 from django.utils.html import format_html
+from core.admin_widgets import TranslatableJSONField
 
-from .models import Contact, ContactRole, MessageSender, PortalMessage, Sponsor
+from .models import (
+    Contact, ContactRole, InterestArea, InterestCampaign, MessageSender, PortalMessage, Sponsor,
+    SuppressedEmail,
+)
+
+
+def _aree_selezionabili(request, model):
+    """Aree offerte nel widget: le attive PIU' quelle gia' scelte sull'oggetto
+    aperto (una disattivata gia' assegnata non deve sparire al salvataggio)."""
+    oid = None
+    try:
+        oid = request.resolver_match.kwargs.get('object_id')
+    except Exception:
+        oid = None
+    q = Q(is_active=True)
+    if oid:
+        try:
+            scelte = list(model._base_manager.filter(pk=oid)
+                          .exclude(interest_areas=None)
+                          .values_list('interest_areas', flat=True))
+        except Exception:      # object_id non valido: l'admin mostrera' il suo 404
+            scelte = []
+        q |= Q(pk__in=scelte)
+    return InterestArea.objects.filter(q).order_by('name')
 
 
 class _Cognome(Func):
@@ -220,7 +244,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         'address_city', 'pec_email',
     )
     readonly_fields = ('created_at', 'updated_at', 'contracts_summary',
-                       'logo_preview', 'conversazione_display')
+                       'logo_preview', 'conversazione_display', 'aree_azienda')
     ordering = (Lower('legal_name'),)
     inlines = [ContactInline]
     actions = ['action_generate_client_summary', 'action_compose_email', 'action_restore']
@@ -377,7 +401,8 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 
     def compose_email_view(self, request, object_id):
         sponsor = get_object_or_404(Sponsor, pk=object_id)
-        contacts = list(sponsor.contacts.all())
+        # chi e' uscito dall'azienda (trasferito) non e' piu' un destinatario
+        contacts = list(sponsor.contacts.filter(left_company_at__isnull=True))
         events = self._events_of_sponsor(sponsor)
 
         if not contacts:
@@ -460,9 +485,20 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
         return render(request, 'admin/compose_email.html', context)
 
 
+    @admin.display(description='Aree di interesse (dai contatti)')
+    def aree_azienda(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        nomi = (InterestArea.objects
+                .filter(contacts__sponsor=obj, contacts__deleted_at__isnull=True,
+                        contacts__left_company_at__isnull=True)
+                .distinct().values_list('name', flat=True))
+        return ', '.join(nomi) or '—'
+
     fieldsets = (
         ('Anagrafica', {
-            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview'),
+            'fields': ('legal_name', 'display_name', 'industry', 'website', 'logo_url', 'logo_file', 'logo_preview',
+                       'aree_azienda'),
         }),
         ('Dati fiscali', {
             'fields': ('vat_number', 'tax_code', 'sdi_code', 'pec_email',
@@ -718,7 +754,7 @@ class SponsorAdmin(SoftDeleteAdminMixin, admin.ModelAdmin):
 class ContactAdmin(admin.ModelAdmin):
     """Admin separato per cercare contatti tra tutti gli sponsor."""
     form = ContactRolesForm
-    change_list_template = 'admin/anagrafica_change_list.html'
+    change_list_template = 'admin/sponsors/contact/change_list.html'
 
     class Media:
         css = {'all': ('admin/css/contact_changelist.css',)}
@@ -726,12 +762,15 @@ class ContactAdmin(admin.ModelAdmin):
     list_display = (
         'col_cognome', 'col_nome', 'sponsor_link', 'email', 'cellulare', 'job_title',
         'roles_display', 'col_principale', 'col_lingua', 'col_portale',
+        'col_uscito',
     )
     list_display_links = ('col_cognome', 'col_nome')
     list_filter = (
         'is_primary', 'has_portal_access', 'preferred_language',
-        'marketing_consent',
+        'marketing_consent', 'interest_areas',
+        ('left_company_at', admin.EmptyFieldListFilter),
     )
+    filter_horizontal = ('interest_areas',)
     search_fields = ('first_name', 'last_name', 'full_name', 'email', 'phone', 'sponsor__legal_name')
 
     def get_search_results(self, request, queryset, search_term):
@@ -749,11 +788,17 @@ class ContactAdmin(admin.ModelAdmin):
         return scope_anagrafica_by_event(
             request, super().get_queryset(request), 'sponsor__contracts')
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'interest_areas':
+            kwargs['queryset'] = _aree_selezionabili(request, Contact)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
     list_select_related = ('sponsor', 'portal_user')
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',
                        'privacy_accepted_at', 'privacy_policy_version',
-                       'marketing_consent_at')
+                       'marketing_consent_at', 'left_company_at', 'transferred_from',
+                       'azioni_rubrica')
     actions = ['action_invita_al_portale']
     def get_ordering(self, request):
         # Ordina per Cognome, poi Nome (campi reali).
@@ -765,6 +810,11 @@ class ContactAdmin(admin.ModelAdmin):
         }),
         ('Funzioni', {
             'fields': ('roles', 'is_primary', 'preferred_language'),
+        }),
+        ('Rubrica', {
+            'fields': ('interest_areas', 'left_company_at', 'transferred_from', 'azioni_rubrica'),
+            'description': "Aree di interesse della persona. «Non più in azienda dal» "
+                           "si compila con il pulsante Trasferisci, non a mano.",
         }),
         ('Firmatario contratti', {
             'fields': (
@@ -797,6 +847,199 @@ class ContactAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    @admin.display(description='Uscito', ordering='left_company_at')
+    def col_uscito(self, obj):
+        return f"dal {obj.left_company_at:%d/%m/%Y}" if obj.left_company_at else ''
+
+    @staticmethod
+    def _puo_anonimizzare(user):
+        # stessa regola di anonimizza_view
+        return user.is_superuser or getattr(user, 'role', '') == 'admin'
+
+    def changelist_view(self, request, extra_context=None):
+        # "Importa rubrica" solo a chi non riceverebbe 403 (vedi importa_rubrica_view)
+        extra_context = {**(extra_context or {}),
+                         'puo_importare': (self.has_add_permission(request)
+                                           and self.has_change_permission(request))}
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_object(self, request, object_id, from_field=None):
+        """I campi readonly (azioni_rubrica) non ricevono la request: i
+        permessi dell'utente viaggiano sull'ISTANZA caricata per questa
+        richiesta, che e' propria della richiesta (thread-safe, a differenza
+        di un attributo su self, condiviso tra le richieste)."""
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            obj._puo_trasferire = self.has_change_permission(request, obj)
+            obj._puo_anonimizzare = self._puo_anonimizzare(request.user)
+        return obj
+
+    @admin.display(description='Azioni')
+    def azioni_rubrica(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        links = []
+        if not obj.left_company_at and getattr(obj, '_puo_trasferire', False):
+            links.append(format_html('<a class="button" href="{}">Trasferisci in altra azienda</a>',
+                                     reverse('admin:sponsors_contact_trasferisci', args=[obj.pk])))
+        if getattr(obj, '_puo_anonimizzare', False):
+            links.append(format_html('<a class="button" style="background:#b91c1c" href="{}">'
+                                     'Cancella dati (GDPR)</a>',
+                                     reverse('admin:sponsors_contact_anonimizza', args=[obj.pk])))
+        if not links:
+            return '—'
+        return format_html(' '.join(['{}'] * len(links)), *links)
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('importa-rubrica/', self.admin_site.admin_view(self.importa_rubrica_view),
+                 name='sponsors_contact_importa_rubrica'),
+            path('<path:object_id>/trasferisci/', self.admin_site.admin_view(self.trasferisci_view),
+                 name='sponsors_contact_trasferisci'),
+            path('<path:object_id>/anonimizza/', self.admin_site.admin_view(self.anonimizza_view),
+                 name='sponsors_contact_anonimizza'),
+        ]
+        return custom + urls
+
+    # Vista provvisoria trasferisci: sostituita nel Task 7.
+    def importa_rubrica_view(self, request):
+        """GET: form di caricamento. POST con file: anteprima (non scrive).
+        POST con conferma: riapplica l'analisi e scrive le righe buone.
+        Le righe passano dall'anteprima alla conferma firmate (signing), cosi'
+        non servono file temporanei e non si possono alterare."""
+        import logging
+        from django.contrib import messages
+        from django.core import signing
+        from django.core.exceptions import PermissionDenied
+        from django.shortcuts import redirect
+        from django.template.response import TemplateResponse
+        from sponsors.rubrica_import import analizza, applica, leggi_file
+
+        if not (self.has_add_permission(request) and self.has_change_permission(request)):
+            raise PermissionDenied
+
+        logger = logging.getLogger(__name__)
+        SALT = 'rubrica-import'
+        ctx = {**self.admin_site.each_context(request), 'opts': self.model._meta,
+               'title': 'Importa rubrica'}
+
+        if request.method == 'POST' and request.POST.get('conferma'):
+            try:
+                righe = signing.loads(request.POST.get('dati', ''), salt=SALT, max_age=3600)
+            except signing.BadSignature:
+                self.message_user(request, "Anteprima scaduta o non valida: ricarica il file.",
+                                  level=messages.ERROR)
+                return redirect('admin:sponsors_contact_importa_rubrica')
+            try:
+                esito = applica(righe)
+            except Exception as e:
+                logger.exception("Import rubrica fallito")
+                self.message_user(request, f"Import non riuscito ({type(e).__name__}): {e}",
+                                  level=messages.ERROR)
+                return redirect('admin:sponsors_contact_importa_rubrica')
+            self.message_user(request, (
+                f"Import completato: {esito['creati']} contatti creati, "
+                f"{esito['aggiornati']} aggiornati, {esito['aziende_create']} aziende nuove, "
+                f"{esito['scartati']} righe scartate."))
+            return redirect('admin:sponsors_contact_changelist')
+
+        if request.method == 'POST' and request.FILES.get('file'):
+            try:
+                righe = leggi_file(request.FILES['file'])
+            except ValueError as e:
+                ctx['errore'] = str(e)
+                return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
+            except Exception as e:
+                logger.exception("Lettura file rubrica fallita")
+                ctx['errore'] = f"Impossibile leggere il file ({type(e).__name__}). Usa .xlsx o .csv."
+                return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
+            analisi = analizza(righe)
+            ctx.update({
+                'analisi': analisi,
+                'dati': signing.dumps(righe, salt=SALT, compress=True),
+                'n_nuovi': sum(r.esito == 'nuovo' for r in analisi),
+                'n_aggiorna': sum(r.esito == 'aggiorna' for r in analisi),
+                'n_errori': sum(r.esito == 'errore' for r in analisi),
+            })
+        return TemplateResponse(request, 'admin/sponsors/contact/importa_rubrica.html', ctx)
+
+    def trasferisci_view(self, request, object_id):
+        from django.core.exceptions import PermissionDenied, ValidationError
+        from django.shortcuts import redirect
+        from django.template.response import TemplateResponse
+        from django.utils import timezone
+        from sponsors.rubrica import trasferisci_contatto
+
+        contatto = get_object_or_404(Contact, pk=object_id)
+        if not self.has_change_permission(request, contatto):
+            raise PermissionDenied
+
+        class TrasferisciForm(forms.Form):
+            nuova_azienda = forms.ModelChoiceField(
+                queryset=Sponsor.objects.exclude(pk=contatto.sponsor_id).order_by('legal_name'),
+                label='Nuova azienda')
+            nuova_email = forms.EmailField(
+                required=False, label='Nuova email',
+                help_text='Lascia vuoto se resta la stessa.')
+            data = forms.DateField(
+                label='In azienda nuova dal', initial=timezone.localdate,
+                widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+
+        form = TrasferisciForm(request.POST or None)
+        if request.method == 'POST' and form.is_valid():
+            try:
+                nuovo = trasferisci_contatto(contatto, form.cleaned_data['nuova_azienda'],
+                                             form.cleaned_data['nuova_email'],
+                                             form.cleaned_data['data'])
+            except ValidationError as e:
+                form.add_error(None, e)
+            else:
+                self.message_user(request, (
+                    f"{nuovo.full_name} ora è in {nuovo.sponsor.legal_name}. "
+                    f"La scheda in {contatto.sponsor.legal_name} resta per lo storico. "
+                    "Se serve l'accesso al portale, invitalo di nuovo."))
+                return redirect('admin:sponsors_contact_change', nuovo.pk)
+        return TemplateResponse(request, 'admin/sponsors/contact/trasferisci.html', {
+            **self.admin_site.each_context(request), 'opts': self.model._meta,
+            'title': f'Trasferisci {contatto.full_name}', 'contatto': contatto, 'form': form})
+
+    def anonimizza_view(self, request, object_id):
+        from django.core.exceptions import PermissionDenied, ValidationError
+        from django.shortcuts import redirect
+        from django.template.response import TemplateResponse
+        from sponsors.rubrica import anonimizza_persona, schede_della_persona
+
+        if not self._puo_anonimizzare(request.user):
+            raise PermissionDenied
+        contatto = get_object_or_404(Contact.all_objects, pk=object_id)
+        # stessa email + catena dei trasferimenti: tutto cio' che verra' toccato
+        schede = schede_della_persona(contatto)
+        errore = ''
+        if not (contatto.email or '').strip() and len(schede) < 2:
+            # senza email e senza catena non c'e' modo di riconoscere la persona;
+            # NON elencare altro (email vuota = tutti i contatti senza email)
+            errore = ("Questa scheda è senza email e non è collegata ad altre schede da un "
+                      "trasferimento: impossibile identificare la persona da anonimizzare.")
+            schede = []
+        if request.method == 'POST' and request.POST.get('conferma'):
+            if errore:
+                self.message_user(request, errore, level=messages.ERROR)
+                return redirect('admin:sponsors_contact_change', contatto.pk)
+            try:
+                n = anonimizza_persona(contatto.email, contact=contatto)
+            except ValidationError as e:
+                self.message_user(request, ' '.join(e.messages), level=messages.ERROR)
+                return redirect('admin:sponsors_contact_change', contatto.pk)
+            self.message_user(request, f"Dati cancellati: {n} schede anonimizzate. "
+                                       "L'indirizzo non potrà più essere reimportato.")
+            return redirect('admin:sponsors_contact_changelist')
+        return TemplateResponse(request, 'admin/sponsors/contact/anonimizza.html', {
+            **self.admin_site.each_context(request), 'opts': self.model._meta,
+            'title': 'Cancella dati personali (GDPR)', 'contatto': contatto, 'schede': schede,
+            'errore': errore})
 
     @admin.display(description='Cognome', ordering='last_name')
     def col_cognome(self, obj):
@@ -1103,3 +1346,159 @@ class PortalMessageAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
         if _nuovo and obj.sender == MessageSender.OPERATOR:
             _notifica_cliente_nuovo_messaggio(request, obj.sponsor)
+
+
+@admin.register(InterestArea)
+class InterestAreaAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'n_contatti')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            _n=Count('contacts', filter=Q(contacts__deleted_at__isnull=True,
+                                          contacts__left_company_at__isnull=True)))
+
+    @admin.display(description='Contatti', ordering='_n')
+    def n_contatti(self, obj):
+        return obj._n
+
+
+@admin.register(SuppressedEmail)
+class SuppressedEmailAdmin(admin.ModelAdmin):
+    """Le esclusioni nascono dal link di disiscrizione o dall'anonimizzazione.
+    Togliere una DISISCRIZIONE riammette l'indirizzo alle campagne (solo se la
+    persona lo chiede); le anonimizzazioni non si toccano."""
+    list_display = ('email', 'reason', 'created_at')
+    list_filter = ('reason',)
+    search_fields = ('email',)
+    readonly_fields = ('email', 'reason', 'created_at', 'updated_at')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return super().has_delete_permission(request, obj) and (
+            obj is None or obj.reason == SuppressedEmail.Reason.UNSUBSCRIBED)
+
+
+class InterestCampaignForm(forms.ModelForm):
+    subject = TranslatableJSONField(languages=['it', 'en'], required_languages=['it'], label='Oggetto')
+    body = TranslatableJSONField(
+        languages=['it', 'en'], required_languages=['it'], wysiwyg=True, label='Corpo email',
+        help_text="Il link di disiscrizione viene aggiunto automaticamente in fondo.")
+
+    class Meta:
+        model = InterestCampaign
+        fields = ('name', 'interest_areas', 'subject', 'body')
+
+    def clean(self):
+        """Oggetto e corpo sono template Django ({{ contact.full_name }}...):
+        se uno non compila, l'invio fallirebbe per ogni destinatario. Meglio
+        dirlo qui, con la lingua e il motivo."""
+        from django.template import TemplateSyntaxError, engines
+        cleaned = super().clean()
+        dj = engines['django']
+        for campo, etichetta in (('subject', 'Oggetto'), ('body', 'Corpo email')):
+            valori = cleaned.get(campo)
+            if not isinstance(valori, dict):
+                continue
+            for lang, testo in valori.items():
+                if not testo:
+                    continue
+                try:
+                    dj.from_string(testo)
+                except TemplateSyntaxError as e:
+                    self.add_error(campo, f"{etichetta} ({lang.upper()}) non è valido: {e}")
+        return cleaned
+
+    class Media:
+        js = ('https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
+              'admin/js/email_wysiwyg.js')
+
+
+@admin.register(InterestCampaign)
+class InterestCampaignAdmin(admin.ModelAdmin):
+    form = InterestCampaignForm
+    list_display = ('name', 'aree', 'destinatari', 'sent_at', 'sent_count')
+    search_fields = ('name',)
+    filter_horizontal = ('interest_areas',)
+    readonly_fields = ('destinatari', 'sent_at', 'sent_by', 'sent_count')
+    fieldsets = (
+        (None, {'fields': ('name', 'interest_areas', 'destinatari')}),
+        ('Contenuto email', {'fields': ('subject', 'body')}),
+        ('Invio', {'fields': ('sent_at', 'sent_by', 'sent_count')}),
+    )
+    actions = ['action_prova', 'action_invia']
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'interest_areas':
+            kwargs['queryset'] = _aree_selezionabili(request, InterestCampaign)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    @admin.display(description='Aree')
+    def aree(self, obj):
+        return ', '.join(obj.interest_areas.values_list('name', flat=True))
+
+    @admin.display(description='Destinatari')
+    def destinatari(self, obj):
+        if not obj or not obj.pk:
+            return '—'
+        from sponsors.rubrica import destinatari_per_aree
+        return len(destinatari_per_aree(obj.interest_areas.all()))
+
+    @admin.action(description="Invia una PROVA a me", permissions=['change'])
+    def action_prova(self, request, queryset):
+        from contracts.tasks.notifications import send_interest_campaign
+        from sponsors.rubrica import destinatari_per_aree
+        email = (request.user.email or '').strip()
+        if not email:
+            self.message_user(
+                request, "Il tuo utente non ha un'email: impostala nel profilo per ricevere la prova.",
+                level=messages.ERROR)
+            return
+        for c in queryset:
+            if not destinatari_per_aree(c.interest_areas.all()):
+                self.message_user(
+                    request, "Nessun destinatario per le aree scelte: prova non inviata.",
+                    level=messages.WARNING)
+                continue
+            send_interest_campaign.delay(c.pk, test_to=email)
+            self.message_user(request, f"Prova in invio a {email}.")
+
+    @admin.action(description="INVIA a tutti i destinatari (una sola volta)", permissions=['change'])
+    def action_invia(self, request, queryset):
+        from django.contrib import messages
+        from django.utils import timezone
+        import logging
+        from contracts.tasks.notifications import send_interest_campaign
+        from sponsors.rubrica import destinatari_per_aree
+        partite = saltate = 0
+        for c in queryset:
+            if c.sent_at is None and not destinatari_per_aree(c.interest_areas.all()):
+                # niente "inviata" a vuoto: resterebbe bloccata senza aver scritto a nessuno
+                self.message_user(
+                    request, f"«{c.name}»: nessun destinatario per le aree scelte, "
+                             "campagna non inviata.", level=messages.WARNING)
+                continue
+            # update condizionato: un doppio clic non la manda due volte
+            if not InterestCampaign.objects.filter(pk=c.pk, sent_at__isnull=True).update(
+                    sent_at=timezone.now(), sent_by=request.user):
+                saltate += 1
+                continue
+            try:
+                send_interest_campaign.delay(c.pk)
+            except Exception as e:
+                # coda non raggiungibile: la campagna torna "da inviare"
+                logging.getLogger(__name__).exception("Accodamento campagna %s fallito", c.pk)
+                InterestCampaign.objects.filter(pk=c.pk).update(sent_at=None, sent_by=None)
+                self.message_user(
+                    request, f"«{c.name}»: invio non avviato ({type(e).__name__}). "
+                             "Nessuna email partita, riprova tra qualche minuto.",
+                    level=messages.ERROR)
+                continue
+            partite += 1
+        if partite or saltate:
+            self.message_user(request, f"{partite} campagna/e in invio."
+                              + (f" {saltate} già inviata/e: ignorata/e." if saltate else ''),
+                              level=messages.WARNING if saltate else messages.SUCCESS)

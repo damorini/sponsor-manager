@@ -1,0 +1,22 @@
+{# sponsors/templates/admin/sponsors/contact/anonimizza.html #}
+{% extends "admin/base_site.html" %}
+{% block content %}
+{% if errore %}
+<p class="errornote">{{ errore }}</p>
+<p><a href="{% url 'admin:sponsors_contact_change' contatto.pk %}">Torna alla scheda</a></p>
+{% else %}
+<p class="errornote">Operazione <strong>irreversibile</strong>: da usare solo se la persona ha
+   chiesto la cancellazione dei propri dati.</p>
+<p>Verranno anonimizzate tutte le schede di questa persona (stessa email e schede collegate
+   da un trasferimento ad altra azienda):</p>
+<ul>{% for s in schede %}<li>{{ s.full_name }} — {{ s.sponsor.legal_name }}{% if s.email %} ({{ s.email }}){% endif %}</li>{% endfor %}</ul>
+<p>Nome, email, telefono e dati anagrafici vengono sostituiti; le schede restano (cestinate) per
+   non rompere i contratti. Gli indirizzi finiscono tra le email escluse e non potranno essere
+   reimportati. Se la persona ha un accesso al portale non usato per altre aziende, viene disattivato.</p>
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="conferma" value="1">
+  <input type="submit" value="Cancella i dati" style="background:#b91c1c;color:#fff">
+  <a href="{% url 'admin:sponsors_contact_change' contatto.pk %}">Annulla</a>
+</form>
+{% endif %}
+{% endblock %}

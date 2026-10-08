@@ -172,7 +172,7 @@ def build_common_context(extra_context: dict = None, language: str = 'it') -> di
             common['azienda'] = getattr(_sp, 'legal_name', '') or ''
         if not common.get('contact'):
             try:
-                common['contact'] = _sp.primary_contact or _sp.contacts.first()
+                common['contact'] = _sp.contatto_di_riferimento
             except Exception:
                 pass
     return common
@@ -434,7 +434,8 @@ def get_recipients_for_contract(contract, roles: list = None) -> list:
     
     Se roles è None, restituisce solo il contatto primario.
     """
-    contacts = contract.sponsor.contacts.all()
+    # chi e' uscito dall'azienda (trasferito) non riceve piu' nulla per lei
+    contacts = contract.sponsor.contacts.filter(left_company_at__isnull=True)
 
     if roles:
         # Filtra contatti con almeno uno dei ruoli richiesti
@@ -459,9 +460,12 @@ def get_recipients_for_contract(contract, roles: list = None) -> list:
 
 
 def get_signer_email(contract) -> Optional[str]:
-    """Email del firmatario del contratto, se valorizzato."""
-    if contract.sponsor_signer_contact and contract.sponsor_signer_contact.email:
-        return contract.sponsor_signer_contact.email
+    """Email del firmatario del contratto, se valorizzato. Gli indirizzi dei
+    contatti anonimizzati (GDPR) finiscono in '.invalid': mai usarli."""
+    signer = contract.sponsor_signer_contact
+    email = (signer.email or '').strip() if signer else ''
+    if email and not email.lower().endswith('.invalid'):
+        return email
     return None
 
 
