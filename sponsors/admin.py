@@ -22,6 +22,26 @@ from .models import (
 )
 
 
+def _aree_selezionabili(request, model):
+    """Aree offerte nel widget: le attive PIU' quelle gia' scelte sull'oggetto
+    aperto (una disattivata gia' assegnata non deve sparire al salvataggio)."""
+    oid = None
+    try:
+        oid = request.resolver_match.kwargs.get('object_id')
+    except Exception:
+        oid = None
+    q = Q(is_active=True)
+    if oid:
+        try:
+            scelte = list(model._base_manager.filter(pk=oid)
+                          .exclude(interest_areas=None)
+                          .values_list('interest_areas', flat=True))
+        except Exception:      # object_id non valido: l'admin mostrera' il suo 404
+            scelte = []
+        q |= Q(pk__in=scelte)
+    return InterestArea.objects.filter(q).order_by('name')
+
+
 class _Cognome(Func):
     """Ultima parola del 'Nome completo' (= cognome), per l'ordinamento."""
     function = 'regexp_replace'
@@ -768,6 +788,11 @@ class ContactAdmin(admin.ModelAdmin):
         return scope_anagrafica_by_event(
             request, super().get_queryset(request), 'sponsor__contracts')
 
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'interest_areas':
+            kwargs['queryset'] = _aree_selezionabili(request, Contact)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
+
     list_select_related = ('sponsor', 'portal_user')
     autocomplete_fields = ['sponsor', 'portal_user']
     readonly_fields = ('created_at', 'updated_at',
@@ -827,17 +852,43 @@ class ContactAdmin(admin.ModelAdmin):
     def col_uscito(self, obj):
         return f"dal {obj.left_company_at:%d/%m/%Y}" if obj.left_company_at else ''
 
+    @staticmethod
+    def _puo_anonimizzare(user):
+        # stessa regola di anonimizza_view
+        return user.is_superuser or getattr(user, 'role', '') == 'admin'
+
+    def changelist_view(self, request, extra_context=None):
+        # "Importa rubrica" solo a chi non riceverebbe 403 (vedi importa_rubrica_view)
+        extra_context = {**(extra_context or {}),
+                         'puo_importare': (self.has_add_permission(request)
+                                           and self.has_change_permission(request))}
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_object(self, request, object_id, from_field=None):
+        """I campi readonly (azioni_rubrica) non ricevono la request: i
+        permessi dell'utente viaggiano sull'ISTANZA caricata per questa
+        richiesta, che e' propria della richiesta (thread-safe, a differenza
+        di un attributo su self, condiviso tra le richieste)."""
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            obj._puo_trasferire = self.has_change_permission(request, obj)
+            obj._puo_anonimizzare = self._puo_anonimizzare(request.user)
+        return obj
+
     @admin.display(description='Azioni')
     def azioni_rubrica(self, obj):
         if not obj or not obj.pk:
             return '—'
         links = []
-        if not obj.left_company_at:
+        if not obj.left_company_at and getattr(obj, '_puo_trasferire', False):
             links.append(format_html('<a class="button" href="{}">Trasferisci in altra azienda</a>',
                                      reverse('admin:sponsors_contact_trasferisci', args=[obj.pk])))
-        links.append(format_html('<a class="button" style="background:#b91c1c" href="{}">'
-                                 'Cancella dati (GDPR)</a>',
-                                 reverse('admin:sponsors_contact_anonimizza', args=[obj.pk])))
+        if getattr(obj, '_puo_anonimizzare', False):
+            links.append(format_html('<a class="button" style="background:#b91c1c" href="{}">'
+                                     'Cancella dati (GDPR)</a>',
+                                     reverse('admin:sponsors_contact_anonimizza', args=[obj.pk])))
+        if not links:
+            return '—'
         return format_html(' '.join(['{}'] * len(links)), *links)
 
     def get_urls(self):
@@ -961,7 +1012,7 @@ class ContactAdmin(admin.ModelAdmin):
         from django.template.response import TemplateResponse
         from sponsors.rubrica import anonimizza_persona, schede_della_persona
 
-        if not (request.user.is_superuser or getattr(request.user, 'role', '') == 'admin'):
+        if not self._puo_anonimizzare(request.user):
             raise PermissionDenied
         contatto = get_object_or_404(Contact.all_objects, pk=object_id)
         # stessa email + catena dei trasferimenti: tutto cio' che verra' toccato
@@ -1341,6 +1392,26 @@ class InterestCampaignForm(forms.ModelForm):
         model = InterestCampaign
         fields = ('name', 'interest_areas', 'subject', 'body')
 
+    def clean(self):
+        """Oggetto e corpo sono template Django ({{ contact.full_name }}...):
+        se uno non compila, l'invio fallirebbe per ogni destinatario. Meglio
+        dirlo qui, con la lingua e il motivo."""
+        from django.template import TemplateSyntaxError, engines
+        cleaned = super().clean()
+        dj = engines['django']
+        for campo, etichetta in (('subject', 'Oggetto'), ('body', 'Corpo email')):
+            valori = cleaned.get(campo)
+            if not isinstance(valori, dict):
+                continue
+            for lang, testo in valori.items():
+                if not testo:
+                    continue
+                try:
+                    dj.from_string(testo)
+                except TemplateSyntaxError as e:
+                    self.add_error(campo, f"{etichetta} ({lang.upper()}) non è valido: {e}")
+        return cleaned
+
     class Media:
         js = ('https://cdn.jsdelivr.net/npm/tinymce@7.6.0/tinymce.min.js',
               'admin/js/email_wysiwyg.js')
@@ -1359,6 +1430,11 @@ class InterestCampaignAdmin(admin.ModelAdmin):
         ('Invio', {'fields': ('sent_at', 'sent_by', 'sent_count')}),
     )
     actions = ['action_prova', 'action_invia']
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == 'interest_areas':
+            kwargs['queryset'] = _aree_selezionabili(request, InterestCampaign)
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     @admin.display(description='Aree')
     def aree(self, obj):
@@ -1394,15 +1470,35 @@ class InterestCampaignAdmin(admin.ModelAdmin):
     def action_invia(self, request, queryset):
         from django.contrib import messages
         from django.utils import timezone
+        import logging
         from contracts.tasks.notifications import send_interest_campaign
-        partite = 0
+        from sponsors.rubrica import destinatari_per_aree
+        partite = saltate = 0
         for c in queryset:
+            if c.sent_at is None and not destinatari_per_aree(c.interest_areas.all()):
+                # niente "inviata" a vuoto: resterebbe bloccata senza aver scritto a nessuno
+                self.message_user(
+                    request, f"«{c.name}»: nessun destinatario per le aree scelte, "
+                             "campagna non inviata.", level=messages.WARNING)
+                continue
             # update condizionato: un doppio clic non la manda due volte
-            if InterestCampaign.objects.filter(pk=c.pk, sent_at__isnull=True).update(
+            if not InterestCampaign.objects.filter(pk=c.pk, sent_at__isnull=True).update(
                     sent_at=timezone.now(), sent_by=request.user):
+                saltate += 1
+                continue
+            try:
                 send_interest_campaign.delay(c.pk)
-                partite += 1
-        saltate = queryset.count() - partite
-        self.message_user(request, f"{partite} campagna/e in invio."
-                          + (f" {saltate} già inviata/e: ignorata/e." if saltate else ''),
-                          level=messages.WARNING if saltate else messages.SUCCESS)
+            except Exception as e:
+                # coda non raggiungibile: la campagna torna "da inviare"
+                logging.getLogger(__name__).exception("Accodamento campagna %s fallito", c.pk)
+                InterestCampaign.objects.filter(pk=c.pk).update(sent_at=None, sent_by=None)
+                self.message_user(
+                    request, f"«{c.name}»: invio non avviato ({type(e).__name__}). "
+                             "Nessuna email partita, riprova tra qualche minuto.",
+                    level=messages.ERROR)
+                continue
+            partite += 1
+        if partite or saltate:
+            self.message_user(request, f"{partite} campagna/e in invio."
+                              + (f" {saltate} già inviata/e: ignorata/e." if saltate else ''),
+                              level=messages.WARNING if saltate else messages.SUCCESS)

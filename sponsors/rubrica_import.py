@@ -86,6 +86,9 @@ def leggi_file(f):
              for i, h in enumerate(intest) if h}
         r['_riga'] = n
         righe.append(r)
+    if not righe:
+        # solo intestazione: senza questo l'anteprima resterebbe muta
+        raise ValueError("Nessuna riga trovata nel file.")
     return righe
 
 

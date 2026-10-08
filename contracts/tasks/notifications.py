@@ -952,12 +952,15 @@ def send_interest_campaign(self, campaign_id, test_to=None):
         body = _pick_lang(campaign.body, lang) or ''
         if not body.strip():
             continue
-        subject = dj.from_string(_pick_lang(campaign.subject, lang) or campaign.name).render(placeholders)
         # in prova il link porta l'indirizzo del tester, mai quello di un contatto vero
         token = signing.dumps({'e': (test_to or contact.email).strip().lower()},
                               salt=MARKETING_UNSUB_SALT)
         txt = _MARKETING_UNSUB_TEXT.get(lang, _MARKETING_UNSUB_TEXT['it'])
         try:
+            # dentro il try: un oggetto che non compila (in una lingua) salta
+            # solo i destinatari di quella lingua, non ferma l'intera campagna
+            subject = dj.from_string(
+                _pick_lang(campaign.subject, lang) or campaign.name).render(placeholders)
             send_email(
                 template_name='promotional_campaign',
                 context={
